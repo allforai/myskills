@@ -105,7 +105,9 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── test-verify/             # test-verify-report.json
 ├── translate/               # translation-manifest.json
 ├── launch-prep/             # competitive-research, compliance-checklist, launch-checklist
-└── bootstrap/               # workflow.json, bootstrap-profile.json, node-specs/, scripts/, learned/
+└── bootstrap/               # workflow.json, bootstrap-profile.json, plan-confirmation.json,
+                             # plan-confirmation-journal.json, repair-authorizations.json,
+                             # safety-quarantine.json, node-specs/, scripts/, learned/
 ```
 
 **Output contract**: JSON files are machine-readable (complete fields, for AI agents and automation); Markdown `*-report.md` files are human-readable summaries. Never duplicate JSON content in Markdown.

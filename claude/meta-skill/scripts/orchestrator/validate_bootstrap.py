@@ -36,7 +36,34 @@ except ImportError:
 
 def _node_id(node: dict, fallback: str = "") -> str:
     """Return the canonical workflow node identifier."""
+    if not isinstance(node, dict):
+        return fallback
     return node.get("node_id") or fallback
+
+
+def _addressable_id(node_id) -> bool:
+    """True when a value can actually name a node.
+
+    An identifier keys a map, orders a report and anchors a blocker. Only a non-empty
+    string does all three: a list or a dict raises when hashed, a number raises when
+    ordered against a string, and neither names anything a user can act on.
+    """
+    return isinstance(node_id, str) and bool(node_id.strip())
+
+
+def _addressable_nodes(raw_nodes) -> dict:
+    """The subset of a node list every graph rule may read, keyed by identifier.
+
+    Entries that cannot be addressed are dropped here rather than repaired: giving one
+    a synthetic id would let a malformed record participate in routing decisions. They
+    are reported by `workflow_shape_findings`, the one gate that owns node shape, so no
+    rule below restates it and none of them can be reached by an identifier that raises.
+    """
+    nodes = {}
+    for node in raw_nodes if isinstance(raw_nodes, list) else []:
+        if isinstance(node, dict) and _addressable_id(node.get("node_id")):
+            nodes[node["node_id"]] = node
+    return nodes
 
 
 def _lower_blob(value) -> str:
@@ -496,16 +523,34 @@ def validate_workflow(wf_path: str) -> list:
     SUSPICIOUS_BARE = {'.env', 'config.json', 'config.yaml', 'package.json',
                        'go.mod', 'Makefile', 'Dockerfile', 'README.md'}
 
-    node_ids = {_node_id(n) for n in wf["nodes"] if _node_id(n)}
+    node_ids = set(_addressable_nodes(wf["nodes"]))
 
     for i, node in enumerate(wf["nodes"]):
         nid = _node_id(node, f"node[{i}]")
+        if not isinstance(node, dict):
+            errors.append(
+                f"workflow.json: node[{i}] must be an object; a {type(node).__name__} carries "
+                f"no node_id and no later check can read it"
+            )
+            continue
         if "id" in node:
             errors.append(f"workflow.json: {nid} uses forbidden legacy field 'id'; use 'node_id'")
         if "blocked_by" in node:
             errors.append(f"workflow.json: {nid} uses forbidden legacy field 'blocked_by'; use 'hard_blocked_by'")
         if not node.get("node_id"):
             errors.append(f"workflow.json: node[{i}] missing 'node_id'")
+        elif not _addressable_id(node["node_id"]):
+            errors.append(
+                f"workflow.json: node[{i}] 'node_id' must be a non-empty string, got "
+                f"{node['node_id']!r}; a node the graph cannot address can be neither "
+                f"blocked, repaired nor reported"
+            )
+        if not _addressable_id(node.get("node_id")):
+            # Shape precedes semantics. Every check below reports against this node's
+            # identifier, and the freshness admission reader keys its record sets by it;
+            # a node the graph cannot address has no field verdict worth reporting and
+            # would raise on the first set membership test.
+            continue
         if "goal" not in node:
             errors.append(f"workflow.json: {nid} missing 'goal'")
         if "capability" not in node:
@@ -542,7 +587,12 @@ def validate_workflow(wf_path: str) -> list:
                 errors.append(f"workflow.json: {nid} '{field}' must be a list")
                 continue
             for cid in node[field]:
-                if cid not in node_ids:
+                if not _addressable_id(cid):
+                    errors.append(
+                        f"workflow.json: {nid} {field} entry must be a non-empty node id, "
+                        f"got {cid!r}"
+                    )
+                elif cid not in node_ids:
                     errors.append(
                         f"workflow.json: {nid} {field} references "
                         f"non-existent node '{cid}'"
@@ -1678,7 +1728,37 @@ def plan_confirmation_blockers(project_root) -> list:
     return plan_confirmation_findings(os.path.join(str(project_root), ".allforai", "bootstrap"))
 
 
-def validate_repair_loop_declaration(bdir: str) -> list:
+def _structural(findings: list, code: str, message: str, node_id: str = "") -> None:
+    """Record one structural finding.
+
+    Structural gates are decided once, here, and read by two consumers: this CLI renders
+    them as `code: message` strings, and the run-time entry takes the same dicts as
+    typed blockers. Neither consumer restates the rule.
+    """
+    finding = {"code": code, "message": message}
+    if node_id:
+        finding["node_id"] = node_id
+    findings.append(finding)
+
+
+def _rendered(findings: list) -> list:
+    return [f"{finding['code']}: {finding['message']}" for finding in findings]
+
+
+def _declared_node_ids(loop: dict, *keys: str) -> list:
+    """The addressable node ids one repair-loop declaration names under `keys`.
+
+    A declaration that is not a list names no nodes here; the readiness gate reports the
+    container's own shape, so this rule reads the route and does not restate it.
+    """
+    for key in keys:
+        declared = loop.get(key)
+        if declared:
+            return [n for n in declared if _text(n)] if isinstance(declared, list) else []
+    return []
+
+
+def repair_loop_declaration_findings(bdir: str) -> list:
     """A declared repair loop must describe a route the orchestrators can actually run.
 
     `validate_unattended_readiness.py` checks the declaration against the graph: a
@@ -1702,9 +1782,7 @@ def validate_repair_loop_declaration(bdir: str) -> list:
             or not isinstance(spec.get("required_repair_loops"), list)):
         return errors
 
-    raw_nodes = workflow.get("nodes")
-    nodes = {_node_id(node): node for node in (raw_nodes if isinstance(raw_nodes, list) else [])
-             if isinstance(node, dict) and _node_id(node)}
+    nodes = _addressable_nodes(workflow.get("nodes"))
     for index, loop in enumerate(spec["required_repair_loops"]):
         if not isinstance(loop, dict):
             continue
@@ -1712,23 +1790,33 @@ def validate_repair_loop_declaration(bdir: str) -> list:
         if not _text(repair_node_id):
             continue
         label = f"required_repair_loops[{index}]"
-        qa_nodes = [n for n in (loop.get("qa_node_ids") or loop.get("qa_nodes") or []) if _text(n)]
-        closure_nodes = [n for n in (loop.get("closure_node_ids") or loop.get("closure_nodes") or [])
-                         if _text(n)]
+        # The blocker is anchored to the repair node only when the graph actually holds it;
+        # a loop naming an absent node is reported by the gate that owns that check.
+        declared_node = repair_node_id if repair_node_id in nodes else ""
+        # A declared node list is a collection of identifiers or it declares nothing:
+        # a scalar is not one member, and iterating it is how a gate stops being a gate.
+        qa_nodes = _declared_node_ids(loop, "qa_node_ids", "qa_nodes")
+        closure_nodes = _declared_node_ids(loop, "closure_node_ids", "closure_nodes")
         if not qa_nodes:
-            errors.append(
-                f"undeclared_repair_loop_routing: {label} names repair node "
-                f"'{repair_node_id}' with no qa_node_ids; nothing routes findings into it"
+            _structural(
+                errors, "undeclared_repair_loop_routing",
+                f"{label} names repair node "
+                f"'{repair_node_id}' with no qa_node_ids; nothing routes findings into it",
+                node_id=declared_node,
             )
         if not closure_nodes:
-            errors.append(
-                f"undeclared_repair_loop_routing: {label} names repair node "
-                f"'{repair_node_id}' with no closure_node_ids; nothing waits for the QA rerun"
+            _structural(
+                errors, "undeclared_repair_loop_routing",
+                f"{label} names repair node "
+                f"'{repair_node_id}' with no closure_node_ids; nothing waits for the QA rerun",
+                node_id=declared_node,
             )
         if repair_node_id in qa_nodes or repair_node_id in closure_nodes:
-            errors.append(
-                f"undeclared_repair_loop_routing: {label} lists repair node "
-                f"'{repair_node_id}' as its own QA or closure node"
+            _structural(
+                errors, "undeclared_repair_loop_routing",
+                f"{label} lists repair node "
+                f"'{repair_node_id}' as its own QA or closure node",
+                node_id=declared_node,
             )
         for closure_node_id in closure_nodes:
             node = nodes.get(closure_node_id)
@@ -1738,12 +1826,19 @@ def validate_repair_loop_declaration(bdir: str) -> list:
             edges = edges if isinstance(edges, list) else []
             missing = [qa for qa in qa_nodes if qa in nodes and qa not in edges]
             if missing:
-                errors.append(
-                    f"undeclared_repair_loop_routing: {label} closure node "
+                _structural(
+                    errors, "undeclared_repair_loop_routing",
+                    f"{label} closure node "
                     f"'{closure_node_id}' is not hard_blocked_by QA node(s) {missing}; it would "
-                    f"close on the repair alone, without the QA rerun that proves it"
+                    f"close on the repair alone, without the QA rerun that proves it",
+                    node_id=closure_node_id,
                 )
     return errors
+
+
+def validate_repair_loop_declaration(bdir: str) -> list:
+    """Rendered repair-loop routing errors for the bootstrap validator CLI."""
+    return _rendered(repair_loop_declaration_findings(bdir))
 
 
 def _downstream_of(nodes: dict, node_id: str, owner_id: str) -> bool:
@@ -1763,7 +1858,7 @@ def _downstream_of(nodes: dict, node_id: str, owner_id: str) -> bool:
     return False
 
 
-def validate_effect_stage_ownership(bdir: str) -> list:
+def effect_stage_ownership_findings(bdir: str) -> list:
     """A deferred effect proof must name a downstream node that actually proves it.
 
     A node whose full effect first exists after a later node declares
@@ -1783,35 +1878,47 @@ def validate_effect_stage_ownership(bdir: str) -> list:
 
     if not isinstance(workflow, dict):
         return errors
-    nodes = {_node_id(node): node for node in workflow.get("nodes", [])
-             if isinstance(node, dict) and _node_id(node)}
+    # A run-time entry reaches this on any file the user's graph currently holds, so a
+    # malformed node list yields no structural finding here and is rejected by the shape
+    # gate that owns it, rather than raising out of the caller. `_addressable_nodes` is
+    # what makes that hold: an identifier that cannot key this map or order the report
+    # below never reaches the rule.
+    nodes = _addressable_nodes(workflow.get("nodes"))
     for node_id, node in sorted(nodes.items()):
         if "downstream_effect_owner" not in node:
             continue
         owner_id = node.get("downstream_effect_owner")
         if not _text(owner_id):
-            errors.append(
-                f"unowned_effect_stage: workflow.json {node_id} downstream_effect_owner must "
+            _structural(
+                errors, "unowned_effect_stage",
+                f"workflow.json {node_id} downstream_effect_owner must "
                 f"name the node that proves the full effect; omit the field when this node "
-                f"proves it at its own stage"
+                f"proves it at its own stage",
+                node_id=node_id,
             )
             continue
         if owner_id == node_id:
-            errors.append(
-                f"unowned_effect_stage: workflow.json {node_id} defers its effect proof to itself"
+            _structural(
+                errors, "unowned_effect_stage",
+                f"workflow.json {node_id} defers its effect proof to itself",
+                node_id=node_id,
             )
             continue
         if owner_id not in nodes:
-            errors.append(
-                f"unowned_effect_stage: workflow.json {node_id} defers its effect proof to "
-                f"non-existent node '{owner_id}'"
+            _structural(
+                errors, "unowned_effect_stage",
+                f"workflow.json {node_id} defers its effect proof to "
+                f"non-existent node '{owner_id}'",
+                node_id=node_id,
             )
             continue
         if not _downstream_of(nodes, node_id, owner_id):
-            errors.append(
-                f"unowned_effect_stage: workflow.json {node_id} defers its effect proof to "
+            _structural(
+                errors, "unowned_effect_stage",
+                f"workflow.json {node_id} defers its effect proof to "
                 f"'{owner_id}', which does not run after it; a deferred effect needs a "
-                f"downstream owner, not a parallel one"
+                f"downstream owner, not a parallel one",
+                node_id=node_id,
             )
             continue
         owner_spec = os.path.join(specs_dir, f"{owner_id}.md")
@@ -1821,11 +1928,104 @@ def validate_effect_stage_ownership(bdir: str) -> list:
         if spec_errors:
             continue
         if "## Effect Verification" not in owner_text:
-            errors.append(
-                f"unowned_effect_stage: node-specs/{owner_id}.md accepts the deferred effect of "
-                f"'{node_id}' but carries no Effect Verification section to prove it"
+            _structural(
+                errors, "unowned_effect_stage",
+                f"node-specs/{owner_id}.md accepts the deferred effect of "
+                f"'{node_id}' but carries no Effect Verification section to prove it",
+                node_id=node_id,
             )
     return errors
+
+
+def validate_effect_stage_ownership(bdir: str) -> list:
+    """Rendered deferred-effect ownership errors for the bootstrap validator CLI."""
+    return _rendered(effect_stage_ownership_findings(bdir))
+
+
+def workflow_shape_findings(bdir: str) -> list:
+    """Node entries no graph rule can address, decided before any rule reads them.
+
+    Every rule above keys a map by node identifier, orders a report by it and anchors a
+    blocker to it. A value that is not a non-empty string does none of those: it raises
+    when hashed or ordered against another identifier, and it names nothing a user can
+    act on. Two nodes sharing one identifier are the same fault seen from the other side
+    — one silently replaces the other in every map the rules build, so the graph that is
+    validated is not the graph on disk.
+
+    A run-time entry reaches these gates on whatever `workflow.json` currently holds, so
+    the fault is returned as a typed finding rather than raised: a traceback is not a
+    verdict, and a caller that cannot publish one leaves its last verdict standing.
+    Faults in the file itself — unparseable bytes, a non-object root, a `nodes` value
+    that is not a list — stay with the gates that own them and are not restated here.
+    """
+    findings = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    if not os.path.exists(workflow_path):
+        return findings
+    try:
+        workflow = _load_json(workflow_path)
+    except Exception:
+        return findings
+    if not isinstance(workflow, dict) or not isinstance(workflow.get("nodes"), list):
+        return findings
+
+    seen = set()
+    for index, node in enumerate(workflow["nodes"]):
+        if not isinstance(node, dict):
+            _structural(
+                findings, "malformed_workflow_node",
+                f"workflow.json nodes[{index}] must be an object; a {type(node).__name__} "
+                f"carries no node identifier, so no rule can plan, block or repair it",
+            )
+            continue
+        node_id = node.get("node_id")
+        if not _addressable_id(node_id):
+            _structural(
+                findings, "malformed_workflow_node",
+                f"workflow.json nodes[{index}] node_id must be a non-empty string, got "
+                f"{node_id!r}; an identifier that cannot key the graph names no node in "
+                f"a plan, a dependency edge or a blocker",
+            )
+            continue
+        if node_id in seen:
+            _structural(
+                findings, "malformed_workflow_node",
+                f"workflow.json nodes[{index}] repeats node_id '{node_id}'; one entry "
+                f"replaces the other wherever the graph is read by identifier, so the "
+                f"validated graph is not the graph on disk",
+                node_id=node_id,
+            )
+            continue
+        seen.add(node_id)
+    return findings
+
+
+def workflow_shape_blockers(project_root) -> list:
+    """Typed node-shape blockers for a run-time entry."""
+    return workflow_shape_findings(os.path.join(str(project_root), ".allforai", "bootstrap"))
+
+
+def structural_gate_blockers(project_root) -> list:
+    """Typed structural-gate blockers for a run-time entry.
+
+    `/run` must not assume `/bootstrap` ran and passed on the graph it is about to
+    execute. Both engines re-decide the same repair-loop routing and deferred-effect
+    ownership rules through this call, from the implementations above, so a workflow
+    the bootstrap gate refuses cannot execute unattended on either host, and neither
+    host restates the rule as a second copy that can drift.
+
+    Shape is decided first and alone. The routing and ownership rules are safe on a
+    malformed graph — they read the addressable subset — but a verdict computed from a
+    subset describes a graph the user does not have, and reporting it beside the shape
+    fault invites repairing the wrong thing. The bootstrap CLI reaches the same ordering
+    through `validate_workflow`, which it runs before these gates.
+    """
+    bdir = os.path.join(str(project_root), ".allforai", "bootstrap")
+    shape = workflow_shape_findings(bdir)
+    if shape:
+        return shape
+    return repair_loop_declaration_findings(bdir) + effect_stage_ownership_findings(bdir)
+
 
 def validate_node_spec(path: str) -> list:
     """Validate a single node-spec markdown file."""
@@ -1910,7 +2110,12 @@ __all__ = [
     "plan_confirmation_findings",
     "plan_confirmation_blockers",
     "validate_repair_loop_declaration",
+    "repair_loop_declaration_findings",
     "validate_effect_stage_ownership",
+    "effect_stage_ownership_findings",
+    "workflow_shape_findings",
+    "workflow_shape_blockers",
+    "structural_gate_blockers",
 ]
 
 

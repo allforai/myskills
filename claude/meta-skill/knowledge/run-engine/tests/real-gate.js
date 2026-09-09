@@ -37,7 +37,7 @@ function declaredLoopProject() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'declared-loop-'))
   const scripts = path.join(root, '.allforai/bootstrap/scripts')
   fs.mkdirSync(scripts, { recursive: true })
-  for (const name of ['check_artifacts.py', 'evidence_freshness.py']) {
+  for (const name of ['check_artifacts.py', 'evidence_freshness.py', 'repair_authorization.py']) {
     fs.copyFileSync(path.join(ORCHESTRATOR, name), path.join(scripts, name))
   }
   fs.mkdirSync(path.join(root, 'src'), { recursive: true })
@@ -137,5 +137,27 @@ function publishEvidence(root, nodeId) {
     verification_command: ['python3', '-c', 'pass'] }).status
 }
 
+// The REAL canonical repair-authorization ledger, driven exactly the way the engine's own
+// prompt tells the agent to drive it: the request is parsed back out of the command line
+// the prompt built, and the helper's stdout is returned verbatim. Nothing here
+// re-implements a decision — this is the boundary `ledger-double.js` stands in for
+// everywhere else, so if the two ever disagree, this one is right.
+function realLedger(root) {
+  return prompt => {
+    const match = /printf '%s' '([\s\S]*?)' \| python3 (\S+)/.exec(prompt)
+    if (!match) throw new Error(`prompt does not carry a ledger request: ${prompt}`)
+    const request = match[1].replace(/'\\''/g, "'")
+    try {
+      return JSON.parse(execFileSync('python3', [path.join(root, match[2]), '.'],
+        { input: request, cwd: root, encoding: 'utf8' }))
+    } catch (err) {
+      // A refusal exits non-zero and still prints its verdict; that verdict is the answer.
+      if (err.stdout) return JSON.parse(err.stdout)
+      throw err
+    }
+  }
+}
+
 module.exports = { declaredLoopProject, checkArtifacts, realGate, realMeasurement,
-  realMeasurementOf, withoutMeasurementFields, publishEvidence, freshnessCli, writeJson }
+  realMeasurementOf, withoutMeasurementFields, publishEvidence, freshnessCli, writeJson,
+  realLedger }

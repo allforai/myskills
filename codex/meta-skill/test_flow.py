@@ -192,6 +192,31 @@ def test_standalone_installer_keeps_canonical_entry(tmp_path):
 
 OMIT = object()
 
+ORCHESTRATOR_SCRIPTS = Path(__file__).resolve().parents[2] / 'claude/meta-skill/scripts/orchestrator'
+
+
+def install_repair_ledger(tmp_path):
+    """Ship the canonical helper into the project and record its provably new run.
+
+    The generated runtime carries `repair_authorization.py` under
+    `.allforai/bootstrap/scripts/`, and the driver reaches the ledger only through it.
+    `initialize` reads the workflow itself and refuses a document that already shows
+    execution, so a fixture that starts mid-run records its origin here, before it adds
+    the transition log the run would have produced.
+    """
+    scripts = tmp_path / '.allforai/bootstrap/scripts'
+    scripts.mkdir(parents=True, exist_ok=True)
+    (scripts / 'repair_authorization.py').write_bytes(
+        (ORCHESTRATOR_SCRIPTS / 'repair_authorization.py').read_bytes())
+    verdict = flow.authorization_request(tmp_path, {'operation': 'initialize',
+                                                    'run_id': 'fixture-run'})
+    assert verdict and verdict['status'] == 'ok', verdict
+    return verdict
+
+
+def ledger_entries(tmp_path):
+    return json.loads((tmp_path / flow.REPAIR_LEDGER).read_text())['authorizations']
+
 
 def repair_project(tmp_path, *, qa_report=None, transition_log=None, max_attempts=2):
     """Four-node loop: implement -> verify(QA) -> repair -> accept(closure)."""
@@ -201,6 +226,8 @@ def repair_project(tmp_path, *, qa_report=None, transition_log=None, max_attempt
         {'node_id': 'repair', 'hard_blocked_by': ['verify'], 'exit_artifacts': ['repair.json']},
         {'node_id': 'accept', 'hard_blocked_by': ['repair'], 'exit_artifacts': ['accept.json']},
     ]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes, 'transition_log': []})
+    install_repair_ledger(tmp_path)
     workflow = {'nodes': nodes, 'transition_log': transition_log or []}
     write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
     loop = {
@@ -258,6 +285,34 @@ def repair_delivered(node_id='repair'):
     return {'node': node_id, 'status': 'completed'}
 
 
+def repair_dispatched(root, workflow, qa_node_id='verify', repair_node_id='repair',
+                      settle='delivered'):
+    """Charge and claim one repair attempt exactly as a real dispatch does.
+
+    The budget ledger is the canonical `.allforai/bootstrap/repair-authorizations.json`,
+    written through `repair_authorization.py` write-ahead of the executor, so a fixture
+    that starts mid-run has to carry the same durable grant a real dispatch left. Passing
+    `settle=None` leaves the grant unresolved — the state a killed driver leaves behind.
+    """
+    budget = flow.repair_budget(next(
+        loop for loop in flow.declared_repair_loops(root)
+        if str(loop['repair_node_id']) == repair_node_id
+        and qa_node_id in flow.loop_nodes(loop, 'qa_node_ids', 'qa_nodes')))
+    authorization_id = f'{repair_node_id}-{qa_node_id}-{len(ledger_entries(root)) + 1}'
+    granted = flow.authorization_request(root, {
+        'operation': 'authorize', 'run_id': 'fixture-run',
+        'authorization_id': authorization_id, 'repair_node_id': repair_node_id,
+        'obligations': [qa_node_id], 'budgets': {qa_node_id: budget}})
+    assert granted and granted['status'] == 'authorized', granted
+    claimed = flow.authorization_request(root, {'operation': 'start', 'run_id': 'fixture-run',
+                                                'authorization_id': authorization_id})
+    assert claimed and claimed['execution_allowed'] is True, claimed
+    if settle is not None:
+        flow.authorization_request(root, {'operation': 'settle', 'outcome': settle,
+                                          'authorization_id': authorization_id})
+    return workflow
+
+
 # A declared node whose inputs have not moved. `evidence: unpublished` is the drift a
 # failed QA node always has: it never gets to publish the evidence it failed to produce.
 # The exact shape a bound-but-failed QA node has: its evidence is unpublished, so
@@ -312,6 +367,7 @@ def test_unreadable_qa_report_is_not_a_usable_repair_trigger(tmp_path, monkeypat
 def test_repair_delivery_requeues_qa_before_closure(tmp_path, monkeypatch):
     workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
                               transition_log=[qa_failed('verify'), repair_delivered()])
+    repair_dispatched(tmp_path, workflow)          # the attempt that delivered was charged
     write(tmp_path / 'repair.json', {'status': 'passed'})
     gate_by_ready_artifacts(tmp_path, monkeypatch)
     node = flow.first_pending_node(tmp_path, workflow)
@@ -320,10 +376,17 @@ def test_repair_delivery_requeues_qa_before_closure(tmp_path, monkeypatch):
     stamp_attempt_evidence(tmp_path, workflow)
     node = flow.first_pending_node(tmp_path, workflow)
     assert node['node_id'] == 'repair', 'the rerun failed again: attempt 2 of 2 is still declared'
+    repair_dispatched(tmp_path, workflow)
     workflow['transition_log'].extend([repair_delivered(), qa_failed('verify')])
     stamp_attempt_evidence(tmp_path, workflow)
-    node = flow.first_pending_node(tmp_path, workflow)
-    assert node['node_id'] == 'verify', 'budget spent: the QA node itself must run again'
+    # Budget spent and the rerun failed again. There is no attempt left that could fix
+    # it, so the obligation is blocked and reported rather than re-run into the same
+    # failure — and its closure is never released (ADR 0005; the Claude engine reaches
+    # the same verdict through `blockedFailures`).
+    assert flow.first_pending_node(tmp_path, workflow) is None
+    blocked = flow.blocked_pending_nodes(tmp_path, workflow)
+    assert 'verify' in blocked, 'an exhausted obligation is blocked, never accepted'
+    assert 'accept' in blocked, 'and its closure node stays shut'
 
 
 def test_a_leftover_report_with_no_recorded_run_is_not_routed(tmp_path, monkeypatch):
@@ -453,6 +516,7 @@ def freshness_project(tmp_path):
     specs = tmp_path / '.allforai/bootstrap/node-specs'
     specs.mkdir(parents=True, exist_ok=True)
     (specs / 'verify.md').write_text('QA the orders export.\n')
+    install_repair_ledger(tmp_path)
     observed = freshness_cli(tmp_path, {'operation': 'observe', 'node_id': 'verify', 'kind': 'contract'})
     published = freshness_cli(tmp_path, {'operation': 'publish', 'observation': observed['observation'],
                                          'verification_command': [sys.executable, '-c', 'pass']})
@@ -523,6 +587,7 @@ def legacy_project(tmp_path, report=None):
     ]
     workflow = {'nodes': nodes, 'transition_log': []}
     write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    install_repair_ledger(tmp_path)
     write(tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json', {
         'version': 1,
         'required_repair_loops': [{'scope': 'orders-export', 'qa_node_ids': ['verify'],
@@ -893,7 +958,7 @@ def try_publish_evidence(tmp_path, node_id):
 
 
 def drive_real_routing(tmp_path, monkeypatch, executor, failing_nodes=frozenset(),
-                       max_iterations=None):
+                       max_iterations=None, on_safety_warning='continue'):
     """Run `flow.main()` with the real node selection, recording what it actually chose.
 
     `first_pending_node` is wrapped, not replaced: the driver picks nodes through
@@ -905,7 +970,7 @@ def drive_real_routing(tmp_path, monkeypatch, executor, failing_nodes=frozenset(
     shutil.copy2(ORCHESTRATOR / 'product_intent.py', scripts)
     write(tmp_path / '.allforai/bootstrap/run-policy.json', {
         'on_repeated_failure': 'halt', 'on_needs_iteration': 'halt_with_report',
-        'on_safety_warning': 'continue'})
+        'on_safety_warning': on_safety_warning})
     selected = []
     real_first_pending_node = flow.first_pending_node
 
@@ -1164,7 +1229,14 @@ def test_a_repair_that_mutates_after_the_qa_pass_does_not_reach_closure(tmp_path
 
 @pytest.mark.parametrize("mode", ['writes-nothing', 'touches-only', 'executor-error', 'blocked-report'])
 def test_a_repair_attempt_that_delivers_nothing_never_releases_the_qa_rerun(tmp_path, monkeypatch, mode):
-    """Four ways to not deliver, none of which may advance the loop or spend a budget."""
+    """Four ways to not deliver. None releases the QA rerun; each still spends an attempt.
+
+    Delivery decides whether the QA node re-runs. It does not decide the budget: an
+    attempt is charged for the dispatch, so a repair that errors or writes nothing costs
+    exactly what one that delivered costs. That is what bounds the loop — the declared
+    `max_attempts` (2 here) is spent, and the obligation is then blocked rather than
+    re-run: nothing is left that could fix it, and it is never accepted either.
+    """
     routing_project(tmp_path)
     if mode in ('touches-only', 'blocked-report'):
         write(tmp_path / 'repair.json', {'status': 'passed'})
@@ -1185,9 +1257,18 @@ def test_a_repair_attempt_that_delivers_nothing_never_releases_the_qa_rerun(tmp_
                                             failing_nodes={'repair'} if mode == 'executor-error' else set())
     current = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
     assert 'accept' not in executed, f'closure ran without a repair: {executed}'
-    assert executed.count('verify') == 1, f'the QA node was released by a non-delivery: {executed}'
-    delivered, _ = flow.repair_progress(current, 'repair', 'verify')
-    assert delivered == 0, f'{mode} spent a budgeted attempt: {current["transition_log"]}'
+    # Nothing the repair did released the QA node: every declared attempt was dispatched,
+    # and the QA node never ran a second time because no attempt was left to judge.
+    assert executed.count('repair') == 2, \
+        f'the declared attempts were not all dispatched: {executed}'
+    assert executed.count('verify') == 1, \
+        f'the QA node was released by a non-delivery: {executed}'
+    spent, answered = flow.repair_progress(tmp_path, current, 'repair', 'verify')
+    assert spent == 2, f'{mode} did not spend its budgeted attempts: {ledger_entries(tmp_path)}'
+    assert answered is False, f'{mode} delivered nothing for the QA node to re-verify'
+    assert flow.open_repair_loops(tmp_path, current, {}) == {}, 'and the budget is spent'
+    assert 'verify' in flow.blocked_pending_nodes(tmp_path, current), \
+        'the exhausted obligation is reported, not silently dropped'
 
 
 def test_a_spent_repair_budget_is_counted_once_across_a_restart(tmp_path, monkeypatch):
@@ -1205,13 +1286,13 @@ def test_a_spent_repair_budget_is_counted_once_across_a_restart(tmp_path, monkey
 
     selected, executed = drive_real_routing(tmp_path, monkeypatch, executor)
     current = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
-    delivered, answered = flow.repair_progress(current, 'repair', 'verify')
+    delivered, answered = flow.repair_progress(tmp_path, current, 'repair', 'verify')
     assert delivered == 2, f'max_attempts is 2: {executed}'
     assert executed.count('repair') == 2, executed
     assert 'accept' not in executed, 'an unrepaired QA failure never reaches closure'
     # A restart re-derives the same spent budget from the same durable log.
     reloaded = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
-    assert flow.repair_progress(reloaded, 'repair', 'verify') == (delivered, answered)
+    assert flow.repair_progress(tmp_path, reloaded, 'repair', 'verify') == (delivered, answered)
     assert flow.open_repair_loops(tmp_path, reloaded, {}) == {}, 'the budget stays spent'
 
 
@@ -1342,6 +1423,8 @@ def test_a_shared_repair_node_budgets_each_qa_node_separately(tmp_path, monkeypa
         {'node_id': 'verifyB', 'hard_blocked_by': [], 'exit_artifacts': ['verifyB.json']},
         {'node_id': 'repair', 'hard_blocked_by': ['verifyA', 'verifyB'], 'exit_artifacts': ['repair.json']},
     ]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes, 'transition_log': []})
+    install_repair_ledger(tmp_path)
     workflow = {'nodes': nodes, 'transition_log': [
         qa_failed('verifyA'), repair_delivered(), qa_failed('verifyA'), qa_failed('verifyB'),
     ]}
@@ -1360,17 +1443,20 @@ def test_a_shared_repair_node_budgets_each_qa_node_separately(tmp_path, monkeypa
     write(tmp_path / 'verifyB.json', {'status': 'failed'})
     stamp_attempt_evidence(tmp_path, workflow, 'verifyA')
     stamp_attempt_evidence(tmp_path, workflow, 'verifyB')
+    repair_dispatched(tmp_path, workflow, 'verifyA')   # only verifyA's attempt was charged
     gate_by_ready_artifacts(tmp_path, monkeypatch)
 
-    spent, _ = flow.repair_progress(workflow, 'repair', 'verifyA')
+    spent, _ = flow.repair_progress(tmp_path, workflow, 'repair', 'verifyA')
     assert spent == 1, 'verifyA spent its declared attempt'
-    spent, _ = flow.repair_progress(workflow, 'repair', 'verifyB')
+    spent, _ = flow.repair_progress(tmp_path, workflow, 'repair', 'verifyB')
     assert spent == 0, "a sibling QA node's attempt is not verifyB's"
     assert flow.open_repair_loops(tmp_path, workflow, {}).keys() == {'verifyB'}
     assert 'verifyB' in flow.blocked_pending_nodes(tmp_path, workflow), \
         'verifyB waits for the repair its own budget still allows'
-    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'verifyA', \
-        'verifyA spent its budget: it reruns instead of routing again'
+    assert 'verifyA' in flow.blocked_pending_nodes(tmp_path, workflow), \
+        'verifyA spent its budget: it is blocked, and a spent obligation is never accepted'
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'repair', \
+        "the shared repair still runs for verifyB, whose own budget is untouched"
 
 
 def test_a_spent_budget_survives_a_restart(tmp_path, monkeypatch):
@@ -1380,10 +1466,147 @@ def test_a_spent_budget_survives_a_restart(tmp_path, monkeypatch):
         qa_failed('verify'), repair_delivered(), qa_failed('verify'), repair_delivered(),
         qa_failed('verify'),
     ])
+    repair_dispatched(tmp_path, workflow)
+    repair_dispatched(tmp_path, workflow)
     write(tmp_path / 'repair.json', {'status': 'passed'})
     gate_by_ready_artifacts(tmp_path, monkeypatch)
-    assert flow.repair_progress(workflow, 'repair', 'verify') == (2, False)
-    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'verify'
+    assert flow.repair_progress(tmp_path, workflow, 'repair', 'verify') == (2, False)
+    assert flow.first_pending_node(tmp_path, workflow) is None
+    assert 'verify' in flow.blocked_pending_nodes(tmp_path, workflow), \
+        'a restart resumes the spent budget and blocks, it does not hand out a third attempt'
+
+
+def test_a_repair_dispatch_is_charged_before_its_executor_runs(tmp_path, monkeypatch):
+    """Write-ahead accounting: the ledger entry is on disk while the executor is running.
+
+    This is the whole reason the attempt is charged at the dispatch rather than at the
+    delivery. An interruption between the two — a kill, a timeout, a host that dies — must
+    leave the attempt spent, because the work it authorized may already have edited the
+    tree. Over-counting the one interrupted attempt is safe; re-granting it is not.
+    """
+    routing_project(tmp_path)
+    charged_while_running = []
+
+    def executor(project_root, node_id, attempt):
+        if node_id == 'verify':
+            write(project_root / 'verify.json', {'status': 'failed', 'gaps': ['missing column'],
+                                                 'attempt': attempt})
+        elif node_id == 'repair':
+            # What a restart would read if this process died right here: the canonical
+            # ledger, not this driver's memory of what it meant to charge.
+            charged_while_running.append(
+                (flow.repair_attempts_spent(project_root, 'repair', 'verify'),
+                 [e['state'] for e in ledger_entries(project_root)]))
+            write(project_root / 'repair.json', {'status': 'passed', 'attempt': attempt})
+        try_publish_evidence(project_root, node_id)
+
+    drive_real_routing(tmp_path, monkeypatch, executor)
+    assert [spent for spent, _ in charged_while_running] == [1, 2], \
+        f'each dispatch must already be charged while its own executor runs: {charged_while_running}'
+    # And the launch claim is durable too, so a restart cannot run the same attempt again.
+    assert [states[-1] for _, states in charged_while_running] == ['started', 'started'], \
+        f'the execution claim must be on disk before the executor: {charged_while_running}'
+    assert [e['state'] for e in ledger_entries(tmp_path)] == ['settled', 'settled'], \
+        'an attempt this driver watched finish is settled, and settling refunds nothing'
+
+
+def test_an_interrupted_repair_dispatch_does_not_get_its_attempt_back(tmp_path, monkeypatch):
+    """The charge survives the process that made it; a restart resumes the same budget."""
+    routing_project(tmp_path)
+
+    def executor(project_root, node_id, attempt):
+        if node_id == 'verify':
+            write(project_root / 'verify.json', {'status': 'failed', 'gaps': ['missing column'],
+                                                 'attempt': attempt})
+        elif node_id == 'repair':
+            raise RuntimeError('killed between the authorization and the work')
+
+    drive_real_routing(tmp_path, monkeypatch, executor, failing_nodes={'repair'})
+    reloaded = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
+    spent, _ = flow.repair_progress(tmp_path, reloaded, 'repair', 'verify')
+    assert spent == 2, f'an interrupted dispatch still spent its attempt: {ledger_entries(tmp_path)}'
+    assert flow.open_repair_loops(tmp_path, reloaded, {}) == {}, \
+        'a restart resumes the spent budget instead of handing the attempts out again'
+
+
+@pytest.mark.parametrize("damage", [
+    'not a ledger document',
+    json.dumps({'ledger_version': 99, 'run_id': 'r', 'origin': {}, 'authorizations': []}),
+    json.dumps({'ledger_version': 1, 'run_id': '', 'origin': {'kind': 'new_run'}, 'authorizations': []}),
+    json.dumps({'ledger_version': 1, 'run_id': 'r', 'origin': {'kind': 'new_run'},
+                'authorizations': 'none'}),
+    json.dumps({'ledger_version': 1, 'run_id': 'r', 'origin': {'kind': 'new_run'},
+                'authorizations': [{'authorization_id': 'a'}]}),
+])
+def test_an_unreadable_repair_ledger_dispatches_nothing(tmp_path, monkeypatch, damage):
+    """The spent budget cannot be read, so no node runs — never a fresh budget.
+
+    Restarting the count would hand out attempts whose work may already be in the tree.
+    The refusal is the canonical helper's, read through the driver rather than
+    re-decided by it.
+    """
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    (tmp_path / flow.REPAIR_LEDGER).write_text(damage)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.ledger_consumption(tmp_path) is None
+    assert flow.repair_ledger_unreadable(tmp_path, workflow) is True
+    assert flow.first_pending_node(tmp_path, workflow) is None
+    assert set(flow.blocked_pending_nodes(tmp_path, workflow)) == \
+        {'implement', 'verify', 'repair', 'accept'}, 'no node of any kind is dispatched'
+
+
+def test_a_missing_ledger_on_a_run_with_history_blocks_instead_of_starting_at_zero(tmp_path, monkeypatch):
+    """Absence of records is not proof of unused budget (ADR 0005/0007).
+
+    The workflow already shows execution, so `initialize` refuses and the driver has no
+    trustworthy accounting. It blocks; it never silently resets the run to zero.
+    """
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    (tmp_path / flow.REPAIR_LEDGER).unlink()
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.ledger_consumption(tmp_path) is None
+    assert flow.repair_attempts_spent(tmp_path, 'repair', 'verify') is None
+    assert flow.repair_ledger_unreadable(tmp_path, workflow) is True
+    assert flow.first_pending_node(tmp_path, workflow) is None
+
+
+def test_a_provably_new_run_starts_at_zero_and_is_recorded_as_such(tmp_path, monkeypatch):
+    """The one case that may start at zero: a workflow the helper itself proves untouched."""
+    nodes = [{'node_id': 'verify', 'hard_blocked_by': [], 'exit_artifacts': ['verify.json']},
+             {'node_id': 'repair', 'hard_blocked_by': ['verify'], 'exit_artifacts': ['repair.json']}]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes, 'transition_log': []})
+    write(tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json', {
+        'version': 1, 'required_repair_loops': [{'scope': 's', 'qa_node_ids': ['verify'],
+        'repair_node_id': 'repair', 'closure_node_ids': [], 'max_attempts': 2}]})
+    scripts = tmp_path / '.allforai/bootstrap/scripts'
+    scripts.mkdir(parents=True, exist_ok=True)
+    (scripts / 'repair_authorization.py').write_bytes(
+        (ORCHESTRATOR_SCRIPTS / 'repair_authorization.py').read_bytes())
+    assert not (tmp_path / flow.REPAIR_LEDGER).exists()
+    consumption = flow.ledger_consumption(tmp_path)
+    assert consumption and consumption['origin'] == 'new_run'
+    assert flow.repair_attempts_spent(tmp_path, 'repair', 'verify') == 0
+    ledger = json.loads((tmp_path / flow.REPAIR_LEDGER).read_text())
+    assert ledger['origin']['proof']['kind'] == 'verified_untouched_workflow'
+
+
+def test_an_explicitly_invalid_budget_blocks_a_failed_qa_node(tmp_path, monkeypatch):
+    """An unusable `max_attempts` is a planning error, not a slower loop.
+
+    The QA node has failed and its declared loop can never bound a repair, so re-running
+    it would reproduce the same failure with nothing able to fix it. It is blocked and the
+    run says why — the same terminal answer `runEngine` gives on the Claude host.
+    """
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'}, max_attempts=0,
+                              transition_log=[qa_failed('verify')])
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.unbounded_repair_loops(tmp_path) == ['repair']
+    assert flow.open_repair_loops(tmp_path, workflow, {}) == {}, 'no repair is routed'
+    assert flow.first_pending_node(tmp_path, workflow) is None, \
+        'and the failed QA node is not quietly re-run instead'
+    assert 'verify' in flow.blocked_pending_nodes(tmp_path, workflow)
 
 
 def test_an_explicitly_invalid_budget_routes_nothing(tmp_path, monkeypatch):
@@ -1449,3 +1672,420 @@ def test_missing_repair_spec_keeps_current_selection(tmp_path, monkeypatch):
     (tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json').write_text('{broken')
     gate_by_ready_artifacts(tmp_path, monkeypatch)
     assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'verify'
+
+
+# --- common execution-contract scenarios (claude/meta-skill/tests/fixtures) -----------
+# The fixture states the business decision both hosts must reach. Each test drives the
+# real Codex selection or the real driver and compares what it did to that decision; the
+# fixture is never asserted against itself.
+
+SCENARIOS = {s['id']: s for s in json.loads(
+    (Path(__file__).resolve().parents[2] /
+     'claude/meta-skill/tests/fixtures/execution-contract-scenarios.json').read_text())['scenarios']}
+
+
+def install_run_safety(tmp_path):
+    """Ship the canonical quarantine helper the driver calls on a halt."""
+    scripts = tmp_path / '.allforai/bootstrap/scripts'
+    scripts.mkdir(parents=True, exist_ok=True)
+    (scripts / 'run_safety.py').write_bytes((ORCHESTRATOR_SCRIPTS / 'run_safety.py').read_bytes())
+
+
+def test_a_safety_warning_raised_by_the_executor_stops_before_the_completion(tmp_path, monkeypatch):
+    """The halt is checked after the executor and before the node is recorded completed.
+
+    Answering it on the next iteration would be too late: the node would already be
+    completed and would already have released its successors. Codex cannot cancel an
+    executor that has finished, so its outputs are quarantined rather than accepted.
+    """
+    scenario = SCENARIOS['late_wave_safety_halt']
+    routing_project(tmp_path)
+    install_run_safety(tmp_path)
+
+    def executor(project_root, node_id, attempt):
+        write(project_root / f'{node_id}.json', {'status': 'passed'})
+        write(project_root / '.allforai/bootstrap/run-warnings.json',
+              {'warnings': ['workspace escape attempted']})
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor,
+                                            on_safety_warning='halt')
+    current = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
+    latest = [e for e in current['transition_log'] if e['node'] == executed[0]][-1]
+    assert latest['status'] == 'failed', 'a quarantined attempt is never recorded completed'
+    assert executed == executed[:1], f'no dispatch followed the halt: {executed}'
+    assert scenario['expect']['quarantine_required'] is True
+    marker = json.loads((tmp_path / flow.SAFETY_QUARANTINE).read_text())
+    assert executed[0] in marker['node_ids'], 'the attempt\'s own outputs are fenced'
+    assert (tmp_path / f'{executed[0]}.json').exists(), 'quarantine preserves outputs, never deletes them'
+
+
+def test_a_safety_halt_stops_every_branch_not_only_the_one_that_raised_it(tmp_path, monkeypatch):
+    """`new_dispatch_allowed: false` is run-wide: an untouched independent branch stops too."""
+    scenario = SCENARIOS['late_wave_safety_halt']
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    workflow['nodes'].append({'node_id': 'independent', 'hard_blocked_by': [],
+                              'exit_artifacts': ['independent.json']})
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.first_pending_node(tmp_path, workflow) is not None, 'dispatchable before the halt'
+    write(tmp_path / flow.SAFETY_QUARANTINE, {'schema_version': 1, 'status': 'quarantined',
+                                              'events': [], 'node_ids': ['verify']})
+    assert scenario['expect']['new_dispatch_allowed'] is False
+    assert flow.first_pending_node(tmp_path, workflow) is None
+    assert 'independent' in flow.blocked_pending_nodes(tmp_path, workflow), \
+        'a branch that never failed is stopped by the run-wide halt too'
+
+
+def test_a_safety_halt_is_not_answered_by_a_repair_route(tmp_path, monkeypatch):
+    """`hard_qa_with_safety_warning`: a halt is not an ordinary QA failure."""
+    scenario = SCENARIOS['hard_qa_with_safety_warning']
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.open_repair_loops(tmp_path, workflow, {}).keys() == {'verify'}
+    write(tmp_path / flow.SAFETY_QUARANTINE, {'schema_version': 1, 'status': 'quarantined',
+                                              'events': [], 'node_ids': ['verify']})
+    assert scenario['expect']['repair_route_allowed'] is False
+    assert flow.open_repair_loops(tmp_path, workflow, {}) == {}
+    assert scenario['expect']['new_dispatch_allowed'] is False
+    assert flow.first_pending_node(tmp_path, workflow) is None
+
+
+def test_an_ordinary_qa_failure_blocks_its_chain_but_not_an_independent_branch(tmp_path, monkeypatch):
+    """`ordinary_qa_failure_with_independent_branch`: block the chain, keep the rest moving."""
+    scenario = SCENARIOS['ordinary_qa_failure_with_independent_branch']
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    workflow['nodes'].append({'node_id': 'independent', 'hard_blocked_by': [],
+                              'exit_artifacts': ['independent.json']})
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    blocked = flow.blocked_pending_nodes(tmp_path, workflow)
+    assert scenario['expect']['failed_qa_successors_allowed'] is False
+    assert 'accept' in blocked, 'the closure node downstream of the failed QA stays shut'
+    assert scenario['expect']['independent_branch_allowed'] is True
+    assert 'independent' not in blocked, 'an unrelated branch keeps running'
+    assert scenario['expect']['final_acceptance'] is False
+    assert blocked, 'and the run cannot finish while the obligation is open'
+
+
+def test_a_shared_repair_charges_only_the_obligations_that_still_have_budget(tmp_path, monkeypatch):
+    """`shared_repair_asymmetric_budget`, driven through the canonical ledger.
+
+    qa-a is exhausted and qa-b is not. The dispatch charges qa-b alone: an exhausted
+    sibling is never charged again, and it is never discharged by the attempt that
+    answers another obligation either.
+    """
+    scenario = SCENARIOS['shared_repair_asymmetric_budget']
+    given, expect = scenario['given'], scenario['expect']
+    nodes = [{'node_id': 'qa-a', 'hard_blocked_by': [], 'exit_artifacts': ['qa-a.json']},
+             {'node_id': 'qa-b', 'hard_blocked_by': [], 'exit_artifacts': ['qa-b.json']},
+             {'node_id': 'repair', 'hard_blocked_by': ['qa-a', 'qa-b'], 'exit_artifacts': ['repair.json']}]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes, 'transition_log': []})
+    install_repair_ledger(tmp_path)
+    workflow = {'nodes': nodes, 'transition_log': [qa_failed('qa-a'), qa_failed('qa-b')]}
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    write(tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json', {
+        'version': 1, 'required_repair_loops': [{
+            'scope': 'shared', 'qa_node_ids': ['qa-a', 'qa-b'], 'repair_node_id': 'repair',
+            'closure_node_ids': [], 'max_attempts': given['budgets']['qa-a']}]})
+    for qa_node_id in ('qa-a', 'qa-b'):
+        write(tmp_path / f'{qa_node_id}.json', {'status': 'failed'})
+        stamp_attempt_evidence(tmp_path, workflow, qa_node_id)
+    for _ in range(given['spent']['qa-a']):
+        repair_dispatched(tmp_path, workflow, 'qa-a')
+    for _ in range(given['spent']['qa-b']):
+        repair_dispatched(tmp_path, workflow, 'qa-b')
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+
+    routed = flow.qa_nodes_routed_to(tmp_path, workflow, 'repair')
+    assert sorted(routed) == expect['eligible_obligations'], routed
+    assert sorted(flow.eligible_obligations(tmp_path, workflow, 'repair', routed)) == \
+        expect['eligible_obligations'], 'only the funded obligation may be charged'
+    grant = flow.authorize_repair_dispatch(tmp_path, workflow, 'repair', routed)
+    assert grant and grant['obligations'] == expect['eligible_obligations']
+    for blocked_obligation in expect['blocked_obligations']:
+        assert flow.repair_attempts_spent(tmp_path, 'repair', blocked_obligation) == \
+            given['spent'][blocked_obligation], 'the exhausted sibling was not charged again'
+        assert blocked_obligation in flow.blocked_pending_nodes(tmp_path, workflow)
+    assert expect['final_acceptance'] is False
+    assert flow.blocked_pending_nodes(tmp_path, workflow), 'the run cannot finish around it'
+
+
+def test_a_replayed_authorization_charges_nothing_and_never_re_executes(tmp_path):
+    """`duplicate_authorization` and `conflicting_authorization_replay` at the driver's call."""
+    duplicate, conflicting = SCENARIOS['duplicate_authorization'], SCENARIOS['conflicting_authorization_replay']
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    request = {'operation': 'authorize', 'run_id': 'fixture-run', 'authorization_id': 'once',
+               'repair_node_id': 'repair', 'obligations': ['verify'], 'budgets': {'verify': 2}}
+    assert flow.authorization_request(tmp_path, request)['status'] == 'authorized'
+    spent = flow.repair_attempts_spent(tmp_path, 'repair', 'verify')
+    replay = flow.authorization_request(tmp_path, request)
+    assert replay['status'] == 'replayed'
+    assert replay['execution_allowed'] is False, duplicate['expect']['replay_execution_allowed']
+    assert flow.repair_attempts_spent(tmp_path, 'repair', 'verify') == spent, \
+        duplicate['expect']['additional_charges']
+    changed = {**request, 'budgets': {'verify': 5}}
+    assert flow.authorization_request(tmp_path, changed)['status'] == 'payload_conflict', \
+        conflicting['expect']['blocked']
+    assert flow.repair_attempts_spent(tmp_path, 'repair', 'verify') == spent, \
+        conflicting['expect']['additional_charges']
+    first = flow.authorization_request(tmp_path, {'operation': 'start', 'run_id': 'fixture-run',
+                                                  'authorization_id': 'once'})
+    assert first['execution_allowed'] is True, 'the first claim runs'
+    again = flow.authorization_request(tmp_path, {'operation': 'start', 'run_id': 'fixture-run',
+                                                  'authorization_id': 'once'})
+    assert again['execution_allowed'] is False, 'a replayed claim never re-executes'
+
+
+def test_an_unresolved_authorization_blocks_the_next_dispatch_instead_of_replaying_it(tmp_path, monkeypatch):
+    """`unknown_execution_after_crash`: no automatic refund, no automatic re-execution."""
+    scenario = SCENARIOS['unknown_execution_after_crash']
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    repair_dispatched(tmp_path, workflow, settle=None)   # killed between the claim and the outcome
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    spent = flow.repair_attempts_spent(tmp_path, 'repair', 'verify')
+    assert spent == 1, scenario['expect']['automatic_refund']
+    assert flow.authorize_repair_dispatch(tmp_path, workflow, 'repair', ['verify']) is None, \
+        scenario['expect']['automatic_reexecution']
+    assert flow.repair_attempts_spent(tmp_path, 'repair', 'verify') == spent, \
+        'a refused dispatch charges nothing'
+    assert scenario['expect']['reconciliation_required'] is True
+    unresolved = flow.ledger_consumption(tmp_path)['unresolved']
+    assert [entry['state'] for entry in unresolved] == ['started']
+
+
+def test_a_declared_per_qa_budget_is_not_curtailed_by_the_generic_caps(tmp_path):
+    """An explicit `max_attempts` outranks the generic supervisor and stagnation caps.
+
+    Both stay finite: they rise only to what the plan itself declared.
+    """
+    repair_project(tmp_path, qa_report={'status': 'failed'}, max_attempts=6)
+    assert flow.MAX_CONSECUTIVE_FAILURES_PER_NODE == 3 and flow.MAX_STAGNANT_ITERATIONS == 5
+    for node_id in ('verify', 'repair'):
+        assert flow.failure_threshold(tmp_path, node_id) == 7, \
+            'a declared 6-attempt loop is not ended at the generic 3'
+    assert flow.failure_threshold(tmp_path, 'implement') == 3, \
+        'a node no loop declared keeps the generic backstop'
+    assert flow.stagnation_limit(tmp_path) == 13, \
+        'two transitions per authorized attempt, plus the failure that opened the loop'
+
+
+def test_a_smaller_declared_budget_never_raises_the_generic_backstop(tmp_path):
+    repair_project(tmp_path, qa_report={'status': 'failed'}, max_attempts=1)
+    assert flow.failure_threshold(tmp_path, 'verify') == flow.MAX_CONSECUTIVE_FAILURES_PER_NODE
+    assert flow.stagnation_limit(tmp_path) == flow.MAX_STAGNANT_ITERATIONS
+
+
+# --- role overlap, uncertain execution, and the fences around them ---------------------
+# A node may hold different roles in different loops (ADR 0006). These drive the real
+# selection and the real driver through that shape; the ledger and the quarantine helper
+# are the canonical ones.
+
+
+def overlap_project(tmp_path, *, spent_on_shared=1, budget_b=1):
+    """Two loops sharing one node: `shared` repairs loop A and is loop B's QA obligation.
+
+    `validate_bootstrap` refuses a repair node that is its own loop's QA or closure node,
+    and nothing refuses this shape — ADR 0006 keeps cross-loop roles supported rather than
+    banning a valid graph to hide a failure-accounting defect.
+    """
+    nodes = [
+        {'node_id': 'qa1', 'hard_blocked_by': [], 'exit_artifacts': ['qa1.json']},
+        {'node_id': 'shared', 'hard_blocked_by': ['qa1'], 'exit_artifacts': ['shared.json']},
+        {'node_id': 'fixer', 'hard_blocked_by': ['shared'], 'exit_artifacts': ['fixer.json']},
+        {'node_id': 'closeA', 'hard_blocked_by': ['qa1', 'shared'], 'exit_artifacts': ['closeA.json']},
+        {'node_id': 'closeB', 'hard_blocked_by': ['shared', 'fixer'], 'exit_artifacts': ['closeB.json']},
+    ]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes, 'transition_log': []})
+    install_repair_ledger(tmp_path)
+    write(tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json', {
+        'version': 1, 'required_repair_loops': [
+            {'scope': 'A', 'qa_node_ids': ['qa1'], 'repair_node_id': 'shared',
+             'closure_node_ids': ['closeA'], 'max_attempts': 2},
+            {'scope': 'B', 'qa_node_ids': ['shared'], 'repair_node_id': 'fixer',
+             'closure_node_ids': ['closeB'], 'max_attempts': budget_b}]})
+    workflow = {'nodes': nodes, 'transition_log': [qa_failed('qa1'), qa_failed('shared')]}
+    write(tmp_path / 'qa1.json', {'status': 'failed'})
+    write(tmp_path / 'shared.json', {'status': 'failed'})
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    stamp_attempt_evidence(tmp_path, workflow, 'qa1')
+    stamp_attempt_evidence(tmp_path, workflow, 'shared')
+    for _ in range(spent_on_shared):
+        repair_dispatched(tmp_path, workflow, qa_node_id='shared', repair_node_id='fixer',
+                          settle='failed')
+    return workflow
+
+
+def test_a_node_blocked_as_an_obligation_is_not_dispatched_in_its_repair_role(tmp_path, monkeypatch):
+    """`shared` owes loop B an obligation it has no budget left for, and repairs loop A.
+
+    Selecting it for the repair role would put it in front of the executor with its own
+    QA report as an exit artifact: the dispatch loop A pays for would write loop B's
+    verdict. Success in one role never cancels another role's blocker (ADR 0006).
+    """
+    workflow = overlap_project(tmp_path)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.repair_attempts_spent(tmp_path, 'fixer', 'shared') == 1, 'loop B is spent'
+    assert flow.exhausted_obligations(tmp_path, workflow) == ['shared']
+    assert 'shared' in flow.blocked_pending_nodes(tmp_path, workflow)
+    selected = flow.first_pending_node(tmp_path, workflow)
+    assert selected is None or selected['node_id'] != 'shared', \
+        'an exhausted obligation is not dispatchable, whatever else the node also is'
+
+
+def test_a_repair_role_dispatch_never_discharges_the_nodes_own_exhausted_obligation(tmp_path, monkeypatch, capsys):
+    """End to end: the run may not finish around loop B's unsatisfied obligation.
+
+    Nor may loop B's repair node run again once its budget is spent: a dispatch nothing
+    authorized is an unpaid attempt, not a free one.
+    """
+    overlap_project(tmp_path)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+
+    def executor(project_root, node_id, attempt):
+        write(project_root / f'{node_id}.json', {'status': 'passed'})
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor, max_iterations=12)
+    out = capsys.readouterr().out
+    assert '"done": true' not in out, 'an exhausted obligation is refused, never accepted'
+    assert 'shared' not in executed and 'fixer' not in executed, executed
+    entries = [(e['repair_node_id'], e['obligations']) for e in ledger_entries(tmp_path)]
+    assert entries == [('fixer', ['shared'])], f'no further attempt was charged: {entries}'
+
+
+def test_an_exhausted_obligation_stays_blocked_when_its_report_is_made_to_look_ready(tmp_path, monkeypatch):
+    """A ready exit artifact is not a QA attempt; only the recorded attempt satisfies it.
+
+    Its latest recorded attempt failed and no budget is left, so the obligation stands
+    however passed its report now reads — otherwise anything able to write that file could
+    discharge it. The loop's repair node is blocked with it: nothing is left to pay for a
+    dispatch, so it never runs as an ordinary pending node either.
+    """
+    workflow = overlap_project(tmp_path)
+    write(tmp_path / 'shared.json', {'status': 'passed'})     # not written by a QA attempt
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    blocked = flow.blocked_pending_nodes(tmp_path, workflow)
+    assert 'shared' in blocked, blocked
+    assert 'fixer' in blocked, f'a dead loop\'s repair node is never dispatched unpaid: {blocked}'
+    selected = flow.first_pending_node(tmp_path, workflow)
+    assert selected is None or selected['node_id'] not in {'shared', 'fixer'}, selected
+
+
+def test_a_halt_whose_quarantine_cannot_be_published_still_fences_the_next_start(tmp_path, monkeypatch, capsys):
+    """`run_safety.py` absent: the canonical marker is not written, and the run is fenced.
+
+    Without a fence the only durable record of the halt is the warnings file a worker
+    writes and a Run Policy a user can edit, and the quarantined outputs read as a
+    completed node on the next start. `safety_quarantine.lock` is what `run_safety.py`
+    itself leaves for a quarantine it could not publish, and it is what
+    `validate_unattended_readiness.py` refuses, so the driver leaves it too.
+    """
+    routing_project(tmp_path)                       # deliberately no install_run_safety
+
+    def executor(project_root, node_id, attempt):
+        write(project_root / f'{node_id}.json', {'status': 'passed'})
+        write(project_root / '.allforai/bootstrap/run-warnings.json',
+              {'warnings': ['workspace escape attempted']})
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor,
+                                            on_safety_warning='halt')
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert payload['quarantine_persisted'] is False, 'persistence is reported, never assumed'
+    assert payload['halt_fenced'] is True
+    assert not (tmp_path / flow.SAFETY_QUARANTINE).exists(), 'no marker is invented'
+    assert (tmp_path / flow.SAFETY_LOCK).exists()
+    assert flow.safety_halted(tmp_path), 'the halt survives this process'
+    workflow = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    assert flow.first_pending_node(tmp_path, workflow) is None, \
+        'and the quarantined outputs are not read as a completed node on the next start'
+    write(tmp_path / '.allforai/bootstrap/run-warnings.json', {'warnings': []})
+    assert flow.safety_halted(tmp_path), \
+        'clearing the warnings a worker wrote does not release a quarantine'
+
+
+def test_an_unresolved_authorization_refuses_the_whole_run_before_the_first_dispatch(tmp_path, monkeypatch, capsys):
+    """Uncertain execution is not an ordinary QA failure and is not blocked branch by branch.
+
+    A grant with no recorded outcome may already have edited the tree, so no branch may
+    proceed on the assumption that it did not — including one that never failed. The
+    refusal is global, it happens before anything is dispatched, and it is reported as
+    reconciliation rather than as a QA verdict (ADR 0006, ADR 0007).
+    """
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    workflow['nodes'].append({'node_id': 'independent', 'hard_blocked_by': [],
+                              'exit_artifacts': ['independent.json']})
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    repair_dispatched(tmp_path, workflow, settle=None)   # killed between claim and outcome
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+
+    def executor(project_root, node_id, attempt):
+        write(project_root / f'{node_id}.json', {'status': 'passed'})
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor, max_iterations=6)
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert executed == [], f'nothing runs while an execution is unaccounted for: {executed}'
+    assert 'independent' in payload['blocked_nodes'], 'the refusal is run-wide'
+    assert payload['unresolved_repair_authorizations'], payload
+    assert 'reconciled' in payload['uncertain_execution']
+    assert 'exhausted_obligations' not in payload, \
+        'an unresolved authorization is not reported as a spent budget'
+    assert flow.repair_attempts_spent(tmp_path, 'repair', 'verify') == 1, 'and nothing is refunded'
+
+
+def test_an_unconfirmed_settlement_stops_the_run_before_the_node_is_completed(tmp_path, monkeypatch, capsys):
+    """The ledger is the record of what a dispatch did; an unrecorded outcome is not one.
+
+    Completing the node here would accept work whose authorization stays open, and the
+    next dispatch for that obligation is refused anyway. So the attempt is recorded as
+    failed with the reason, and the run stops for reconciliation.
+    """
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    helper = tmp_path / '.allforai/bootstrap/scripts' / flow.LEDGER_HELPER
+
+    def executor(project_root, node_id, attempt):
+        write(project_root / f'{node_id}.json', {'status': 'passed'})
+        helper.unlink()                    # the settlement can no longer reach the ledger
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor, max_iterations=3)
+    payload = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert executed == ['repair'], executed
+    assert payload['unresolved_repair_authorizations'], payload
+    current = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
+    latest = [e for e in current['transition_log'] if e['node'] == 'repair'][-1]
+    assert latest['status'] == 'failed', 'an attempt that never settled is not a completion'
+    assert 'not recorded in the canonical ledger' in latest['error']
+    entry = ledger_entries(tmp_path)[-1]
+    assert entry['state'] == 'started' and entry['outcome'] is None, entry
+
+
+def test_a_receipt_for_another_authorization_is_not_permission_to_execute(tmp_path, monkeypatch):
+    """A verdict is trusted for its accounting, not for its addressing.
+
+    A receipt naming a different authorization says nothing about this dispatch, and
+    reading it as if it did would attribute one attempt's charge or claim to another.
+    """
+    workflow = repair_project(tmp_path, qa_report={'status': 'failed'},
+                              transition_log=[qa_failed('verify')])
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    scripts = tmp_path / '.allforai/bootstrap/scripts'
+    (scripts / flow.LEDGER_HELPER).write_text(
+        'import json,sys\n'
+        'request = json.load(sys.stdin)\n'
+        'operation = request.get("operation")\n'
+        'verdict = {"consumption": {"status": "ok", "run_id": "fixture-run", "obligations": [],\n'
+        '                           "unresolved": []},\n'
+        '           "authorize": {"status": "authorized", "authorization_id": "somebody-else",\n'
+        '                         "run_id": "fixture-run"},\n'
+        '           "start": {"status": "started", "authorization_id": "somebody-else",\n'
+        '                     "execution_allowed": True}}[operation]\n'
+        'print(json.dumps(verdict))\n')
+    assert flow.authorize_repair_dispatch(tmp_path, workflow, 'repair', ['verify']) is None
+    assert flow.settle_repair_dispatch(tmp_path, {'authorization_id': 'mine'}, 'delivered') is False

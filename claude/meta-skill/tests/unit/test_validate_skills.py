@@ -1,8 +1,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_skills import validate_skill_tree
+from ..module_isolation import load
+
+validate_skill_tree = load("validate_skills").validate_skill_tree
 
 
 def _write_skill(root, rel, body):

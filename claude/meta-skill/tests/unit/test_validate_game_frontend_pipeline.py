@@ -1,8 +1,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_game_frontend_pipeline import validate_game_frontend_pipeline
+from ..module_isolation import load
+
+_frontend_pipeline = load("validate_game_frontend_pipeline")
+validate_game_frontend_pipeline = _frontend_pipeline.validate_game_frontend_pipeline
 
 
 def _write(root, rel, text):
@@ -196,7 +198,7 @@ def test_validate_game_frontend_pipeline_rejects_unlisted_child(tmp_path):
     assert any("missing canonical child path" in error for error in errors)
 
 
-from validate_game_frontend_pipeline import ADR3_NEUTRAL as _ADR3_NEUTRAL
+_ADR3_NEUTRAL = _frontend_pipeline.ADR3_NEUTRAL
 
 
 def _migrate_fixture_to_neutral_names(tmp_path):

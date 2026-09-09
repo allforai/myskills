@@ -139,14 +139,52 @@ and applies it:
   never charged to a sibling. A QA node that never ran, published nothing, or failed on an
   environment, authority, readiness or gate error has no verdict to repair against: it is
   a diagnosis case, never a repair route.
-- Attempts already granted are read back from `transition_log` when the DAG loads, so a
-  resumed run continues the spent budget instead of handing the same attempts out again.
-  Every declared QA node states its attempts, explicit `0` included. A history that cannot
-  be read, or that omits a declared QA node, is a hard failure: the remaining budget is
-  unknown, and guessing it would hand a resumed run the attempts it already spent.
+- **An attempt is spent when a repair dispatch is authorized, not when it succeeds.** The
+  canonical ledger is `.allforai/bootstrap/repair-authorizations.json`, its own document,
+  and both hosts reach it only through `repair_authorization.py`. The engine has no
+  filesystem: every ledger operation is a prompt that runs that CLI and returns its verdict
+  verbatim, which is then checked against what was asked. A verdict that names another
+  dispatch, another repair node, or an answer nobody asked for is a forged receipt and
+  nothing executes on it — otherwise "the ledger said so" would mean only "the agent said
+  so".
+
+  A dispatch is two durable steps, both before the executor. `authorize` charges every
+  eligible obligation atomically and is **never** permission to run; `start` claims the one
+  execution that charge paid for, and only the first claim is granted. Two consequences
+  follow, and the Codex driver shares both. A repair whose executor errors, or that writes
+  nothing, costs the same one attempt as one that delivered and did not fix the finding: a
+  budget that only charged for success would bound neither, and the loop could repeat
+  without end. And an interruption between the charge and the work leaves the attempt
+  spent — re-granting it would hand out an attempt whose work may already be in the tree.
+  A route that opens and is interrupted before any dispatch costs nothing, on either host.
+
+  Opening the route is not the charge. The QA node's failed `transition_log` entry records
+  that this QA node failed and was routed; it is the QA node's history, never the budget.
+- **Only an execution the engine watched end is settled.** Settling records an outcome and
+  returns no budget. An attempt whose stage threw, whose host died, or whose wave was
+  quarantined by a safety halt is deliberately left unresolved: whether it ran is then a
+  question for `reconcile` and evidence that can be checked, not something to guess. The
+  two guesses fail in opposite unsafe directions — assume it ran and a needed repair is
+  skipped; assume it did not and duplicate side effects replay on a budget already spent.
+- **Consumption first; initialize only a ledger that does not exist.** The spent budget is
+  read from the ledger before any node runs, never summarized out of `workflow.json` by the
+  agent that loads the DAG — a count inferred by reading a file is not accounting. A ledger
+  that is unreadable, belongs to another run, or carries an ambiguous history is untrusted
+  state and stops the run. Only `missing_ledger` may be initialized, and the helper itself
+  reads `workflow.json` and refuses to record zero for a run that already shows execution.
+  Because that origin is proved, an obligation the ledger does not list really has spent
+  nothing — absence is trustworthy here only because the document is.
+- **An unresolved grant at startup blocks.** A charge that never reached an outcome leaves
+  it unknown whether that attempt ran, so a resumed run stops for reconciliation rather
+  than replaying uncertain work or refunding an attempt that may already have been spent.
 - A loop that declares no `max_attempts` takes the documented default of three attempts
   per QA node. A declared `max_attempts` that is not a positive integer is unbounded, not
-  a request for that default: the loop routes nothing and the QA failure goes to diagnosis.
+  a request for that default: nothing is routed, and a QA node that has already failed is
+  **not re-run** — re-running it would reproduce the same failure with nothing able to fix
+  it and bury the planning error in a busy run. The engine stops with that QA failure in
+  `needs_diagnosis`; the Codex driver blocks the node and reports it with
+  `unbounded_repair_loops`. Both validators reject the shape before the run starts; this is
+  only what happens if one ever gets past them.
 - No other successor may proceed on a failed dependency. A failed node is never
   `completed`, and its report is never edited to make it look passed.
 - A repair opened for one node never absorbs another node's verdict in the same wave. An
@@ -161,7 +199,13 @@ and applies it:
   the run would end `needs_diagnosis` with `exhausted_repair_loop` on the repair node.
   So for the declared repair node of an open loop, a **withheld** gate is a delivery: the
   engine records it and moves on. An environment, authority or cross-node blocker is still
-  `hard_fail` and still stops the run.
+  `hard_fail` — never a delivery, never an advance — and it stops the run once the loop's
+  declared budget is spent, bounded like any other dispatch that produced nothing. The
+  exception is a `NON_QA_FAILURE_TYPES` verdict (`invalid_artifact_gate`,
+  `invalid_readiness_gate`, `deadlock`, `safety_warning`, `needs_iteration`,
+  `exhausted_retries`): structural, environmental or policy answers are not attempts that
+  fell short, so they stop the run immediately, on the same reasoning that keeps them from
+  opening a repair route in the first place.
 
   A delivery is **measured, never asserted**. The engine holds no filesystem, so its only
   independent measurement is the gate step running `check_artifacts.py --json` and
@@ -178,6 +222,12 @@ and applies it:
   its own merits before anything commits it. Every `closure_node_ids` entry stays blocked
   until the QA node itself completes — a delivered repair is not a passing QA, and the
   rerun is the only way past the loop. The Codex driver applies the same lifecycle.
+- A dispatch of the repair node that itself hard-fails inside its still-open loop — an
+  `unmeasured_repair_delivery`, say — is not a terminal verdict while that loop has budget
+  left. Its attempt is already charged, so the next one is dispatched; when the budget is
+  gone the failure stops the run with its own findings. The declared `max_attempts` is
+  therefore the single bound on every repair dispatch for that QA node, whatever the
+  dispatch produced. The Codex driver applies the same bound.
 - When the budget is spent and the QA node still fails, that is a hard failure with the
   original findings; report it, never waive it.
 

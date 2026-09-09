@@ -2,18 +2,24 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_bootstrap import (
-    GAME_2D_PRODUCTION_REQUIRED_NODES,
-    validate_approval_records,
-    validate_app_design_flow,
-    validate_canvas2d_game_client_profile_flow,
-    validate_game_2d_production_flow,
-    validate_mobile_ui_coverage,
-    validate_node_spec_contracts,
-    validate_node_spec_coverage,
-    validate_workflow,
-)
+import pytest
+
+from ..module_isolation import load
+
+_validate_bootstrap = load("validate_bootstrap")
+GAME_2D_PRODUCTION_REQUIRED_NODES = _validate_bootstrap.GAME_2D_PRODUCTION_REQUIRED_NODES
+validate_approval_records = _validate_bootstrap.validate_approval_records
+validate_app_design_flow = _validate_bootstrap.validate_app_design_flow
+validate_canvas2d_game_client_profile_flow = _validate_bootstrap.validate_canvas2d_game_client_profile_flow
+validate_game_2d_production_flow = _validate_bootstrap.validate_game_2d_production_flow
+validate_mobile_ui_coverage = _validate_bootstrap.validate_mobile_ui_coverage
+validate_node_spec_contracts = _validate_bootstrap.validate_node_spec_contracts
+validate_node_spec_coverage = _validate_bootstrap.validate_node_spec_coverage
+validate_workflow = _validate_bootstrap.validate_workflow
+effect_stage_ownership_findings = _validate_bootstrap.effect_stage_ownership_findings
+repair_loop_declaration_findings = _validate_bootstrap.repair_loop_declaration_findings
+structural_gate_blockers = _validate_bootstrap.structural_gate_blockers
+workflow_shape_findings = _validate_bootstrap.workflow_shape_findings
 
 
 def _write_workflow(tmp_path, nodes):
@@ -830,3 +836,105 @@ def test_react_native_ui_automation_node_passes(tmp_path):
     errors = validate_mobile_ui_coverage(str(tmp_path))
 
     assert errors == []
+
+
+# Shape before semantics. A node identifier keys every map these gates build, orders the
+# report they emit and names the blocker they raise. The gates below are reached by a
+# run-time entry on whatever `workflow.json` currently holds, so an identifier that cannot
+# do those three things has to be refused as a verdict, never raised as a traceback: a
+# caller handed an exception publishes nothing, and its previous verdict stays on disk.
+MALFORMED_IDS = [1, 0, 3.5, True, None, ["a"], {"a": 1}, "", "   "]
+
+
+@pytest.mark.parametrize("node_id", MALFORMED_IDS)
+def test_a_node_identifier_that_cannot_key_the_graph_is_rejected_by_shape(tmp_path, node_id):
+    path = _write_workflow(tmp_path, [_base_node(node_id=node_id)])
+
+    errors = validate_workflow(path)
+
+    assert any("node_id" in error for error in errors), errors
+
+
+@pytest.mark.parametrize("node_id", MALFORMED_IDS)
+def test_the_structural_gates_report_a_malformed_identifier_instead_of_raising(tmp_path, node_id):
+    """`/run` reaches these on the user's current graph; a traceback is not a verdict."""
+    _write(tmp_path, ".allforai/bootstrap/workflow.json",
+           json.dumps({"nodes": [_base_node(node_id=node_id),
+                                 _base_node(node_id="paired", downstream_effect_owner="absent")]}))
+
+    blockers = structural_gate_blockers(tmp_path)
+
+    assert [b["code"] for b in blockers] == ["malformed_workflow_node"], blockers
+    # The ownership rule is not answered from the addressable remainder: the graph the
+    # user has is not the graph that subset describes.
+    assert not any(b["code"] == "unowned_effect_stage" for b in blockers), blockers
+
+
+def test_two_nodes_sharing_one_identifier_are_a_shape_fault(tmp_path):
+    """One entry replaces the other in every map, so the validated graph is not the graph."""
+    _write(tmp_path, ".allforai/bootstrap/workflow.json",
+           json.dumps({"nodes": [_base_node(node_id="twin"), _base_node(node_id="twin")]}))
+
+    blockers = structural_gate_blockers(tmp_path)
+
+    assert [b["code"] for b in blockers] == ["malformed_workflow_node"], blockers
+    assert blockers[0]["node_id"] == "twin", blockers
+
+
+@pytest.mark.parametrize("nodes", [
+    None, "bad", 42, {}, {"a": 1}, [None], ["bad"], [[]], [False], [{}],
+    [{"node_id": 1}, {"node_id": "b"}], [{"node_id": ["a"]}], [{"node_id": {"a": 1}}],
+    [{"node_id": "a", "hard_blocked_by": ["b"]}, {"node_id": 2}],
+], ids=["null", "string", "number", "empty-object", "object", "null-entry", "string-entry",
+        "array-entry", "boolean-entry", "no-id", "mixed-int-string", "array-id", "object-id",
+        "one-valid-one-malformed"])
+def test_no_graph_rule_raises_on_a_malformed_node_collection(tmp_path, nodes):
+    """Each gate is called directly, so a caller cannot be shielded by an earlier one."""
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps({"nodes": nodes}))
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(
+        {"required_repair_loops": [{"repair_node_id": "repair", "qa_node_ids": ["qa"],
+                                    "closure_node_ids": ["closure"], "max_attempts": 2}]}))
+    bdir = str(tmp_path / ".allforai/bootstrap")
+
+    for findings in (workflow_shape_findings(bdir), repair_loop_declaration_findings(bdir),
+                     effect_stage_ownership_findings(bdir), structural_gate_blockers(tmp_path)):
+        assert isinstance(findings, list)
+        assert all(isinstance(f, dict) and "code" in f and "message" in f for f in findings), findings
+
+
+@pytest.mark.parametrize("workflow", [b"{not json", b'{"nodes": [{"node_id": "\xff\xfe"}]}'],
+                         ids=["unparseable", "undecodable"])
+def test_a_workflow_that_cannot_be_read_yields_no_structural_verdict(tmp_path, workflow):
+    """Unreadable bytes are the file gates' finding; a graph rule invents nothing from them."""
+    path = tmp_path / ".allforai/bootstrap/workflow.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(workflow)
+
+    assert structural_gate_blockers(tmp_path) == []
+    assert validate_workflow(str(path))
+
+
+def test_a_reference_to_a_malformed_identifier_is_reported_not_hashed(tmp_path):
+    path = _write_workflow(tmp_path, [_base_node(hard_blocked_by=[["upstream"]], unlocks=[7])])
+
+    errors = validate_workflow(path)
+
+    assert any("hard_blocked_by entry must be a non-empty node id" in e for e in errors), errors
+    assert any("unlocks entry must be a non-empty node id" in e for e in errors), errors
+
+
+def test_a_well_formed_graph_still_reaches_the_structural_rules(tmp_path):
+    """The shape gate must not become a blanket refusal: the routing rule still decides."""
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps({"nodes": [
+        _base_node(node_id="qa"),
+        _base_node(node_id="repair", hard_blocked_by=["qa"]),
+        _base_node(node_id="closure", hard_blocked_by=["repair"]),
+    ]}))
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(
+        {"required_repair_loops": [{"repair_node_id": "repair", "qa_node_ids": ["qa"],
+                                    "closure_node_ids": ["closure"], "max_attempts": 2}]}))
+
+    blockers = structural_gate_blockers(tmp_path)
+
+    assert [b["code"] for b in blockers] == ["undeclared_repair_loop_routing"], blockers
+    assert blockers[0]["node_id"] == "closure", blockers

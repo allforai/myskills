@@ -17,6 +17,7 @@ import pytest
 
 from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, REF, codex_transition, confirm_plan,
                                    project, publish_contract, write)
+from ..module_isolation import load
 from .test_freshness_admission_corrections import (
     _ABSENT, _artifacts, _blockers, _bootstrap, _readiness, _reconcile, _set_node, HOSTS, NODE, WORKFLOW)
 
@@ -234,8 +235,7 @@ def test_corrupt_or_unknown_freshness_record_fails_closed_for_every_node(tmp_pat
 
 
 def test_legacy_admission_never_admits_evaluated_or_unknown_status():
-    sys.path.insert(0, str(REPO / "claude/meta-skill/scripts/orchestrator"))
-    from check_artifacts import freshness_admits
+    freshness_admits = load("check_artifacts").freshness_admits
     assert freshness_admits(None) is True
     assert freshness_admits({"status": "valid", "admission": "declared"}) is True
     assert freshness_admits({"status": "undeclared", "readiness_status": "undeclared", "admission": "legacy"}) is True
@@ -259,8 +259,7 @@ def test_legacy_admission_never_admits_evaluated_or_unknown_status():
                          ids=["number", "null", "string", "object", "null-entry", "string-entry",
                               "array-node-id", "object-node-id", "missing-status"])
 def test_malformed_history_never_completes_scoped_undeclared_work(history):
-    sys.path.insert(0, str(REPO / "claude/meta-skill/scripts/orchestrator"))
-    from check_artifacts import freshness_admission
+    freshness_admission = load("check_artifacts").freshness_admission
     node = {"node_id": "deliver-export", "requirement_refs": [REF], "exit_artifacts": []}
     workflow = {"nodes": [node], "transition_log": history}
     assert freshness_admission(node, workflow) == "missing"

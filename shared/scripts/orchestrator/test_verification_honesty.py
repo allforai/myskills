@@ -2,8 +2,11 @@ import os
 import tempfile
 import unittest
 
-from check_evidence import derive_state
-from compute_completeness import compute_completeness
+from _module_isolation import load, module_dir
+
+_check_evidence, _compute_completeness = load(module_dir(), "check_evidence", "compute_completeness")
+derive_state = _check_evidence.derive_state
+compute_completeness = _compute_completeness.compute_completeness
 
 
 def _touch(path, content='x'):

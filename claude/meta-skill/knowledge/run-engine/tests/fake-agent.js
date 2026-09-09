@@ -26,6 +26,11 @@ function makeFakeAgent(responses) {
         blocking_findings: []
       }
     }
+    // Unknown labels may be answered by a fallback: the ledger double registers one,
+    // because the engine's authorize/start/settle labels carry the repair node id.
+    if (spec === undefined && typeof responses.__fallback === 'function') {
+      spec = responses.__fallback(label, prompt, idx)
+    }
     if (typeof spec === 'function') spec = spec(idx, prompt)
     if (Array.isArray(spec)) spec = spec[Math.min(idx, spec.length - 1)]
     if (spec && spec.__promise) return spec.__promise

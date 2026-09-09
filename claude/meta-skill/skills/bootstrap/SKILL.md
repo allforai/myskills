@@ -750,6 +750,9 @@ If `.allforai/bootstrap/` already exists (previous run):
 - **Preserve**: `.allforai/bootstrap/learned/` (project experience, never delete)
 - **Preserve**: `plan-confirmation.json` and `plan-confirmation-journal.json`
   (what the user confirmed, and when — appended to, never rewritten)
+- **Preserve**: `repair-authorizations.json` and `safety-quarantine.json` when
+  present. Re-bootstrap is not a new run or permission to reset spent repair
+  budgets, replay uncertain execution, or clear a safety halt.
 - **Preserve for audit**: `transition_log[]`, `run-log.jsonl`,
   `workflow-state-index.json`, `workflow-reconciliation-plan.json`, and
   `workflow-reconciliation-plan.md`
@@ -773,6 +776,8 @@ mkdir -p .allforai/bootstrap/protocols
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/product_intent.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/evidence_freshness.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/repair_authorization.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/run_safety.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/input-freshness.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/check_decision_inputs.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/validate_bootstrap.py .allforai/bootstrap/scripts/

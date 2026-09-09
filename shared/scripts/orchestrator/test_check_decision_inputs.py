@@ -1,5 +1,8 @@
 import json, os, tempfile, unittest
-from check_decision_inputs import check_decision_inputs
+from _module_isolation import load, module_dir
+
+_check_decision_inputs = load(module_dir(), "check_decision_inputs")
+check_decision_inputs = _check_decision_inputs.check_decision_inputs
 
 class TestCheckDecisionInputs(unittest.TestCase):
     def _wf(self, nodes):
@@ -25,7 +28,7 @@ class TestCheckDecisionInputs(unittest.TestCase):
         self.assertEqual(check_decision_inputs(wf, base_dir="/tmp"), [])
 
     def test_orphan_decision_detected(self):
-        from check_decision_inputs import find_orphan_decisions
+        find_orphan_decisions = _check_decision_inputs.find_orphan_decisions
         wf = self._wf([{"node_id": "a", "decision_inputs": ["d/decision-x.json"]}])
         # decision-y.json was gathered but no node references it -> orphan (fix C4)
         orphans = find_orphan_decisions(wf, ["d/decision-x.json", "d/decision-y.json"])

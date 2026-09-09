@@ -1,8 +1,11 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from validate_specialization_contracts import REQUIRED_SECTIONS, validate_specialization_contracts
+from ..module_isolation import load
+
+_contracts = load("validate_specialization_contracts")
+REQUIRED_SECTIONS = _contracts.REQUIRED_SECTIONS
+validate_specialization_contracts = _contracts.validate_specialization_contracts
 
 
 def _write(root, rel, text):

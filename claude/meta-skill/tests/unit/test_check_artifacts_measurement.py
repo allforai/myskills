@@ -19,9 +19,12 @@ import pytest
 
 from .test_bootstrap_scope import project, publish_contract, write
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts/orchestrator"))
-import check_artifacts  # noqa: E402
-from check_artifacts import artifact_digest, check_node_artifacts, recorded_binding  # noqa: E402
+from ..module_isolation import load  # noqa: E402
+
+check_artifacts = load("check_artifacts")
+artifact_digest = check_artifacts.artifact_digest
+check_node_artifacts = check_artifacts.check_node_artifacts
+recorded_binding = check_artifacts.recorded_binding
 
 NODE = "deliver-export"
 REPORT = ".allforai/bootstrap/export-report.json"

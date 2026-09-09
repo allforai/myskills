@@ -14,6 +14,7 @@ import os
 import signal
 import subprocess
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -276,6 +277,98 @@ def artifact_ready(project_root: Path, rel_path: str) -> bool:
     return path.exists() and artifact_status_error(path, project_root) is None
 
 
+SAFETY_QUARANTINE = ".allforai/bootstrap/safety-quarantine.json"
+SAFETY_LOCK = ".allforai/bootstrap/safety-quarantine.lock"
+SAFETY_WARNINGS = ".allforai/bootstrap/run-warnings.json"
+SAFETY_HALT_REASON = "Recorded Run Policy requires a run-wide safety halt"
+
+
+def safety_halted(project_root: Path) -> bool:
+    """A run-wide halt is already recorded, so nothing further may be dispatched.
+
+    The lock counts as well as the marker: `run_safety.py` leaves it behind when a
+    quarantine could not be published, and the absence of the marker is then not proof
+    that no halt was required. `validate_unattended_readiness.py` refuses the same two
+    paths, so the halt survives a restart instead of living only in this process.
+    """
+    return (project_root / SAFETY_QUARANTINE).exists() or (project_root / SAFETY_LOCK).exists()
+
+
+def read_safety_warnings(project_root: Path):
+    """The warnings the executor recorded, or None when the report cannot be trusted.
+
+    An unreadable or wrong-shaped report is not an empty one. Reading it as "no warnings"
+    would let a malformed safety report authorize the very completion the report exists
+    to stop.
+    """
+    path = project_root / SAFETY_WARNINGS
+    if not path.exists():
+        return []
+    try:
+        warnings = load_json(path)["warnings"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if not isinstance(warnings, list) or not all(isinstance(w, str) and w.strip() for w in warnings):
+        return None
+    return warnings
+
+
+def safety_halt_required(project_root: Path, warnings: list[str]) -> bool:
+    """Record the warnings and ask the recorded Run Policy whether the run may continue."""
+    if not warnings:
+        return False
+    run_script(project_root, "record_run_event.py",
+               [".", "--event", "safety_warning", "--status", "warning",
+                "--message", "; ".join(warnings)])
+    return policy_action(project_root, "on_safety_warning") != "continue"
+
+
+def fence_safety_halt(project_root: Path) -> bool:
+    """Leave the persistent fence a quarantine that could not be published leaves behind.
+
+    `run_safety.py` keeps `safety-quarantine.lock` for exactly this meaning: a quarantine
+    was attempted and its marker is not proof of anything. When the helper is missing or
+    could not answer at all, the driver still owes the run that fence — otherwise the only
+    record of the halt is the worker-written warnings file and a mutable Run Policy, and
+    the next start would read the quarantined outputs as a completed node. `safety_halted`
+    and `validate_unattended_readiness.py` both already refuse this path.
+    """
+    lock = project_root / SAFETY_LOCK
+    try:
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.mkdir(exist_ok=True)
+    except OSError:
+        return False
+    return True
+
+
+def quarantine_outputs(project_root: Path, node_ids: list[str], reason: str) -> bool:
+    """Fence these nodes' outputs behind the canonical quarantine. Never accepts or deletes.
+
+    Codex cannot cancel an executor that has already finished, so the outputs of the
+    attempt that raised the warning exist. They are quarantined rather than completed:
+    the run stops, and only independent revalidation may release them (ADR 0006).
+    Returns whether the canonical quarantine is durably recorded — an unconfirmed
+    persistence is reported, never assumed. Whatever the answer, the run is fenced before
+    it is returned: an unpublished quarantine still stops the next start.
+    """
+    result = run_script(project_root, "run_safety.py",
+                        [".", "--nodes-json", json.dumps(node_ids), "--reason", reason])
+    verdict = None
+    if result is not None and result.returncode == 0:
+        try:
+            verdict = json.loads(result.stdout)
+        except (ValueError, TypeError):
+            verdict = None
+    recorded = verdict.get("node_ids") if isinstance(verdict, dict) else None
+    quarantined = (isinstance(verdict, dict) and verdict.get("status") == "quarantined"
+                   and isinstance(recorded, list)
+                   and all(node_id in recorded for node_id in node_ids))
+    if not quarantined:
+        fence_safety_halt(project_root)
+    return quarantined
+
+
 def diagnosis_protocol_path(project_root: Path) -> Path:
     return project_root / ".allforai/bootstrap/protocols/diagnosis.md"
 
@@ -311,7 +404,8 @@ def repair_budget(loop: dict) -> int | None:
 
     An explicitly declared budget that is not a positive integer is a planning
     error, not a request for the default: defaulting there would grant attempts
-    the plan never authorized, so such a loop routes nothing.
+    the plan never authorized, so such a loop routes nothing and its failed QA
+    node is blocked rather than re-run — see `unbounded_repair_loops`.
     `validate_unattended_readiness.py` blocks the same shape before the run starts.
     """
     if "max_attempts" not in loop:
@@ -320,6 +414,20 @@ def repair_budget(loop: dict) -> int | None:
     if isinstance(budget, bool) or not isinstance(budget, int) or budget <= 0:
         return None
     return budget
+
+
+def unbounded_repair_loops(project_root: Path) -> list[str]:
+    """Repair node ids whose declared loop states a `max_attempts` that is not usable.
+
+    Such a loop can never bound anything, so its QA failure has no repair route at all.
+    Re-running the QA node would reproduce the same failure with nothing able to fix it
+    and hide the planning error behind a busy run, so the failure is fail-closed instead:
+    the QA node is blocked and the run reports it, the same terminal answer the Claude
+    engine gives. `validate_unattended_readiness.py` and `validate_bootstrap.py` reject
+    the shape before the run; this is what happens if one ever gets past them.
+    """
+    return sorted({str(loop["repair_node_id"]) for loop in declared_repair_loops(project_root)
+                   if repair_budget(loop) is None})
 
 
 def repair_awaiting_finalization(project_root: Path, workflow: dict, repair_node_id: str) -> bool:
@@ -345,15 +453,136 @@ def repair_awaiting_finalization(project_root: Path, workflow: dict, repair_node
     return True
 
 
-def repair_progress(workflow: dict, repair_node_id: str, qa_node_id: str) -> tuple[int, bool]:
-    """(attempts this QA node has spent, repair already delivered for its last failure).
+REPAIR_LEDGER = ".allforai/bootstrap/repair-authorizations.json"
+LEDGER_HELPER = "repair_authorization.py"
 
-    The declared budget is per QA node — one repair node may serve several — so an
-    attempt is counted only for the QA node whose failure it answered. Both values
-    come from the durable transition_log, so a restart resumes the same budget
-    instead of handing out the spent attempts again.
+# Consumption verdicts keyed by the exact ledger bytes they were read from. The helper
+# stays the only accounting authority; this only avoids re-asking it the same question
+# about a file that has not changed. Any write to the ledger changes the digest and the
+# next read goes back to the helper.
+_LEDGER_READS: dict[tuple[str, str], dict] = {}
+
+
+def authorization_request(project_root: Path, request: dict) -> dict | None:
+    """One request to the canonical repair-authorization helper, or None when unusable.
+
+    `.allforai/bootstrap/repair-authorizations.json` is the authority on what each QA
+    obligation has spent, and this driver never reads or writes it directly: a second
+    implementation of the accounting rules is a second set of bugs. A missing helper, a
+    crashed one, or output that is not a verdict is not a zero balance — it is unknown,
+    and unknown blocks.
     """
-    delivered = 0
+    result = run_script(project_root, LEDGER_HELPER, ["."], json.dumps(request))
+    if result is None or result.returncode not in (0, 1):
+        return None
+    try:
+        verdict = json.loads(result.stdout)
+    except (ValueError, TypeError):
+        return None
+    return verdict if isinstance(verdict, dict) and isinstance(verdict.get("status"), str) else None
+
+
+def ledger_consumption(project_root: Path) -> dict | None:
+    """Per-obligation spend for this run, read from the canonical ledger.
+
+    Returns None when the accounting cannot be established — a missing helper, an
+    unreadable ledger, an existing run whose history is ambiguous. `initialize` is only
+    ever reached from a provably new ledger, and nothing here resets one.
+    """
+    ledger_path = project_root / REPAIR_LEDGER
+    key = (str(project_root), file_digest(ledger_path) or "absent")
+    cached = _LEDGER_READS.get(key)
+    if cached is not None:
+        return cached
+    verdict = authorization_request(project_root, {"operation": "consumption"})
+    if verdict is None:
+        return None
+    if verdict.get("status") == "ok":
+        _LEDGER_READS[key] = verdict
+        return verdict
+    if verdict.get("untrusted") != "missing_ledger":
+        # An unreadable ledger, an ambiguous history, or a foreign run identity. The
+        # spent budget is unknown and a guess would hand back attempts already spent.
+        return None
+    # No ledger at all. Only a run the helper can itself prove untouched may start at
+    # zero; a workflow that already shows execution is refused there, and this driver
+    # neither overrides that nor invents the history it is missing.
+    started = authorization_request(project_root, {"operation": "initialize",
+                                                   "run_id": uuid.uuid4().hex})
+    if started is None or started.get("status") != "ok":
+        return None
+    verdict = authorization_request(project_root, {"operation": "consumption"})
+    if verdict is None or verdict.get("status") != "ok":
+        return None
+    _LEDGER_READS[(str(project_root), file_digest(ledger_path) or "absent")] = verdict
+    return verdict
+
+
+def repair_ledger_unreadable(project_root: Path, workflow: dict) -> bool:
+    """True when a run with declared repair loops has no trustworthy spend accounting.
+
+    Nothing may then run: dispatching now could re-grant an attempt whose work is already
+    in the tree. A run with no declared loop has no budget to lose and is unaffected.
+    """
+    if not declared_repair_loops(project_root):
+        return False
+    return ledger_consumption(project_root) is None
+
+
+def unresolved_authorizations(project_root: Path) -> list[str]:
+    """Ids of grants the ledger holds with no recorded outcome.
+
+    Each one is an execution nobody watched end: it may have edited the tree and it may
+    never have started. That is not an ordinary QA failure and it is not this driver's to
+    guess, so it stops the whole run up front rather than being discovered whenever the
+    affected repair node happens to be selected. Reconciling it against attributable
+    evidence is a deliberate operation (ADR 0006, ADR 0007).
+    """
+    consumption = ledger_consumption(project_root)
+    if consumption is None:
+        return []
+    return sorted({str(entry["authorization_id"])
+                   for entry in consumption.get("unresolved") or []
+                   if isinstance(entry, dict) and entry.get("authorization_id")})
+
+
+def obligation_record(consumption: dict, repair_node_id: str, qa_node_id: str) -> dict:
+    for record in consumption.get("obligations") or []:
+        if (isinstance(record, dict) and record.get("repair_node_id") == repair_node_id
+                and record.get("qa_node_id") == qa_node_id):
+            return record
+    return {}
+
+
+def repair_attempts_spent(project_root: Path, repair_node_id: str, qa_node_id: str) -> int | None:
+    """Repair dispatches this QA obligation has been charged for, per the canonical ledger.
+
+    Per (repair node, QA node) because the declared budget is per QA node: one repair node
+    may serve several, and attempts spent answering one are never charged to a sibling.
+    Charged at the grant, not at the delivery — a budget that only charges for success
+    bounds nothing, since a repair that errors or writes nothing would cost nothing and
+    could repeat. None means the accounting is unknown, which is not zero.
+    """
+    consumption = ledger_consumption(project_root)
+    if consumption is None:
+        return None
+    spent = obligation_record(consumption, repair_node_id, qa_node_id).get("spent", 0)
+    if isinstance(spent, bool) or not isinstance(spent, int) or spent < 0:
+        return None
+    return spent
+
+
+def repair_progress(project_root: Path, workflow: dict, repair_node_id: str,
+                    qa_node_id: str) -> tuple[int | None, bool]:
+    """(attempts this QA obligation has spent, repair already delivered for its last failure).
+
+    The two answer different questions and come from different records. The spent budget is
+    the canonical authorization ledger. `answered` is the loop's sequencing, read from the
+    workflow transition log: a repair that already delivered against this QA node's current
+    failure is not dispatched again, because the QA rerun, not another repair, is what
+    judges it. Both are durable, so a restart resumes the same state instead of starting
+    over.
+    """
     awaiting_repair = False   # this QA node failed and no repair has answered it yet
     answered = False          # a repair delivered after this QA node's last transition
     for entry in workflow.get("transition_log", []):
@@ -364,9 +593,117 @@ def repair_progress(workflow: dict, repair_node_id: str, qa_node_id: str) -> tup
             answered = False
         elif node == repair_node_id and repair_delivered(entry):
             if awaiting_repair and not answered:
-                delivered += 1
-            answered = True
-    return delivered, answered
+                answered = True
+    return repair_attempts_spent(project_root, repair_node_id, qa_node_id), answered
+
+
+def eligible_obligations(project_root: Path, workflow: dict, repair_node_id: str,
+                         qa_node_ids: list[str]) -> dict[str, int]:
+    """{QA node id: its declared budget} for the obligations this dispatch may charge.
+
+    A shared repair charges only the obligations that still have budget. An exhausted
+    sibling is neither charged again nor discharged by the attempt that answers another
+    obligation — it still has to be satisfied (ADR 0005).
+    """
+    budgets: dict[str, int] = {}
+    for loop in declared_repair_loops(project_root):
+        if str(loop["repair_node_id"]) != repair_node_id:
+            continue
+        budget = repair_budget(loop)
+        if budget is None:
+            continue
+        for qa_node_id in loop_nodes(loop, "qa_node_ids", "qa_nodes"):
+            if qa_node_id not in qa_node_ids:
+                continue
+            spent, _ = repair_progress(project_root, workflow, repair_node_id, qa_node_id)
+            if spent is None or spent >= budget:
+                continue
+            budgets[qa_node_id] = budget
+    return budgets
+
+
+def authorize_repair_dispatch(project_root: Path, workflow: dict, repair_node_id: str,
+                              qa_node_ids: list[str]) -> dict | None:
+    """Charge and then claim the one execution this repair dispatch pays for.
+
+    Two durable steps, in this order, both before the executor. `authorize` records the
+    charge — it is never permission to run — and `start` claims the single execution it
+    paid for. A process that dies between them leaves an unresolved grant, and the helper
+    then refuses a further grant for those obligations rather than replaying uncertain
+    work or refunding an attempt that may already have edited the tree (ADR 0006).
+    Returns the claim when this dispatch may execute, otherwise None.
+    """
+    consumption = ledger_consumption(project_root)
+    if consumption is None:
+        return None
+    budgets = eligible_obligations(project_root, workflow, repair_node_id, qa_node_ids)
+    if not budgets:
+        return None
+    authorization_id = uuid.uuid4().hex
+    granted = authorization_request(project_root, {
+        "operation": "authorize", "run_id": consumption["run_id"],
+        "authorization_id": authorization_id, "repair_node_id": repair_node_id,
+        "obligations": sorted(budgets), "budgets": budgets,
+        "provenance": {"host": "codex", "dispatched_at": now_iso()}})
+    if not receipt_for(granted, "authorized", authorization_id,
+                       run_id=consumption["run_id"]):
+        return None
+    claimed = authorization_request(project_root, {
+        "operation": "start", "run_id": consumption["run_id"],
+        "authorization_id": authorization_id})
+    if (not receipt_for(claimed, "started", authorization_id)
+            or claimed.get("execution_allowed") is not True):
+        # The claim this dispatch would execute under is not the claim it asked for.
+        # Nothing runs: the grant may be recorded, so the attempt stays unresolved and
+        # the next dispatch for these obligations is refused rather than replayed.
+        return None
+    return {"authorization_id": authorization_id, "run_id": consumption["run_id"],
+            "obligations": sorted(budgets)}
+
+
+def receipt_for(verdict: dict | None, status: str, authorization_id: str, **fields) -> bool:
+    """This verdict answers the request that was actually made, or it is not an answer.
+
+    A verdict is trusted for its accounting, not for its addressing: a receipt naming a
+    different authorization or a different run says nothing about this dispatch, and
+    reading it as if it did would attribute one attempt's charge, claim or outcome to
+    another. The helper echoes what it decided about; this checks it.
+    """
+    if not isinstance(verdict, dict) or verdict.get("status") != status:
+        return False
+    if verdict.get("authorization_id") != authorization_id:
+        return False
+    return all(verdict.get(key) == value for key, value in fields.items())
+
+
+def settle_repair_dispatch(project_root: Path, grant: dict, outcome: str) -> bool:
+    """Record how a claimed attempt ended. It never returns budget and never re-runs it.
+
+    Only called when this driver observed the attempt finish. An interrupted or
+    quarantined attempt is deliberately left unresolved: whether its execution occurred
+    is then a question for `reconcile` and its evidence, not for the driver to assume.
+
+    Returns whether the ledger confirmed this outcome for this authorization. A refused
+    or unanswerable settlement is not a settled attempt, and the caller may not accept
+    the work it was reporting on: the record of what the attempt did is the ledger's, and
+    an attempt whose outcome never reached it is exactly the unresolved state that stops
+    the next dispatch.
+    """
+    verdict = authorization_request(project_root, {
+        "operation": "settle", "authorization_id": grant["authorization_id"],
+        "outcome": outcome})
+    return receipt_for(verdict, "settled", grant["authorization_id"], outcome=outcome)
+
+
+def qa_nodes_routed_to(project_root: Path, workflow: dict, repair_node_id: str) -> list[str]:
+    """QA node ids whose open failure this repair dispatch is being authorized against."""
+    if repair_node_id not in declared_repair_nodes(project_root):
+        return []
+    complete = {node_identity(n): independent_artifact_gate(project_root, node_identity(n))
+                for n in workflow.get("nodes", [])}
+    return [qa_node_id
+            for qa_node_id, loop in open_repair_loops(project_root, workflow, complete).items()
+            if str(loop["repair_node_id"]) == repair_node_id]
 
 
 def last_failed_transition(workflow: dict, node_id: str) -> dict | None:
@@ -734,6 +1071,10 @@ def open_repair_loops(project_root: Path, workflow: dict, complete: dict[str, bo
     """QA nodes currently routed to their declared repair node, keyed by QA node id."""
     nodes = {node_identity(n): n for n in workflow.get("nodes", [])}
     routed: dict[str, dict] = {}
+    if safety_halted(project_root):
+        # A safety halt is not an ordinary QA failure and a repair is not its answer.
+        # Routing one would dispatch new work over quarantined outputs.
+        return routed
     for loop in declared_repair_loops(project_root):
         repair_node_id = str(loop["repair_node_id"])
         if repair_node_id not in nodes:
@@ -745,18 +1086,70 @@ def open_repair_loops(project_root: Path, workflow: dict, complete: dict[str, bo
             qa_node = nodes.get(qa_node_id)
             if qa_node is None or complete.get(qa_node_id):
                 continue
-            spent, answered = repair_progress(workflow, repair_node_id, qa_node_id)
-            # A delivered repair is answered by the QA rerun, never by another repair.
-            if answered or spent >= budget:
+            spent, answered = repair_progress(project_root, workflow, repair_node_id, qa_node_id)
+            # A delivered repair is answered by the QA rerun, never by another repair, and
+            # an unknown spend routes nothing rather than guessing an attempt is left.
+            if answered or spent is None or spent >= budget:
                 continue
             if qa_report_usable(project_root, qa_node, workflow):
                 routed[qa_node_id] = loop
     return routed
 
 
+def exhausted_obligation_pairs(project_root: Path, workflow: dict) -> list[tuple[str, str]]:
+    """(repair node, QA node) for every obligation whose declared budget is spent.
+
+    A QA node whose budget is spent has no repair attempt left. Running it again would
+    reproduce the same failure with nothing able to fix it, and finishing the run around
+    it would accept an obligation that was never satisfied. It is blocked and reported —
+    an exhausted obligation is refused, never accepted (ADR 0005).
+
+    What satisfies it is its own QA attempt, and only the attempt this driver recorded
+    says whether that happened. A ready exit artifact does not: the exit artifact of a QA
+    node is a file, and a node dispatched in some other role can write it. So an
+    obligation whose latest recorded attempt failed stays exhausted however ready its
+    report now looks. A repair that has already delivered is not exhausted either: its QA
+    rerun is what judges that delivery, and the rerun is not another repair attempt.
+    """
+    pairs: list[tuple[str, str]] = []
+    for loop in declared_repair_loops(project_root):
+        budget = repair_budget(loop)
+        if budget is None:
+            continue
+        repair_node_id = str(loop["repair_node_id"])
+        for qa_node_id in loop_nodes(loop, "qa_node_ids", "qa_nodes"):
+            if last_failed_transition(workflow, qa_node_id) is None:
+                continue
+            spent, answered = repair_progress(project_root, workflow, repair_node_id, qa_node_id)
+            if not answered and spent is not None and spent >= budget:
+                pairs.append((repair_node_id, qa_node_id))
+    return pairs
+
+
+def exhausted_obligations(project_root: Path, workflow: dict) -> list[str]:
+    """QA node ids whose declared repair budget is spent and whose last attempt failed."""
+    return sorted({qa_node_id for _, qa_node_id in
+                   exhausted_obligation_pairs(project_root, workflow)})
+
+
 def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, list[str]]:
     """(next dispatchable node, ids of pending nodes nothing may dispatch yet)."""
     nodes = workflow.get("nodes", [])
+    if safety_halted(project_root):
+        # Run-wide, not branch-wide: a recorded halt stops new dispatch for every pending
+        # node, including branches that never failed, until the quarantined outputs are
+        # independently revalidated.
+        return None, [node_identity(n) for n in nodes]
+    if repair_ledger_unreadable(project_root, workflow):
+        # The spent budget cannot be read, so nothing may run: dispatching now could
+        # re-grant an attempt whose work is already in the tree.
+        return None, [node_identity(n) for n in nodes]
+    if declared_repair_loops(project_root) and unresolved_authorizations(project_root):
+        # An authorization with no recorded outcome is uncertain execution, not a QA
+        # verdict. Its work may already be in the tree, so no branch may proceed on the
+        # assumption that it is not — the refusal is global and it is refused before the
+        # first dispatch, not when the affected repair node comes up.
+        return None, [node_identity(n) for n in nodes]
     complete = {node_identity(n): independent_artifact_gate(project_root, node_identity(n)) for n in nodes}
     routed = open_repair_loops(project_root, workflow, complete)
     repair_nodes = {str(loop["repair_node_id"]) for loop in routed.values()}
@@ -768,18 +1161,47 @@ def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, lis
         for closure in loop_nodes(loop, "closure_node_ids", "closure_nodes")
         if any(not complete.get(qa) for qa in loop_nodes(loop, "qa_node_ids", "qa_nodes"))
     }
+    # A QA node that has already failed under a loop whose declared budget is unusable has
+    # no repair route and nothing to gain from running again: it is blocked, and the run
+    # reports it rather than looping on a planning error.
+    unbounded = {
+        qa_node_id
+        for loop in declared_repair_loops(project_root)
+        if repair_budget(loop) is None
+        for qa_node_id in loop_nodes(loop, "qa_node_ids", "qa_nodes")
+        if last_failed_transition(workflow, qa_node_id) is not None
+    }
+    # An obligation whose declared budget is spent is blocked and reported, whatever its
+    # report now looks like — see `exhausted_obligation_pairs`.
+    spent_out = exhausted_obligation_pairs(project_root, workflow)
+    exhausted = {qa_node_id for _, qa_node_id in spent_out}
+    dead_loop_repairs = {repair_node_id for repair_node_id, _ in spent_out}
+    # A repair node whose only obligations are exhausted has nothing left to be authorized
+    # for. Dispatching it as an ordinary pending node would run a repair attempt the
+    # budget never paid for, so it is blocked too. One still routed for an obligation that
+    # has budget keeps running for that obligation alone (ADR 0005).
+    dead_loop_repairs -= repair_nodes
     blocked: list[str] = []
     selected: dict | None = None
     for node in nodes:
         node_id = node_identity(node)
+        # A node's blockers hold in every role it plays. Reaching the repair role first
+        # would let a dispatch authorized for one loop write this node's own QA verdict
+        # and discharge an obligation of another: success in one role never cancels
+        # another role's blocker (ADR 0006).
+        if node_id in exhausted:
+            blocked.append(node_id)
+            continue
+        if not complete.get(node_id) and (node_id in routed or node_id in closure_blocked
+                                          or node_id in unbounded
+                                          or node_id in dead_loop_repairs):
+            blocked.append(node_id)
+            continue
         if node_id in repair_nodes:
             if selected is None:
                 selected = node
             continue
         if complete.get(node_id):
-            continue
-        if node_id in routed or node_id in closure_blocked:
-            blocked.append(node_id)
             continue
         dependencies = node.get("hard_blocked_by") or []
         dispatchable = all(
@@ -899,6 +1321,46 @@ def count_consecutive_failures(workflow: dict, node_id: str) -> int:
     return count
 
 
+def loop_budgets_for(project_root: Path, node_id: str) -> list[int]:
+    """Declared per-QA budgets of every loop this node takes part in."""
+    budgets = []
+    for loop in declared_repair_loops(project_root):
+        members = {str(loop["repair_node_id"]), *loop_nodes(loop, "qa_node_ids", "qa_nodes")}
+        if node_id not in members:
+            continue
+        budget = repair_budget(loop)
+        if budget is not None:
+            budgets.append(budget)
+    return budgets
+
+
+def failure_threshold(project_root: Path, node_id: str) -> int:
+    """Consecutive failures this node may record before the supervisor stops the run.
+
+    The generic cap is a backstop for a node nobody planned a bound for. It must never
+    be the thing that ends a declared loop: a plan that authorized `max_attempts`
+    repairs authorized the failures that go with them, and stopping at the smaller
+    generic number would silently curtail an explicit per-QA budget while reporting a
+    supervisor threshold instead of an exhausted one. The bound stays finite either
+    way — it is the declared budget, plus the failure that opened the loop.
+    """
+    budgets = loop_budgets_for(project_root, node_id)
+    return max([MAX_CONSECUTIVE_FAILURES_PER_NODE] + [budget + 1 for budget in budgets])
+
+
+def stagnation_limit(project_root: Path) -> int:
+    """Transitions without new artifacts allowed before the run is called stagnant.
+
+    A declared loop legitimately produces them: a repair that delivers nothing and the
+    QA rerun that judges it both record a transition and neither writes an artifact —
+    two per authorized attempt, plus the QA failure that opened the loop. Below that,
+    the generic guard would end the loop before its declared budget was spent.
+    """
+    budgets = [budget for loop in declared_repair_loops(project_root)
+               for budget in [repair_budget(loop)] if budget is not None]
+    return max([MAX_STAGNANT_ITERATIONS] + [2 * budget + 1 for budget in budgets])
+
+
 def transition_artifacts(entry: dict) -> list[str]:
     artifacts = entry.get("artifacts_created")
     if isinstance(artifacts, list):
@@ -940,10 +1402,13 @@ def execution_policy(project_root: Path) -> dict:
     return policy
 
 
-def run_bounded(command: list[str], project_root: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+def run_bounded(command: list[str], project_root: Path, timeout: int,
+                stdin_text: str | None = None) -> subprocess.CompletedProcess[str]:
     """Bound the whole subprocess group, including children of CLI/helper processes."""
     try:
-        proc = subprocess.Popen(command, cwd=project_root, text=True, stdout=subprocess.PIPE,
+        proc = subprocess.Popen(command, cwd=project_root, text=True,
+                                stdin=subprocess.PIPE if stdin_text is not None else None,
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, start_new_session=(os.name == "posix"))
     except OSError as exc:
         return subprocess.CompletedProcess(command, 127, "", str(exc))
@@ -956,7 +1421,7 @@ def run_bounded(command: list[str], project_root: Path, timeout: int) -> subproc
         else:
             proc.kill()
     try:
-        out, err = proc.communicate(timeout=timeout)
+        out, err = proc.communicate(input=stdin_text, timeout=timeout)
     except subprocess.TimeoutExpired:
         stop()
         out, err = proc.communicate()
@@ -968,12 +1433,13 @@ def run_bounded(command: list[str], project_root: Path, timeout: int) -> subproc
     return subprocess.CompletedProcess(command, proc.returncode, out, err)
 
 
-def run_script(project_root: Path, name: str, args: list[str]) -> subprocess.CompletedProcess[str] | None:
+def run_script(project_root: Path, name: str, args: list[str],
+               stdin_text: str | None = None) -> subprocess.CompletedProcess[str] | None:
     path = script_path(project_root, name)
     if not path.exists():
         return None
     return run_bounded([sys.executable, str(path), *args], project_root,
-                       execution_policy(project_root)["helper_timeout_seconds"])
+                       execution_policy(project_root)["helper_timeout_seconds"], stdin_text)
 
 
 def run_preflight(project_root: Path) -> int:
@@ -1249,20 +1715,19 @@ def main() -> int:
         return 6
 
     for iteration in range(1, max_iterations + 1):
-        warning_path = project_root / ".allforai/bootstrap/run-warnings.json"
-        if warning_path.exists():
-            try:
-                warnings = load_json(warning_path)["warnings"]
-                if not isinstance(warnings, list) or not all(isinstance(w, str) and w.strip() for w in warnings):
-                    raise ValueError("warnings must be an array of non-empty strings")
-            except (OSError, ValueError, KeyError, TypeError):
-                print(json.dumps({"passed": False, "done": False, "error": "invalid safety warning report"}), file=sys.stderr)
-                return 6
-            if warnings:
-                run_script(project_root, "record_run_event.py", [".", "--event", "safety_warning", "--status", "warning", "--message", "; ".join(warnings)])
-                if policy_action(project_root, "on_safety_warning") != "continue":
-                    print(json.dumps({"passed": False, "done": False, "error": "recorded Run Policy halted on safety warning", "warnings": warnings}), file=sys.stderr)
-                    return 4
+        if safety_halted(project_root):
+            print(json.dumps({"passed": False, "done": False,
+                              "error": "a run-wide safety halt is recorded; no node may be dispatched "
+                                       "until the quarantined outputs are independently revalidated",
+                              "quarantine": SAFETY_QUARANTINE}), file=sys.stderr)
+            return 4
+        warnings = read_safety_warnings(project_root)
+        if warnings is None:
+            print(json.dumps({"passed": False, "done": False, "error": "invalid safety warning report"}), file=sys.stderr)
+            return 6
+        if safety_halt_required(project_root, warnings):
+            print(json.dumps({"passed": False, "done": False, "error": "recorded Run Policy halted on safety warning", "warnings": warnings}), file=sys.stderr)
+            return 4
         workflow = load_json(workflow_path)
         if not run_expanders(project_root, workflow):
             print(json.dumps({"passed": False, "done": False, "error": "workflow expander failed"}), file=sys.stderr)
@@ -1272,9 +1737,35 @@ def main() -> int:
         if node is None:
             blocked = blocked_pending_nodes(project_root, workflow)
             if blocked:
-                print(json.dumps({"passed": False, "done": False,
-                                  "error": "no dispatchable node; pending nodes remain blocked",
-                                  "blocked_nodes": blocked}), file=sys.stderr)
+                payload = {"passed": False, "done": False,
+                           "error": "no dispatchable node; pending nodes remain blocked",
+                           "blocked_nodes": blocked}
+                if repair_ledger_unreadable(project_root, workflow):
+                    payload["invalid_repair_attempt_history"] = (
+                        f"{REPAIR_LEDGER} is not a trustworthy per-obligation budget ledger; "
+                        "recover it with the repair-authorization helper before resuming")
+                unbounded = unbounded_repair_loops(project_root)
+                if unbounded:
+                    # Name the planning error rather than leaving a bare blocked list: a
+                    # declared loop with an unusable `max_attempts` is why its failed QA
+                    # node has no route.
+                    payload["unbounded_repair_loops"] = unbounded
+                # Two different stops, never one list. An exhausted obligation is a QA
+                # verdict this run recorded and a budget the plan declared: the evidence
+                # is complete and the answer is that it was never satisfied. An
+                # unresolved authorization is the opposite — an execution nobody watched
+                # end, which is recovered by reconciling evidence, not by more QA.
+                exhausted = exhausted_obligations(project_root, workflow)
+                if exhausted:
+                    payload["exhausted_obligations"] = exhausted
+                unresolved = unresolved_authorizations(project_root)
+                if unresolved:
+                    payload["unresolved_repair_authorizations"] = unresolved
+                    payload["uncertain_execution"] = (
+                        "an authorization has no recorded outcome, so whether its repair "
+                        "ran is unknown; the whole run is refused until it is reconciled "
+                        "against attributable evidence — this is not a QA failure")
+                print(json.dumps(payload), file=sys.stderr)
                 return 6
         acceptance_node = node is None or any(artifact_path(a) == ".allforai/concept-acceptance/acceptance-report.json"
                                                for a in node.get("exit_artifacts", []))
@@ -1303,7 +1794,8 @@ def main() -> int:
 
         node_id = str(node.get("node_id") or node.get("id"))
         failure_count = count_consecutive_failures(workflow, node_id)
-        if failure_count >= MAX_CONSECUTIVE_FAILURES_PER_NODE:
+        threshold = failure_threshold(project_root, node_id)
+        if failure_count >= threshold:
             diagnosis_path = diagnosis_protocol_path(project_root)
             diagnosis = run_diagnosis(project_root, node_id, failure_count)
             diagnosis_text = (diagnosis.stdout or diagnosis.stderr or "").strip()
@@ -1320,7 +1812,7 @@ def main() -> int:
                 workflow_path,
                 node_id,
                 failure_count,
-                f"Repeated node failure reached threshold {MAX_CONSECUTIVE_FAILURES_PER_NODE}.",
+                f"Repeated node failure reached threshold {threshold}.",
                 diagnosis_text[:4000],
             )
             history = load_json(workflow_path).get("diagnosis_history", [])
@@ -1348,13 +1840,14 @@ def main() -> int:
                 )
                 return 3
 
-        if stagnant_iteration_count(workflow) >= MAX_STAGNANT_ITERATIONS:
+        stagnation_cap = stagnation_limit(project_root)
+        if stagnant_iteration_count(workflow) >= stagnation_cap:
             print(
                 json.dumps(
                     {
                         "passed": False,
                         "done": False,
-                        "error": f"stagnant workflow: {MAX_STAGNANT_ITERATIONS} consecutive transitions without new artifacts",
+                        "error": f"stagnant workflow: {stagnation_cap} consecutive transitions without new artifacts",
                     },
                     indent=2,
                     ensure_ascii=False,
@@ -1380,7 +1873,54 @@ def main() -> int:
         binding_before = binding_identity(project_root, node_id) if is_loop_node else None
         if binding_before is not None and not qa_inputs_current(node_freshness(project_root, node_id)):
             binding_before = None      # already drifted before the attempt began
+        # Write-ahead repair accounting through the canonical ledger: dispatching a
+        # declared repair node charges one of each answered QA obligation's declared
+        # attempts and then claims the single execution that charge pays for, both durable
+        # before the executor starts. Charging on delivery instead would leave a repair
+        # that errors or writes nothing costing nothing, which bounds neither host.
+        routed_obligations = qa_nodes_routed_to(project_root, workflow, node_id)
+        grant = None
+        if routed_obligations:
+            grant = authorize_repair_dispatch(project_root, workflow, node_id, routed_obligations)
+            if grant is None:
+                # No durable grant, so no execution. An exhausted budget, an unresolved
+                # earlier grant, or unknown accounting all land here, and each is a stop
+                # rather than an unpaid attempt.
+                print(json.dumps({
+                    "passed": False, "done": False, "node": node_id,
+                    "error": "repair dispatch was not authorized; no attempt may run without a "
+                             "durable per-obligation grant",
+                    "obligations": routed_obligations}), file=sys.stderr)
+                return 6
         result = run_codex(project_root, build_prompt(node_id, goal, finalize_evidence))
+        # Read before anything this attempt produced can be accepted. Answering a warning
+        # on the next iteration would be too late: this node would already be recorded
+        # completed and would already have released its successors. Codex cannot cancel an
+        # executor that has finished, so its outputs are quarantined rather than accepted,
+        # and the halt is run-wide — every branch stops, not only this one.
+        post_warnings = read_safety_warnings(project_root)
+        if post_warnings is None or safety_halt_required(project_root, post_warnings):
+            quarantined = [artifact_path(a) for a in node.get("exit_artifacts", [])
+                           if (project_root / artifact_path(a)).exists()]
+            persisted = quarantine_outputs(project_root, [node_id], SAFETY_HALT_REASON)
+            append_transition_if_missing(
+                workflow_path, before_count, node_id, "failed", started_at, quarantined,
+                "run-wide safety halt: outputs quarantined pending independent revalidation")
+            print(json.dumps({
+                "passed": False, "done": False, "node": node_id,
+                "error": ("invalid safety warning report" if post_warnings is None
+                          else "recorded Run Policy halted on safety warning"),
+                "warnings": post_warnings or [],
+                "quarantined_outputs": quarantined,
+                "quarantine_persisted": persisted,
+                # Persistence of the canonical marker is reported, never assumed; the
+                # fence is separate and is what stops the next start. Both are stated.
+                "halt_fenced": safety_halted(project_root),
+                # Left unresolved on purpose: the outputs are quarantined, so whether this
+                # attempt delivered anything is not settled by the driver that halted it.
+                "unresolved_repair_authorization": grant and grant["authorization_id"],
+                "quarantine": SAFETY_QUARANTINE}), file=sys.stderr)
+            return 6 if post_warnings is None else 4
         binding_after = binding_identity(project_root, node_id) if is_loop_node else None
 
         artifacts_created = [
@@ -1392,6 +1932,24 @@ def main() -> int:
         all_ready = result.returncode == 0 and independent_artifact_gate(
             project_root, gate_node_id
         )
+
+        # Settled before the attempt may be accepted. This driver watched the attempt
+        # finish, so its end is recorded; settling returns no budget, because the attempt
+        # was granted and is spent either way. An interrupted or timed-out attempt is
+        # deliberately left unresolved — whether its execution occurred is a question for
+        # `reconcile` and evidence that can be checked, never an assumption made here.
+        # A settlement the ledger did not confirm is the same uncertainty: the node is not
+        # completed on it, and the run stops for reconciliation rather than accepting work
+        # whose authorization stays open.
+        settlement_error = None
+        if grant is not None and result.returncode not in {124, 130}:
+            if not settle_repair_dispatch(project_root, grant,
+                                          "delivered" if all_ready else "failed"):
+                settlement_error = (
+                    "repair attempt outcome was not recorded in the canonical ledger "
+                    f"(authorization {grant['authorization_id']}); the attempt stays "
+                    "unresolved and is reconciled against evidence, never assumed")
+                all_ready = False
 
         if all_ready:
             append_transition_if_missing(
@@ -1423,6 +1981,8 @@ def main() -> int:
                 binding_before if binding_before == binding_after else None,
                 result.returncode == 0,
             ) if is_loop_node else None
+            if settlement_error:
+                error_line = (settlement_error + "; " + error_line)[:600]
             if qa_evidence and qa_evidence.get("ambiguous"):
                 # Neither a verdict this attempt produced nor a file it left alone.
                 # Say so on the record instead of letting it pass or vanish.
@@ -1439,6 +1999,14 @@ def main() -> int:
                 error_line,
                 qa_evidence,
             )
+
+        if settlement_error:
+            print(json.dumps({
+                "passed": False, "done": False, "node": node_id,
+                "error": settlement_error,
+                "unresolved_repair_authorizations": [grant["authorization_id"]],
+                "obligations": grant["obligations"]}), file=sys.stderr)
+            return 6
 
         print(json.dumps({
             "iteration": iteration,

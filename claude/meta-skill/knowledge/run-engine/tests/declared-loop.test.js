@@ -13,7 +13,7 @@ const path = require('node:path')
 const core = require('../engine-core.js')
 const { pipeline } = require('./harness-doubles.js')
 const { makeFakeAgent } = require('./fake-agent.js')
-const { declaredLoopProject, realGate, realMeasurement, publishEvidence } = require('./real-gate.js')
+const { declaredLoopProject, realGate, realMeasurement, publishEvidence, realLedger } = require('./real-gate.js')
 
 const LOOP = {
   scope: 'orders-export',
@@ -23,7 +23,11 @@ const LOOP = {
   max_attempts: 2
 }
 
-const attempts = () => [{ repair_node_id: 'repair', qa_node_id: 'verify', attempts: 0 }]
+// NO MOCK BOUNDARY on the ledger here. Unlike the rest of the suite, these tests answer
+// every ledger prompt by actually running the shipped `repair_authorization.py` in the
+// temporary project, so the prompts, the request encoding, the receipts and the real
+// authorize -> start -> settle state machine are all exercised end to end.
+const LEDGER_LABEL = /^(ledger:(consumption|initialize)|repair-(authorize|start|settle):)/
 
 function writeReport(root, name, value) {
   fs.writeFileSync(path.join(root, name), JSON.stringify(value))
@@ -35,9 +39,11 @@ function declaredLoopAgent(root, nodes, calls = [], { unmeasured = false, execut
   const counters = {}
   const bump = id => (counters[id] = (counters[id] || 0) + 1)
   const gate = id => () => realGate(root, id, { unmeasured })
+  const ledger = realLedger(root)
   return makeFakeAgent({
+    __fallback: (label, prompt) => LEDGER_LABEL.test(label) ? ledger(prompt) : undefined,
     'measure:repair': () => realMeasurement(root, 'repair', { unmeasured }),
-    'load-dag': { nodes, completed: [], repair_loops: [LOOP], repair_attempts: attempts() },
+    'load-dag': { nodes, completed: [], repair_loops: [LOOP] },
     verify: () => {
       const n = bump('verify')
       calls.push(`verify:${n}`)

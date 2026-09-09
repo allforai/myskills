@@ -20,7 +20,7 @@
     "meta-intent-t13": ["T13-bc513-spec.md", "T13-bc513-standards.md"],
     "result": "All 9 reports are byte-identical to preserved integration copies. Recheck worktree status and branch containment after final acceptance before removal; no worktree removed."
   },
-  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": false, "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4", "refresh_check": "All four exports share current candidate fingerprint. Initial refreshed-ledger checks exposed six metadata/phase-guard failures; corrected at existing boundary. All 37 results-pin tests now pass; unchanged remaining 67 helper tests passed in preceding runs. This is preparation validation, not host proof."},
+  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": true, "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4", "historical_candidate_refresh_required": false, "status": "historical_preparation_only_candidate_withdrawn", "refresh_check": "Historical e30 preparation: all four exports then shared its fingerprint; 37 results-pin and 67 preceding helper tests passed. This is not current candidate acceptance or host proof. Fresh export and actual-host verification are required after the current repairs are accepted."},
   "main_base": "a37ca40a548bd748b416b908157223a7287ad720",
   "max_concurrency": 3,
   "status": "running",
@@ -179,7 +179,11 @@
     "actual_host_required": 60,
     "fresh_candidate_required": true
   },
-  "active": [],
+  "active": [
+    {"role": "authorization_foundation", "task": "task_21317d2a591d", "dispatch": "ctx_a4b208370c55", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"},
+    {"role": "test_import_isolation", "task": "task_a5fff6a18224", "dispatch": "ctx_9d7a52e384b3", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"},
+    {"role": "structural_gate_robustness", "task": "task_7005827db79b", "dispatch": "ctx_51bb7288559e", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"}
+  ],
   "completed": [
     9,
     10,

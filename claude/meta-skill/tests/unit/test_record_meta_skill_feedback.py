@@ -1,8 +1,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from record_meta_skill_feedback import record_feedback
+from ..module_isolation import load
+
+_feedback = load("record_meta_skill_feedback")
+record_feedback = _feedback.record_feedback
 
 
 def _write(root, rel, text):
@@ -27,7 +29,7 @@ def test_record_feedback_prefers_local_myskills_repo(tmp_path, monkeypatch):
             stderr = ""
         return Result()
 
-    monkeypatch.setattr("record_meta_skill_feedback._run", fake_run)
+    monkeypatch.setattr(_feedback, "_run", fake_run)
     result = record_feedback(project, message="workflow expansion gap", category="workflow-gap", mode="draft")
 
     assert result["status"] == "recorded_local_myskills"
@@ -38,8 +40,7 @@ def test_record_feedback_prefers_local_myskills_repo(tmp_path, monkeypatch):
 def test_record_feedback_falls_back_to_pending_issue_when_no_local_repo(tmp_path, monkeypatch):
     project = tmp_path / "project"
     project.mkdir()
-    import record_meta_skill_feedback
-    monkeypatch.setattr(record_meta_skill_feedback, "_candidate_repos", lambda project_root: [])
+    monkeypatch.setattr(_feedback, "_candidate_repos", lambda project_root: [])
 
     result = record_feedback(project, message="workflow expansion gap", category="workflow-gap", mode="draft")
 
@@ -51,8 +52,7 @@ def test_record_feedback_falls_back_to_pending_issue_when_no_local_repo(tmp_path
 def test_record_feedback_redacts_project_name_and_paths(tmp_path, monkeypatch):
     project = tmp_path / "secret-project"
     project.mkdir()
-    import record_meta_skill_feedback
-    monkeypatch.setattr(record_meta_skill_feedback, "_candidate_repos", lambda project_root: [])
+    monkeypatch.setattr(_feedback, "_candidate_repos", lambda project_root: [])
     message = f"Failure in {project}/src/app.ts for secret-project with api_key=abc"
 
     result = record_feedback(project, message=message, category="privacy", mode="draft")

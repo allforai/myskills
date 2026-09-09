@@ -144,6 +144,8 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 - `check_artifacts.py`
 - `product_intent.py`
 - `evidence_freshness.py`
+- `repair_authorization.py`
+- `run_safety.py`
 - `validate_bootstrap.py`
 - `expand_game_2d_production.py`
 - `reconcile_bootstrap_workflow.py`
@@ -152,6 +154,10 @@ Copy the current orchestrator helper set from `./scripts/orchestrator/` (the sha
 - `summarize_run_log.py`
 - `record_meta_skill_feedback.py`
 - `check_product_summary.py` when product inference is emitted
+
+Preserve existing `repair-authorizations.json` and `safety-quarantine.json`
+during re-bootstrap. Regenerating a plan does not authorize clearing a safety
+halt, resetting repair consumption, or replaying an uncertain dispatch.
 
 Copy `knowledge/input-freshness.md` from the canonical root into
 `.allforai/bootstrap/protocols/`. Follow it on every bootstrap/resume, including

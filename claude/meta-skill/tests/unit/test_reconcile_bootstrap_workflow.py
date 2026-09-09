@@ -2,8 +2,11 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from reconcile_bootstrap_workflow import build_reconciliation_plan, build_state_index
+from ..module_isolation import load
+
+_reconcile = load("reconcile_bootstrap_workflow")
+build_reconciliation_plan = _reconcile.build_reconciliation_plan
+build_state_index = _reconcile.build_state_index
 
 
 def _write(root, rel, text):

@@ -3,8 +3,9 @@ import sys
 import time
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from check_artifacts import check_node_artifacts
+from ..module_isolation import load
+
+check_node_artifacts = load("check_artifacts").check_node_artifacts
 
 
 @pytest.mark.parametrize('content', ['{broken', '', 'NaN invalid'])

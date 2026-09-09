@@ -1,7 +1,10 @@
 import unittest
-from validate_audit_outputs import (
-    validate_granularity_audit, validate_decision_coverage, validate_decision_artifact
-)
+from _module_isolation import load, module_dir
+
+_validate_audit_outputs = load(module_dir(), "validate_audit_outputs")
+validate_granularity_audit = _validate_audit_outputs.validate_granularity_audit
+validate_decision_coverage = _validate_audit_outputs.validate_decision_coverage
+validate_decision_artifact = _validate_audit_outputs.validate_decision_artifact
 
 class TestGranularity(unittest.TestCase):
     def test_valid(self):

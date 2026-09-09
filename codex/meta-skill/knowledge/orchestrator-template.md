@@ -178,12 +178,73 @@ this loop apply it:
 
   Anything short of all four is re-run or diagnosed, never repaired against.
 
-- Attempts are counted from `transition_log`, which is durable: a restarted driver
-  resumes the spent budget instead of handing the same attempts out again. An attempt is
-  a repair dispatch that completed while that QA node was waiting on it.
+- **An attempt is spent when a repair dispatch is authorized, not when it succeeds.** The
+  canonical ledger is `.allforai/bootstrap/repair-authorizations.json`, and the driver
+  reaches it only through `repair_authorization.py` — never by reading or writing the file
+  itself, because a second implementation of the accounting rules is a second set of bugs.
+  It is a separate document from `workflow.json` so a concurrent workflow writer and the
+  budget ledger can never lose each other's write.
+
+  A dispatch is two durable steps, both before the executor: `authorize` records the
+  charge against every eligible obligation all-or-none, and `start` claims the single
+  execution that charge pays for. `authorize` is never permission to run, and only the
+  first `start` returns `execution_allowed`; a replay, a resumed driver or a second worker
+  is refused. When the attempt finishes under this driver's eye it is `settle`d, which
+  records an outcome and returns no budget. An attempt that was interrupted, timed out, or
+  quarantined is deliberately left unresolved: whether its execution occurred is a
+  question for `reconcile` and evidence that can be checked, never an assumption. The
+  helper then refuses a further grant for those obligations rather than replaying
+  uncertain work or refunding an attempt that may already have edited the tree.
+
+  Every one of those verdicts is checked for the request it answers: a receipt naming a
+  different authorization or a different run is not an answer about this dispatch, and
+  reading it as one would attribute a charge, a claim or an outcome to the wrong attempt.
+  A settlement the ledger did not confirm is the same uncertainty as a crash — the node is
+  **not** completed on it, and the run stops for reconciliation, because the ledger is the
+  record of what a dispatch did and accepting work whose authorization stays open would
+  make that record decorative.
+
+  **Uncertain execution stops the whole run, up front.** An authorization with no recorded
+  outcome may already have edited the tree; no branch may proceed on the assumption that
+  it did not, including one that never failed. The run is refused before the first
+  dispatch — not when the affected repair node happens to come up — and it is reported as
+  `unresolved_repair_authorizations` with the ids, plus a note that reconciliation against
+  attributable evidence is what releases it. That is deliberately not the same stop as an
+  ordinary QA failure: report-backed QA blocking names `exhausted_obligations` or
+  `unbounded_repair_loops`, where the evidence is complete and the answer is that an
+  obligation was never satisfied. One list is a verdict, the other is a question, and they
+  are never merged.
+
+  Zero is a claim about history and is verified, never assumed: `initialize` is reached
+  only when there is no ledger at all, and it refuses a workflow that already shows
+  execution. A missing, unreadable or ambiguous ledger blocks every node — absence of
+  records is not proof of unused budget. Two consequences follow, and the Claude engine
+  shares both. A repair whose executor errors, or that writes nothing, costs the
+  same one attempt as one that delivered and did not fix the finding: a budget that only
+  charged for success would bound neither, and the loop could repeat without end. And an
+  interruption between the authorization and the work leaves the attempt spent —
+  over-counting the one attempt that was cut short is recoverable, re-granting it is not,
+  because the work it authorized may already be in the tree. A route that opens and is
+  interrupted before any dispatch costs nothing, on either host.
+
+  Opening the route is not the charge. The QA node's failed `transition_log` entry records
+  that this QA node failed; it is the QA node's history, never the budget. The ledger is
+  durable, so a restarted driver resumes the spent budget instead of handing the same
+  attempts out again.
+
+- **A shared repair charges only the obligations that still have budget.** One repair node
+  may answer several QA nodes, and each carries its own declared bound. The dispatch is
+  authorized for the funded obligations alone: an exhausted sibling is never charged
+  again, and it is never discharged by the attempt that answers another obligation. It
+  still has to be satisfied.
 - A loop that declares no `max_attempts` takes the documented default of three attempts
   per QA node. A declared `max_attempts` that is not a positive integer is unbounded, not
-  a request for that default: the loop routes nothing and the QA node is re-run instead.
+  a request for that default: nothing is routed, and a QA node that has already failed is
+  **not re-run** — re-running it would reproduce the same failure with nothing able to fix
+  it and bury the planning error in a busy run. The driver blocks that QA node and reports
+  it, naming the loop under `unbounded_repair_loops`; the Claude engine stops with the same
+  QA failure in `needs_diagnosis`. Both validators reject the shape before the run starts;
+  this is only what happens if one ever gets past them.
 - Only the declared repair node may proceed on that failed QA node. No other successor
   advances on a failed dependency, a failed node is never recorded `completed`, and its
   report is never edited to look passed.
@@ -202,8 +263,39 @@ this loop apply it:
   and completes on its own merits; only then does closure become reachable. Every
   `closure_node_ids` entry stays blocked until the QA node itself completes; a delivered
   repair is not a passing QA.
-- When the budget is spent and the QA node still fails, it is a normal repeated failure:
-  diagnose and stop under the recorded Run Policy. Never waive it.
+- A repair dispatch that delivered nothing is bounded the same way: it spent its attempt,
+  so the loop dispatches the next one and stops at the declared `max_attempts` rather than
+  retrying a non-delivery until the generic consecutive-failure threshold catches it. The
+  declared budget is therefore the single bound on every repair dispatch for that QA node,
+  whatever the dispatch produced. The Claude engine applies the same bound.
+- When the budget is spent and the QA node still fails, the obligation is **blocked and
+  reported**, not re-run. No attempt is left that could fix it, so another rerun would
+  reproduce the same failure; and the run may not finish around it either — an exhausted
+  obligation is refused, never accepted. A repair that has already delivered is not
+  exhausted: its QA rerun judges that delivery and is not another repair attempt. The
+  Claude engine reaches the same verdict and ends in `needs_diagnosis`.
+
+  What satisfies the obligation is its own QA attempt, and only the attempt the driver
+  recorded says whether that happened. A ready exit artifact does not: the exit artifact
+  of a QA node is a file, and anything dispatched for another reason can write it. So an
+  obligation whose latest recorded attempt failed stays blocked however passed its report
+  now reads. Its loop's repair node is blocked with it — nothing is left to pay for a
+  dispatch, and a repair node run as an ordinary pending node is an unpaid attempt, not a
+  free one.
+- **A node's blockers hold in every role it plays.** A node may repair one loop and be a
+  QA obligation of another; that shape stays supported, and `validate_bootstrap` refuses
+  only a repair node that is its own loop's QA or closure node. So blocked-ness is
+  decided before the repair role is: a node that is routed, awaiting its own repair,
+  exhausted, or under an unbounded loop is not dispatched as a repairer for anything
+  else. Otherwise the dispatch one loop authorized would put that node in front of the
+  executor with its own QA report among its exit artifacts, and success in one role would
+  cancel another role's blocker — which it never may (ADR 0006).
+- **A declared `max_attempts` outranks the generic caps.** The consecutive-failure
+  threshold and the stagnation cap are backstops for nodes nobody planned a bound for.
+  They rise to what the plan declared — the budget plus the failure that opened the loop,
+  and two transitions per authorized attempt — so a 6-attempt loop is never ended at the
+  generic 3 while reporting a supervisor threshold instead of an exhausted budget. They
+  stay finite, and a loop declaring fewer attempts never lowers them.
 - When no node is dispatchable but pending nodes remain, the graph is blocked. Report the
   blocked nodes; that state is never a completed workflow.
 
@@ -268,8 +360,28 @@ On the first iteration, if `transition_log` is non-empty:
   for recorded `continue`; out-of-scope, convergence and stagnation caps still halt.
 - For non-blocking safety warnings, consume `--policy-event on_safety_warning`:
   continue logs, halt stops with a report. In native flow.py, nodes publish a
-  `warnings` array of strings to `.allforai/bootstrap/run-warnings.json`; the
-  supervisor consumes it before the next wave. Hard safety blockers remain failures.
+  `warnings` array of strings to `.allforai/bootstrap/run-warnings.json`. The supervisor
+  reads it **immediately after the executor and before the node is recorded completed**,
+  never only on the next iteration: by then the node would already have completed and
+  released its successors. An unreadable warnings report is not an empty one and stops the
+  run the same way. Hard safety blockers remain failures.
+- **A halt is run-wide, and its outputs are quarantined rather than accepted.** Codex
+  cannot cancel an executor that has already finished, so the attempt's outputs exist.
+  The driver calls `run_safety.py . --nodes-json <ids> --reason <reason>`, which fences
+  them behind `.allforai/bootstrap/safety-quarantine.json` without deleting or accepting
+  anything, records the node `failed`, and stops. While that marker — or the
+  `safety-quarantine.lock` left behind by a quarantine that could not be published —
+  exists, **no node is dispatchable**, including branches that never failed, and no repair
+  route opens: a safety halt is not an ordinary QA failure and a repair is not its answer.
+  `validate_unattended_readiness.py` refuses both paths, so the halt survives a restart and
+  is released only by independent revalidation.
+
+  Persistence of the canonical marker is reported (`quarantine_persisted`), never assumed —
+  and it is not what makes the halt durable. Whatever `run_safety.py` answers, and whether
+  or not it is there to answer at all, the driver leaves the lock behind before it reports:
+  a halt whose only record was the warnings file a worker writes and a Run Policy a user
+  can edit would be released by editing either, and the quarantined outputs would read as a
+  completed node on the next start. `halt_fenced` states whether that fence is in place.
 - 5 iterations with no new artifacts: stop and output current best state plus TODOs
 - Single node running too long: warn, do not silently discard work
 

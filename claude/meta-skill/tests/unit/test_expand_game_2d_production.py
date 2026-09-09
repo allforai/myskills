@@ -2,16 +2,16 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../scripts/orchestrator"))
-from expand_game_2d_production import expand_game_2d_production
-from validate_bootstrap import (
-    GAME_2D_PRODUCTION_REQUIRED_NODES,
-    validate_game_2d_production_flow,
-    validate_node_spec,
-    validate_node_spec_contracts,
-    validate_node_spec_coverage,
-    validate_workflow,
-)
+from ..module_isolation import load
+
+_expand, _validate_bootstrap = load("expand_game_2d_production", "validate_bootstrap")
+expand_game_2d_production = _expand.expand_game_2d_production
+GAME_2D_PRODUCTION_REQUIRED_NODES = _validate_bootstrap.GAME_2D_PRODUCTION_REQUIRED_NODES
+validate_game_2d_production_flow = _validate_bootstrap.validate_game_2d_production_flow
+validate_node_spec = _validate_bootstrap.validate_node_spec
+validate_node_spec_contracts = _validate_bootstrap.validate_node_spec_contracts
+validate_node_spec_coverage = _validate_bootstrap.validate_node_spec_coverage
+validate_workflow = _validate_bootstrap.validate_workflow
 
 
 def _write(root, rel, text):

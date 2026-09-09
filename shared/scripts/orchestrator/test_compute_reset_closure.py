@@ -1,5 +1,7 @@
 import unittest
-from compute_reset_closure import reset_closure
+from _module_isolation import load, module_dir
+
+reset_closure = load(module_dir(), "compute_reset_closure").reset_closure
 
 NODES = [
     {"node_id": "n1", "hard_blocked_by": []},

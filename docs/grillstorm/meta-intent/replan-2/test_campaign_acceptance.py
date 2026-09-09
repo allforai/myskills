@@ -8,6 +8,12 @@ import pytest
 ROOT = Path(__file__).resolve().parent
 
 
+def test_preparation_cannot_override_current_candidate_withdrawal():
+    execution = json.loads((ROOT / "execution.json").read_text())
+    if execution["correction_verification_checkpoint"]["fresh_candidate_required"]:
+        assert execution["preparation_verification"]["candidate_refresh_required"] is True
+
+
 @pytest.mark.parametrize("task", ["T15", "T16", "T17", "T18"])
 def test_open_candidate_repairs_withdraw_launch_acceptance(task):
     checkpoint = json.loads((ROOT / "execution.json").read_text())["correction_verification_checkpoint"]

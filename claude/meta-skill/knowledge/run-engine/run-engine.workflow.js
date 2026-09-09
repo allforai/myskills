@@ -40,16 +40,33 @@ const DAG_SCHEMA = {
         repair_node_id: { type: 'string' },
         closure_node_ids: { type: 'array', items: { type: 'string' } },
         max_attempts: { type: 'integer' }
-      } } },
-    // Repair dispatches already granted, read back from the durable transition_log so a
-    // resumed run continues the same budget instead of restarting it.
-    repair_attempts: { type: 'array', items: { type: 'object',
-      required: ['repair_node_id', 'qa_node_id', 'attempts'],
-      properties: {
-        repair_node_id: { type: 'string' },
-        qa_node_id: { type: 'string' },
-        attempts: { type: 'integer' }
       } } }
+  }
+}
+
+// One verdict from the canonical repair-authorization ledger. The helper decides; this
+// schema only says what a verdict looks like so a receipt can be checked rather than
+// believed. `status` is the whole answer — everything else is evidence for it.
+const LEDGER_VERDICT_SCHEMA = {
+  type: 'object',
+  required: ['status'],
+  properties: {
+    status: { type: 'string' },
+    reason: { type: 'string' },
+    untrusted: { type: 'string' },
+    run_id: { type: 'string' },
+    origin: { type: 'string' },
+    authorization_id: { type: 'string' },
+    repair_node_id: { type: 'string' },
+    state: { type: 'string' },
+    outcome: { type: 'string' },
+    execution_allowed: { type: 'boolean' },
+    replayed: { type: 'boolean' },
+    refunded: { type: 'boolean' },
+    charged: { type: 'object' },
+    remaining: { type: 'object' },
+    obligations: { type: 'array' },
+    unresolved: { type: 'array' }
   }
 }
 
@@ -235,10 +252,9 @@ function loadDagPrompt() {
     'Also read .allforai/bootstrap/unattended-run-readiness-spec.json and return its',
     'required_repair_loops verbatim as repair_loops[] (each with qa_node_ids, repair_node_id,',
     'closure_node_ids, max_attempts); return [] when the spec declares none.',
-    'Also return repair_attempts[] = one {repair_node_id, qa_node_id, attempts} per declared',
-    'qa_node_id, where attempts is the number of transition_log entries for that QA node with',
-    'status "failed" — the repair dispatches this run already granted it. Count them; do not',
-    'estimate, and return 0 only when the log truly holds none.',
+    'Do NOT report repair budgets here. The spent budget is not summarized from workflow.json:',
+    'it is read from the canonical repair-authorization ledger by its own helper, because a',
+    'count inferred by reading a file is not accounting.',
     'Do not execute any node. Read and summarize only.'
   ].join(' ')
 }
@@ -351,8 +367,96 @@ function repairRoutePrompt(qaNodeId, loop, attempt) {
     `(attempt ${attempt} of ${repairBudget(loop)})".`,
     'Do NOT mark the QA node completed and do not edit its report: the declared repair node runs',
     'next, this QA node then reruns, and no closure node of this loop may start until that rerun',
-    'passes. Append only; do not touch other entries.'
+    'passes. Append only; do not touch other entries, and do not write the repair_routes entry',
+    'here — that is appended separately, immediately before the repair node is dispatched.'
   ].join(' ')
+}
+
+// Single-quote a value for a POSIX shell command line embedded in a prompt.
+function shellQuote(value) {
+  return "'" + String(value).replace(/'/g, "'\\''") + "'"
+}
+
+// Every ledger operation is one run of the canonical helper. This engine has no
+// filesystem of its own — its only actuator is an agent — so the accounting is not
+// something it can do: it is something it asks a deterministic Python CLI to do and then
+// checks the receipt of. The prompt therefore carries the exact command and forbids the
+// agent from producing a verdict any other way. A verdict that was written rather than
+// executed is a forged receipt, and the caller below refuses one.
+function authorizationPrompt(request) {
+  return [
+    'Run EXACTLY this command, once, and return its stdout parsed as your JSON result:',
+    `printf '%s' ${shellQuote(JSON.stringify(request))} | python3 .allforai/bootstrap/scripts/repair_authorization.py .`,
+    'This is the canonical repair-authorization ledger at',
+    '.allforai/bootstrap/repair-authorizations.json. Return the verdict object exactly as the',
+    'command printed it. Do NOT invent, summarize, complete, correct or re-order it; do NOT',
+    'edit the ledger file by hand; do NOT re-run the command with different input; do NOT',
+    'retry a refusal. A refusal exits non-zero and still prints a verdict — that verdict is',
+    'the answer, so return it. Only if the command cannot be run at all, return',
+    '{"status": "invalid", "reason": "<what actually happened>"}.'
+  ].join(' ')
+}
+
+// The dispatch identity. Durable and unique: it is derived from the run, the repair node
+// and each obligation's spend at the moment the dispatch was decided, so a driver that
+// dies and restarts recomputes the same id and the helper recognises the replay instead
+// of charging a second attempt. A new attempt always has a different prior spend, so it
+// always gets a different id.
+// A run identity that is stable across restarts of the same plan, so a resumed run finds
+// its own ledger instead of a foreign one. Derived from the declared graph rather than a
+// clock or a random source, both of which would make every restart a different run — and
+// the helper refuses a second identity over an existing ledger, which is what keeps a
+// silent reset impossible.
+function runIdentity(dag) {
+  const shape = JSON.stringify({
+    nodes: (dag.nodes || []).map(n => n && n.node_id).filter(Boolean).sort(),
+    loops: (dag.repair_loops || []).map(l => ({
+      repair_node_id: l && l.repair_node_id,
+      qa_node_ids: [...((l && (l.qa_node_ids || l.qa_nodes)) || [])].sort(),
+      max_attempts: l && l.max_attempts
+    })).sort((a, b) => String(a.repair_node_id).localeCompare(String(b.repair_node_id)))
+  })
+  let hash = 2166136261
+  for (let i = 0; i < shape.length; i++) {
+    hash ^= shape.charCodeAt(i)
+    hash = Math.imul(hash, 16777619) >>> 0
+  }
+  return `run-${hash.toString(16).padStart(8, '0')}`
+}
+
+function authorizationId(runId, repairNodeId, priorSpent) {
+  const parts = Object.keys(priorSpent).sort().map(qa => `${qa}#${priorSpent[qa]}`)
+  return `${runId}::${repairNodeId}::${parts.join(',')}`
+}
+
+// A receipt is checked, never believed. The helper's own verdict is the only evidence
+// that a charge or a launch claim is durable, so a verdict that names another dispatch,
+// omits its identity, or answers a question that was not asked is refused exactly like a
+// refusal — nothing may execute on it.
+function ledgerReceiptError(verdict, expect) {
+  if (!verdict || typeof verdict !== 'object') return 'the ledger helper returned no verdict'
+  if (verdict.status !== expect.status) {
+    return `ledger refused ${expect.operation}: ${verdict.status}` +
+      (verdict.untrusted ? ` (${verdict.untrusted})` : '') +
+      (verdict.reason ? ` — ${verdict.reason}` : '')
+  }
+  if (expect.authorization_id !== undefined && verdict.authorization_id !== expect.authorization_id) {
+    return `receipt names authorization ${JSON.stringify(verdict.authorization_id)}, not ${JSON.stringify(expect.authorization_id)}`
+  }
+  if (expect.repair_node_id !== undefined && verdict.repair_node_id !== undefined &&
+      verdict.repair_node_id !== expect.repair_node_id) {
+    return `receipt names repair node ${JSON.stringify(verdict.repair_node_id)}, not ${JSON.stringify(expect.repair_node_id)}`
+  }
+  if (expect.execution_allowed !== undefined && verdict.execution_allowed !== expect.execution_allowed) {
+    return `receipt reports execution_allowed ${JSON.stringify(verdict.execution_allowed)}, expected ${JSON.stringify(expect.execution_allowed)}`
+  }
+  return null
+}
+
+function ledgerBlocker(nodeId, detail) {
+  return { status: 'needs_diagnosis', hardFailures: [{
+    node_id: nodeId, outcome: 'hard_fail', artifacts_written: [],
+    blocking_findings: [{ type: 'invalid_repair_authorization', detail }] }] }
 }
 
 function commitFailuresPrompt(hardFailures) {
@@ -419,12 +523,16 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
   let strict = ''
   while (true) {
     const r = await agent(runNodePrompt(node, strict), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
-    if (routeOutcome(r) === 'hard') return { ...r, outcome: 'hard_fail' }
+    if (!r || r.node_id !== node.node_id) {
+      return { node_id: node.node_id, outcome: 'hard_fail', artifacts_written: [],
+        blocking_findings: [{ type: 'invalid_artifact_gate', detail: 'executor result missing or names a different node' }] }
+    }
     if ((r.safety_warnings || []).length) {
       await agent(`Record these safety warnings without asking a question: ${JSON.stringify(r.safety_warnings)}.`, { label: `safety-report:${node.node_id}` })
       if (policy.on_safety_warning !== 'continue') return { ...r, outcome: 'hard_fail',
         blocking_findings: [{ type: 'safety_warning', detail: 'Recorded Run Policy requires halt' }] }
     }
+    if (routeOutcome(r) === 'hard') return { ...r, outcome: 'hard_fail' }
     if (r.acceptance_verdict === 'needs_iteration') {
       const event = await agent('Run python3 .allforai/bootstrap/scripts/product_intent.py . --policy-event on_needs_iteration. Return its JSON verbatim; do not ask questions.', {
         label: 'policy:on_needs_iteration', schema: { type: 'object', required: ['action'], properties: { action: { type: 'string' } } }
@@ -517,39 +625,61 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
   const repair = { loops: dag.repair_loops || [], open: new Map() }
+  const blockedFailures = new Map()
   // `${repair_node_id}::${qa_node_id}` -> repair dispatches already granted to that QA node.
   // Keyed by the pair because one repair node may serve several QA nodes and each carries
   // its own declared budget; seeded from the recorded history so a restart resumes it.
   const repairAttempts = new Map()
-  const recordedAttempts = dag.repair_attempts === undefined ? [] : dag.repair_attempts
-  if (!Array.isArray(recordedAttempts)) {
-    return { status: 'needs_diagnosis', hardFailures: [{
-      node_id: 'repair-attempt-history', outcome: 'hard_fail',
-      blocking_findings: [{ type: 'invalid_repair_attempt_history',
-        detail: 'repair_attempts is not an array; the spent budget cannot be read' }] }] }
-  }
-  for (const entry of recordedAttempts) {
-    // Unreadable history means the remaining budget is unknown. Restarting it would hand
-    // out attempts the plan already spent, so the run stops instead.
-    if (!entry || !entry.repair_node_id || !entry.qa_node_id ||
-        !Number.isInteger(entry.attempts) || entry.attempts < 0) {
-      return { status: 'needs_diagnosis', hardFailures: [{
-        node_id: 'repair-attempt-history', outcome: 'hard_fail',
-        blocking_findings: [{ type: 'invalid_repair_attempt_history',
-          detail: `unreadable recorded repair attempts: ${JSON.stringify(entry)}` }] }] }
+  let ledgerRunId = null
+  if (repair.loops.length > 0) {
+    // Consumption first. The canonical ledger is the authority on what every obligation
+    // has spent, and — unlike a count summarized out of workflow.json — an obligation it
+    // does not list really has spent nothing, because the ledger's own origin was proved
+    // when it was created. That proof is why absence may be read as zero here and could
+    // not be before.
+    let consumption = await agent(authorizationPrompt({ operation: 'consumption' }),
+      { schema: LEDGER_VERDICT_SCHEMA, label: 'ledger:consumption' })
+    if (consumption && consumption.status === 'blocked' && consumption.untrusted === 'missing_ledger') {
+      // The only path to a fresh budget, and this engine does not assert it: the helper
+      // reads workflow.json itself and refuses to record zero for a run that already
+      // shows execution. Any other refusal — an unreadable ledger, a foreign run, an
+      // ambiguous history — is untrusted state and stops the run right here.
+      const started = await agent(
+        authorizationPrompt({ operation: 'initialize', run_id: runIdentity(dag) }),
+        { schema: LEDGER_VERDICT_SCHEMA, label: 'ledger:initialize' })
+      const refused = ledgerReceiptError(started, { status: 'ok', operation: 'initialize' })
+      if (refused) return ledgerBlocker('repair-authorization-ledger', refused)
+      consumption = await agent(authorizationPrompt({ operation: 'consumption' }),
+        { schema: LEDGER_VERDICT_SCHEMA, label: 'ledger:consumption' })
     }
-    repairAttempts.set(`${entry.repair_node_id}::${entry.qa_node_id}`, entry.attempts)
-  }
-  // Every declared QA node must state its attempts, explicit 0 included. An absent
-  // entry is missing history, not a fresh budget: assuming zero would silently hand a
-  // resumed run the attempts it already spent.
-  for (const loop of repair.loops) {
-    for (const qaNodeId of ((loop && (loop.qa_node_ids || loop.qa_nodes)) || [])) {
-      if (repairAttempts.has(`${loop.repair_node_id}::${qaNodeId}`)) continue
-      return { status: 'needs_diagnosis', hardFailures: [{
-        node_id: 'repair-attempt-history', outcome: 'hard_fail',
-        blocking_findings: [{ type: 'invalid_repair_attempt_history',
-          detail: `no recorded repair attempts for QA node ${qaNodeId} of loop ${loop.repair_node_id}` }] }] }
+    const refused = ledgerReceiptError(consumption, { status: 'ok', operation: 'consumption' })
+    if (refused) return ledgerBlocker('repair-authorization-ledger', refused)
+    if (typeof consumption.run_id !== 'string' || !consumption.run_id) {
+      return ledgerBlocker('repair-authorization-ledger',
+        'the ledger reported no run identity; its consumption cannot be attributed to this run')
+    }
+    ledgerRunId = consumption.run_id
+    // A grant that never reached an outcome leaves it unknown whether that attempt ran.
+    // Resuming would either replay uncertain work or spend a budget twice, so the run
+    // stops for reconciliation rather than guessing which (ADR 0006).
+    const unresolved = consumption.unresolved === undefined ? [] : consumption.unresolved
+    if (!Array.isArray(unresolved)) {
+      return ledgerBlocker('repair-authorization-ledger',
+        'the ledger did not report its unresolved authorizations')
+    }
+    if (unresolved.length > 0) {
+      return ledgerBlocker('repair-authorization-ledger',
+        `unresolved repair authorization(s) ${JSON.stringify(unresolved.map(u => u && u.authorization_id))}: ` +
+        'whether their execution occurred is unknown. Reconcile them against evidence before ' +
+        'resuming — this run neither replays nor refunds them')
+    }
+    for (const record of (consumption.obligations || [])) {
+      if (!record || typeof record.repair_node_id !== 'string' || typeof record.qa_node_id !== 'string' ||
+          !Number.isInteger(record.spent) || record.spent < 0) {
+        return ledgerBlocker('repair-authorization-ledger',
+          `unreadable ledger obligation: ${JSON.stringify(record)}`)
+      }
+      repairAttempts.set(`${record.repair_node_id}::${record.qa_node_id}`, record.spent)
     }
   }
 
@@ -582,7 +712,26 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     phase('Execute')
     // A repair node that already ran for an earlier attempt must run again for this one.
     for (const loop of repair.open.values()) done.delete(loop.repair_node_id)
-    const ready = computeReady(dag.nodes, done, repair)
+    const funded = (qa, loop) => repairBudget(loop) !== null &&
+      (repairAttempts.get(`${loop.repair_node_id}::${qa}`) || 0) < repairBudget(loop)
+    // A node may repair one loop and owe a QA obligation in another; ADR 0006 keeps that
+    // shape supported. What it does not allow is the repair hat settling the obligation.
+    // A node whose own obligation has nothing left to fix it is blocked in every role: a
+    // repairer may not accept its own work, and dispatching it here would let it write the
+    // very verdict it owes — on a budget authorized against a different loop.
+    const unfundedObligation = nodeId => repair.loops.some(loop => {
+      const qaIds = (loop && (loop.qa_node_ids || loop.qa_nodes)) || []
+      if (!qaIds.includes(nodeId) || done.has(nodeId)) return false
+      const budget = repairBudget(loop)
+      return budget === null ||
+        (repairAttempts.get(`${loop.repair_node_id}::${nodeId}`) || 0) >= budget
+    })
+    const ready = computeReady(dag.nodes, done, repair).filter(node => {
+      if (blockedFailures.has(node.node_id)) return false
+      if (repair.open.has(node.node_id) && unfundedObligation(node.node_id)) return false
+      const obligations = [...repair.open].filter(([, loop]) => loop.repair_node_id === node.node_id)
+      return obligations.length === 0 || obligations.some(([qa, loop]) => funded(qa, loop))
+    })
     if (ready.length === 0) break
     log(`running ${ready.length} ready node(s)`)
     // repair_node_id -> the QA node ids whose failure it is answering right now.
@@ -597,30 +746,163 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     for (const [repairNodeId, qaIds] of openRepairNodes) {
       const node = ready.find(n => n.node_id === repairNodeId)
       if (!node) continue
+      // Charge every QA node this dispatch answers before anything else the dispatch
+      // does. The declared budget is per QA node, so one repair node serving several
+      // spends one attempt of each; a sibling is never charged for another's failure, and
+      // an exhausted one is left out of the grant entirely rather than charged again.
+      const authorizedQa = qaIds.filter(qa => funded(qa, repair.open.get(qa))).sort()
+      if (authorizedQa.length === 0) {
+        // Unreachable while the `ready` filter holds, and a stop rather than a skip if it
+        // ever stops holding: a repair attempt that reaches the executor without a grant
+        // is exactly the unpaid dispatch the ledger exists to prevent.
+        return ledgerBlocker(repairNodeId,
+          'no obligation of this dispatch has budget left; a repair attempt may not run unpaid')
+      }
+      const priorSpent = {}
+      const budgets = {}
+      for (const qaNodeId of authorizedQa) {
+        priorSpent[qaNodeId] = repairAttempts.get(`${repairNodeId}::${qaNodeId}`) || 0
+        budgets[qaNodeId] = repairBudget(repair.open.get(qaNodeId))
+      }
+      const grantId = authorizationId(ledgerRunId, repairNodeId, priorSpent)
+      // One atomic grant for the whole dispatch: every obligation is charged or none is,
+      // so a partial charge can never leave a sibling paying for an attempt that was
+      // never authorized. It is still not permission to run.
+      const granted = await agent(authorizationPrompt({
+        operation: 'authorize', run_id: ledgerRunId, authorization_id: grantId,
+        repair_node_id: repairNodeId, obligations: authorizedQa, budgets,
+        provenance: { host: 'claude-run-engine' }
+      }), { schema: LEDGER_VERDICT_SCHEMA, label: `repair-authorize:${repairNodeId}` })
+      const grantError = ledgerReceiptError(granted, { status: 'authorized', operation: 'authorize',
+        authorization_id: grantId, repair_node_id: repairNodeId, execution_allowed: false })
+      if (grantError) return ledgerBlocker(repairNodeId, grantError)
+      // The charge is authoritative, not this engine's arithmetic.
+      for (const qaNodeId of authorizedQa) {
+        const charged = granted.charged && granted.charged[qaNodeId]
+        if (!Number.isInteger(charged) || charged !== priorSpent[qaNodeId] + 1) {
+          return ledgerBlocker(repairNodeId,
+            `receipt charged ${JSON.stringify(charged)} to ${qaNodeId}, expected ${priorSpent[qaNodeId] + 1}`)
+        }
+        repairAttempts.set(`${repairNodeId}::${qaNodeId}`, charged)
+      }
+      // The launch claim is separate and succeeds once. A replay, a resumed engine and a
+      // second worker are all told no, so nothing executes twice on one charge.
+      const claimed = await agent(authorizationPrompt({
+        operation: 'start', run_id: ledgerRunId, authorization_id: grantId
+      }), { schema: LEDGER_VERDICT_SCHEMA, label: `repair-start:${repairNodeId}` })
+      const claimError = ledgerReceiptError(claimed, { status: 'started', operation: 'start',
+        authorization_id: grantId, execution_allowed: true })
+      if (claimError) return ledgerBlocker(repairNodeId, claimError)
       const before = await agent(measurePrompt(node), {
         schema: MEASUREMENT_SCHEMA, label: `measure:${repairNodeId}`
       })
-      openDelivery.set(repairNodeId, { qa: qaIds, before: (before && before.measurement) || null })
+      openDelivery.set(repairNodeId, { qa: qaIds, authorized_qa: authorizedQa,
+        authorization_id: grantId, before: (before && before.measurement) || null })
     }
-    const outcomes = await pipeline(
-      ready,
-      node => runNode(node, agent, policy, openDelivery.get(node.node_id) || null),
-      // A delivery is not a completion: it never commits, so the repair node stays out of
-      // `done` and must still pass its own gate later.
-      result => routeOutcome(result) === 'done' && !result.delivered
-        ? serializeCommit(() => commitNode(result, agent, done)).then(() => result)  // fix C1: serialized
-        : result,
-      result => routeOutcome(result) === 'done' && !result.iteration_repair_stopped && !result.delivered
-        ? null : result
-    )
+    // Workflow pipelines have no stage barrier. Hold every completion until all
+    // in-flight results are known, otherwise a late safety halt can follow a sibling's
+    // already-published completion. The latch also fences further retries/gates.
+    let safetyHalted = false
+    const waveAgent = async (prompt, opts = {}) => {
+      if (safetyHalted && !(opts.label || '').startsWith('safety-report:')) {
+        throw new Error('run safety halt prohibits further agent dispatch')
+      }
+      const result = await agent(prompt, opts)
+      if (result && ((policy.on_safety_warning !== 'continue' && (result.safety_warnings || []).length) ||
+          (result.blocking_findings || []).some(f => f && f.type === 'safety_warning'))) safetyHalted = true
+      return result
+    }
+    const outcomes = await pipeline(ready, async node => {
+      try {
+        return await runNode(node, waveAgent, policy, openDelivery.get(node.node_id) || null)
+      } catch (error) {
+        // A thrown stage is otherwise swallowed by Workflow as null. Unknown execution
+        // is a blocker, never absence of a failure or permission to repeat the node.
+        // `execution_unknown` is what stops the settlement below: this engine did not
+        // observe how the attempt ended, so its authorization stays unresolved rather
+        // than being recorded as a delivery or a failure it cannot vouch for.
+        return { node_id: node.node_id, outcome: 'hard_fail', artifacts_written: [],
+          execution_unknown: true,
+          blocking_findings: [{ type: safetyHalted ? 'safety_warning' : 'invalid_artifact_gate',
+            detail: safetyHalted ? 'in-flight result quarantined after run safety halt' : 'node execution did not return a usable result' }] }
+      }
+    })
+    if (safetyHalted) {
+      const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
+      const quotedNodes = "'" + JSON.stringify(ready.map(n => n.node_id)).replace(/'/g, "'\\''") + "'"
+      const quarantine = await agent('Run python3 .allforai/bootstrap/scripts/run_safety.py . --nodes-json ' +
+        quotedNodes + " --reason 'Recorded Run Policy requires a run-wide safety halt'. " +
+        'Return its JSON verbatim. Do not invent a persistence receipt, delete artifacts, mark nodes complete, or clear the halt.',
+        { label: 'quarantine-wave', schema: { type: 'object', required: ['status'], properties: {
+          status: { type: 'string' }, node_ids: { type: 'array', items: { type: 'string' } }
+        } } })
+      if (!quarantine || quarantine.status !== 'quarantined' || !Array.isArray(quarantine.node_ids) ||
+          ready.some(n => !quarantine.node_ids.includes(n.node_id))) {
+        hardFailures.push({ node_id: 'safety-quarantine', outcome: 'hard_fail', artifacts_written: [],
+          blocking_findings: [{ type: 'invalid_readiness_gate', detail: 'safety quarantine persistence was not confirmed' }] })
+      }
+      await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
+      // Deliberately not settled. The wave's outputs are quarantined pending independent
+      // revalidation, so whether those attempts delivered anything is not this engine's
+      // to record; the grants stay unresolved and the next run stops for reconciliation.
+      return { status: 'needs_diagnosis', hardFailures }
+    }
+    // Settle only what this engine actually watched end. Settling returns no budget — the
+    // attempt was granted, so it is spent either way — it only removes the uncertainty
+    // about whether the attempt ran. An unknown outcome is left unresolved on purpose:
+    // guessing would either replay uncertain work or refund an attempt already spent.
+    for (const [repairNodeId, grant] of openDelivery) {
+      if (!grant || !grant.authorization_id) continue
+      const result = outcomes.find(r => r && r.node_id === repairNodeId)
+      if (!result || result.execution_unknown) continue
+      const outcome = (result.delivered || routeOutcome(result) === 'done') ? 'delivered' : 'failed'
+      const settled = await agent(authorizationPrompt({
+        operation: 'settle', authorization_id: grant.authorization_id, outcome
+      }), { schema: LEDGER_VERDICT_SCHEMA, label: `repair-settle:${repairNodeId}` })
+      const settleError = ledgerReceiptError(settled, { status: 'settled', operation: 'settle',
+        authorization_id: grant.authorization_id })
+      if (settleError) return ledgerBlocker(repairNodeId, settleError)
+    }
+    // A delivery is not a completion. Serialize actual completions only after the
+    // safety barrier; the independent QA must still judge a repair delivery.
+    for (const result of outcomes) {
+      if (result && routeOutcome(result) === 'done' && !result.delivered) {
+        await serializeCommit(() => commitNode(result, agent, done))
+      }
+    }
     // A repair node that delivered or completed this wave closes its loop; the QA node
     // reruns next, and that rerun — not the delivery — is what releases closure.
     const delivered = new Set(outcomes.filter(r => r && r.delivered).map(r => r.node_id))
     for (const [qaNodeId, loop] of [...repair.open]) {
-      if (done.has(loop.repair_node_id) || delivered.has(loop.repair_node_id)) repair.open.delete(qaNodeId)
+      const grant = openDelivery.get(loop.repair_node_id)
+      if (grant && grant.authorized_qa.includes(qaNodeId) &&
+          (done.has(loop.repair_node_id) || delivered.has(loop.repair_node_id))) repair.open.delete(qaNodeId)
     }
     const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
     if (hardFailures.length > 0) {
+      // A declared repair node that failed inside its own still-open loop is not a
+      // terminal verdict while that loop has budget left. Its attempt was already charged
+      // before it ran, so the loop simply dispatches the next one; a repair that errors or
+      // delivers nothing is bounded by the declared max_attempts exactly like one that
+      // delivered and did not fix the finding. When the budget is gone it is retained no
+      // longer and stops the run with its own findings.
+      //
+      // NON_QA_FAILURE_TYPES are the exception, and the same reason applies as when a QA
+      // node carries them: they are structural, environmental or policy verdicts, not an
+      // attempt that fell short. A recorded safety halt or a broken readiness gate is not
+      // made truer by dispatching it again, so it stops the run now.
+      const retained = hardFailures.filter(failure => {
+        if ((failure.blocking_findings || []).some(f => f && NON_QA_FAILURE_TYPES.has(f.type))) return false
+        // Its repair role does not answer its own obligation. A node that owes a QA
+        // obligation with no attempt left to fix it is blocked, not retained, however
+        // funded the loop it repairs still is (ADR 0005, ADR 0006).
+        if (unfundedObligation(failure.node_id)) return false
+        return [...repair.open].some(([qa, loop]) => {
+          if (!loop || loop.repair_node_id !== failure.node_id) return false
+          const budget = repairBudget(loop)
+          return budget !== null && (repairAttempts.get(`${loop.repair_node_id}::${qa}`) || 0) < budget
+        })
+      })
       const routed = []
       for (const failure of hardFailures) {
         const loop = repairLoopFor(repair.loops, failure.node_id)
@@ -628,21 +910,32 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
         const budget = repairBudget(loop)
         if (budget === null) continue          // unusable declared budget: route nothing
         const key = `${loop.repair_node_id}::${failure.node_id}`
+        // Peek, never charge: the attempt is spent when the repair is dispatched, so a
+        // route that opens and is then interrupted before any dispatch costs nothing.
         const spent = repairAttempts.get(key) || 0
         if (spent >= budget) continue
-        repairAttempts.set(key, spent + 1)
         repair.open.set(failure.node_id, loop)
         await agent(repairRoutePrompt(failure.node_id, loop, spent + 1), {
           label: `repair-route:${failure.node_id}:${spent + 1}`
         })
         routed.push(failure.node_id)
       }
-      // Every failure must be a declared, budgeted, report-backed QA failure to
-      // continue; anything else is a real stop.
-      if (routed.length !== hardFailures.length) {
-        for (const qaNodeId of routed) repair.open.delete(qaNodeId)
+      // Every failure must be a declared, budgeted, report-backed QA failure, or a repair
+      // node still inside its own funded loop, to continue; anything else is a real stop.
+      const handled = new Set([...routed, ...retained.map(f => f.node_id)])
+      const unhandled = hardFailures.filter(f => !handled.has(f.node_id))
+      if (unhandled.length > 0) {
         await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
-        return { status: 'needs_diagnosis', hardFailures }
+        // A usable QA verdict blocks its obligation and successors, not unrelated
+        // branches. Infrastructure/authority/policy failures still stop the run.
+        if (unhandled.some(f => !qaReportUsable(f))) {
+          return { status: 'needs_diagnosis', hardFailures }
+        }
+        for (const failure of unhandled) {
+          blockedFailures.set(failure.node_id, failure)
+          const loop = repairLoopFor(repair.loops, failure.node_id)
+          if (loop) repair.open.set(failure.node_id, loop)
+        }
       }
     }
     // Checked after routing, never instead of it: a repair opened for one node cannot
@@ -654,6 +947,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     if (outcomes.some(result => result && result.iteration_repair_stopped)) return { status: 'iteration_repair_stopped' }
   }
   const remaining = dag.nodes.filter(n => !done.has(n.node_id))
+  if (blockedFailures.size > 0) {
+    return { status: 'needs_diagnosis', hardFailures: [...blockedFailures.values()] }
+  }
   if (remaining.length > 0 && repair.open.size > 0) {
     // The repair budget is spent and the QA node still has not passed.
     const hardFailures = [...repair.open].map(([qaNodeId, loop]) => ({

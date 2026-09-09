@@ -16,6 +16,7 @@ import pytest
 from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, confirm_plan, gate, project,
                                    publish_contract, write)
 from .test_evidence_freshness import invoke as freshness_invoke
+from ..module_isolation import load
 
 WORKFLOW = ".allforai/bootstrap/workflow.json"
 NODE = "deliver-export"
@@ -237,8 +238,7 @@ def test_retained_legacy_node_keeps_gate_behavior_without_invented_provenance(tm
 
 def test_legacy_workflow_without_any_declaration_keeps_freshness_out_of_the_gate(tmp_path):
     from .test_validate_unattended_readiness import _minimal_project
-    sys.path.insert(0, str(REPO / "claude/meta-skill/scripts/orchestrator"))
-    from check_artifacts import check_node_artifacts
+    check_node_artifacts = load("check_artifacts").check_node_artifacts
     _minimal_project(tmp_path)
     write(tmp_path, ".allforai/game-design/design.json", {"status": "passed"})
     workflow = json.loads((tmp_path / WORKFLOW).read_text())
