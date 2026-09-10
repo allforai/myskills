@@ -76,3 +76,30 @@ def test_a_stale_build_entry_is_refused_at_gate_time(gate_project):
     assert write_entry(run, draft, gate_project, node, "compile-verify")[1] == ""
     (gate_project / "app.py").write_text("print(2)\n")
     assert "构建标识不匹配" in entries_reason(run, gate_project, node)
+
+
+@pytest.mark.parametrize("capability, run_name, output", [
+    ("spec-compliance-verify", "spec-compliance", '{"endpoints": {"declared": 20, "present": 20, "drifted": []}}\n'),
+    ("security-verify", "security-verify", '{"decisions_checked": 6, "missing": []}\n'),
+    ("pipeline-closure-verify", "pipeline-closure", '{"pipelines": [{"id": "checkout", "status": "complete"}]}\n'),
+])
+def test_contract_gates_write_contract_entries(gate_project, capability, run_name, output):
+    run = gate_project / ".allforai" / run_name
+    node = capability + "-1"
+    draft = _gate_draft(run, node, "contract", capability + " 的比对在真实树上做了吗？", output, suffix=".json")
+    entry, reason = write_entry(run, draft, gate_project, node, capability)
+    assert reason == "", reason
+    assert entry["medium"] == "contract" and "served_by" not in entry
+    assert entry["author"]["capability"] == capability
+    assert entries_reason(run, gate_project, node) == ""
+
+
+def test_a_contract_entry_whose_diff_was_not_captured_is_refused(gate_project):
+    run = gate_project / ".allforai/spec-compliance"
+    node = "spec-compliance-verify-1"
+    d = run / "evidence" / node / "q01"; d.mkdir(parents=True)
+    (d / "diff.png").write_bytes(b"\x89PNG")
+    draft = {"q": "比对做了吗？", "facet": "F1", "medium": "contract", "verdict": "done",
+             "evidence": {"dir": "evidence/%s/q01/" % node, "key_observation": "x"}}
+    _, reason = write_entry(run, draft, gate_project, node, "spec-compliance-verify")
+    assert "机械门证据无输出文件" in reason
