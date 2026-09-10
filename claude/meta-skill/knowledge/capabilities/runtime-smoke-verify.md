@@ -147,7 +147,9 @@ the node must not author and refuses a draft that fails; `check_evidence.py --en
   `evidence/<node_id>/<module_id>/`) holding the screenshot, the network log and the launch exit
   code the "What the node does" step 4 records; `evidence.key_observation` names the first API call
   and its status.
-- `served_by` names where the artifact's own requests went: `host`, `process` (the launched binary,
+- `served_by` The node also returns the same `served_by` inside its `verification` result to the run
+  engine; the engine does not count a runtime claim without it. `served_by` names where the artifact's
+  own requests went: `host`, `process` (the launched binary,
   simulator app or served build, never a test runner) and `mock_layers`. This node does not mock
   (Implementation notes), so a non-empty `mock_layers` is a finding in itself: such an entry may be
   `gap` or `unprovable`, never `done` (`经 mock 层（…）的 runtime 不能判 done`). `fixtures` lists any

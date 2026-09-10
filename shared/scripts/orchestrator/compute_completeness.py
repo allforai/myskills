@@ -40,9 +40,17 @@ def _response_text(entry, base_dir):
     return response_text(ev if os.path.isabs(ev) else os.path.join(base_dir, ev))
 
 
+# a runtime method exercises the product; the node must say where its requests went. real-test is a
+# suite run — a mechanical gate — and needs no destination.
+RUNTIME_METHODS = ("real-run", "real-api", "db-query", "screenshot")
+
+
 def hollow_reason(entry, base_dir="."):
     """Why a green entry may not count, in cross-exam's words; "" when it may."""
     served = _served_by(entry)
+    method = (entry.get("verification") or {}).get("method")
+    if method in RUNTIME_METHODS and not served:
+        return "runtime 节点未报请求去向 served_by（host / process / mock_layers），不计 verified"
     layers = served.get("mock_layers")
     if isinstance(layers, list) and layers:
         return "经 mock 层（" + ", ".join(map(str, layers)) + "）的 runtime 不能判 done"

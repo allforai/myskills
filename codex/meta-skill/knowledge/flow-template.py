@@ -1616,6 +1616,21 @@ than changing sources.
 """
 
 
+RUNTIME_METHODS = ("real-run", "real-api", "db-query", "screenshot")
+
+
+def runtime_verification_reason(result):
+    """A runtime method must say where its requests went; a claim without served_by is not verified."""
+    v = result.get("verification") or {}
+    if v.get("method") not in RUNTIME_METHODS:
+        return ""
+    sb = v.get("served_by")
+    if not isinstance(sb, dict) or not isinstance(sb.get("host"), str) or not isinstance(sb.get("process"), str) \
+            or not isinstance(sb.get("mock_layers"), list):
+        return "runtime verification without served_by (host / process / mock_layers): the node did not say where its requests went"
+    return ""
+
+
 def build_prompt(node_id: str, goal: str, finalize_evidence: bool = False) -> str:
     if finalize_evidence:
         return f"""Continue the generated workflow autonomously.

@@ -149,11 +149,22 @@ def test_hollowness_report_no_longer_downgrades_anything(tmp_path):
     report.write_text(json.dumps({"hollow_nodes": [{"node_id": "orders", "type": "fake_success",
                                                      "downgrade_to": "unverified"}]}))
 
-    r = compute_completeness(_workflow(_entry("orders", ev)), str(tmp_path))
+    served = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+    r = compute_completeness(_workflow(_entry("orders", ev, served)), str(tmp_path))
 
     assert (r["verified"], r["unverified"]) == (1, 0), r
     assert "hollow" not in json.dumps(r)
 
 
-def test_hollow_reason_is_empty_without_served_by():
-    assert hollow_reason({"status": "completed", "verification": {"method": "real-run"}}) == ""
+def test_a_runtime_claim_without_served_by_is_not_verified():
+    """Nothing asked the node where its requests went, so nothing can say they went to the real thing."""
+    for method in ("real-run", "real-api", "db-query", "screenshot"):
+        entry = {"node_id": "n", "verification": {"method": method, "evidence_path": "e.json"}}
+        reason = hollow_reason(entry)
+        assert "served_by" in reason and "不计 verified" in reason, (method, reason)
+
+
+def test_a_suite_run_and_a_generated_only_node_need_no_served_by():
+    # real-test is a mechanical run; none never counted anyway
+    for method in ("real-test", "none"):
+        assert hollow_reason({"node_id": "n", "verification": {"method": method}}) == ""

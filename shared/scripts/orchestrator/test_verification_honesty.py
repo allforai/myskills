@@ -95,8 +95,10 @@ class TestComputeCompleteness(unittest.TestCase):
     def test_mixed_counts_and_pct(self):
         with tempfile.TemporaryDirectory() as d:
             _capture(os.path.join(d, "ev.json"))
+            served = {"host": "localhost:3000", "process": "node", "mock_layers": []}
             tl = [
-                {"node": "a", "status": "completed", "verification": _verif(evidence_path="ev.json")}, # verified
+                {"node": "a", "status": "completed",
+                 "verification": dict(_verif(evidence_path="ev.json"), served_by=served)},             # verified
                 {"node": "b", "status": "completed", "verification": {"method": "none"}},              # unverified
                 {"node": "c", "status": "failed"},                                                     # failed
                 {"node": "d", "status": "completed", "verification": _verif(evidence_path="gone.txt")},# unverified (missing)
