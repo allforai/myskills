@@ -100,6 +100,16 @@ Do not mix ledgers, verdicts, or loops.
    （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开；
    续接时读旧 ledger 的 `open_threads` 作为起手牌候选。
 6. 使用 `ledger_store.py` 加锁并初始化/载入 `ledger.json`（schema 见 `$ROOT/schemas.md`），新 run 写 `ledger_version: 2`。
+7. **作者证据入账（有则读，无则跳过）**：交付流水线（meta-skill `/run` 的 product-verify / runtime-smoke-verify /
+   test-verify 等门）在目标项目 `.allforai/<gate>/evidence-entries/<node_id>.json` 留下带 `author` 标记的 ledger 形条目时，
+   读进本 run：每条的证据目录复制到 `evidence/author/<node_id>/…`，条目字段**原样**入账（`author`、`build`、`build_excludes`、
+   `build_artifacts`、`probed_at`、`medium`、`verdict`、`served_by`、`readback`、`images`、`image_digests` 一个都不改——改了
+   引擎就核不过），只把 `evidence.dir` 改指副本，并由你补 `q` 与 `facet`（定面后归到它触及的面）。采信规则写死在渲染器
+   （见 schemas.md 的 `author`）：**机械介质**（`build` / `test` / `contract`）经引擎核过 build、摘要、readback 后作**门**——
+   报告标"作者证据"，bias-guard 对每条生效；**`runtime` 等其它介质永远不采信**，只作上下文摆给你看，对应的问题照派独立
+   实测官；**没有实测官 entry 的问题按无法自证入账**——作者写的任何东西都关不掉一个裁决。核不过的（build 不是此刻的树、
+   摘要过期、缺 readback、probed_at 无偏移、标记不全）按引擎的理由拒渲点名。读作者证据是为了少重跑构建与测试、知道作者
+   看过哪些运行时问题，不是为了少派实测官。
 
 ## 1. 定面（facet map）
 
@@ -274,4 +284,4 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 操作面 K 个，裁决触及 T 个，未触及逐个点名"、
 旅程完成度（每条走通 N 步或卡在第 K 步加卡死类型）、缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、缺陷模式（patterns：每类
 "共 N 位点，实证 M，未查 K"，未查位点逐个点名）、未拉的线（open_threads，
-续盘接手点）——**没有编造的总百分比**。
+续盘接手点）、作者证据（如有：机械门"门通过 / 门未通过"与同问有无独立实测，runtime 只作上下文）——**没有编造的总百分比**。

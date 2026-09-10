@@ -62,6 +62,19 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
       "requirement_refs": ["R-09"],
       "requirement_ref": "R-09（旧字段，可选）",
       "severity": "high|medium|low（仅 gap|drift；done/unprovable 不带）"
+    },
+    {
+      "q": "测试套件在真后端下过吗？",
+      "facet": "F1",
+      "medium": "test",
+      "verdict": "done",
+      "probed_at": "2026-09-10T09:12:08+08:00",
+      "build": "<commit>-<snapshot 摘要前 16 位>[-<产物摘要前 16 位>]",
+      "build_excludes": [".allforai", ".claude", ".codex"],
+      "build_artifacts": ["dist"],
+      "readback": {"runner": "pytest 8.2.0", "selected": "142 tests"},
+      "evidence": {"dir": "evidence/author/test-verify-1/", "key_observation": "142 passed（capture_evidence/v1 记录）"},
+      "author": {"pipeline": "meta-skill/run", "node_id": "test-verify-1", "capability": "test-verify"}
     }
   ],
   "journeys": [
@@ -126,6 +139,23 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 - 顶层可选 `examiner_is_author`：盘问官==交付作者时为 true，渲染器在总览点明"作者自审，
   bias-guard 生效"，续盘时该条件不丢。**没写也躲不掉**：渲染器查 run 目录所在仓库，当前 git 用户是最近 50 次
   提交的作者之一而 ledger 未标，总览照样点明"按作者自审处理"——自审是事实，不是申报项。
+- `entries[].author`（可选；交付流水线写的条目才有）：`{"pipeline", "node_id", "capability"}` 三键非空字符串，是作者标记——
+  meta-skill `/run` 的 `capture_evidence.py entry` 写入的就是这个字段。带此标记的 entry 走另一条采信路，写死在渲染器：
+  - 先过引擎的条目形状（`entry_reason`：介质、裁决、`build`、带偏移的 `probed_at`、run 下非空证据目录、介质内容门、
+    `served_by`、`readback` 形状、`images` / `image_digests` 摘要），再核三条作者独有的：标记齐全；`readback` 非空
+    （工具自己报的运行对象——runner 与用例数、编译器与目标、契约文件版本——和应用读回同理）；`build` 是 run 目录所在仓库
+    **此刻**的树（按 entry 的 `build_excludes` 加本 run 目录排除后由引擎重算；`build_excludes` 只能是宿主隐藏目录如
+    `.allforai`，产品路径一律拒）。核不过的按引擎的理由拒渲点名（`构建标识不匹配`、`截图内容摘要不匹配`、
+    `probed_at 缺时区偏移`、`作者证据缺读回 readback`、`作者标记不完整`…）。
+  - **机械介质**（`build` / `test` / `contract`，证据目录里须有捕获输出文件）核过即**采信为门**：报告"作者证据"专节标
+    "门通过 / 门未通过"、谁写的、哪个 build。门不是裁决：同一 `q` 有被采信的实测官 entry 时以实测官裁决为准，门只作旁证；
+    **没有**实测官 entry 的机械门按**无法自证**入账并写明"作者证据只作门，裁决须独立实测官取证"——它进无法自证计数与逐面，
+    不触及操作面、不算需求裁决、不占 G 号。
+  - **`runtime`（截图、旅程、served_by 观察）及 code / ledger 等其它介质永远不采信**：只在"作者证据"专节作上下文摆给盘问官
+    看（并标同一问有无独立实测），不进任何计数，其所在面没有实测官 entry 照进"未盘问声明"——每个运行时问题仍由 fresh-context
+    实测官取证。
+  - bias-guard 对每条作者证据生效：总览点明作者证据的来源、门与上下文各几条。作者写的任何东西都关不掉一个裁决
+    （done / gap / drift）。
 - `facets[].risk` 可选，只对 `not_examined` 面有意义：渲染器按 level 排序未盘问声明并打印 why；
   缺 risk 的未盘问面排在最后并标"未评估风险"。
 - `evidence.dir` 相对 run 目录；**每个 entry 必有非空 evidence 目录**（spec §6.6）：
@@ -180,6 +210,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因，逐步状态列表）→ 缺口清单（gap+drift 按 severity 排；普通缺口行首带 `[G1]`——G 号由渲染器按 ledger 里 entries 的先后顺序编，不按严重度，续盘只追加不重排所以稳定，被拒渲的不占号；旅程 gap 行首带 `[J1]`，不占 G 号。product-review 的 `depends_on` 引用的就是 G/J 号）→
 无法自证清单 → 未盘问声明（not_examined 面与未盘问旅程，按 risk 同列）→ 未拉的线（open_threads）→
 缺陷模式（patterns：每类"共 N 位点，实证 M，未查 K"，未查位点逐个点名）→
+作者证据（如有：机械门逐条"门通过 / 门未通过"与同问有无独立实测，runtime 等其它介质逐条"仅上下文"）→
 拒渲声明（如有）。
 
 ## 诚实性红线（写死在 render_report.py，不是嘱咐）
@@ -207,3 +238,6 @@ N 步 / 卡在第 K 步加卡死类型 / 绕过的 waypoint / 无法自证原因
 7. 覆盖没有自报通道：facet 的"盘过"按被采信 entry 推导；操作面的"触及"只认被采信 entry 引用的、
    且在 `surfaces[]` 登记过的 id；需求的"有裁决"只认被采信 entry 的引用。零证据的面、未登记的
    面 id、没人引用的需求，一律渲染为未盘问 / 未触及 / 无裁决并逐个点名，不进任何计数。
+8. 作者证据（带 `author` 标记的 entry）没有裁决通道：机械介质（build / test / contract）核过引擎与此刻的构建标识才作门，
+   `runtime` 永远只作上下文；同一问没有实测官 entry 的门按无法自证入账并写明原因——作者写的任何东西都关不掉一个
+   done / gap / drift。

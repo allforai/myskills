@@ -5,7 +5,7 @@ from datetime import datetime
 from unittest import mock
 
 import evidence
-from evidence import (PROBE_WINDOW_TOLERANCE, artifact, bindings_reason, content_reason, entry_reason,
+from evidence import (GATE_MEDIA, PROBE_WINDOW_TOLERANCE, artifact, bindings_reason, content_reason, entry_reason,
                       evidence_dir, images_reason, parse_time, probe_window, probe_window_reason,
                       probed_at_reason, readback, readback_reason, ref_digest_reason, served_by_reason)
 
@@ -286,6 +286,18 @@ def test_entry_shape_admits_a_complete_runtime_entry(tmp_path):
     code = _entry(medium='code')
     run = _run(tmp_path / 'c', code, {'q01-excerpt.md': 'src/a.ts:1 x'})
     assert entry_reason(code, run) == ''
+
+
+def test_mechanical_media_need_a_captured_output(tmp_path):
+    # build results, test runs and contract diffs are the media an author's evidence may gate on (#60):
+    # the entry shape admits them, and their content is a captured output, never a note that it passed
+    assert GATE_MEDIA == ('build', 'test', 'contract')
+    for medium in GATE_MEDIA:
+        run = _run(tmp_path / medium, _entry(medium=medium), {'pytest.json': '{"exit_code": 0}'})
+        assert entry_reason(_entry(medium=medium), run) == ''
+    run = _run(tmp_path / 'png', _entry(medium='test'), {'green.png': b'\x89PNG'})
+    assert content_reason(_entry(medium='test'), run) == '机械门证据无输出文件（构建 / 测试 / 契约比对的捕获输出）'
+    assert entry_reason(_entry(medium='test'), run) == '机械门证据无输出文件（构建 / 测试 / 契约比对的捕获输出）'
 
 
 def test_entry_shape_refuses_by_name(tmp_path):

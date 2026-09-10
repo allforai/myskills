@@ -39,7 +39,10 @@ loads its own siblings; nothing here is on `sys.path`.
   unreadable times) for a consumer whose report pins its own sentence; `probe_window_reason` is the
   canonical sentence. Both take an optional `read_mtime` reader so a consumer's tests can replace theirs.
 - **The ledger-entry shape** (`entry_reason`): medium, verdict, build, `probed_at` with an offset, a real
-  evidence directory under the run, served_by, readback and digest-bound images, refused by name.
+  evidence directory under the run, served_by, readback and digest-bound images, refused by name. Media are
+  a probe's (`MEDIA`: runtime, code, ledger) or a mechanical gate's (`GATE_MEDIA`: build, test, contract —
+  whose content is a captured output); which of them an author's entry may gate on is cross-exam's rule (#60),
+  the shape is this one.
 
 Every check returns `''` or the refusal reason; none raises on a malformed entry. Reason strings are the ones
 cross-exam prints today, so a case moved here keeps its assertion.

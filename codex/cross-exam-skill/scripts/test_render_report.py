@@ -1142,3 +1142,167 @@ class TestFrozenRunRendersByteIdentically(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             report = render(self._frozen_run(tmp))
         self.assertEqual(report, self.GOLDEN.read_text(encoding="utf-8"))
+
+
+class TestAuthorEvidence(unittest.TestCase):
+    """作者证据（交付流水线写的 entry，带 author 标记，#60）：机械介质核过引擎才作门，runtime 只作上下文，
+    任何裁决都不能只靠作者——没有独立实测官 entry 的问题按无法自证入账。"""
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+    AUTHOR = {"pipeline": "meta-skill/run", "node_id": "test-verify-1", "capability": "test-verify"}
+    HOST_DIRS = [".allforai", ".claude", ".codex"]
+    RUN = "docs/cross-exam/2026-09-10-demo"
+    SERVED = {"host": "localhost:3000", "process": "node next dev", "mock_layers": []}
+    PROBED_AT = "2026-09-07T10:00:00+08:00"
+
+    @staticmethod
+    def _git(repo, *args):
+        import subprocess
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        env.update(GIT_AUTHOR_NAME="a", GIT_AUTHOR_EMAIL="a@b", GIT_COMMITTER_NAME="a", GIT_COMMITTER_EMAIL="a@b")
+        subprocess.run(["git", "-C", str(repo), "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
+                       check=True, capture_output=True, env=env)
+
+    def _author(self, q, medium="test", verdict="done", **extra):
+        e = {"q": q, "facet": "F1", "medium": medium, "verdict": verdict, "probed_at": self.PROBED_AT,
+             "author": dict(self.AUTHOR), "build_excludes": list(self.HOST_DIRS),
+             "readback": {"runner": "pytest 8.2.0", "selected": "142 tests"},
+             "evidence": {"dir": "evidence/author/test-verify-1/", "key_observation": "142 passed"}}
+        if medium == "runtime":
+            e["served_by"] = dict(self.SERVED)
+        if verdict in ("gap", "drift"):
+            e["severity"] = "medium"
+        e.update(extra)
+        return e
+
+    def _prober(self, q, verdict="done"):
+        e = _entry(q, verdict=verdict, severity="medium" if verdict in ("gap", "drift") else None)
+        e.update(probed_at="2026-09-07T10:05:00+08:00", served_by=dict(self.SERVED))
+        return e
+
+    def _run(self, tmp, entries, files=None, dirty=None):
+        """A committed target repo with the cross-exam run inside it. Author entries get the build of the tree
+        as the pipeline saw it (host dirs excluded, the run dir not yet there); `dirty` edits the tree after."""
+        repo = Path(tmp)
+        repo.mkdir(parents=True, exist_ok=True)
+        (repo / "app.py").write_text("print(1)\n", encoding="utf-8")
+        self._git(repo, "init", "-q")
+        self._git(repo, "add", ".")
+        self._git(repo, "commit", "-q", "-m", "one")
+        identity = render_report._identity.build_identity(repo, (), self.HOST_DIRS)["build"]
+        run = repo / self.RUN
+        files = {"author/test-verify-1/pytest.json": '{"exit_code": 0, "passed": 142}', "q1/note.txt": "evidence",
+                 "q1/q01-home.png": b"\x89PNG", **(files or {})}
+        for rel, body in files.items():
+            if body is None:   # a default file the case does without
+                continue
+            p = run / "evidence" / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(body if isinstance(body, bytes) else body.encode("utf-8"))
+        for e in entries:
+            if "author" in e:
+                e.setdefault("build", identity)
+        if dirty:
+            (repo / "app.py").write_text(dirty, encoding="utf-8")
+        (run / "ledger.json").write_text(json.dumps({
+            "ledger_version": 2, "target": "demo", "baseline": "spec", "started": "2026-09-10",
+            "facets": self.FACETS, "entries": entries}, ensure_ascii=False), encoding="utf-8")
+        return run
+
+    def test_mechanical_author_entry_is_a_gate_labelled_author_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._run(tmp, [self._prober("测试套件在真后端下过吗？"), self._author("测试套件在真后端下过吗？")])
+            report = render(run)
+            self.assertIn("## 作者证据", report)
+            self.assertIn("- **门通过** [F1] 测试套件在真后端下过吗？ — 142 passed（meta-skill/run · test-verify-1 · test-verify · 介质 test", report)
+            self.assertIn("· 独立实测：实证完成", report)
+            self.assertIn("bias-guard 对每条作者证据生效", report)
+            self.assertIn("实证完成：1（运行时 1 · 代码 0 · 台账 0） · 缺口：0 · 跑偏：0 · 无法自证：0", report)
+            self.assertNotIn("违规裁决", report)
+
+    def test_author_runtime_evidence_is_context_and_the_question_still_needs_a_prober(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            screenshot = lambda: self._author("首页在真后端下能渲染吗？", medium="runtime",
+                                              evidence={"dir": "evidence/author/product-verify-1/", "key_observation": "首页渲染"})
+            run = self._run(tmp, [screenshot()], files={"author/product-verify-1/home.png": b"\x89PNG"})
+            report = render(run)
+            self.assertIn("- **仅上下文** [F1] 首页在真后端下能渲染吗？ — 首页渲染（meta-skill/run · test-verify-1 · test-verify · 介质 runtime", report)
+            self.assertIn("· 待独立实测官取证", report)
+            self.assertIn("实测 0 问", report)
+            self.assertIn("实证完成：0 · 缺口：0 · 跑偏：0 · 无法自证：0", report)
+            self.assertIn("- 面一（F1）— 未盘问，不计入任何完成度", report)
+            self.assertNotIn("违规裁决", report)
+            # a prober on the same question is the verdict; the author screenshot stays context beside it
+            run = self._run(tmp + "/again", [self._prober("首页在真后端下能渲染吗？", verdict="gap"), screenshot()],
+                            files={"author/product-verify-1/home.png": b"\x89PNG"})
+            report = render(run)
+            self.assertIn("· 独立实测：缺口", report)
+            self.assertIn("缺口：1", report)
+            self.assertIn("[G1]", report)
+
+    def test_author_code_excerpt_is_context_not_a_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._run(tmp, [self._author("幂等键在哪？", medium="code")],
+                            files={"author/test-verify-1/pytest.json": "src/api/refund.ts:42 if (order.refunded) return 409"})
+            report = render(run)
+            self.assertIn("- **仅上下文** [F1] 幂等键在哪？", report)
+            self.assertNotIn("门通过", report)
+
+    def test_no_verdict_rests_on_author_entries_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._run(tmp, [self._author("测试套件在真后端下过吗？")])
+            report = render(run)
+            self.assertIn("实证完成：0 · 缺口：0 · 跑偏：0 · 无法自证：1", report)
+            line = ("- **无法自证** [作者证据] [F1] 测试套件在真后端下过吗？ — 142 passed（证据：evidence/author/test-verify-1/）"
+                    " · 作者证据只作门（test 门通过），裁决须独立实测官取证")
+            self.assertIn(line, report)
+            self.assertIn(line, report.split("## 无法自证清单")[1].split("## ")[0])
+            self.assertIn("· 未独立实测，按无法自证入账", report)
+            self.assertIn("盘问 0 面（另 1 面仅无法自证）", report)
+            # a failed gate cannot close a gap either
+            run = self._run(tmp + "/gap", [self._author("测试套件在真后端下过吗？", verdict="gap")])
+            report = render(run)
+            self.assertIn("缺口：0 · 跑偏：0 · 无法自证：1", report)
+            self.assertIn("- **门未通过** [F1]", report)
+            self.assertNotIn("[G1]", report)
+
+    def test_unverifiable_author_evidence_is_refused_by_name(self):
+        cases = [
+            ({"images": ["pytest.json"], "image_digests": {"pytest.json": "stale"}}, None, None, "截图内容摘要不匹配: pytest.json"),
+            ({}, None, "print(2)\n", "构建标识不匹配：记录 "),
+            ({"build": "deadbeef-0000000000000000"}, None, None, "构建标识不匹配：记录 deadbeef-0000000000000000，当前 "),
+            ({"readback": {}}, None, None, "作者证据缺读回 readback"),
+            ({"readback": None}, None, None, "作者证据缺读回 readback"),
+            ({"probed_at": "2026-09-07T10:00:00"}, None, None, "probed_at 缺时区偏移（如 +08:00）"),
+            ({"author": {"pipeline": "meta-skill/run"}}, None, None, "作者标记不完整（pipeline / node_id / capability）"),
+            ({"build_excludes": [".allforai", "src"]}, None, None, "构建标识排除范围只能是宿主隐藏目录（如 .allforai）: src"),
+            ({}, {"author/test-verify-1/pytest.json": None, "author/test-verify-1/green.png": b"\x89PNG"}, None,
+             "机械门证据无输出文件（构建 / 测试 / 契约比对的捕获输出）"),
+        ]
+        for extra, files, dirty, reason in cases:
+            with tempfile.TemporaryDirectory() as tmp:
+                run = self._run(tmp, [self._author("测试套件在真后端下过吗？", **extra)], files=files, dirty=dirty)
+                report = render(run)
+                self.assertIn("## 违规裁决", report, reason)
+                self.assertIn("测试套件在真后端下过吗？（" + reason, report)
+                self.assertIn("无法自证：0", report)
+                self.assertNotIn("## 作者证据", report)
+
+    def test_author_build_is_recomputed_without_the_run_directory_the_examiner_writes(self):
+        # the run dir did not exist when the pipeline took the identity; the examiner's own ledger and
+        # evidence must not turn every author entry stale
+        with tempfile.TemporaryDirectory() as tmp:
+            run = self._run(tmp, [self._author("测试套件在真后端下过吗？")])
+            (run / "notes.md").write_text("盘问官的笔记", encoding="utf-8")
+            self.assertIn("- **门通过** [F1]", render(run))
+
+    def test_run_outside_a_repository_refuses_author_evidence_with_the_engine_reason(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = self._author("测试套件在真后端下过吗？", build="abc-clean")
+            run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
+            d = run / "evidence/author/test-verify-1"
+            d.mkdir(parents=True)
+            (d / "pytest.json").write_text('{"exit_code": 0}', encoding="utf-8")
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            ledger["ledger_version"] = 2
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            self.assertIn("测试套件在真后端下过吗？（不是 git 仓库或没有提交: ", render(run))

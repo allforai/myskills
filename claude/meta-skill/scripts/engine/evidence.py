@@ -15,6 +15,9 @@ IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg'}
 OUTPUT_SUFFIXES = {'.txt', '.log', '.json', '.md'}
 PROBE_WINDOW_TOLERANCE = 120   # 秒：实测官最后一次写证据与 transcript 收尾落盘之间容许的偏差
 MEDIA = ('runtime', 'code', 'ledger')
+# 机械介质：构建结果、测试运行、契约比对——输出由工具决定，不由写它的人决定。作者（交付流水线）写的条目只能以
+# 这些介质作门；runtime 从来不是门（#60）。
+GATE_MEDIA = ('build', 'test', 'contract')
 VERDICTS = ('done', 'gap', 'drift', 'unprovable')
 SEGMENT_SPLIT = re.compile(r'[+/,;]')
 TOKEN_SPLIT = re.compile(r'[\s+/,;]+')
@@ -142,6 +145,8 @@ def content_reason(entry, run_dir):
         if isinstance(wanted, list) and wanted and len(files) < len(wanted):
             return '要求 %d 个状态只落了 %d 个文件' % (len(wanted), len(files))
         return served_by_reason(entry)
+    if medium in GATE_MEDIA and not any(f.suffix.lower() in OUTPUT_SUFFIXES for f in files):
+        return '机械门证据无输出文件（构建 / 测试 / 契约比对的捕获输出）'
     return ''
 
 
@@ -267,12 +272,12 @@ def images_reason(holder, evidence_dir):
 # --- the ledger-entry shape ---
 
 def entry_reason(entry, run_dir):
-    """The shape every evidence entry shares, whoever wrote it: a legal medium and verdict, a build identity,
+    """The shape every evidence entry shares, whoever wrote it: a legal medium (a probe's or a mechanical gate's) and verdict, a build identity,
     probed_at with an offset, a real evidence directory under the run, content that looks like a probe,
     served_by for runtime, a well-formed readback and bound images. '' admits; anything else names the rule."""
     if not isinstance(entry, dict):
         return '条目须是对象'
-    if entry.get('medium') not in MEDIA:
+    if entry.get('medium') not in MEDIA + GATE_MEDIA:
         return '非法介质: %s' % entry.get('medium')
     if entry.get('verdict') not in VERDICTS:
         return '非法裁决：%s' % entry.get('verdict')
