@@ -558,6 +558,7 @@ If total nodes > 30, offer phased `/bootstrap` → `/run` cycles in Step 3.4.
   "project": "<project name>",
   "goals": ["<user-selected goal codes, e.g. 'analyze', 'translate', 'quality-checks'>"],
   "planned_at": "<ISO timestamp>",
+  "user_steps": ["/cross-exam", "/product-review"],
   "nodes": [
     {
       "node_id": "<project-specific name>",
@@ -637,6 +638,7 @@ When writing each node into `workflow.json`, add:
 
 At the top level of `workflow.json`, add:
 - `expanders`: the list of project-local expander scripts that apply (e.g. `["expand_game_2d_production.py"]`), promoting today's hardcoded invocation to a declared list.
+- `user_steps`: the entries the user types after the pipeline, in order — `["/cross-exam", "/product-review"]` on every workflow the suppress rules do not exempt (`bootstrap-planning.md` §After the pipeline). Never nodes: no engine dispatches them, and a node named after either is refused at the run boundary (`verdict_entry_planned_as_node`).
 
 **`human_gate` is not a runtime concept.** Direction decisions are Phase A
 `decision_inputs` artifacts. See `docs/adr/0001-bootstrap-free-planning.md`.
@@ -677,6 +679,9 @@ Bootstrap 完成。
 
 规划了 {N} 个节点：
   {list each node id + goal}
+
+流水线之后由你手动执行（不是节点，/run 不会调度）：
+  {workflow.json.user_steps in order, e.g. /cross-exam → /product-review；被 suppress 规则豁免时写"无"并说明原因}
 
 确认正确吗？
 ```
@@ -860,6 +865,15 @@ Bootstrap 完成。
   /run 逆向分析
   /run 复刻到 SwiftUI
   /run 代码治理
+
+/run 全部完成后，由你依次执行（用户步骤，不是节点）：
+  /cross-exam       独立取证：交付是否真的完成
+  /product-review   产品评审：交付是否有用、可售
+顺序依据 myskills CLAUDE.md《Which entry for which situation》：先问"做完了吗"，再问"做得好吗"。
 ```
+
+Print the two user steps exactly as `workflow.json.user_steps` lists them. When the
+suppress rules exempt the project (CLI, library-sdk: no UI, no product to examine), print
+`无后续用户步骤：{reason}` in their place instead of dropping the block silently.
 
 ---

@@ -550,3 +550,58 @@ def test_a_missing_repair_ledger_does_not_block_readiness(tmp_path):
     codes = [b["code"] for b in report["blockers"]]
     assert "unreconciled_repair_accounting" not in codes, report
     assert report["status"] == "ready", report
+
+
+# ADR-0008: `/cross-exam` and `/product-review` are user steps after the pipeline, never
+# nodes. A generated workflow lists them at the top level in `user_steps`, where no engine
+# reads them as work; a node that plans either is refused by name at the run boundary.
+def _design_node(**overrides):
+    node = {"node_id": "design", "goal": "design", "capability": "game-design",
+            "human_gate": True,
+            "approval_record_path": ".allforai/game-design/approval-records.json",
+            "exit_artifacts": [{"path": ".allforai/game-design/design.json"}]}
+    node.update(overrides)
+    return node
+
+
+def _with_workflow(tmp_path, workflow):
+    _minimal_project(tmp_path)
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
+
+
+@pytest.mark.parametrize("field, value", [
+    ("node_id", "cross-exam"), ("node_id", "product-review"),
+    ("node_id", "Cross_Exam"), ("node_id", "final-product-review"),
+    ("capability", "cross-exam"), ("capability", "product-review"),
+])
+def test_a_node_named_after_a_verdict_entry_is_refused_by_name(tmp_path, field, value):
+    node = _design_node(**{field: value})
+    _with_workflow(tmp_path, {"nodes": [node]})
+    _write(tmp_path, f".allforai/bootstrap/node-specs/{node['node_id']}.md", "non interactive work")
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    blocker = next(b for b in report["blockers"] if b["code"] == "verdict_entry_planned_as_node")
+    assert blocker["node_id"] == node["node_id"]
+    assert "user step" in blocker["message"] and "user_steps" in blocker["message"], blocker
+
+
+def test_user_steps_after_the_pipeline_are_admitted_and_never_scheduled(tmp_path):
+    _with_workflow(tmp_path, {"nodes": [_design_node()],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "ready", report
+    assert report["blockers"] == []
+
+
+@pytest.mark.parametrize("user_steps", ["/cross-exam", {"entry": "/cross-exam"}, [1], [""], [None]])
+def test_user_steps_that_name_no_entry_are_refused_with_a_reason(tmp_path, user_steps):
+    _with_workflow(tmp_path, {"nodes": [_design_node()], "user_steps": user_steps})
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    assert any(b["code"] == "invalid_user_steps" for b in report["blockers"]), report
