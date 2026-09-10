@@ -13,7 +13,8 @@ rather than inflating completeness — regardless of how the LLM behaves.
   failed      <- status failed
 
 Ledger-shaped entries (ADR-0008, #59): the runtime gates — product-verify,
-runtime-smoke-verify, test-verify — also write, beside their human reports,
+runtime-smoke-verify, test-verify and, over its screenshot manifest, visual-verify
+(#61, `check_visual_evidence.py`) — also write, beside their human reports,
 `<run>/evidence-entries/<node_id>.json` in cross-exam's ledger-entry shape. The
 shared engine (`engine/`, a sibling of this file) validates the shape; this module
 adds what only /run knows: the author marker, the build compared with the tree

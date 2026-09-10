@@ -18,6 +18,18 @@ def test_committed_mirrors_match():
     assert _load_sync().sync(check=True) == []
 
 
+def test_four_mirrors_sit_beside_their_engine():
+    """Every mirror is a sibling of an evidence engine mirror: matrix.py loads the engine from `../engine`,
+    so a mirror placed anywhere else would expand no inventory (#61 added the meta-skill ports)."""
+    module = _load_sync()
+    root = module.SOURCE.parents[1]
+    assert [t.relative_to(root).as_posix() for t in module.TARGETS] == [
+        'claude/superstorm/knowledge/cross-exam/visual', 'codex/cross-exam-skill/visual',
+        'claude/meta-skill/scripts/visual', 'codex/meta-skill/scripts/visual']
+    for target in module.TARGETS:
+        assert (target.parent / 'engine/evidence.py').is_file()
+
+
 def test_sync_ignores_tool_residue(tmp_path):
     # .pytest_cache/README.md and __pycache__/*.py sit inside the source tree after a test run;
     # they are not package files and must neither fail --check nor be copied into mirrors.
