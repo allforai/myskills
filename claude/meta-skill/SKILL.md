@@ -93,7 +93,7 @@ knowledge/
 | security-verify | Security design decisions vs implementation verification |
 | quality-checks | Dead links, field consistency, CRUD gaps |
 | visual-verify | Screenshot-based UI comparison |
-| concept-acceptance | Product experience vs original concept verification |
+| concept-acceptance | Coverage gate: every concept behaviour mapping has evidence or is named missing (no score, no verdict) |
 
 ### Post-Implementation
 | Capability | Purpose |

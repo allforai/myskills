@@ -376,16 +376,10 @@ def run_policy(root, request):
         event = request["event"]
         if event not in POLICY_OPTIONS:
             raise ValueError("Unknown run event requires a report, never a new unattended interview")
-        action = policy[event]
-        if event == "on_needs_iteration" and action == "auto_fix_once" and request.get("consume") is True:
-            state_path = ".allforai/bootstrap/run-policy-state.json"
-            state = _read(root, state_path, {})
-            if state.get("iteration_policy_consumed"):
-                action = "halt_with_report"
-            else:
-                state["iteration_policy_consumed"] = True
-                _write(root, state_path, state)
-        return {"status": "policy_action", "event": event, "action": action, "questions": []}
+        # A read, never a charge: the one repair `auto_fix_once` grants is an attempt the
+        # repair-authorization ledger charges against the gate's declared loop, so a
+        # second accounting here would either double-count it or hide it (ADR 0005).
+        return {"status": "policy_action", "event": event, "action": policy[event], "questions": []}
     return {"status": "run_policy_ready", "policy": policy, "questions": []}
 
 
@@ -1312,7 +1306,7 @@ if __name__ == "__main__":
     import sys
     try:
         request = ({"operation": "run-policy"} if sys.argv[2:] == ["--run-policy"] else
-                   {"operation": "run-event", "event": sys.argv[3], "consume": True} if len(sys.argv) == 4 and sys.argv[2] == "--policy-event"
+                   {"operation": "run-event", "event": sys.argv[3]} if len(sys.argv) == 4 and sys.argv[2] == "--policy-event"
                    else json.load(sys.stdin))
         result = session(Path(sys.argv[1]).resolve(), request)
         print(json.dumps(result, ensure_ascii=False))

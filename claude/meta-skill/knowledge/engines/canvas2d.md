@@ -64,7 +64,7 @@ unless the product concept explicitly excludes it:
 | `art-quality-qa` | generated/imported art | target-size readability and runtime asset binding |
 | `platform-build-*` | mobile target | iOS/Android build/simulator evidence, not only browser smoke |
 | `qa-repair-loop` | two or more QA nodes | read all QA reports, repair, rerun affected evidence |
-| `concept-acceptance` | production/launch/unattended | final weighted product acceptance against concept/art/runtime |
+| `concept-acceptance` | production/launch/unattended | coverage gate: every behaviour mapping in the concept has runtime evidence or is named as missing; no score, no verdict |
 
 The generated nodes should use project-specific names, but the graph shape must
 cover these families. If bootstrap cannot determine whether a family applies,

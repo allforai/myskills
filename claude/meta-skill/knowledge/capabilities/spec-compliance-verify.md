@@ -130,7 +130,7 @@ For each message type in protocol-spec.md:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `.allforai/spec-compliance/spec-compliance-report.json` | `summary.missing`, `summary.drifted` | concept-acceptance | required | Acceptance verdict requires knowing if spec gaps exist |
+| `.allforai/spec-compliance/spec-compliance-report.json` | `summary.missing`, `summary.drifted` | concept-acceptance | required | a mapping whose behaviour depends on a missing or drifted spec item has no evidence and is named in `missing_mappings[]` |
 | `.allforai/spec-compliance/spec-compliance-report.json` | `api_compliance.missing[]`, `db_compliance.missing_tables[]` | pipeline-closure-verify | optional | Pipeline closure can cross-reference spec gaps with flow gaps |
 | `.allforai/spec-compliance/spec-compliance-report.json` | `summary` | launch-prep | required | Launch prep needs overall compliance score before greenlight |
 

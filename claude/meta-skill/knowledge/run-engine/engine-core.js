@@ -78,7 +78,10 @@ const NODE_RESULT_SCHEMA = {
       } },
     summary: { type: 'string' },
     safety_warnings: { type: 'array', items: { type: 'string' } },
-    acceptance_verdict: { type: 'string' }
+    // The concept-acceptance coverage gate's output, copied verbatim from its report:
+    // every behaviour mapping the concept declares either has evidence or is named here.
+    // Empty means proceed. It renders no score and no verdict (ADR 0008).
+    missing_mappings: { type: 'array', items: { type: 'object' } }
   }
 }
 
@@ -330,7 +333,9 @@ function runNodePrompt(node, strict) {
     'Return a NODE_RESULT { node_id, outcome (passed|soft_fail|hard_fail), artifacts_written,',
     'blocking_findings: [{type, detail, suspected_root_node?}], assumed_decisions? }. Attach',
     'suspected_root_node when the root cause is in another node.',
-    'Return safety_warnings[] for non-blocking warnings and acceptance_verdict "needs_iteration" when concept-acceptance needs another pass.',
+    'Return safety_warnings[] for non-blocking warnings. When this node is the concept-acceptance coverage gate, return',
+    'missing_mappings[] copied verbatim from .allforai/concept-acceptance/acceptance-report.json — the behaviour mappings',
+    'with no evidence; an empty list means every mapping has evidence. Return no score, threshold or verdict.',
     'Product requirements can only come from recorded user decision_inputs; an unresolved product choice is a hard failure, never an assumed decision.',
     strict || ''
   ].filter(Boolean).join(' ')
@@ -509,7 +514,6 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
   const repairMax = node.repair_retry_max ?? 3
   let attempt = 0
   let repairAttempt = 0
-  let iterationRepair = false
   let strict = ''
   while (true) {
     const r = await agent(runNodePrompt(node, strict), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
@@ -523,20 +527,35 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
         blocking_findings: [{ type: 'safety_warning', detail: 'Recorded Run Policy requires halt' }] }
     }
     if (routeOutcome(r) === 'hard') return { ...r, outcome: 'hard_fail' }
-    if (r.acceptance_verdict === 'needs_iteration') {
+    if (r.acceptance_verdict !== undefined) {
+      // The coverage gate names missing behaviour mappings; it renders no verdict. A
+      // result that still carries one is a scored report, not this gate's output (ADR 0008).
+      return { ...r, outcome: 'hard_fail', blocking_findings: [{ type: 'invalid_artifact_gate',
+        detail: 'acceptance_verdict is a scored verdict; the concept-acceptance gate reports missing_mappings only' }] }
+    }
+    if (r.missing_mappings !== undefined && !Array.isArray(r.missing_mappings)) {
+      return { ...r, outcome: 'hard_fail', blocking_findings: [{ type: 'invalid_artifact_gate',
+        detail: 'missing_mappings is not a list; the coverage gate produced no decidable output' }] }
+    }
+    if ((r.missing_mappings || []).length > 0) {
+      const missing = r.missing_mappings
       const event = await agent('Run python3 .allforai/bootstrap/scripts/product_intent.py . --policy-event on_needs_iteration. Return its JSON verbatim; do not ask questions.', {
         label: 'policy:on_needs_iteration', schema: { type: 'object', required: ['action'], properties: { action: { type: 'string' } } }
       })
       const action = event && event.action
-      await agent('Write concept-acceptance/acceptance-report.md with the actual gaps and recorded policy action ' + action + '. ' +
+      await agent('Write concept-acceptance/acceptance-report.md naming these behaviour mappings without evidence: ' +
+        JSON.stringify(missing) + ', and the recorded policy action ' + action + '. ' +
         (action === 'accept' ? 'Append accepted_with_gaps to .allforai/bootstrap/assumed-decisions.json; do not mark the node completed or verified.' :
           'List fix / re-bootstrap / accept for the next interactive entry; never ask now.'), { label: `iteration-report:${node.node_id}` })
       if (action === 'accept') return { ...r, outcome: 'accepted_with_gaps' }
-      if (action === 'auto_fix_once' && !iterationRepair) {
-        iterationRepair = true
-        await agent(repairPrompt(node, r.blocking_findings), { label: `iteration-repair:${node.node_id}` })
-        strict = 'Rerun concept-acceptance and its independent verification after the one recorded repair; then stop.'
-        continue
+      if (action === 'auto_fix_once') {
+        // One bounded repair request, and only through the declared loop and its ledger
+        // (ADR 0005, ADR 0006). The gate's failure is routed like any other QA verdict:
+        // a gate no loop declares a repair for, or whose budget is spent, stops the run.
+        // Nothing is repaired in-node here — that would be an attempt nobody charged.
+        return { ...r, outcome: 'hard_fail', iteration_repair: true,
+          blocking_findings: missing.map(mapping => ({ type: 'missing_mapping',
+            detail: `behaviour mapping without evidence: ${JSON.stringify(mapping)}`, mapping })) }
       }
       return { ...r, outcome: 'hard_fail', blocking_findings: [{ type: 'needs_iteration', detail: 'Recorded policy halted with report' }] }
     }
@@ -550,7 +569,7 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
           type: 'invalid_artifact_gate', detail: 'independent artifact gate missing or mismatched'
         }] }
       }
-      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return iterationRepair ? { ...r, iteration_repair_stopped: true } : r
+      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return r
       if (gate.status === 'hard_fail') {
         return { ...r, outcome: 'hard_fail', blocking_findings: gate.blocking_findings || [] }
       }
@@ -620,6 +639,21 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   // Keyed by the pair because one repair node may serve several QA nodes and each carries
   // its own declared budget; seeded from the recorded history so a restart resumes it.
   const repairAttempts = new Map()
+  // Coverage gates whose missing-mapping failure was routed to their declared repair in
+  // this session. The recorded auto_fix_once policy grants exactly one iteration repair,
+  // whatever the loop's remaining budget: a rerun that passes stops the run as
+  // iteration_repair_stopped, and one that still names missing mappings is a policy
+  // verdict, never a second route. The ledger's spent count answers the same question
+  // across a restart, so an attempt charged by an earlier session counts too.
+  const iterationRepaired = new Set()
+  const stopRepeatedIteration = result => {
+    if (!result || !result.iteration_repair) return result
+    const loop = repairLoopFor(repair.loops, result.node_id)
+    const spent = loop ? (repairAttempts.get(`${loop.repair_node_id}::${result.node_id}`) || 0) : 0
+    if (!iterationRepaired.has(result.node_id) && spent === 0) return result
+    return { ...result, iteration_repair: false, blocking_findings: [{ type: 'needs_iteration',
+      detail: 'behaviour mappings still lack evidence after the one recorded iteration repair; the recorded policy stops here' }] }
+  }
   let ledgerRunId = null
   if (repair.loops.length > 0) {
     // Consumption first. The canonical ledger is the authority on what every obligation
@@ -802,7 +836,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
           (result.blocking_findings || []).some(f => f && f.type === 'safety_warning'))) safetyHalted = true
       return result
     }
-    const outcomes = await pipeline(ready, async node => {
+    const outcomes = (await pipeline(ready, async node => {
       try {
         return await runNode(node, waveAgent, policy, openDelivery.get(node.node_id) || null)
       } catch (error) {
@@ -816,7 +850,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
           blocking_findings: [{ type: safetyHalted ? 'safety_warning' : 'invalid_artifact_gate',
             detail: safetyHalted ? 'in-flight result quarantined after run safety halt' : 'node execution did not return a usable result' }] }
       }
-    })
+    })).map(stopRepeatedIteration)
     if (safetyHalted) {
       const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
       const quotedNodes = "'" + JSON.stringify(ready.map(n => n.node_id)).replace(/'/g, "'\\''") + "'"
@@ -909,6 +943,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
           label: `repair-route:${failure.node_id}:${spent + 1}`
         })
         routed.push(failure.node_id)
+        // The coverage gate's one recorded iteration repair is this dispatch; the
+        // charge itself is taken by the ledger when the repair node is dispatched.
+        if (failure.iteration_repair) iterationRepaired.add(failure.node_id)
       }
       // Every failure must be a declared, budgeted, report-backed QA failure, or a repair
       // node still inside its own funded loop, to continue; anything else is a real stop.
@@ -934,7 +971,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     if (outcomes.some(r => r && routeOutcome(r) === 'accepted')) {
       return { status: 'accepted_with_gaps', verified: false }
     }
-    if (outcomes.some(result => result && result.iteration_repair_stopped)) return { status: 'iteration_repair_stopped' }
+    // The gate's rerun after its one recorded repair passed and was committed above; the
+    // recorded policy still ends the run here rather than continuing past it.
+    if (outcomes.some(r => r && routeOutcome(r) === 'done' && iterationRepaired.has(r.node_id))) return { status: 'iteration_repair_stopped' }
   }
   const remaining = dag.nodes.filter(n => !done.has(n.node_id))
   if (blockedFailures.size > 0) {

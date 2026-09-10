@@ -169,7 +169,7 @@ order race").
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `.allforai/pipeline-closure/pipeline-closure-report.json` | `summary.broken`, `pipelines[]` | concept-acceptance | optional | concept-acceptance 参考 broken pipelines 作为 core gap 证据；broken pipeline = 必然 needs_iteration |
+| `.allforai/pipeline-closure/pipeline-closure-report.json` | `summary.broken`, `pipelines[]` | concept-acceptance | optional | a behaviour mapping whose flow is a broken pipeline has no evidence: it belongs in `missing_mappings[]`, with the broken stage as `expected_evidence` |
 | `.allforai/pipeline-closure/pipeline-closure-report.json` | `closure_gaps[]` | product-verify | optional | product-verify 可借用 closure gap 补充静态验证报告 |
 
 ## Knowledge References
