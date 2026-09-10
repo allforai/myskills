@@ -184,6 +184,9 @@ def pinned_layout_reason(baseline_obj, inventory):
     non-empty allowed empty area. The declaration is the decision; the width literal only guards it (a
     fluid rule that names a width is a contradiction). Otherwise "820px centered" freezes as a rule a wide
     window trivially satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
+    stray = [k for k in CATEGORIES if k in baseline_obj and k not in (baseline_obj.get('categories') or {})]
+    if stray:
+        return '基线类别 %s 写在了顶层，须放在 categories 之下才会被检查' % ', '.join(sorted(stray))
     rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
     if rules is not None and not isinstance(rules, list):
         return 'layout 规则须是列表'

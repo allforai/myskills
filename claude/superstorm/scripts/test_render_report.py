@@ -1238,13 +1238,23 @@ class TestAuthorEvidence(unittest.TestCase):
             self.assertIn("- **门未通过** [F1]", report)
             self.assertNotIn("[G1]", report)
 
+    def test_readback_is_demanded_of_runtime_author_entries_only(self):
+        # a suite run has nothing to read back; a runtime capture without readback proves nothing was applied
+        for extra in ({"readback": {}}, {"readback": None}):
+            with tempfile.TemporaryDirectory() as tmp:
+                report = render(self._run(tmp, [self._author("测试套件在真后端下过吗？", **extra)]))
+                self.assertNotIn("作者证据缺读回", report)
+                self.assertIn("## 作者证据", report)
+            with tempfile.TemporaryDirectory() as tmp:
+                report = render(self._run(tmp, [self._author("首页在真后端下渲染吗？", medium="runtime", **extra)]))
+                self.assertIn("首页在真后端下渲染吗？（作者证据缺读回 readback", report)
+                self.assertNotIn("## 作者证据", report)
+
     def test_unverifiable_author_evidence_is_refused_by_name(self):
         cases = [
             ({"images": ["pytest.json"], "image_digests": {"pytest.json": "stale"}}, None, None, "截图内容摘要不匹配: pytest.json"),
             ({}, None, "print(2)\n", "构建标识不匹配：记录 "),
             ({"build": "deadbeef-0000000000000000"}, None, None, "构建标识不匹配：记录 deadbeef-0000000000000000，当前 "),
-            ({"readback": {}}, None, None, "作者证据缺读回 readback"),
-            ({"readback": None}, None, None, "作者证据缺读回 readback"),
             ({"probed_at": "2026-09-07T10:00:00"}, None, None, "probed_at 缺时区偏移（如 +08:00）"),
             ({"author": {"pipeline": "meta-skill/run"}}, None, None, "作者标记不完整（pipeline / node_id / capability）"),
             ({"build_excludes": [".allforai", "src"]}, None, None, "构建标识排除范围只能是宿主隐藏目录（如 .allforai）: src"),

@@ -144,8 +144,8 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 - `entries[].author`（可选；交付流水线写的条目才有）：`{"pipeline", "node_id", "capability"}` 三键非空字符串，是作者标记——
   meta-skill `/run` 的 `capture_evidence.py entry` 写入的就是这个字段。带此标记的 entry 走另一条采信路，写死在渲染器：
   - 先过引擎的条目形状（`entry_reason`：介质、裁决、`build`、带偏移的 `probed_at`、run 下非空证据目录、介质内容门、
-    `served_by`、`readback` 形状、`images` / `image_digests` 摘要），再核三条作者独有的：标记齐全；`readback` 非空
-    （工具自己报的运行对象——runner 与用例数、编译器与目标、契约文件版本——和应用读回同理）；`build` 是 run 目录所在仓库
+    `served_by`、`readback` 形状、`images` / `image_digests` 摘要），再核三条作者独有的：标记齐全；runtime 介质的 `readback` 非空
+    （应用读回它被施加的环境；build / test / contract 门是套件或编译器的一次运行，没有可读回的环境，不要求）；`build` 是 run 目录所在仓库
     **此刻**的树（按 entry 的 `build_excludes` 加本 run 目录排除后由引擎重算；`build_excludes` 只能是宿主隐藏目录如
     `.allforai`，产品路径一律拒）。核不过的按引擎的理由拒渲点名（`构建标识不匹配`、`截图内容摘要不匹配`、
     `probed_at 缺时区偏移`、`作者证据缺读回 readback`、`作者标记不完整`…）。

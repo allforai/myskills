@@ -93,6 +93,11 @@ def evidence_dir(entry, run_dir):
     p = (Path(d) if Path(d).is_absolute() else run_dir / d).resolve()
     try:
         if (run_dir / 'evidence').resolve() not in p.parents or not p.is_dir() or not any(p.iterdir()):
+            # the most likely honest slip: a path written from the project root instead of the run
+            for base in (run_dir.parent, run_dir.parent.parent):
+                alt = (base / d).resolve()
+                if (run_dir / 'evidence').resolve() in alt.parents and alt.is_dir():
+                    return None, 'evidence.dir 相对 run 目录（%s）书写，不是相对项目根: %s' % (run_dir.name, d)
             return None, '无证据目录'
     except OSError:
         return None, '无证据目录'

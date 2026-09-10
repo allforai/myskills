@@ -388,7 +388,8 @@ def _planned_verdict_entry(node: dict) -> str | None:
     return None
 
 
-def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[dict]) -> None:
+def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[dict],
+                            warnings: list[dict] | None = None) -> None:
     """Neither skill calls the other (ADR-0008); the graph may only list them for the user.
 
     A node that plans `/cross-exam` or `/product-review` is refused by name: `/run` would
@@ -406,7 +407,22 @@ def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[di
                  f"on the delivery is not the author's to give (ADR-0008). It is a user "
                  f"step after the pipeline: remove the node and list it in "
                  f"workflow.json user_steps.", node_id=_node_id(node))
-    if not isinstance(workflow, dict) or "user_steps" not in workflow:
+    if not isinstance(workflow, dict):
+        return
+    if "user_steps" not in workflow:
+        # a workflow that plans verification has a product to examine afterwards; the steps the
+        # user takes then are part of the workflow, and only an empty list says "nothing to examine"
+        plans_verify = any(isinstance(n, dict) and isinstance(n.get("capability"), str)
+                           and (n["capability"].endswith("-verify") or n["capability"] == "concept-acceptance")
+                           for n in nodes)
+        message = ("workflow.json has no user_steps: the steps the user takes after the run "
+                   "(/cross-exam, then /product-review) are part of the workflow. A project with no "
+                   "product to examine (cli, library-sdk) says so with user_steps: []; silence is "
+                   "not an exemption.")
+        if plans_verify:
+            _add(blockers, "missing_user_steps", message)
+        elif warnings is not None:
+            _add(warnings, "missing_user_steps", message)
         return
     steps = workflow.get("user_steps")
     if (not isinstance(steps, list)
@@ -554,7 +570,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     # Decided on the graph as written, before shape faults defer the node list: a planned
     # verdict node is a planning fault the user repairs at bootstrap, whatever else holds.
-    _verdict_entry_blockers(workflow, nodes, blockers)
+    _verdict_entry_blockers(workflow, nodes, blockers, warnings)
     scope_blockers = validate_scope(project_root, workflow)
     blockers.extend(scope_blockers)
     from check_artifacts import document_verification_errors, freshness_states

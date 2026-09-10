@@ -230,3 +230,13 @@ def test_test_layer_entries_are_mechanical_gates(project):
     bare = {**gate, "evidence": {"dir": "evidence/%s/q06/" % NODE, "key_observation": "x"}}
     _, reason = write_entry(run, bare, project, NODE, "test-verify")
     assert "机械门证据无输出文件" in reason
+
+
+def test_evidence_dir_written_from_the_project_root_is_named_as_such(project):
+    """`evidence.dir` is relative to the run directory; a project-root path is the most likely honest slip
+    and deserves a reason that says where the base is, not `无证据目录`."""
+    (project / RUN / "evidence" / NODE / "q07").mkdir(parents=True)
+    (project / RUN / "evidence" / NODE / "q07" / "out.json").write_text("{}")
+    draft = _draft(evidence={"dir": RUN + "/evidence/%s/q07/" % NODE, "key_observation": "x"})
+    _, reason = write_entry(project / RUN, draft, project, NODE, "product-verify")
+    assert "相对 run 目录" in reason and RUN in reason

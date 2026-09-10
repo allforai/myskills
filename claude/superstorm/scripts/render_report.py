@@ -165,7 +165,7 @@ def _author_reason(e, run_dir):
     reason = _engine.entry_reason(e, run_dir)
     if reason:
         return reason
-    if not _engine.readback(e):
+    if e.get("medium") == "runtime" and not _engine.readback(e):   # a suite run has nothing to read back
         return "作者证据缺读回 readback"
     excludes = e.get("build_excludes") if isinstance(e.get("build_excludes"), list) else []
     bad = [str(x) for x in excludes if not isinstance(x, str) or not HOST_DIR.match(x)]

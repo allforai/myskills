@@ -28,7 +28,8 @@ def _minimal_project(tmp_path, *, gate_status="approved", node_spec="non interac
                 "approval_record_path": ".allforai/game-design/approval-records.json",
                 "exit_artifacts": [{"path": ".allforai/game-design/design.json"}],
             }
-        ]
+        ],
+        "user_steps": ["/cross-exam", "/product-review"],
     }
     _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
     _write(tmp_path, ".allforai/bootstrap/node-specs/design.md", node_spec)
@@ -157,7 +158,8 @@ def _project_with_repair_loop(tmp_path, loop):
             {"node_id": "closure-qa", "goal": "closure", "capability": "qa",
              "hard_blocked_by": ["runtime-repair", "runtime-qa"],
              "exit_artifacts": [{"path": ".allforai/quality-checks/closure.json"}]},
-        ]
+        ],
+        "user_steps": ["/cross-exam", "/product-review"],
     }
     _minimal_project(tmp_path)
     _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
@@ -605,3 +607,21 @@ def test_user_steps_that_name_no_entry_are_refused_with_a_reason(tmp_path, user_
 
     assert report["status"] == "not_ready"
     assert any(b["code"] == "invalid_user_steps" for b in report["blockers"]), report
+
+
+def test_a_workflow_that_plans_verification_but_forgets_its_user_steps_is_not_ready(tmp_path):
+    # a verify node means there is a product to examine afterwards; the steps the user takes then
+    # are part of the workflow, and only an empty list says "nothing to examine"
+    verify = {**_design_node(), "node_id": "pv", "capability": "product-verify",
+              "exit_artifacts": [{"path": ".allforai/product-verify/verify-report.json"}]}
+    _with_workflow(tmp_path, {"nodes": [_design_node(), verify]})
+    report = validate_unattended_readiness(tmp_path)
+    blocker = next(b for b in report["blockers"] if b["code"] == "missing_user_steps")
+    assert "user_steps" in blocker["message"] and "[]" in blocker["message"]
+    _with_workflow(tmp_path, {"nodes": [_design_node(), verify], "user_steps": []})
+    assert not [b for b in validate_unattended_readiness(tmp_path)["blockers"] if b["code"] == "missing_user_steps"]
+    # a design-only workflow is warned, not blocked
+    _with_workflow(tmp_path, {"nodes": [_design_node()]})
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_user_steps"]
+    assert any(w["code"] == "missing_user_steps" for w in report.get("warnings", []))
