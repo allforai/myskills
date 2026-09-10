@@ -244,6 +244,16 @@ When the canonical protocol tells the user to run `/run [goal]`, adapt the instr
 - invoke it through Codex's command mechanism in the target project
 - prefer keeping the main task goal fixed at bootstrap time instead of introducing it only during run time
 
+The canonical user steps after the pipeline (`knowledge/bootstrap-planning.md` §After the
+pipeline, ADR-0008) apply unchanged: `workflow.json.user_steps` is
+`["/cross-exam", "/product-review"]` on every workflow the suppress rules do not exempt
+(CLI and library-sdk: `[]`, with the reason in the summary). On Codex the user invokes
+them as the `cross-exam` and `product-review` skills from `~/.codex/skills/cross-exam`;
+print them under that name in the Step 3.4 and 6.4 summaries, in that order, and point at
+CLAUDE.md's "Which entry for which situation" table for the reason. They are never nodes:
+the copied `validate_unattended_readiness.py` refuses a node named after either
+(`verdict_entry_planned_as_node`), and `flow.py` never dispatches them.
+
 ### 6. Research-First Specialization
 
 Codex bootstrap should prefer:

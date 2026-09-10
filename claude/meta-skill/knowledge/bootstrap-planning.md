@@ -15,7 +15,28 @@ Design the smallest node graph that achieves the user's goals for *this* project
 - Separate outcome from route. When the user's named means (an engine, a module, a requested node) may not be the best route to the underlying product outcome, record it as a Phase A decision input with the alternative and let the human choose. Never silently swap the route.
   Exception, and the only one: art dimension is a pipeline capability limit, not a route. This pipeline produces 2D / 2.5D assets only because 3D assets cannot be generated; `dimension=3d` and skeletal-animation requests are remapped to 2D frame animation (see `bootstrap-art-pipeline.md`). That remap is never a Phase A option, but it is stated to the user once in the Phase A summary — a recorded remap that nobody was told about is still a silent swap.
 
-## Product confirmation
+## After the pipeline: user steps
+
+See `docs/adr/0008-verdicts-leave-the-run-the-engine-is-shared.md`.
+
+The graph ends where the author's evidence ends. Whether the delivery is *done* and
+whether it is *good* are judged by a party that did not write it, so every workflow
+carries, after its last node, the two entries the user types next:
+
+```json
+"user_steps": ["/cross-exam", "/product-review"]
+```
+
+- They are listed, never planned: no node is named after either, no node-spec invokes
+  either, and no engine dispatches them. `validate_unattended_readiness.py` refuses a
+  workflow that plans one as a node (`verdict_entry_planned_as_node`).
+- The order is fixed and is the one CLAUDE.md's "Which entry for which situation" table
+  gives: first "is it done", then "is it good". The planning summary and the completion
+  text print the two steps and point at that table for the reason; they never restate it.
+- The only exemption is a suppress rule (`suppress-rules.md`): a CLI or library-sdk
+  project has no UI and no product to examine, so `user_steps` is `[]` and the summary
+  says why. Any other project gets both steps; a goal that is "just implement" is not a
+  reason to drop them.
 
 For reconstruction and new-product routes, execute `product-intent-confirmation.md`
 at interactive bootstrap/resume. Its journal-backed baseline, generated projection

@@ -388,7 +388,10 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Termination
 
-- All required exit artifacts are ready: report success
+- All required exit artifacts are ready: report success. End the report with
+  `workflow.json.user_steps` in order (`cross-exam`, then `product-review`) as the skills the
+  user invokes next; they are never dispatched, never started by a node, and never
+  reported as done (ADR-0008). An empty list means the project was exempted at bootstrap.
 - `concept-acceptance` names missing behaviour mappings
   (`acceptance-report.json.missing_mappings` non-empty): read `--policy-event
   on_needs_iteration`. An empty list is the gate passing — proceed, ask nothing. A report
