@@ -1,15 +1,44 @@
 # T18 actor launch request
 
-## Launch suspended — candidate acceptance withdrawn
+## Current launch binding — candidate 01146b70e1fe018effbf83dbb678277b657a3783
 
-Do not launch the packets listed below. Later host evaluations and repair reviews
-found unresolved production defects. Their old commit, hashes and paths remain
-historical evidence, not permission for new launches or pass admission. After the
-repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
-bindings, and rerun the required host scenarios. See `results.json` field
-`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+Candidate commit: `01146b70e1fe018effbf83dbb678277b657a3783` (main; #9–#14 audit-proved, ADR-0008 merged, 1166 unit tests green).
+Packet root: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18`
+Candidate tree SHA-256: `ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2`
+Claude entry: `candidate/claude/meta-skill/skills/bootstrap/SKILL.md`
+Codex entry:  `candidate/codex/meta-skill/SKILL.md`
 
-## Historical launch binding — superseded by the suspension above
+Every cell is `unverified` until a real host session runs it and a fresh-context evaluator
+judges the raw dialogue. Deliver each cell's `actor-input.md` verbatim and nothing else.
+
+The reference export further below (`5c02e24c`) is still **not** launch input.
+
+Prompt files for this candidate:
+
+- claude T18/fact-only-vs-behavior: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/fact-only-vs-behavior/actor-input.md`
+- codex T18/fact-only-vs-behavior: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/fact-only-vs-behavior/actor-input.md`
+- claude T18/accept-full-recovery: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/accept-full-recovery/actor-input.md`
+- codex T18/accept-full-recovery: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/accept-full-recovery/actor-input.md`
+- claude T18/reject-repair-full-recovery: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/reject-repair-full-recovery/actor-input.md`
+- codex T18/reject-repair-full-recovery: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/reject-repair-full-recovery/actor-input.md`
+- claude T18/defer: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/defer/actor-input.md`
+- codex T18/defer: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/defer/actor-input.md`
+- claude T18/interrupted-recovery: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/interrupted-recovery/actor-input.md`
+- codex T18/interrupted-recovery: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/interrupted-recovery/actor-input.md`
+- claude T18/unattended-conflict: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/unattended-conflict/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/unattended-conflict/actor-input-phase2.md`
+- codex T18/unattended-conflict: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/unattended-conflict/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/unattended-conflict/actor-input-phase2.md`
+- claude T18/report-only-not-done: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/report-only-not-done/actor-input.md`
+- codex T18/report-only-not-done: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/report-only-not-done/actor-input.md`
+- claude T18/stable-repeat: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/claude/stable-repeat/actor-input.md`
+- codex T18/stable-repeat: `/private/tmp/meta-intent-host-campaign.pGw3c0/T18/codex/stable-repeat/actor-input.md`
+
+Everything below this section is history. Its commit, hashes and paths are preserved as the
+record of earlier preparations and failed launches; they are never launch input and no evidence
+gathered against them counts for this candidate.
+
+## Historical launch binding — superseded by the binding above
 
 Historical prompt files:
 
@@ -50,16 +79,18 @@ replies stay in `evaluator-private.md` and are never sent to a tested context.
 
 ## Do not launch this export
 
-`#14` is under active production repair and is **not accepted**. The export described below is bound
-to `5c02e24cf993c36591458f87f1c7dcfb66be3a35`, a development reference for the external-change API
-only. Do not launch actors against it and do not record evidence from it.
+The export described below is bound to `5c02e24cf993c36591458f87f1c7dcfb66be3a35`, a development
+reference for the external-change API only. That commit was never accepted. Do not launch actors
+against it and do not record evidence from it.
 
-Before any actor runs:
+The four steps this section required before any actor runs are now satisfied by the current
+launch binding at the top of this file, and only by it:
 
-1. Take the fixed, accepted `#14` candidate commit.
-2. Re-export: `python3 prepare_packets.py <new packet root> --candidate <fixed sha>`.
+1. Take the fixed, accepted `#14` candidate commit — `01146b70e1fe018effbf83dbb678277b657a3783`.
+2. Re-export: `python3 prepare_packets.py <new packet root> --candidate <fixed sha>` — done into
+   `/private/tmp/meta-intent-host-campaign.pGw3c0/T18`.
 3. Record the new packet root, the new candidate tree SHA-256 and both entry SHA-256 values in
-   `results.json` (`launch_candidate`, `launch_candidate_tree_sha256`, `launch_packet_root`).
+   `results.json` (`launch_candidate`, `launch_candidate_tree_sha256`, `launch_packet_root`) — done.
 4. Launch from the regenerated cell paths, not from the reference paths below.
 
 ## Reference export (preparation output, not launch input)

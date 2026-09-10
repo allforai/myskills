@@ -1,15 +1,42 @@
 # T16 actor launch request
 
-## Launch suspended — candidate acceptance withdrawn
+## Current launch binding — candidate 01146b70e1fe018effbf83dbb678277b657a3783
 
-Do not launch the packets listed below. Later host evaluations and repair reviews
-found unresolved production defects. Their old commit, hashes and paths remain
-historical evidence, not permission for new launches or pass admission. After the
-repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
-bindings, and rerun the required host scenarios. See `results.json` field
-`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+Candidate commit: `01146b70e1fe018effbf83dbb678277b657a3783` (main; #9–#14 audit-proved, ADR-0008 merged, 1166 unit tests green).
+Packet root: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16`
+Candidate tree SHA-256: `ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2`
+Claude entry: `candidate/claude/meta-skill/skills/bootstrap/SKILL.md`
+Codex entry:  `candidate/codex/meta-skill/SKILL.md`
 
-## Historical launch binding — superseded by the suspension above
+Every cell is `unverified` until a real host session runs it and a fresh-context evaluator
+judges the raw dialogue. Deliver each cell's `actor-input.md` verbatim and nothing else.
+
+Prompt files for this candidate:
+
+- claude T16/no-answer: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/no-answer/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/no-answer/actor-input-phase2.md`
+- codex T16/no-answer: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/no-answer/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/no-answer/actor-input-phase2.md`
+- claude T16/partial-resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/partial-resume/actor-input.md`
+- codex T16/partial-resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/partial-resume/actor-input.md`
+- claude T16/reverse-prior-decision: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/reverse-prior-decision/actor-input.md`
+- codex T16/reverse-prior-decision: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/reverse-prior-decision/actor-input.md`
+- claude T16/legacy-provenance: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/legacy-provenance/actor-input.md`
+- codex T16/legacy-provenance: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/legacy-provenance/actor-input.md`
+- claude T16/removed-not-resurrected: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/removed-not-resurrected/actor-input.md`
+- codex T16/removed-not-resurrected: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/removed-not-resurrected/actor-input.md`
+- claude T16/discussion-preserves-source: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/discussion-preserves-source/actor-input.md`
+- codex T16/discussion-preserves-source: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/discussion-preserves-source/actor-input.md`
+- claude T16/unattended-pending: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/unattended-pending/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/unattended-pending/actor-input-phase2.md`
+- codex T16/unattended-pending: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/unattended-pending/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/unattended-pending/actor-input-phase2.md`
+
+Everything below this section is history. Its commit, hashes and paths are preserved as the
+record of earlier preparations and failed launches; they are never launch input and no evidence
+gathered against them counts for this candidate.
+
+## Historical launch binding — superseded by the binding above
 
 Historical prompt files:
 

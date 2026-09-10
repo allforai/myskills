@@ -1,15 +1,38 @@
 # T15 actor launch request
 
-## Launch suspended — candidate acceptance withdrawn
+## Current launch binding — candidate 01146b70e1fe018effbf83dbb678277b657a3783
 
-Do not launch the packets listed below. Later host evaluations and repair reviews
-found unresolved production defects. Their old commit, hashes and paths remain
-historical evidence, not permission for new launches or pass admission. After the
-repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
-bindings, and rerun the required host scenarios. See `results.json` field
-`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+Candidate commit: `01146b70e1fe018effbf83dbb678277b657a3783` (main; #9–#14 audit-proved, ADR-0008 merged, 1166 unit tests green).
+Packet root: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15`
+Candidate tree SHA-256: `ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2`
+Claude entry: `candidate/claude/meta-skill/skills/bootstrap/SKILL.md`
+Codex entry:  `candidate/codex/meta-skill/SKILL.md`
 
-## Historical launch binding — superseded by the suspension above
+Every cell is `unverified` until a real host session runs it and a fresh-context evaluator
+judges the raw dialogue. Deliver each cell's `actor-input.md` verbatim and nothing else.
+
+Prompt files for this candidate:
+
+- claude T15/large-code-local-button: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/large-code-local-button/actor-input.md`
+- codex T15/large-code-local-button: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/large-code-local-button/actor-input.md`
+- claude T15/missing-product-docs: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/actor-input.md`
+- codex T15/missing-product-docs: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/actor-input.md`
+- claude T15/reshape-business-model: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/reshape-business-model/actor-input.md`
+- codex T15/reshape-business-model: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/reshape-business-model/actor-input.md`
+- claude T15/add-unimplemented-need: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/add-unimplemented-need/actor-input.md`
+- codex T15/add-unimplemented-need: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/add-unimplemented-need/actor-input.md`
+- claude T15/deny-inferred-intent: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/deny-inferred-intent/actor-input.md`
+- codex T15/deny-inferred-intent: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/deny-inferred-intent/actor-input.md`
+- claude T15/interrupted-confirmation: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/interrupted-confirmation/actor-input.md`
+- codex T15/interrupted-confirmation: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/interrupted-confirmation/actor-input.md`
+- claude T15/new-product: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/new-product/actor-input.md`
+- codex T15/new-product: `/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/new-product/actor-input.md`
+
+Everything below this section is history. Its commit, hashes and paths are preserved as the
+record of earlier preparations and failed launches; they are never launch input and no evidence
+gathered against them counts for this candidate.
+
+## Historical launch binding — superseded by the binding above
 
 Historical prompt files:
 

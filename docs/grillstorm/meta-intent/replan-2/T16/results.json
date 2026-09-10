@@ -1,22 +1,23 @@
 {
   "task": "T16",
   "issue": "docs/grillstorm/meta-intent/replan-2/issues/16.md",
-  "source_commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
-  "production_commit": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
+  "source_commit": "01146b70e1fe018effbf83dbb678277b657a3783",
+  "production_commit": "01146b70e1fe018effbf83dbb678277b657a3783",
   "accepted_producer": {
     "implementation": "d622402cb1f5cc2b34a53854deaf058c41a4c676",
     "boundary_report": "3c6e12019cc638153459944d91bf94279402b768",
     "integrated_as": "0340eccf277f6727b2b49e67a45178f1c57b9a7c",
-    "assigned_by": "coordinator msg_1de975dc057c"
+    "assigned_by": "coordinator msg_1de975dc057c",
+    "accepted_candidate": "01146b70e1fe018effbf83dbb678277b657a3783"
   },
-  "packet_root": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16",
-  "candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
+  "packet_root": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16",
+  "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
   "candidate_entries": {
     "claude": "claude/meta-skill/skills/bootstrap/SKILL.md",
     "codex": "codex/meta-skill/SKILL.md"
   },
   "candidate_entry_sha256": {
-    "claude": "3938723850b5bff08f8b20c32e702f43f46e42519e9b51166b8a2cfdb670df26",
+    "claude": "ac03ae2260a3426a09cd2eff1b452406b283a55d28a32d1444dae8a725c2d60d",
     "codex": "526dc0958a9c174a07d9b98d54de8cd1f2561790dbbf759853b45e13086c6065"
   },
   "required_cells": 14,
@@ -25,7 +26,7 @@
   "host_evidence": "0/14",
   "preparation_status": "prepared; 14 candidate-bound blind packets exported and guarded by tests",
   "proof_status": "unverified",
-  "evidence_boundary": "The integration full regression was still running when this candidate was assigned, so 0340eccf is the accepted producer for testing, not final joint acceptance.",
+  "evidence_boundary": "Preparation only against candidate 01146b70e1fe018effbf83dbb678277b657a3783. Host proof is 0/14; an exported packet is not acceptance and no earlier candidate's evidence carries over.",
   "launch_ownership": "coordinator only; this worker never launches actors or nested dispatches",
   "cells": [
     {
@@ -38,10 +39,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/no-answer/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/no-answer/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/no-answer/project",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/no-answer/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/no-answer/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/no-answer/project",
       "attempts": []
     },
     {
@@ -54,10 +55,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/no-answer/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/no-answer/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/no-answer/project",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/no-answer/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/no-answer/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/no-answer/project",
       "attempts": []
     },
     {
@@ -70,10 +71,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/partial-resume/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/partial-resume/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/partial-resume/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/partial-resume/project",
       "attempts": []
     },
     {
@@ -86,10 +87,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/partial-resume/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/partial-resume/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/partial-resume/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/partial-resume/project",
       "attempts": []
     },
     {
@@ -102,10 +103,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/reverse-prior-decision/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/reverse-prior-decision/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/reverse-prior-decision/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/reverse-prior-decision/project",
       "attempts": []
     },
     {
@@ -118,10 +119,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/reverse-prior-decision/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/reverse-prior-decision/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/reverse-prior-decision/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/reverse-prior-decision/project",
       "attempts": []
     },
     {
@@ -135,10 +136,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/legacy-provenance/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/legacy-provenance/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/legacy-provenance/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/legacy-provenance/project",
       "attempts": []
     },
     {
@@ -152,10 +153,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/legacy-provenance/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/legacy-provenance/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/legacy-provenance/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/legacy-provenance/project",
       "attempts": []
     },
     {
@@ -168,10 +169,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/removed-not-resurrected/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/removed-not-resurrected/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/removed-not-resurrected/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/removed-not-resurrected/project",
       "attempts": []
     },
     {
@@ -184,10 +185,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/removed-not-resurrected/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/removed-not-resurrected/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/removed-not-resurrected/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/removed-not-resurrected/project",
       "attempts": []
     },
     {
@@ -199,10 +200,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/discussion-preserves-source/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/discussion-preserves-source/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/discussion-preserves-source/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/discussion-preserves-source/project",
       "attempts": []
     },
     {
@@ -214,10 +215,10 @@
         "R30"
       ],
       "phases": 1,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/discussion-preserves-source/actor-input.md",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/discussion-preserves-source/actor-input.md",
       "phase2_packet": null,
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/discussion-preserves-source/project",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/discussion-preserves-source/project",
       "attempts": []
     },
     {
@@ -230,10 +231,10 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/unattended-pending/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/unattended-pending/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/claude/unattended-pending/project",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/unattended-pending/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/unattended-pending/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/claude/unattended-pending/project",
       "attempts": []
     },
     {
@@ -246,15 +247,15 @@
         "R30"
       ],
       "phases": 2,
-      "reason": "Current candidate prepared; no actor execution proven yet.",
-      "packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/unattended-pending/actor-input.md",
-      "phase2_packet": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/unattended-pending/actor-input-phase2.md",
-      "project": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16/codex/unattended-pending/project",
+      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/unattended-pending/actor-input.md",
+      "phase2_packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/unattended-pending/actor-input-phase2.md",
+      "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16/codex/unattended-pending/project",
       "attempts": []
     }
   ],
   "issue_accepted_complete": false,
-  "launch_decision": "Refreshed against e30ccc7c after independent reviews and main synchronization. Coordinator will revalidate one actual cell per host; historical trust/quota limitations are not current findings.",
+  "launch_decision": "Fresh candidate 01146b70e1fe018effbf83dbb678277b657a3783 exported to /private/tmp/meta-intent-host-campaign.pGw3c0 after the #9-#14 audit, ADR-0008 and 1166 green unit tests; the earlier e30ccc7c withdrawal is lifted for this export only. No cell has been launched yet, so every cell is unverified and no historical evidence carries over.",
   "blockers": [
     "Claude workspace-trust stopped the current T15 pilot before prompt delivery; requires human confirmation per project.",
     "Codex current T15 pilot is running; no quota refusal observed on this attempt. Remaining cells are unexecuted."
@@ -264,18 +265,18 @@
     "path": "docs/grillstorm/meta-intent/replan-2/T16/results.json",
     "note": "Original preparation and historical failed launches remain recoverable in this committed version; no host pass was recorded."
   },
-  "launch_candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
-  "launch_candidate_tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
-  "launch_packet_root": "/private/tmp/meta-intent-host-campaign.XX6yRo/T16",
-  "candidate_accepted": false,
-  "candidate_acceptance_withdrawal": {
+  "launch_candidate": "01146b70e1fe018effbf83dbb678277b657a3783",
+  "launch_candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+  "launch_packet_root": "/private/tmp/meta-intent-host-campaign.pGw3c0/T16",
+  "candidate_accepted": true,
+  "candidate_refresh_required": false,
+  "candidate_status": "final",
+  "status": "prepared for current-host revalidation; zero scenario passes",
+  "historical_candidate_acceptance_withdrawal": {
     "previously_accepted_for_launch": true,
     "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4",
     "tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
     "reason": "Actual host evaluations found planning and decision-gate defects; the subsequent 2cc347af repair was also rejected in review. Preserve historical evidence but do not launch or admit passes against this candidate.",
     "evidence": "T15-coordinator-boundary-review.md"
-  },
-  "candidate_refresh_required": true,
-  "candidate_status": "acceptance withdrawn; historical export preserved; repaired candidate and fresh host proof required",
-  "status": "prepared for current-host revalidation; zero scenario passes"
+  }
 }

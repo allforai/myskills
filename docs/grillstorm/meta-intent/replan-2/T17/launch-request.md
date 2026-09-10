@@ -1,15 +1,44 @@
 # T17 actor launch request
 
-## Launch suspended — candidate acceptance withdrawn
+## Current launch binding — candidate 01146b70e1fe018effbf83dbb678277b657a3783
 
-Do not launch the packets listed below. Later host evaluations and repair reviews
-found unresolved production defects. Their old commit, hashes and paths remain
-historical evidence, not permission for new launches or pass admission. After the
-repairs are accepted, regenerate and re-fingerprint a fresh candidate, update the
-bindings, and rerun the required host scenarios. See `results.json` field
-`candidate_acceptance_withdrawal` and `../T15-coordinator-boundary-review.md`.
+Candidate commit: `01146b70e1fe018effbf83dbb678277b657a3783` (main; #9–#14 audit-proved, ADR-0008 merged, 1166 unit tests green).
+Packet root: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17`
+Candidate tree SHA-256: `ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2`
+Claude entry: `candidate/claude/meta-skill/skills/bootstrap/SKILL.md`
+Codex entry:  `candidate/codex/meta-skill/SKILL.md`
 
-## Historical launch binding — superseded by the suspension above
+Every cell is `unverified` until a real host session runs it and a fresh-context evaluator
+judges the raw dialogue. Deliver each cell's `actor-input.md` verbatim and nothing else.
+
+Prompt files for this candidate:
+
+- claude T17/two-dirty-states: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/two-dirty-states/actor-input.md`
+- codex T17/two-dirty-states: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/two-dirty-states/actor-input.md`
+- claude T17/baseline-only-change: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/baseline-only-change/actor-input.md`
+- codex T17/baseline-only-change: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/baseline-only-change/actor-input.md`
+- claude T17/generated-sync-no-loop: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/generated-sync-no-loop/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/generated-sync-no-loop/actor-input-phase2.md`
+- codex T17/generated-sync-no-loop: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/generated-sync-no-loop/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/generated-sync-no-loop/actor-input-phase2.md`
+- claude T17/tests-pass-docs-stale: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/tests-pass-docs-stale/actor-input.md`
+- codex T17/tests-pass-docs-stale: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/tests-pass-docs-stale/actor-input.md`
+- claude T17/transitive-unrelated-impact: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/transitive-unrelated-impact/actor-input.md`
+- codex T17/transitive-unrelated-impact: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/transitive-unrelated-impact/actor-input.md`
+- claude T17/copied-old-evidence: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/copied-old-evidence/actor-input.md`
+- codex T17/copied-old-evidence: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/copied-old-evidence/actor-input.md`
+- claude T17/unchanged-idempotency: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/unchanged-idempotency/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/unchanged-idempotency/actor-input-phase2.md`
+- codex T17/unchanged-idempotency: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/unchanged-idempotency/actor-input.md`
+  Resume: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/unchanged-idempotency/actor-input-phase2.md`
+- claude T17/uncertain-impact: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/claude/uncertain-impact/actor-input.md`
+- codex T17/uncertain-impact: `/private/tmp/meta-intent-host-campaign.pGw3c0/T17/codex/uncertain-impact/actor-input.md`
+
+Everything below this section is history. Its commit, hashes and paths are preserved as the
+record of earlier preparations and failed launches; they are never launch input and no evidence
+gathered against them counts for this candidate.
+
+## Historical launch binding — superseded by the binding above
 
 Historical prompt files:
 

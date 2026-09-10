@@ -20,7 +20,7 @@
     "meta-intent-t13": ["T13-bc513-spec.md", "T13-bc513-standards.md"],
     "result": "All 9 reports are byte-identical to preserved integration copies. Recheck worktree status and branch containment after final acceptance before removal; no worktree removed."
   },
-  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": true, "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4", "historical_candidate_refresh_required": false, "status": "historical_preparation_only_candidate_withdrawn", "refresh_check": "Historical e30 preparation: all four exports then shared its fingerprint; 37 results-pin and 67 preceding helper tests passed. This is not current candidate acceptance or host proof. Fresh export and actual-host verification are required after the current repairs are accepted."},
+  "preparation_verification": {"T15": 20, "T16": 22, "T17": 31, "T18": 31, "actual_host_passed": 0, "actual_host_required": 60, "candidate_refresh_required": false, "candidate": "e30ccc7cec9120815f0d9bc92204adf465f666d4", "historical_candidate_refresh_required": false, "status": "historical_preparation_only_candidate_withdrawn", "refresh_check": "Historical e30 preparation: all four exports then shared its fingerprint; 37 results-pin and 67 preceding helper tests passed. This is not current candidate acceptance or host proof. Fresh export and actual-host verification are required after the current repairs are accepted.", "refresh_cleared_by": "fresh_candidate 01146b70 exported to /private/tmp/meta-intent-host-campaign.pGw3c0; preparation identity is refreshed, host proof is still 0/60."},
   "main_base": "a37ca40a548bd748b416b908157223a7287ad720",
   "max_concurrency": 3,
   "status": "running",
@@ -177,7 +177,17 @@
     "campaign_launch_acceptance": "T15-T18 old candidate acceptance withdrawn; original launch pins and evidence preserved; fresh export and host runs required after accepted repairs",
     "actual_host_passed": 0,
     "actual_host_required": 60,
-    "fresh_candidate_required": true
+    "fresh_candidate_required": false
+  },
+  "fresh_candidate": {
+    "commit": "01146b70e1fe018effbf83dbb678277b657a3783",
+    "tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+    "packet_root": "/private/tmp/meta-intent-host-campaign.pGw3c0",
+    "accepted_at": "2026-09-11T00:00:00+00:00",
+    "basis": "#9–#14 audit-proved on main; 1166 unit tests green; ADR-0008 merged",
+    "supersedes": "current_host_campaign.root /private/tmp/meta-intent-host-campaign.XX6yRo (candidate e30ccc7c, acceptance withdrawn); that record is kept as history, not as the current binding",
+    "cells": {"T15": 14, "T16": 14, "T17": 16, "T18": 16, "total": 60, "executed": 0, "passed": 0},
+    "note": "Export identity only. Every cell stays unverified until a real host session runs it and a fresh-context evaluator judges the raw dialogue."
   },
   "active": [
     {"role": "authorization_foundation", "task": "task_21317d2a591d", "dispatch": "ctx_a4b208370c55", "base": "47ea2855e4ababe2c4f00135eda6946a40023da8", "agent": "claude", "model": "opus", "checkout": "grillstorm-meta-intent"},
