@@ -1372,3 +1372,36 @@ def test_every_reported_obligation_has_a_known_bound(root):
         assert isinstance(record['budget'], int) and record['budget'] > 0
         assert record['remaining'] == record['budget'] - record['spent']
         assert record['exhausted'] is (record['remaining'] <= 0)
+
+
+# --- the concept-acceptance coverage gate's missing-mapping repair (ADR 0008) ---
+#
+# A missing behaviour mapping under `auto_fix_once` is a QA finding like any other. It
+# reaches a repair only as a charge against the gate's declared loop: the request names
+# the gate as the obligation, the plan supplies the bound, and the same refusals apply.
+
+def test_a_missing_mapping_repair_is_charged_against_the_gates_declared_loop(root):
+    started(root, loops=(('concept-fix', ['concept-acceptance'], 1),))
+    first = grant(root, 'iter-1', ['concept-acceptance'], {'concept-acceptance': 1},
+                  repair_node_id='concept-fix')
+    assert first['status'] == 'authorized' and first['execution_allowed'] is False
+    assert ra.start(root, 'run-1', 'iter-1')['execution_allowed'] is True
+    ra.settle(root, 'iter-1', 'delivered')
+    assert spend_by_obligation(root) == {'concept-acceptance': 1}
+    # The list still non-empty after the one repair is over budget here, and the policy
+    # would have stopped it first; either way nothing further is charged.
+    refused = refusal(grant, root, 'iter-2', ['concept-acceptance'], {'concept-acceptance': 1},
+                      repair_node_id='concept-fix')
+    assert refused['status'] == 'budget_exhausted'
+    assert spend_by_obligation(root) == {'concept-acceptance': 1}
+
+
+def test_a_missing_mapping_repair_no_loop_declares_is_refused_as_undeclared(root):
+    """A gate nobody planned a repair for has no budget to be within: nothing runs."""
+    started(root)
+    refused = refusal(grant, root, 'iter-1', ['concept-acceptance'], {'concept-acceptance': 1},
+                      repair_node_id='concept-fix')
+    assert refused['untrusted'] == 'undeclared_repair_pair'
+    assert refused['undeclared'] == ['concept-acceptance']
+    assert ra.consumption(root)['obligations'] == []
+    assert not start_permits_execution(root, 'iter-1')

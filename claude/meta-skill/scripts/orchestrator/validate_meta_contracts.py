@@ -242,6 +242,36 @@ def validate_canvas2d_contract(errors: list[str]) -> None:
             errors.append(f"bootstrap.md: missing runtime-specialized bootstrap term {term}")
 
 
+def validate_concept_gate_contract(errors: list[str]) -> None:
+    """concept-acceptance is a coverage gate (ADR-0008): both hosts read its missing-mapping
+    list and nothing in the capability or either template drives the run off a score."""
+    readers = (
+        ROOT / "knowledge/orchestrator-template.md",
+        ROOT / "knowledge/run-engine/engine-core.js",
+        Path("codex/meta-skill/knowledge/orchestrator-template.md"),
+        Path("codex/meta-skill/knowledge/flow-template.py"),
+    )
+    for path in readers:
+        if not path.exists():
+            errors.append(f"{path}: missing concept-acceptance reader")
+            continue
+        if "missing_mappings" not in path.read_text(encoding="utf-8"):
+            errors.append(f"{path}: on_needs_iteration must read acceptance-report.json missing_mappings")
+    capability = CAPABILITIES / "concept-acceptance.md"
+    capability_text = capability.read_text(encoding="utf-8") if capability.exists() else ""
+    for term in ("missing_mappings", "covered_mappings", "coverage gate"):
+        if term not in capability_text:
+            errors.append(f"concept-acceptance.md: missing coverage gate term {term}")
+    for scored in ("scored 0-100", "pass_threshold defaults", "Verdict is binary", "Aggregate dimension scores"):
+        if scored in capability_text:
+            errors.append(f"concept-acceptance.md: scoring language left in the coverage gate: {scored}")
+    for path in readers[:1] + readers[2:3]:
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        for driver in ("verdict = needs_iteration", "verdict = `needs_iteration`", "returns `needs_iteration`"):
+            if driver in text:
+                errors.append(f"{path}: on_needs_iteration fires on the missing-mapping list, not a verdict: {driver}")
+
+
 def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
     bootstrap_text = _bootstrap_text()
     skill = ROOT / "skills/meta-orchestration/40-qa/bootstrap-node-expansion-qa/SKILL.md"
@@ -401,6 +431,7 @@ def main() -> int:
     validate_implement_goal_contract(errors)
     validate_feedback_contract(errors)
     validate_canvas2d_contract(errors)
+    validate_concept_gate_contract(errors)
     validate_bootstrap_node_expansion_contract(errors)
     validate_rebootstrap_reconciliation_contract(errors)
     validate_public_entrypoint_surface(errors)

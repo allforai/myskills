@@ -162,6 +162,8 @@ repair, never defaults. Explicit answers and the actual user response reference
 repair it while retaining the prior content in `run-policy-repairs.json`.
 Unattended policy events cannot collect or repair these choices. These operations
 never write the product journal or requirement confirmations. Runtime consumers
-use `--policy-event <key>`; `auto_fix_once` consumption is persisted before repair
-in run-policy-state.json, so interruption cannot grant a second repair. Accepted
-gaps are an explicitly qualified run outcome, not verified/completed work.
+use `--policy-event <key>` as a read of the recorded choice. The one repair
+`auto_fix_once` grants is an attempt charged in the repair-authorization ledger
+against the concept-acceptance gate's declared loop, so interruption cannot grant
+a second repair and no second accounting exists. Accepted gaps are an explicitly
+qualified run outcome, not verified/completed work.

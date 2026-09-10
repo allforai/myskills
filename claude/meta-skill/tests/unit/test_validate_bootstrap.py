@@ -231,7 +231,7 @@ def test_canvas2d_game_client_mature_profile_passes(tmp_path):
         if "repair-loop" in node_id:
             body += " qa-repair-loop repair and revalidation revalidation-report"
         if "concept-acceptance" in node_id:
-            body += " concept-acceptance acceptance-report final weighted product acceptance"
+            body += " concept-acceptance acceptance-report coverage gate missing_mappings"
         _write_node_spec(tmp_path, node_id, body)
 
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
@@ -274,7 +274,7 @@ def test_canvas2d_game_client_requires_audio_closure_by_default(tmp_path):
             "module_wiring_proofs production consumer visual acceptance runtime probe "
             "asset manifest preload fps memory performance budget legal action "
             "interface cards public module signatures preserved_exports qa-repair-loop "
-            "concept-acceptance acceptance-report final weighted product acceptance",
+            "concept-acceptance acceptance-report coverage gate missing_mappings",
         )
 
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
@@ -319,7 +319,7 @@ def test_canvas2d_game_client_audio_can_be_scope_locked_out(tmp_path):
             "module_wiring_proofs production consumer visual acceptance runtime probe "
             "asset manifest preload fps memory performance budget legal action "
             "interface cards public module signatures preserved_exports qa-repair-loop "
-            "concept-acceptance acceptance-report final weighted product acceptance",
+            "concept-acceptance acceptance-report coverage gate missing_mappings",
         )
 
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))

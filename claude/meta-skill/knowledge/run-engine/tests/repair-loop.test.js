@@ -188,10 +188,15 @@ const runPolicy = onNeedsIteration => ({
   policy: { on_repeated_failure: 'halt', on_safety_warning: 'continue', on_needs_iteration: onNeedsIteration }
 })
 
-const needsIteration = id => ({
-  node_id: id, outcome: 'passed', artifacts_written: [`art/${id}`],
-  blocking_findings: [], acceptance_verdict: 'needs_iteration'
+// The concept-acceptance coverage gate (ADR 0008): every behaviour mapping either has
+// evidence or is named in missing_mappings. There is no score and no verdict; the gate
+// fires on a non-empty list and proceeds on an empty one.
+const MISSING = [{ mapping_id: 'bm-3', behaviour: 'frustration lowers difficulty', expected_evidence: 'runtime probe' }]
+const gateNamed = (id, missing = MISSING) => ({
+  node_id: id, outcome: 'passed', artifacts_written: ['.allforai/concept-acceptance/acceptance-report.json'],
+  blocking_findings: [], missing_mappings: missing
 })
+const gateCovered = id => gateNamed(id, [])
 
 test('runEngine: an accepted-with-gaps node in a repair wave is not reported complete', async () => {
   const dag = { nodes: withIter(), completed: [], repair_loops: [LOOP] }
@@ -203,7 +208,7 @@ test('runEngine: an accepted-with-gaps node in a repair wave is not reported com
     repair: passed('repair'),
     accept: passed('accept'),
     // A re-run of an accepted node may report anything; it must never be re-run.
-    iter: [needsIteration('iter'), passed('iter')],
+    iter: [gateNamed('iter'), gateCovered('iter')],
     'policy:on_needs_iteration': { action: 'accept' },
     'iteration-report:iter': {},
     'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit:iter': {}
@@ -214,22 +219,133 @@ test('runEngine: an accepted-with-gaps node in a repair wave is not reported com
   assert.equal(agent.counters.iter, 1, 'an accepted node is never re-run into a passing verdict')
 })
 
-test('runEngine: a stopped iteration repair in a repair wave is not reported complete', async () => {
-  const dag = { nodes: withIter(), completed: [], repair_loops: [LOOP] }
+test('runEngine: an empty missing-mapping list proceeds without consulting the policy', async () => {
+  const dag = { nodes: withIter(), completed: [], repair_loops: [] }
   const agent = agentWith(ledgerFor(), {
-    'run-policy': runPolicy('auto_fix_once'),
+    'run-policy': runPolicy('halt_with_report'),
     'load-dag': dag,
-    implement: passed('implement'),
-    verify: [qaFailed('verify'), passed('verify')],
-    repair: passed('repair'),
-    accept: passed('accept'),
-    iter: [needsIteration('iter'), passed('iter')],
-    'policy:on_needs_iteration': { action: 'auto_fix_once' },
-    'iteration-report:iter': {}, 'iteration-repair:iter': {},
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    iter: gateCovered('iter'),
     'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit:iter': {}
   })
   const res = await core.runEngine({ agent, pipeline, phase: cappedPhase() })
-  assert.equal(res.status, 'iteration_repair_stopped', 'a one-shot iteration repair must still stop the run')
+  assert.equal(res.status, 'complete')
+  assert.equal(agent.counters['policy:on_needs_iteration'], undefined, 'nothing fired')
+  assert.equal(agent.counters['commit:iter'], 1)
+})
+
+test('runEngine: a scored acceptance verdict is refused by name, never read as a gate result', async () => {
+  const dag = { nodes: withIter(), completed: [], repair_loops: [] }
+  const agent = agentWith(ledgerFor(), {
+    'run-policy': runPolicy('auto_fix_once'),
+    'load-dag': dag,
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    iter: { ...gateCovered('iter'), acceptance_verdict: 'pass', overall_score: 91 },
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit-failures': {}
+  })
+  const res = await core.runEngine({ agent, pipeline, phase: cappedPhase() })
+  assert.equal(res.status, 'needs_diagnosis')
+  const finding = res.hardFailures.find(f => f.node_id === 'iter').blocking_findings[0]
+  assert.equal(finding.type, 'invalid_artifact_gate')
+  assert.match(finding.detail, /scored verdict/)
+  assert.equal(agent.counters['commit:iter'], undefined)
+})
+
+// A missing mapping under auto_fix_once is a bounded QA repair request: it reaches its
+// declared repair node only through the ledger (ADR 0005, ADR 0006), and it is granted
+// exactly once by the recorded policy however much budget the loop still holds.
+const ITER_LOOP = { scope: 'concept', qa_node_ids: ['iter'], repair_node_id: 'iter-repair', closure_node_ids: [], max_attempts: 2 }
+const withIterLoop = () => withIter().concat([
+  { node_id: 'iter-repair', capability: 'x', hard_blocked_by: ['iter'], exit_artifacts: [] }
+])
+const iterAuthorizations = ledger => ledger.calls.filter(c => c.operation === 'authorize')
+
+test('runEngine: a missing mapping is repaired once through the declared loop and the ledger, then the run stops', async () => {
+  const dag = { nodes: withIterLoop(), completed: [], repair_loops: [ITER_LOOP] }
+  const ledger = ledgerFor({}, ITER_LOOP)
+  const agent = agentWith(ledger, {
+    'run-policy': runPolicy('auto_fix_once'),
+    'load-dag': dag,
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    iter: [gateNamed('iter'), gateCovered('iter')],
+    'iter-repair': passed('iter-repair'),
+    'policy:on_needs_iteration': { action: 'auto_fix_once' },
+    'iteration-report:iter': {},
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit:iter': {}, 'commit:iter-repair': {}
+  })
+  const res = await core.runEngine({ agent, pipeline, phase: cappedPhase() })
+  assert.equal(res.status, 'iteration_repair_stopped', 'one repair, one rerun, then stop')
+  assert.equal(agent.counters['iter-repair'], 1, 'the declared repair node ran once')
+  assert.equal(agent.counters['iteration-repair:iter'], undefined, 'no in-node repair bypasses the ledger')
+  const grants = iterAuthorizations(ledger)
+  assert.equal(grants.length, 1, 'the repair was charged through the ledger')
+  assert.deepEqual(grants[0].obligations, ['iter'])
+  assert.equal(grants[0].repair_node_id, 'iter-repair')
+  assert.equal(ledger.spentOf('iter-repair', 'iter'), 1)
+  assert.equal(agent.counters.iter, 2, 'the gate reran after the repair')
+  assert.equal(agent.counters['commit:iter'], 1, 'the passing rerun is committed')
+})
+
+test('runEngine: a mapping still missing after the one recorded repair stops the run, not a second route', async () => {
+  const dag = { nodes: withIterLoop(), completed: [], repair_loops: [ITER_LOOP] }
+  const ledger = ledgerFor({}, ITER_LOOP)
+  const agent = agentWith(ledger, {
+    'run-policy': runPolicy('auto_fix_once'),
+    'load-dag': dag,
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    iter: gateNamed('iter'),
+    'iter-repair': passed('iter-repair'),
+    'policy:on_needs_iteration': { action: 'auto_fix_once' },
+    'iteration-report:iter': {},
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit:iter-repair': {}, 'commit-failures': {}
+  })
+  const res = await core.runEngine({ agent, pipeline, phase: cappedPhase() })
+  assert.equal(res.status, 'needs_diagnosis')
+  assert.equal(agent.counters['iter-repair'], 1, 'the loop still had budget; the policy is what stopped it')
+  assert.equal(iterAuthorizations(ledger).length, 1)
+  assert.equal(agent.counters.iter, 2)
+  const finding = res.hardFailures.find(f => f.node_id === 'iter').blocking_findings[0]
+  assert.equal(finding.type, 'needs_iteration')
+  assert.equal(agent.counters['commit:iter'], undefined)
+})
+
+test('runEngine: a missing mapping with no declared repair loop is an unauthorized repair and halts', async () => {
+  const dag = { nodes: withIter(), completed: [], repair_loops: [] }
+  const ledger = ledgerFor()
+  const agent = agentWith(ledger, {
+    'run-policy': runPolicy('auto_fix_once'),
+    'load-dag': dag,
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    iter: gateNamed('iter'),
+    'policy:on_needs_iteration': { action: 'auto_fix_once' },
+    'iteration-report:iter': {},
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit-failures': {}
+  })
+  const res = await core.runEngine({ agent, pipeline, phase: cappedPhase() })
+  assert.equal(res.status, 'needs_diagnosis')
+  assert.equal(agent.counters.iter, 1, 'nothing repaired, nothing rerun')
+  assert.equal(iterAuthorizations(ledger).length, 0, 'no grant was ever charged')
+  assert.equal(agent.counters['iteration-repair:iter'], undefined)
+})
+
+test('runEngine: a missing mapping whose declared budget is spent halts without a dispatch', async () => {
+  const dag = { nodes: withIterLoop(), completed: [], repair_loops: [ITER_LOOP] }
+  const ledger = ledgerFor({ iter: ITER_LOOP.max_attempts }, ITER_LOOP)
+  const agent = agentWith(ledger, {
+    'run-policy': runPolicy('auto_fix_once'),
+    'load-dag': dag,
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    iter: gateNamed('iter'),
+    'iter-repair': passed('iter-repair'),
+    'policy:on_needs_iteration': { action: 'auto_fix_once' },
+    'iteration-report:iter': {},
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}, 'commit-failures': {}
+  })
+  const res = await core.runEngine({ agent, pipeline, phase: cappedPhase() })
+  assert.equal(res.status, 'needs_diagnosis')
+  assert.equal(agent.counters['iter-repair'], undefined, 'an over-budget repair never runs')
+  assert.equal(iterAuthorizations(ledger).length, 0)
+  assert.equal(ledger.spentOf('iter-repair', 'iter'), ITER_LOOP.max_attempts, 'nothing further charged')
 })
 
 // --- the declared budget is per QA node, and it survives a restart ---

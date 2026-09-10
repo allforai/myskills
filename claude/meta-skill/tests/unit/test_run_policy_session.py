@@ -83,7 +83,14 @@ def test_generated_driver_requires_policy_and_consumes_repeated_failure_choice(t
     assert ("Selected node: deliver-export" in calls) == (choice == "continue")
 
 
-@pytest.mark.parametrize("choice,expected", [("halt_with_report", 5), ("accept", 0), ("auto_fix_once", 5)])
+# concept-acceptance is a coverage gate (ADR 0008): its report names the behaviour mappings
+# without evidence and renders no score or verdict. With no declared repair loop naming the
+# gate, auto_fix_once has nothing it may charge: the repair is unauthorized and halts.
+MISSING_MAPPINGS = [{"mapping_id": "bm-1", "behaviour": "CSV labels follow the account locale",
+                     "expected_evidence": "export fixture in the second locale"}]
+
+
+@pytest.mark.parametrize("choice,expected", [("halt_with_report", 5), ("accept", 0), ("auto_fix_once", 6)])
 @pytest.mark.parametrize("declared", [False, True])
 def test_generated_driver_consumes_iteration_policy_without_new_interviews(tmp_path, choice, expected, declared):
     project(tmp_path, confirmed=True, host="codex")
@@ -99,7 +106,8 @@ def test_generated_driver_consumes_iteration_policy_without_new_interviews(tmp_p
         spec_path.write_text("---\n" + json.dumps(workflow["nodes"][0]) + "\n---" + body)
     write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
     write(tmp_path, ".allforai/bootstrap/export-report.json", {"status": "passed"})
-    write(tmp_path, ".allforai/concept-acceptance/acceptance-report.json", {"verdict": "needs_iteration", "gaps": ["CSV labels need improvement"]})
+    write(tmp_path, ".allforai/concept-acceptance/acceptance-report.json",
+          {"gate": "concept-acceptance", "missing_mappings": MISSING_MAPPINGS})
     publish_evidence(tmp_path)  # Declared evidence is verified and published before the policy branch is exercised.
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_needs_iteration=choice),
                              "user_reference": "Run entry"}).returncode == 0
@@ -116,14 +124,35 @@ def test_generated_driver_consumes_iteration_policy_without_new_interviews(tmp_p
         if choice == "accept":
             assert json.loads(result.stderr)["passed"] is False
             assert json.loads(result.stderr)["done"] is False
-    if choice == "auto_fix_once":
-        assert (bin_dir / "repair-count").read_text() == "1"
-    else:
-        assert not (bin_dir / "repair-count").exists()
+    assert not (bin_dir / "repair-count").exists(), "no repair runs outside a ledger-authorized dispatch"
     if choice == "accept":
         assert "accepted_with_gaps" in (tmp_path / ".allforai/bootstrap/assumed-decisions.json").read_text()
     else:
-        assert (tmp_path / ".allforai/concept-acceptance/acceptance-report.md").exists()
+        summary = (tmp_path / ".allforai/concept-acceptance/acceptance-report.md").read_text()
+        assert "bm-1" in summary and "score" not in summary.lower()
+    if choice == "auto_fix_once":
+        assert "no declared repair loop names the concept-acceptance gate" in result.stderr
+
+
+def test_generated_driver_refuses_a_scored_acceptance_report_by_name(tmp_path):
+    project(tmp_path, confirmed=True, host="codex")
+    driver = tmp_path / ".allforai/codex/flow.py"
+    driver.parent.mkdir(parents=True)
+    shutil.copy2(Path(__file__).resolve().parents[4] / "codex/meta-skill/knowledge/flow-template.py", driver)
+    workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
+    workflow["expanders"] = []
+    write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    write(tmp_path, ".allforai/bootstrap/export-report.json", {"status": "passed"})
+    write(tmp_path, ".allforai/concept-acceptance/acceptance-report.json",
+          {"verdict": "pass", "overall_score": 91, "pass_threshold": 80, "missing_mappings": []})
+    publish_evidence(tmp_path)
+    assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_needs_iteration="halt_with_report"),
+                             "user_reference": "Run entry"}).returncode == 0
+    result = subprocess.run([sys.executable, str(driver), "Export orders", "1"], cwd=tmp_path,
+                            text=True, capture_output=True)
+    assert result.returncode == 5, (result.stdout, result.stderr)
+    summary = (tmp_path / ".allforai/concept-acceptance/acceptance-report.md").read_text()
+    assert "refused" in summary and "verdict" in summary, "a scored report is not read as either answer"
 
 
 @pytest.mark.parametrize("choice,count", [("halt", 3), ("continue", 4)])
@@ -160,15 +189,19 @@ const pipeline=async (items,...steps)=>Promise.all(items.map(async x=>{for(const
     assert result["result"]["status"] == ("complete" if choice == "continue" else "needs_diagnosis")
 
 
-@pytest.mark.parametrize("event,choice,status,attempts,repaired", [
-    ("on_safety_warning", "halt", "needs_diagnosis", 1, False),
-    ("on_safety_warning", "continue", "complete", 1, False),
-    ("on_needs_iteration", "halt_with_report", "needs_diagnosis", 1, False),
-    ("on_needs_iteration", "accept", "accepted_with_gaps", 1, False),
-    ("on_needs_iteration", "auto_fix_once", "needs_diagnosis", 2, False),
-    ("on_needs_iteration", "auto_fix_once", "iteration_repair_stopped", 2, True),
+# The Claude shell reads the gate's missing-mapping list: a named mapping fires the
+# recorded policy, an empty list proceeds. With no declared repair loop, auto_fix_once has
+# no route it may charge, so nothing is repaired in-node and the run stops. The
+# ledger-authorized route itself is covered in run-engine/tests/repair-loop.test.js.
+@pytest.mark.parametrize("event,choice,status,attempts,gate", [
+    ("on_safety_warning", "halt", "needs_diagnosis", 1, "covered"),
+    ("on_safety_warning", "continue", "complete", 1, "covered"),
+    ("on_needs_iteration", "halt_with_report", "needs_diagnosis", 1, "named"),
+    ("on_needs_iteration", "accept", "accepted_with_gaps", 1, "named"),
+    ("on_needs_iteration", "auto_fix_once", "needs_diagnosis", 1, "named"),
+    ("on_needs_iteration", "auto_fix_once", "complete", 1, "covered"),
 ])
-def test_claude_shell_routes_safety_and_iteration_without_committing_unverified_acceptance(tmp_path, event, choice, status, attempts, repaired):
+def test_claude_shell_routes_safety_and_iteration_without_committing_unverified_acceptance(tmp_path, event, choice, status, attempts, gate):
     project(tmp_path, confirmed=True)
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, **{event: choice}), "user_reference": "run entry"}).returncode == 0
     shell = Path(__file__).resolve().parents[2] / "knowledge/run-engine/run-engine.workflow.js"
@@ -184,8 +217,9 @@ const agent=async(prompt,opts)=>{
   return JSON.parse(cp.spawnSync(process.argv[3],['.allforai/bootstrap/scripts/product_intent.py','.',...args],{encoding:'utf8'}).stdout);
  }
  if(opts.label==='load-dag')return {nodes:[{node_id:'export',hard_blocked_by:[],exit_artifacts:[]}],completed:[]};
- if(opts.label==='export'){count++;return {node_id:'export',outcome:'passed',blocking_findings:[],artifacts_written:[],
-  ...(process.argv[4]==='on_safety_warning'?{safety_warnings:['Slow external API']}:{acceptance_verdict:process.argv[5]==='yes'&&count>1?'passed':'needs_iteration'})};}
+ if(opts.label==='export'){count++;return {node_id:'export',outcome:'passed',blocking_findings:[],artifacts_written:['.allforai/concept-acceptance/acceptance-report.json'],
+  ...(process.argv[4]==='on_safety_warning'?{safety_warnings:['Slow external API']}:{}),
+  missing_mappings:process.argv[5]==='named'?[{mapping_id:'bm-1',behaviour:'CSV labels follow the account locale'}]:[]};}
  if(opts.label==='verify:export')return {node_id:'export',status:'passed',blocking_findings:[]};
  if(opts.label==='commit:export')commits++;
  return {};
@@ -193,12 +227,12 @@ const agent=async(prompt,opts)=>{
 const pipeline=async(items,...steps)=>Promise.all(items.map(async x=>{for(const step of steps)x=await step(x);return x;}));
 (async()=>{const result=await new AsyncFunction('agent','pipeline','log','phase',source)(agent,pipeline,()=>{},()=>{});console.log(JSON.stringify({result,count,commits}));})();
 ''')
-    result = subprocess.run(["node", str(runner), str(shell), sys.executable, event, "yes" if repaired else "no"], cwd=tmp_path, text=True, capture_output=True)
+    result = subprocess.run(["node", str(runner), str(shell), sys.executable, event, gate], cwd=tmp_path, text=True, capture_output=True)
     assert result.returncode == 0, result.stderr
     output = json.loads(result.stdout)
     assert output["result"]["status"] == status
-    assert output["count"] == attempts
-    assert output["commits"] == (1 if status == "complete" or repaired else 0)
+    assert output["count"] == attempts, "no in-node repair reruns the gate outside a ledger-authorized dispatch"
+    assert output["commits"] == (1 if status == "complete" else 0)
 
 
 @pytest.mark.parametrize("choice,expected", [("halt", 4), ("continue", 0)])

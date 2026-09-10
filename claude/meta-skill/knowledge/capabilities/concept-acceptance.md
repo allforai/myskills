@@ -1,20 +1,42 @@
 # Concept Acceptance Capability
 
-> Final workflow node. Verify the running product delivers the experience promised
-> by product-concept.json. This is NOT code-vs-design verification (that's product-verify)
-> — this is experience-vs-concept verification, closing the product iteration loop.
+> Final workflow node. A coverage gate, not a verdict (ADR-0008): every behaviour
+> mapping the concept declares either has evidence in the delivered product or is
+> named as missing. The gate scores nothing, sets no threshold and renders no
+> verdict. Whether the product delivers the concept, and how well, is the question
+> `/cross-exam` and `/product-review` ask afterwards, as a party that did not write
+> the code. This is NOT code-vs-design verification either (that is product-verify).
 
 ## Goal
 
-After all build/test/demo nodes complete, answer: "Does this product deliver
-the value promised in the original concept?" Score the result and produce
-actionable feedback for the next iteration.
+After all build/test/demo/verify nodes complete, answer one machine-decidable
+question: for each behaviour mapping the concept declares, does evidence exist
+that the delivered product exhibits it? The answer is two lists — covered and
+missing. The orchestrator's `on_needs_iteration` trigger fires on a non-empty
+missing list and proceeds on an empty one; nothing else in this gate's output
+drives the run.
 
 ## Prerequisite
 
-`product-concept.json` must exist — OR — for game projects, `game-design-doc.json` (from game-design-finalize node). Bootstrap auto-appends this node when `has_product_concept = true` OR `is_game_project = true`.
+`product-concept.json` must exist — OR — for game projects, `game-design-doc.json`
+(from game-design-finalize node). Bootstrap auto-appends this node when
+`has_product_concept = true` OR `is_game_project = true`.
 
-**Game project fallback** (`is_game_project = true` and `has_product_concept = false`): Use `.allforai/game-design/game-design-doc.json` as the concept baseline. Dimension mapping: `core_loop` → Value proposition + Core features; `systems[]` → Core features + Differentiators; `player_roles[]` → Role coverage; `economy` → Business model (monetization flows). All other verification dimensions remain the same.
+**What a behaviour mapping is.** The concept states, per adaptive system, the
+behaviours that change with state (`adaptive_systems[].behavior_mappings[]`:
+`state_read` → `behavior`). Those are the mappings this gate covers, and the concept
+is the only source of them: the gate never invents a mapping the concept did not
+declare, and never drops one it did.
+
+**Game project fallback** (`is_game_project = true` and `has_product_concept = false`):
+the baseline is `.allforai/game-design/game-design-doc.json`; its `systems[]` entries
+that describe state-driven behaviour (`core_loop` feedback, `economy` rules, per-role
+`player_roles[]` behaviour) are the mappings.
+
+**MVP scope**: mappings that reference only `post_launch` features are listed as
+`out_of_scope`, with the feature that defers them, never as covered and never as
+missing. Bootstrap Step 3.5 Level 4 flags them as "premature mapping"; this gate does
+not re-judge that.
 
 ## What LLM Must Accomplish (not how)
 
@@ -22,186 +44,138 @@ actionable feedback for the next iteration.
 
 | Output | What |
 |--------|------|
-| `.allforai/concept-acceptance/acceptance-report.json` | Structured scoring across all concept dimensions |
-| `.allforai/concept-acceptance/acceptance-report.md` | Human-readable summary with gaps and recommendations |
-| `.allforai/product-concept/iteration-feedback.json` | Written to product-concept/ for next bootstrap cycle |
+| `.allforai/concept-acceptance/acceptance-report.json` | The coverage gate's machine record: covered, missing and out-of-scope mappings, each bound to the concept it was read from |
+| `.allforai/concept-acceptance/acceptance-report.md` | Human-readable summary: the missing list and what evidence each lacks; no scores |
+| `.allforai/product-concept/iteration-feedback.json` | The missing list for the next bootstrap cycle, plus `user_decisions[]` (empty until a human records one) |
 
-### Verification Dimensions
+### Output Shape
 
-| Dimension | Check |
-|-----------|-------|
-| Value proposition | Is the product positioning reflected in actual functionality? |
-| Core features | Every `must_have` feature is functional and accessible? |
-| Differentiators | `differentiators` features deliver genuine differentiation, not just exist? |
-| Role coverage | Every defined role has a complete usage path? |
-| Business model | Key commercial flows (payment, subscription, etc.) work end-to-end? |
-| Eliminated items | `errc.eliminate` features confirmed NOT implemented? |
+`acceptance-report.json` keeps its name; its shape is the gate's and nothing more:
+
+```json
+{
+  "gate": "concept-acceptance",
+  "checked_at": "<ISO timestamp with timezone offset>",
+  "attempt_id": "<unique per run of this node>",
+  "concept_ref": { "path": ".allforai/product-concept/product-concept.json", "digest": "sha256:<hex>" },
+  "covered_mappings": [
+    {
+      "mapping_id": "<system>/<index or name>",
+      "state_read": "<as declared>",
+      "behavior": "<as declared>",
+      "evidence": [
+        { "kind": "runtime-probe | e2e | test | screenshot | log | api-roundtrip",
+          "path": "<file under .allforai/ or the project>",
+          "claim": "<one line: what this evidence shows>" }
+      ]
+    }
+  ],
+  "missing_mappings": [
+    {
+      "mapping_id": "<system>/<index or name>",
+      "state_read": "<as declared>",
+      "behavior": "<as declared>",
+      "expected_evidence": "<what would have shown it>",
+      "searched": ["<where evidence was looked for>"]
+    }
+  ],
+  "out_of_scope_mappings": [
+    { "mapping_id": "<...>", "deferred_by": "<post_launch feature>" }
+  ]
+}
+```
+
+The report carries no `verdict`, `overall_score`, `pass_threshold` or
+`dimensions[].score`. A report that does is not this gate's output: both
+orchestrators refuse it by name rather than read it as either answer, and the
+same refusal applies to a report with no `missing_mappings` list at all.
 
 ### Required Quality
 
-- Every dimension scored 0-100 with evidence
-- Every gap is actionable (type + target + suggestion)
-- Verdict is binary: `pass` or `needs_iteration`
-- Pass requires: overall_score >= pass_threshold AND zero `core` severity gaps
-- pass_threshold defaults to 80, but bootstrap can customize it in the node-spec based on project type (MVP/prototype: 60, standard product: 80, high-bar consumer: 90+)
+- Every mapping the concept declares appears in exactly one of the three lists.
+  A mapping in none of them, or in two, refuses the report.
+- A mapping is covered only by evidence that shows the behaviour **changing with
+  the state it reads**: a before/after observation (state, triggering event,
+  observed behaviour) or its equivalent. Code that references the state dimension
+  is not evidence that the behaviour changes; the mapping stays missing.
+- Every `evidence.path` exists and is readable at the time the report is written;
+  a path that does not is refused, not skipped.
+- `concept_ref.digest` is the digest of the concept as read. A concept edited after
+  the report was written invalidates the report; it does not silently age.
+- `attempt_id` is unique per run of this node, so the same missing list twice is two
+  distinct verdicts and the orchestrator never has to infer a rerun from a timestamp.
+- A missing mapping names what evidence would have covered it and where the gate
+  looked. That list is the repair request; a bare "not implemented" is not one.
+- The gate reads only the concept, the delivered product and the evidence the
+  earlier gates left under `.allforai/`. It never runs `/cross-exam` and never
+  reads its ledger.
 
-## Protocol
+### Evidence the gate may cite
 
-### Phase 1: Static Verification (LLM Review)
+Runtime evidence produced by earlier nodes (product-verify, runtime-smoke-verify,
+test-verify, visual-verify, demo-forge's `verify-report.json`) is admissible when
+its `readback`/`build` bindings name the current build; the gate may also gather its
+own before/after observations with the project's E2E tool as `bootstrap-profile.json`
+selects it (Playwright, `flutter test integration_test/`, XCUITest, Espresso, curl, a
+shell script, PlayMode/GUT/Gauntlet, or a manual playthrough checklist for a game with
+no runner). Static evidence (a code path, a config value) covers nothing on its own.
 
-LLM reads all produced artifacts + source code, cross-referenced against
-`product-concept.json`. For each dimension, judge whether the implementation
-faithfully delivers the concept's intent. Not mechanical matching — semantic
-judgment of whether the product experience matches the concept promise.
+For multi-client roles (`clients[]` with `feature_parity`), a mapping is covered
+only when it is covered on every client the mapping's feature is declared for;
+`parity_exceptions` and `explicit` `supported_features[]` narrow that set, they never
+widen it. A mapping covered on one client and not another is missing, and the entry
+names the client.
 
-### Phase 2: Dynamic Verification (E2E Experience)
+## Downstream Contract (orchestrator)
 
-Platform-specific — bootstrap generates the concrete tool in the node-spec
-based on `bootstrap-profile.json` tech_stacks. This capability defines
-principles only:
+`on_needs_iteration` fires when `missing_mappings` is non-empty, and proceeds when
+it is empty. Under the recorded Run Policy:
 
-| Module Type | Tool (selected by bootstrap) |
-|-------------|------------------------------|
-| Web (Next.js, React, Vue) | Playwright |
-| Flutter mobile | flutter test integration_test/ |
-| React Native | Detox / Maestro |
-| iOS native (SwiftUI) | XCUITest |
-| Android native (Kotlin) | Espresso |
-| API-only backend | curl / HTTP client |
-| CLI tool | Shell script execution |
-| Desktop (Electron, Tauri) | Platform-specific E2E |
-| Unity | Unity Test Framework (PlayMode -runTests) |
-| Godot | GUT framework (`godot --headless --script addons/gut/gut_cmdln.gd`) or GdUnit4 |
-| Unreal Engine | Gauntlet Automation Framework |
-| Game (no automated runner) | Manual playthrough checklist: launch → core loop → save/load → exit |
+- `halt_with_report` writes `acceptance-report.md` and stops; the fix /
+  re-bootstrap / accept choice is the human's, afterwards.
+- `auto_fix_once` turns the missing list into **one bounded QA repair request** under
+  the existing authorization path (ADR-0005, ADR-0006): the gate is a QA node whose
+  current report is a positive verdict, its declared `required_repair_loops` entry
+  names the repair node, and the dispatch is charged to the ledger before it runs.
+  A gate no loop declares a repair for is an unauthorized repair and halts; a spent
+  or unknown budget halts; a second missing list after the one recorded repair halts
+  with its report. Nothing repairs in-node, and nothing repairs unpaid.
+- `accept` records `accepted_with_gaps` as a qualified run outcome, never as
+  verified or completed work.
 
-For each role defined in product-concept.json:
+## Iteration Feedback
 
-**Single-client roles** (legacy `client_type` field):
-1. Authenticate as that role (using demo-forge seeded credentials)
-2. Walk through each core flow end-to-end
-3. Capture evidence (screenshots/recordings/logs per platform)
-4. Score: completeness (can the flow be completed?) + fluency (unnecessary steps,
-   dead ends, confusion?)
-
-**Multi-client roles** (`clients[]` array with `feature_parity`):
-For EACH client declared in the role:
-1. Use the appropriate E2E tool for that client's `client_type` (see table above)
-2. Authenticate as that role on THIS specific client
-3. Walk through each core flow end-to-end on THIS client
-4. Capture evidence per client
-5. Score per client: completeness + fluency
-
-After all clients are tested, perform **parity check**:
-- `feature_parity: full` → every feature must work on every client
-- `feature_parity: partial` → every feature must work on every client, except those in `parity_exceptions`
-- `feature_parity: explicit` → each client is tested ONLY on its declared `supported_features[]`.
-  Score per client reflects only those features. A voice client scoring 90 on 3 features
-  is not compared against an iOS client scoring 85 on 10 features — different scopes.
-- Score parity: flag significant score differences between clients for the same flow
-  (e.g., buyer-ios: 90, buyer-web: 60 → flag as "web experience significantly worse")
-- Parity failures are reported as gaps with severity based on the feature's importance
-
-### Phase 2.5: Adaptive Behavior Verification (when concept has adaptive_systems)
-
-If `product-concept.json` contains `adaptive_systems[]`, verify that state machines
-actually work at runtime — not just that the code exists, but that behaviors change
-based on state.
-
-For each adaptive system:
-
-1. **Trigger state transitions**: use demo-forge seeded data or live interaction to
-   trigger events defined in `transitions[]`. Example: submit 5 wrong answers to
-   trigger frustration_index increase.
-
-2. **Verify state updates**: after triggering events, read the user's state from the
-   API or database. Confirm dimensions were updated as expected.
-
-3. **Verify behavior changes**: after state changes, trigger the behavior that reads
-   that state. Confirm the output differs from the default. Example: after
-   frustration_index > 0.7, the next exercise should be easier than before.
-
-4. **Test boundary conditions**:
-   - New user (all dimensions at initial values) → default behavior correct?
-   - Edge values (mastery = 0.0, mastery = 1.0) → no crashes, reasonable behavior?
-   - State regression (user was advanced, now answers wrong) → difficulty decreases?
-
-Evidence format: for each adaptive system, record a before/after state snapshot
-with the triggering events and observed behavior change. This is the strongest
-proof that personalization works — static code review cannot verify this.
-
-**MVP scope**: only verify behavior_mappings that reference MVP features. Mappings
-that reference post_launch features are skipped (flagged by Step 3.5 Level 4 as
-"premature mapping").
-
-### Phase 3: Scoring and Verdict
-
-Aggregate dimension scores into overall_score. Apply verdict logic:
-- `pass`: overall_score >= pass_threshold AND no `core` severity gaps
-- `needs_iteration`: overall_score < pass_threshold OR any `core` severity gap
-
-### Phase 4: Iteration Feedback
-
-Write `.allforai/product-concept/iteration-feedback.json`:
+Write `.allforai/product-concept/iteration-feedback.json` on every run, whatever the
+lists hold — it is the audit trail for the iteration:
 
 ```json
 {
   "iteration": 1,
-  "feedback_at": "<ISO timestamp>",
+  "feedback_at": "<ISO timestamp with timezone offset>",
   "source": "concept-acceptance",
-  "overall_score": 78,
-  "verdict": "needs_iteration",
-  "gaps": [
-    {
-      "feature": "<feature name>",
-      "severity": "core | important | minor",
-      "status": "not_implemented | partial | poor_experience",
-      "detail": "<what's wrong>"
-    }
-  ],
-  "recommended_actions": [
-    {
-      "type": "fix_gap | simplify_flow | reconsider_concept | deprioritize",
-      "target": "<feature or flow name>",
-      "suggestion": "<actionable recommendation>"
-    }
-  ],
+  "concept_ref": { "path": "...", "digest": "sha256:<hex>" },
+  "missing_mappings": [ "<the report's entries, verbatim>" ],
   "user_decisions": []
 }
 ```
 
 Archive previous feedback to `.allforai/product-concept/iteration-history/iteration-{N}.json`.
-
-**Always write feedback**, regardless of verdict. On `pass`, gaps[] and recommended_actions[]
-will be empty or contain only minor items — the file serves as audit trail for the iteration.
-
-### Phase 5: Human Intervention (orchestrator responsibility)
-
-When verdict = `pass`: orchestrator proceeds to normal completion (success report).
-No human intervention needed. The iteration loop is closed.
-
-When verdict = `needs_iteration`, the orchestrator (run.md) must:
-
-1. Output acceptance-report.md summary
-2. Stop execution
-3. Present options:
-   - a) Fix gaps then re-verify → `/run concept-acceptance`
-   - b) Adjust concept then re-bootstrap → edit product-concept.json, `/bootstrap`
-   - c) Accept current state → mark as v1
-
-This is the orchestrator's job, not the subagent's. The subagent produces the
-report and feedback; the orchestrator decides whether to stop.
+`user_decisions[]` is written only by a human at an interactive entry; the gate
+leaves it as it found it.
 
 ## Rules (Must Preserve)
 
-1. **Static before dynamic**: Cheaper checks first, catch obvious gaps early.
-2. **Per-role verification**: Each role's journey tested independently.
-3. **Concept is the baseline**: Not design artifacts, not code structure — the original
-   product concept is the single source of truth for this verification.
-4. **Evidence-based**: Each dimension score must cite specific evidence (screenshots,
-   code paths, test results).
-5. **Feedback is structured**: iteration-feedback.json must be machine-readable so
-   the next bootstrap can consume it automatically.
+1. **Concept is the baseline**: not design artifacts, not code structure — the
+   declared mappings are the single list this gate covers.
+2. **Coverage, not judgement**: the gate says which mappings have evidence and which
+   do not. It never says how good the product is, how complete it feels, or whether
+   it should ship; those verdicts left `/run` (ADR-0008).
+3. **Evidence is bound**: every covered mapping cites evidence that exists and names
+   the build it was taken from; the report names the concept digest it was read against.
+4. **The missing list is the repair request**: machine-readable, one entry per
+   mapping, each naming the evidence that would cover it.
+5. **Per-client coverage**: a multi-client mapping is covered per client, never by
+   the best client.
 
 ## Downstream Consumers
 
@@ -210,25 +184,32 @@ report and feedback; the orchestrator decides whether to stop.
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `.allforai/concept-acceptance/acceptance-report.json` | `verdict`, `overall_score` | orchestrator (run.md) | required | orchestrator 需要 verdict 来决定是否停止执行还是继续 |
-| `.allforai/concept-acceptance/acceptance-report.json` | `gaps[]` | orchestrator (run.md) | required | 输出 gap 摘要给用户选择下一步行动 |
-| `.allforai/product-concept/iteration-feedback.json` | full file | bootstrap (re-run) | optional | 下一轮 /bootstrap 读取历史 gap 进行增量规划 |
+| `.allforai/concept-acceptance/acceptance-report.json` | `missing_mappings[]` | orchestrator (run.md / flow.py) | required | `on_needs_iteration` fires on a non-empty list and proceeds on an empty one; under `auto_fix_once` the list is the bounded repair request |
+| `.allforai/concept-acceptance/acceptance-report.json` | `concept_ref`, `attempt_id` | orchestrator (run.md / flow.py) | required | binds the list to the concept it was read from and to the attempt that produced it |
+| `.allforai/product-concept/iteration-feedback.json` | full file | bootstrap (re-run) | optional | 下一轮 /bootstrap 读取 missing_mappings 进行增量规划 |
 
 ## Knowledge References
 
 ### Phase-Specific:
 - cross-phase-protocols.md §A: Push-Pull for loading concept baseline
-- cross-phase-protocols.md §B: 4D+6V+Closure for verification rigor
 - cross-phase-protocols.md §C: Upstream Baseline Validation (concept = ultimate upstream)
-- consumer-maturity-patterns.md: consumer maturity scoring for experience quality
+- docs/adr/0008: why the score, threshold and verdict left this gate
 
 ## Composition Hints
 
 ### Single Node (default)
 Run after all build/test/demo/verify nodes complete. Final node in workflow.
 
+### Repair loop for `auto_fix_once`
+When the Run Policy may answer `auto_fix_once`, bootstrap declares a
+`required_repair_loops` entry whose `qa_node_ids` names this node and whose
+`repair_node_id` is a node `hard_blocked_by` it (a distinct node from any loop this
+gate closes, or the graph cycles). Without that declaration the trigger halts as an
+unauthorized repair — by design, not by accident.
+
 ### Split Static vs Dynamic
-For large multi-platform projects: static verification as one node, dynamic per platform.
+For large multi-platform projects: evidence gathering per platform as separate
+nodes, one gate node reading them all.
 
 ### Skip Entirely
 When `product-concept.json` does not exist (pure code analysis, tune, quality-checks goals).

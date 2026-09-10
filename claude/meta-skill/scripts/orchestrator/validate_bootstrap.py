@@ -309,7 +309,9 @@ CANVAS2D_REQUIRED_FAMILIES = {
         "concept-acceptance",
         "concept acceptance",
         "acceptance-report",
-        "final weighted product acceptance",
+        "missing_mappings",
+        "missing behaviour mappings",
+        "coverage gate",
     ),
 }
 

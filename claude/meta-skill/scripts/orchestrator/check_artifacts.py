@@ -85,6 +85,9 @@ PRODUCTION_GAP_FIELDS = (
     "experience_gaps",
     "visual_quality_gaps",
     "perceptual_gaps",
+    # The concept-acceptance coverage gate: behaviour mappings with no evidence. A
+    # non-empty list is that gate's QA verdict, never a score (ADR 0008).
+    "missing_mappings",
 )
 
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
@@ -409,6 +412,7 @@ def _production_gap_error(data: dict) -> dict | None:
             "contract_gaps",
             "gaps",
             "major_findings",
+            "missing_mappings",
             "remaining_gaps",
             "test_gaps",
             "unresolved_findings",

@@ -56,7 +56,8 @@ Before stopping, record `preflight_blocked` with `record_run_event.py`, then run
 Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
 Reuse `run_policy_ready` with zero questions. On `needs_run_policy`, collect
 the returned three choices together from the user: repeated failure
-continue/halt; needs_iteration halt_with_report/auto_fix_once/accept; safety
+continue/halt; needs_iteration (the concept-acceptance coverage gate names
+behaviour mappings without evidence) halt_with_report/auto_fix_once/accept; safety
 warning continue/halt. First options are displayed defaults, never automatic
 answers. Persist JSON `{operation: "run-policy", answers: {...}, user_reference}`
 through that CLI. Invalid policy blocks for interactive repair. Both the markdown
@@ -388,11 +389,22 @@ On the first iteration, if `transition_log` is non-empty:
 ## Termination
 
 - All required exit artifacts are ready: report success
-- `concept-acceptance` verdict = `needs_iteration`: consume `--policy-event on_needs_iteration`.
-  halt_with_report writes the summary and stops; auto_fix_once durably consumes
-  one repair, reruns acceptance, then stops; accept records accepted_with_gaps
-  without claiming verified/completed work; the artifact gate treats an
-  `accepted_with_gaps` report status as blocking. Never ask during execution.
+- `concept-acceptance` names missing behaviour mappings
+  (`acceptance-report.json.missing_mappings` non-empty): read `--policy-event
+  on_needs_iteration`. An empty list is the gate passing — proceed, ask nothing. A report
+  that still carries a `verdict`, `overall_score` or `pass_threshold`, or no
+  `missing_mappings` list, is refused by name; it is a scored report, not this gate's
+  output (ADR-0008). halt_with_report writes the summary and stops. auto_fix_once makes the
+  list one bounded QA repair request under the existing authorization path: the gate is a
+  declared QA node whose current report is a positive verdict, `flow.py` routes it to its
+  declared repair node, and the dispatch is charged to the ledger before it runs (ADR-0005,
+  ADR-0006) — nothing is repaired by an executor of the policy's own. A gate no
+  `required_repair_loops` entry names, or whose budget is spent or unknown, halts as an
+  unauthorized repair (exit 6, reason named). After the one repair delivers the gate reruns;
+  a list that still names mappings halts with its report (exit 5), whatever budget the loop
+  has left. accept records accepted_with_gaps without claiming verified/completed work; the
+  artifact gate treats an `accepted_with_gaps` report status as blocking. Never ask during
+  execution.
 - A node withheld by freshness carries `freshness.diff` and `freshness.repair`:
   repair at the named `owner` (the node, a stale producer, or `interactive-bootstrap`
   for a pending or unreplanned product decision), re-observe and republish. A

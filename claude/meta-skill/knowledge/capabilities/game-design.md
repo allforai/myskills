@@ -753,7 +753,7 @@ listed in §Finalize Exit Artifacts. Only include fields whose source JSON exist
 | `quality-checks` | `.allforai/game-design/game-design-doc.json` `.economy.balance_targets`, `.allforai/game-design/systems/audio-design.json.sfx_catalogue[].milestone_gate` | Numerical QA; art-agnostic check; milestone gate check; audio milestone check |
 | `generate-artifacts` | `.allforai/game-design/game-design-doc.json` `.systems[]` | Code generation targets; must implement Asset Registry |
 | `product-verify` | `.allforai/game-design/game-design-doc.json` | Verifies implementation against game design spec; checks all `systems[]` were implemented |
-| `concept-acceptance` | `.allforai/game-design/game-design-doc.json` | Post-implementation concept fitness check; compares shipped game systems against original concept |
+| `concept-acceptance` | `.allforai/game-design/game-design-doc.json` | Coverage gate: every state-driven behaviour the design declares has evidence in the shipped game or is named as missing |
 | `launch-prep` | `.allforai/game-design/game-design-doc.json` | Competitive research context (what systems does this game have?); monetization model for pricing research |
 
 ## Composition Hints
