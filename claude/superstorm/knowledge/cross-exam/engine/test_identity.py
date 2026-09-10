@@ -101,3 +101,43 @@ def test_build_reason_compares_a_recorded_value_with_the_tree(repo):
     assert '缺构建标识' in build_reason('', repo)
     assert '缺构建标识' in build_reason(None, repo)
     assert '不是 git 仓库' in build_reason(recorded, repo / 'nowhere')
+
+
+def test_excluded_paths_are_outside_the_snapshot_tracked_or_not(repo):
+    """What the probe itself writes (a run directory, evidence) must not move the build it records:
+    an excluded path counts neither as an untracked file nor as a diff against the commit."""
+    clean = build_identity(repo, exclude=['docs/run'])
+    assert clean == build_identity(repo)                              # nothing there yet: same value
+    run = repo / 'docs/run'
+    run.mkdir(parents=True)
+    (run / 'ledger.json').write_text('{}')
+    assert build_identity(repo, exclude=['docs/run']) == clean
+    assert build_identity(repo)['build'] != clean['build']            # without the exclusion it is untracked content
+    _git(repo, 'add', '.')
+    _git(repo, 'commit', '-q', '-m', 'run')
+    committed = build_identity(repo, exclude=['docs/run'])
+    (run / 'ledger.json').write_text('{"entries": []}')
+    assert build_identity(repo, exclude=['docs/run']) == committed    # a tracked, edited file under it: still outside
+    assert build_identity(repo)['build'] != committed['build']
+    (repo / 'app.py').write_text('print(2)\n')
+    assert build_identity(repo, exclude=['docs/run'])['build'] != committed['build']   # the product moved
+    assert build_reason(committed['build'], repo, exclude=['docs/run']) != ''
+    (repo / 'app.py').write_text('print(1)\n')
+    assert build_reason(committed['build'], repo, exclude=['docs/run']) == ''
+
+
+def test_repository_variables_a_git_hook_exports_do_not_redirect_the_identity(tmp_path, repo, monkeypatch):
+    """A gate run from inside another repository's hook inherits GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE;
+    the identity is still the tree at `repo`, never the hook's repository."""
+    other = tmp_path / 'other'
+    other.mkdir()
+    (other / 'x').write_text('x')
+    _git(other, 'init', '-q')
+    _git(other, 'add', '.')
+    _git(other, 'commit', '-q', '-m', 'other')
+    expected = build_identity(repo)
+    monkeypatch.setenv('GIT_DIR', str(other / '.git'))
+    monkeypatch.setenv('GIT_WORK_TREE', str(other))
+    monkeypatch.setenv('GIT_INDEX_FILE', str(other / '.git/index'))
+    assert build_identity(repo) == expected
+    assert expected['commit'] != _git(other, 'rev-parse', 'HEAD')

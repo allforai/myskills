@@ -92,7 +92,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── game-design/             # system-spec.json, config-schema.json, protocol-spec.md (game-specific generate-artifacts outputs)
 ├── generate-artifacts/      # cli/pipeline/service/sdk archetype artifacts (command-tree, dag-spec, etc.)
 ├── demo-forge/              # demo-plan.json, forge-data.json, verify-report.json (demo + integration testing)
-├── product-verify/          # static-report, dynamic-report, verify-report, ui-helper-profile.json
+├── product-verify/          # static-report, dynamic-report, verify-report, ui-helper-profile.json, evidence-entries/<node>.json + evidence/
 ├── spec-compliance/         # spec-compliance-report.json
 ├── pipeline-closure/        # pipeline-closure-report.json
 ├── security-verify/         # security-verify-report.json
@@ -100,9 +100,9 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── deadhunt/                # validation-profile, static-analysis/, tests/, fix-tasks
 ├── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
 ├── concept-acceptance/      # acceptance-report.json
-├── runtime-smoke/           # smoke-report.json
+├── runtime-smoke/           # smoke-report.json, evidence-entries/<node>.json + evidence/
 ├── visual-verify/           # visual-verify-report.json, screenshots/
-├── test-verify/             # test-verify-report.json
+├── test-verify/             # test-verify-report.json, evidence-entries/<node>.json + evidence/
 ├── translate/               # translation-manifest.json
 ├── launch-prep/             # competitive-research, compliance-checklist, launch-checklist
 └── bootstrap/               # workflow.json, bootstrap-profile.json, plan-confirmation.json,
@@ -110,7 +110,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
                              # safety-quarantine.json, node-specs/, scripts/, learned/
 ```
 
-**Output contract**: JSON files are machine-readable (complete fields, for AI agents and automation); Markdown `*-report.md` files are human-readable summaries. Never duplicate JSON content in Markdown.
+**Output contract**: JSON files are machine-readable (complete fields, for AI agents and automation); Markdown `*-report.md` files are human-readable summaries. Never duplicate JSON content in Markdown. Runtime verify gates (product-verify, runtime-smoke-verify, test-verify) keep their report names and also write `evidence-entries/<node>.json` in cross-exam's ledger-entry shape (ADR-0008), validated by the shared evidence engine.
 
 ## Installing Plugins
 
