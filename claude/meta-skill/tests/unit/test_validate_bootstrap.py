@@ -14,6 +14,7 @@ validate_canvas2d_game_client_profile_flow = _validate_bootstrap.validate_canvas
 validate_game_2d_production_flow = _validate_bootstrap.validate_game_2d_production_flow
 validate_mobile_ui_coverage = _validate_bootstrap.validate_mobile_ui_coverage
 validate_node_spec_contracts = _validate_bootstrap.validate_node_spec_contracts
+validate_node_spec = _validate_bootstrap.validate_node_spec
 validate_node_spec_coverage = _validate_bootstrap.validate_node_spec_coverage
 validate_workflow = _validate_bootstrap.validate_workflow
 effect_stage_ownership_findings = _validate_bootstrap.effect_stage_ownership_findings
@@ -938,3 +939,23 @@ def test_a_well_formed_graph_still_reaches_the_structural_rules(tmp_path):
 
     assert [b["code"] for b in blockers] == ["undeclared_repair_loop_routing"], blockers
     assert blockers[0]["node_id"] == "closure", blockers
+
+
+def test_workflow_naming_a_retired_capability_is_refused_by_name(tmp_path):
+    """hollowness-detector left /run (ADR-0008). A workflow generated before retirement must
+    fail with a reason naming the capability, not run a node that no longer exists."""
+    path = _write_workflow(tmp_path, [_base_node(node_id="hollow-audit", capability="hollowness-detector")])
+
+    errors = validate_workflow(path)
+
+    assert any("hollow-audit" in e and "retired capability 'hollowness-detector'" in e for e in errors), errors
+    assert any("cross-exam" in e for e in errors), errors
+
+
+def test_node_spec_naming_a_retired_capability_is_refused_by_name(tmp_path):
+    spec = _write(tmp_path, "hollow-audit.md", "---\nnode_id: hollow-audit\ncapability: hollowness-detector\n---\n"
+                  + ATTENTION_CONTRACT_BODY)
+
+    errors = validate_node_spec(str(spec))
+
+    assert any("retired capability 'hollowness-detector'" in e for e in errors), errors

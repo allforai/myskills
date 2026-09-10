@@ -32,6 +32,8 @@ def _bootstrap_text() -> str:
 
 
 def validate_capability_files(errors: list[str]) -> None:
+    from validate_bootstrap import RETIRED_CAPABILITIES
+
     text = _bootstrap_text()
     capabilities = sorted(set(re.findall(r'capability:\s*"([^"]+)"', text)))
     for capability in capabilities:
@@ -39,6 +41,11 @@ def validate_capability_files(errors: list[str]) -> None:
         if not path.exists():
             errors.append(
                 f"bootstrap.md: capability '{capability}' has no {path.as_posix()}"
+            )
+        elif capability in RETIRED_CAPABILITIES:
+            # The tombstone file exists so old node-specs resolve; planning it is refused.
+            errors.append(
+                f"bootstrap.md: plans retired capability '{capability}': {RETIRED_CAPABILITIES[capability]}"
             )
 
 
