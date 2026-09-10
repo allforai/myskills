@@ -182,7 +182,9 @@ the node must not author and refuses a draft that fails; `check_evidence.py --en
   `capture_evidence/v1` record of the real command, never a pasted summary — and, for UI
   automation, a screenshot for every state asked for (`states_to_capture`);
   `evidence.key_observation` gives passed / failed counts and the first failure.
-- `served_by` (runtime entries; a `test` entry carries none) names where the exercised code's requests went: `host`, `process` (the dev server,
+- `served_by` The node also returns the same `served_by` inside its `verification` result to the run
+  engine; the engine does not count a runtime claim without it. `served_by` (runtime entries; a `test`
+  entry carries none) names where the exercised code's requests went: `host`, `process` (the dev server,
   emulator or launched binary the tests drove; the runner alone is not a destination) and the mock
   layers **in effect** in the harness — MSW registered, a mocked client, nock, an in-memory DB
   (`mock_layers`, `[]` when none). Through a mock layer an entry may be `gap` or `unprovable`,

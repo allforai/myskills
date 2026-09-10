@@ -84,7 +84,15 @@ const NODE_RESULT_SCHEMA = {
         method: { type: 'string', enum: ['real-run', 'real-test', 'real-api', 'db-query', 'screenshot', 'none'] },
         evidence_path: { type: 'string' }, // captured proof file; must EXIST for the node to count as 'verified'
         verifier: { type: 'string' },      // identity that verified — must differ from the generator
-        claim: { type: 'string' }          // one line: what was proven to actually work
+        claim: { type: 'string' },         // one line: what was proven to actually work
+        served_by: { type: 'object',       // where the exercised code's requests went (ADR-0008, #64):
+          properties: {                    // required for every runtime method; the hollow refusals read it
+            host: { type: 'string' },
+            process: { type: 'string' },
+            mock_layers: { type: 'array', items: { type: 'string' } },
+            fixtures: { type: 'array', items: { type: 'string' } }
+          },
+          required: ['host', 'process', 'mock_layers'] }
       } },
     summary: { type: 'string' },
     safety_warnings: { type: 'array', items: { type: 'string' } },
@@ -208,8 +216,29 @@ function computeReady(nodes, done, repair) {
   })
 }
 
+// A runtime method exercises the product, so the node must say where its requests went; without
+// served_by nothing can tell a real backend from a mock, and compute_completeness will not count it.
+// real-test is a suite run (mechanical) and none never counted.
+const RUNTIME_METHODS = ['real-run', 'real-api', 'db-query', 'screenshot']
+
+function runtimeVerificationReason(result) {
+  const v = (result && result.verification) || {}
+  if (!RUNTIME_METHODS.includes(v.method)) return ''
+  const sb = v.served_by
+  if (!sb || typeof sb !== 'object' || typeof sb.host !== 'string' || typeof sb.process !== 'string'
+      || !Array.isArray(sb.mock_layers)) {
+    return 'runtime verification without served_by (host / process / mock_layers): the node did not say where its requests went'
+  }
+  return ''
+}
+
 function routeOutcome(result) {
   if (result.outcome === 'accepted_with_gaps') return 'accepted'
+  const unbacked = runtimeVerificationReason(result)
+  if (unbacked && result.outcome === 'passed') {
+    result.blocking_findings = [...(result.blocking_findings || []),
+      { type: 'unbacked_runtime_verification', detail: unbacked }]
+  }
   const findings = result.blocking_findings || []
   if (result.outcome === 'passed' && findings.length === 0) return 'done'
   if (result.outcome === 'hard_fail') return 'hard'
@@ -334,7 +363,11 @@ function runNodePrompt(node, strict) {
     'STRICTLY forbid placeholder / stub / debug-residue / pure-color placeholder outputs.',
     'VERIFICATION (epistemic honesty): if you actually exercised the real built behavior, capture',
     'external proof to a file (real run output / real API round-trip with real data / db row / screenshot)',
-    'and RETURN verification: {method, evidence_path, verifier, claim}. If you only generated code',
+    'and RETURN verification: {method, evidence_path, verifier, claim, served_by}. served_by is',
+    'REQUIRED for real-run / real-api / db-query / screenshot: {host, process, mock_layers[], fixtures[]}',
+    '— the dev server or binary your requests reached, the mock layers in effect (MSW, nock, an',
+    'in-memory DB; [] when none) and the fixture files a canned answer could have come from. A runtime',
+    'claim without it is not counted as verified. If you only generated code',
     'without exercising it, RETURN verification.method "none" — do NOT claim verified. "Generated"',
     'must never masquerade as "verified".',
     'If you must assume an unforeseen emergent decision, pick a sensible default and RETURN it in',

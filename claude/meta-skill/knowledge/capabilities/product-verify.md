@@ -254,7 +254,9 @@ what the node must not author and refuses a draft that fails; `check_evidence.py
 - `evidence.dir` is a non-empty directory under `.allforai/product-verify/evidence/` (recommended
   `evidence/<node_id>/<qNN>/`) holding a screenshot or output file for every state the probe asked for
   (`states_to_capture`); `evidence.key_observation` says what was seen.
-- `served_by` names where the requests went: `host`, `process`, the mock layers **in effect**
+- `served_by` The node also returns the same `served_by` inside its `verification` result to the run
+  engine; the engine does not count a runtime claim without it. `served_by` names where the requests
+  went: `host`, `process`, the mock layers **in effect**
   (`mock_layers`, `[]` when none; layers checked and found inactive go in `checked_absent`) and the
   canned fixture files that could have answered instead (`fixtures`, optional). Through a mock layer
   a probe may record a `gap`, never a `done` (`经 mock 层（…）的 runtime 不能判 done`); an output

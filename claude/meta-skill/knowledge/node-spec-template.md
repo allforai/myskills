@@ -136,6 +136,8 @@ run evidence. Code written, file exists, exported function exists, or mock-only
 assertions are not sufficient completion evidence. If the effect cannot be
 verified, return a blocking status instead of marking the node complete.
 
+- `served_by` (required when `method` is `real-run`, `real-api`, `db-query` or `screenshot`): `{host, process, mock_layers[], fixtures[]}` — where the exercised code's requests went. A runtime claim without it is not counted as verified; a non-empty `mock_layers` or a response equal to a listed fixture cannot be `done` (ADR-0008, #64).
+
 The required proof must be observable at this node's own stage. When a deliverable
 is split so that the full effect first exists downstream (production wiring,
 integration, deployment), either merge the nodes — local-change obligations may

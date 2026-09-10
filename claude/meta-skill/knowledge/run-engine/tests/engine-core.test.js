@@ -162,3 +162,38 @@ test('runNode: missing artifact gate is a hard failure', async () => {
   assert.equal(result.outcome, 'hard_fail')
   assert.equal(result.blocking_findings[0].type, 'invalid_artifact_gate')
 })
+
+test('NODE_RESULT_SCHEMA: verification may carry served_by with host, process, mock_layers, fixtures', () => {
+  const sb = core.NODE_RESULT_SCHEMA.properties.verification.properties.served_by
+  assert.ok(sb, 'served_by missing from verification schema')
+  assert.deepEqual(sb.required, ['host', 'process', 'mock_layers'])
+  assert.equal(sb.properties.fixtures.type, 'array')
+})
+
+test('runtimeVerificationReason: a runtime method without served_by names the field', () => {
+  for (const method of core.RUNTIME_METHODS) {
+    const r = { node_id: 'n', outcome: 'passed', blocking_findings: [],
+      verification: { method, evidence_path: 'e.json', verifier: 'v', claim: 'c' } }
+    assert.match(core.runtimeVerificationReason(r), /served_by/, method)
+  }
+})
+
+test('runtimeVerificationReason: real-test and none need no served_by; a served_by claim passes', () => {
+  assert.equal(core.runtimeVerificationReason({ verification: { method: 'real-test' } }), '')
+  assert.equal(core.runtimeVerificationReason({ verification: { method: 'none' } }), '')
+  assert.equal(core.runtimeVerificationReason({ verification: { method: 'real-api',
+    served_by: { host: 'localhost:3000', process: 'node', mock_layers: [] } } }), '')
+})
+
+test('routeOutcome: a passed runtime claim without served_by is soft, not done, and the finding says why', () => {
+  const r = { outcome: 'passed', blocking_findings: [],
+    verification: { method: 'real-api', evidence_path: 'e.json', verifier: 'v', claim: 'c' } }
+  assert.equal(core.routeOutcome(r), 'soft')
+  assert.ok(r.blocking_findings.some(f => f.type === 'unbacked_runtime_verification'), JSON.stringify(r.blocking_findings))
+})
+
+test('commitPrompt: served_by is recorded verbatim inside verification', () => {
+  const p = core.commitPrompt({ node_id: 'n', artifacts_written: [], verification: { method: 'real-api',
+    served_by: { host: 'localhost:3000', process: 'node', mock_layers: ['msw'] } } })
+  assert.match(p, /"served_by":\{"host":"localhost:3000","process":"node","mock_layers":\["msw"\]\}/)
+})
