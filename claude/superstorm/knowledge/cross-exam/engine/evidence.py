@@ -151,33 +151,50 @@ def mtime(path):
     return os.stat(path).st_mtime
 
 
-def probe_window_reason(entry, files, transcript):
+def probe_window(entry, files, transcript, read_mtime=None):
     """探测窗口 [probed_at, transcript mtime + PROBE_WINDOW_TOLERANCE]：实测官从开始到返回的这段时间。
     证据目录里每个文件的修改时间都要落在窗口内，transcript 点了名的也不例外——点名只证明实测官打算写它，
     不证明这一份就是它写的；probed_at 晚于 transcript 落盘则窗口为空，一个都不认。
-    读不到文件时间只记 note（entry['transcript_note']），不拒渲：文件系统抹掉 mtime 是属性，不是造假。"""
+    The facts alone, for a consumer whose report pins its own sentence: None when probed_at is unusable
+    (naive or absent: the content gate names that first), else {start: aware datetime, end: timestamp or
+    None when the transcript's time is unreadable, outside: [(name, timestamp)], unreadable: [name]}.
+    `read_mtime` is the file-time reader (default `mtime`); a consumer's tests may hand in their own."""
+    read = read_mtime or mtime
     start = parse_time(entry.get('probed_at')) if isinstance(entry, dict) else None
     if not start or start.tzinfo is None:
-        return ''
+        return None
+    window = {'start': start, 'end': None, 'outside': [], 'unreadable': []}
     try:
-        end = mtime(transcript) + PROBE_WINDOW_TOLERANCE
+        window['end'] = read(transcript) + PROBE_WINDOW_TOLERANCE
     except OSError:
-        entry['transcript_note'] = 'transcript 时间不可读，探测窗口未核'
-        return ''
-    stamp = lambda t: datetime.fromtimestamp(t, start.tzinfo).isoformat()
-    outside, unreadable = [], []
+        return window
     for f in files:
         try:
-            m = mtime(f)
+            m = read(f)
         except OSError:
-            unreadable.append(f.name)
+            window['unreadable'].append(f.name)
             continue
-        if not start.timestamp() <= m <= end:
-            outside.append('%s（%s）' % (f.name, stamp(m)))
-    if outside:
-        return '证据文件写于探测窗口之外，窗口 [%s, %s]：%s' % (start.isoformat(), stamp(end), '、'.join(outside))
-    if unreadable:
-        entry['transcript_note'] = '证据文件时间不可读，探测窗口未核：' + '、'.join(unreadable)
+        if not start.timestamp() <= m <= window['end']:
+            window['outside'].append((f.name, m))
+    return window
+
+
+def probe_window_reason(entry, files, transcript, read_mtime=None):
+    """The probe window as a refusal: every offender named with its time, or '' with a note on the entry
+    (entry['transcript_note']) when a time could not be read——文件系统抹掉 mtime 是属性，不是造假。"""
+    window = probe_window(entry, files, transcript, read_mtime)
+    if window is None:
+        return ''
+    if window['end'] is None:
+        entry['transcript_note'] = 'transcript 时间不可读，探测窗口未核'
+        return ''
+    start = window['start']
+    stamp = lambda t: datetime.fromtimestamp(t, start.tzinfo).isoformat()
+    if window['outside']:
+        return '证据文件写于探测窗口之外，窗口 [%s, %s]：%s' % (
+            start.isoformat(), stamp(window['end']), '、'.join('%s（%s）' % (n, stamp(m)) for n, m in window['outside']))
+    if window['unreadable']:
+        entry['transcript_note'] = '证据文件时间不可读，探测窗口未核：' + '、'.join(window['unreadable'])
     return ''
 
 
@@ -190,7 +207,8 @@ def value_tokens(value):
     return {v} | {s.strip() for s in SEGMENT_SPLIT.split(v) if s.strip()} | set(TOKEN_SPLIT.split(v))
 
 
-def _readback(capture):
+def readback(capture):
+    """The map of axis to in-app value a capture or entry carries, {} when it carries none."""
     rb = capture.get('readback') if isinstance(capture, dict) else None
     return rb if isinstance(rb, dict) else {}
 
@@ -198,7 +216,7 @@ def _readback(capture):
 def readback_reason(case, capture, support):
     """Setting an axis is not the same as the app rendering it: for every axis the code declares support on,
     the capture must carry the value read back inside the app, and it must be one the case claims."""
-    rb = _readback(capture)
+    rb = readback(capture)
     case = case if isinstance(case, dict) else {}
     for axis in (support or {}):
         got = rb.get(axis)

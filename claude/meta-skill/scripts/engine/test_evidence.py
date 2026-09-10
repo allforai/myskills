@@ -6,8 +6,8 @@ from unittest import mock
 
 import evidence
 from evidence import (PROBE_WINDOW_TOLERANCE, artifact, bindings_reason, content_reason, entry_reason,
-                      evidence_dir, images_reason, parse_time, probe_window_reason, probed_at_reason,
-                      readback_reason, ref_digest_reason, served_by_reason)
+                      evidence_dir, images_reason, parse_time, probe_window, probe_window_reason,
+                      probed_at_reason, readback, readback_reason, ref_digest_reason, served_by_reason)
 
 PROBED_AT = '2026-09-07T10:00:00+08:00'
 SERVED = {'host': 'localhost:3000', 'process': 'node next dev', 'mock_layers': []}
@@ -166,6 +166,35 @@ def test_unreadable_mtime_is_a_note_not_a_refusal(tmp_path):
 def test_probe_window_without_a_usable_probed_at_checks_nothing(tmp_path):
     e, files, transcript = _window(tmp_path, {'q01-00.md': 9999}, 600, probed_at='nonsense')
     assert probe_window_reason(e, files, transcript) == ''
+    assert probe_window(e, files, transcript) is None
+    e, files, transcript = _window(tmp_path / 'naive', {'q01-00.md': 9999}, 600, probed_at='2026-09-07T10:00:00')
+    assert probe_window(e, files, transcript) is None
+
+
+def test_probe_window_facts_let_a_port_keep_its_own_sentence(tmp_path):
+    # the rule is computed once; a consumer whose report pins different wording formats these facts itself
+    e, files, transcript = _window(tmp_path, {'q01-late.md': 600 + 200, 'q01-ok.md': 60}, 600)
+    window = probe_window(e, files, transcript)
+    assert window['start'] == datetime.fromisoformat(PROBED_AT)
+    assert window['end'] == T0 + 600 + PROBE_WINDOW_TOLERANCE
+    assert window['outside'] == [('q01-late.md', T0 + 800)]
+    assert window['unreadable'] == []
+    assert 'transcript_note' not in e                       # facts only; the sentence and the note are the caller's
+    e, files, _ = _window(tmp_path / 'b', {'q01-00.md': 300}, 600)
+    assert probe_window(e, files, tmp_path / 'gone.output')['end'] is None
+
+
+def test_probe_window_reads_file_times_through_the_given_seam(tmp_path):
+    # a consumer's tests replace its own mtime reader; the engine honours the reader it is handed
+    e, files, transcript = _window(tmp_path, {'q01-00.md': 300, 'q01-01.md': 300}, 600)
+
+    def flaky(path):
+        if path.name == 'q01-00.md':
+            raise OSError('no mtime')
+        return os.stat(path).st_mtime
+    assert probe_window(e, files, transcript, read_mtime=flaky)['unreadable'] == ['q01-00.md']
+    assert probe_window_reason(e, files, transcript, read_mtime=flaky) == ''
+    assert e['transcript_note'] == '证据文件时间不可读，探测窗口未核：q01-00.md'
 
 
 # --- readback (from visual acceptance test_supported_axis_requires_in_app_readback) ---
@@ -181,6 +210,12 @@ def test_supported_axis_requires_in_app_readback():
     assert readback_reason(case, {'readback': {'appearance': 'dark'}}, DARK) == ''
     assert readback_reason(case, {'readback': 'dark'}, DARK).startswith('appearance 轴缺应用内读回值')
     assert readback_reason(case, {}, {}) == ''                     # no declared support, nothing to read back
+
+
+def test_readback_is_the_map_a_capture_carries_or_nothing():
+    assert readback({'readback': {'appearance': 'dark'}}) == {'appearance': 'dark'}
+    assert readback({'readback': 'dark'}) == {}
+    assert readback({}) == {} and readback(None) == {}
 
 
 def test_compound_case_value_is_proven_by_its_readback():

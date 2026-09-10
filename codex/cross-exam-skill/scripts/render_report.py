@@ -42,6 +42,7 @@ Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
 exit 1=ledger 不可读或缺必填键。
 """
+import importlib.util
 import json
 import re
 import subprocess
@@ -49,18 +50,28 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-PATH_LINE = re.compile(r'[\w./\-]+\.[A-Za-z0-9]+:\d+')
-IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg'}
+_PACKAGE = Path(__file__).resolve().parents[1]
 
-import importlib.util
 
-# Load this package's own visual validator by path under a unique module name: a `validation`
-# module already on sys.path (another package, a test process) must never stand in for it.
-_VISUAL_VALIDATION = Path(__file__).resolve().parents[1] / "visual/validation.py"
-_spec = importlib.util.spec_from_file_location("cross_exam_visual_validation", _VISUAL_VALIDATION)
-_visual = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_visual)
+def _by_path(name, path):
+    """Load a package module by path under a unique module name: a `validation` or `evidence` module
+    already on sys.path (another package, a test process) must never stand in for this package's own."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_visual = _by_path("cross_exam_visual_validation", _PACKAGE / "visual/validation.py")
 visual_reason, visual_section = _visual.visual_reason, _visual.visual_section
+# The evidence engine (ADR-0008) owns what an entry must carry before it is read: probed_at, the evidence
+# directory, the content gate per medium, served_by, the probe window. This renderer keeps the names its
+# tests patch as aliases and decides nothing the engine already decides.
+_engine = _by_path("cross_exam_engine_evidence", _PACKAGE / "engine/evidence.py")
+PROBE_WINDOW_TOLERANCE = _engine.PROBE_WINDOW_TOLERANCE
+_evidence_files = _engine.evidence_files
+_content_reason = _engine.content_reason
+_parse_time = _engine.parse_time
 
 VERDICT_LABELS = {"done": "实证完成", "gap": "缺口",
                   "drift": "跑偏", "unprovable": "无法自证"}
@@ -88,64 +99,14 @@ def _load(run_dir):
 
 
 def _has_evidence(entry, run_dir):
-    d = (entry.get("evidence") or {}).get("dir")
-    if not d:
-        return False
-    p = Path(d) if Path(d).is_absolute() else run_dir / d
-    p = p.resolve()
-    evidence_root = (run_dir / "evidence").resolve()
-    if evidence_root not in p.parents:
-        return False
-    return p.is_dir() and any(p.iterdir())
-
-
-def _evidence_files(entry, run_dir):
-    d = (entry.get("evidence") or {}).get("dir") or ""
-    p = Path(d) if Path(d).is_absolute() else run_dir / d
-    return [f for f in p.iterdir() if f.is_file()] if p.is_dir() else []
-
-
-def _content_reason(e, run_dir):
-    """ledger_version 2 的证据内容门：目录非空只说明有文件，不说明有取证。
-    code 介质要有 路径:行号 的摘录；runtime 介质要有截图或输出文件、且不少于当初要求的状态数，并记请求去向；
-    unprovable 的原因文件要写得出尝试了什么；经过 mock 层的 runtime 不能算 done。"""
-    probed = _parse_time(e.get("probed_at"))
-    if not probed:
-        return "缺 probed_at（ISO 8601）"
-    if probed.tzinfo is None:   # 无偏移的时间在每台渲染机上都是另一个探测窗口
-        return "probed_at 缺时区偏移（如 +08:00）"
-    files = _evidence_files(e, run_dir)
-    medium, verdict = e.get("medium"), e.get("verdict")
-    text = "".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.suffix not in IMAGE_SUFFIXES)
-    if verdict == "unprovable":
-        return "" if len(text.strip()) >= 40 else "无法自证缺原因文件（尝试了什么、卡在哪）"
-    if medium == "code" and not PATH_LINE.search(text):
-        return "代码摘录无 路径:行号"
-    if medium == "runtime":
-        images = [f for f in files if f.suffix.lower() in IMAGE_SUFFIXES]
-        outputs = [f for f in files if f.suffix.lower() in {".txt", ".log", ".json", ".md"}]
-        if not images and not outputs:
-            return "运行时证据无截图或输出文件"
-        wanted = e.get("states_to_capture")
-        if isinstance(wanted, list) and wanted and len(files) < len(wanted):
-            return f"要求 {len(wanted)} 个状态只落了 {len(files)} 个文件"
-        served = e.get("served_by")
-        if not isinstance(served, dict) or not served.get("host") or not served.get("process") \
-                or not isinstance(served.get("mock_layers"), list):
-            return "缺请求去向 served_by（host / process / mock_layers）"
-        if served["mock_layers"] and verdict == "done":
-            return "经 mock 层（" + ", ".join(map(str, served["mock_layers"])) + "）的 runtime 不能判 done"
-    return ""
-
-
-PROBE_WINDOW_TOLERANCE = 120   # 秒：实测官最后一次落盘与 transcript 最终刷出之间的容差，只加在窗口上界
+    return not _engine.evidence_dir(entry, run_dir)[1]
 
 
 def _transcript_reason(e, run_dir):
     """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
     证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
     逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。
-    名字对上之后再核探测窗口（见 _probe_window_reason）：提过目录不等于目录里后来加的文件也是实测官写的。"""
+    名字对上之后再核探测窗口（见 _window_sentence）：提过目录不等于目录里后来加的文件也是实测官写的。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -161,34 +122,27 @@ def _transcript_reason(e, run_dir):
     d = d[2:] if d.startswith("./") else d
     if absent and not (d and d in body):
         return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
-    return _probe_window_reason(e, files, p)
+    return _window_sentence(e, files, p)
 
 
-def _probe_window_reason(e, files, transcript):
-    """探测窗口（probe window）：entry 的 probed_at 起，transcript 文件写完（mtime）加容差止。实测官的取证只能
-    发生在这段时间里；证据目录中任何一个文件的修改时间落在窗口外都拒渲——包括 transcript 点过名的文件（点名
-    证明实测官打算写它，不证明磁盘上这份就是它写的）。probed_at 晚于 transcript mtime 即空窗口，逐个拒。
-    修改时间读不出来只记 note 不拒渲：文件系统的脾气不是造假。窗口不从 ledger 自身时间戳凭空造：transcript
-    不在就不核（上游已标不可核）。"""
-    start = _parse_time(e.get("probed_at"))
-    if start.tzinfo is None:
-        start = start.astimezone()
-    tz = start.tzinfo
-    end = datetime.fromtimestamp(transcript.stat().st_mtime + PROBE_WINDOW_TOLERANCE, tz=tz)
-    unreadable, outside = [], []
-    for f in files:
-        try:
-            written = datetime.fromtimestamp(f.stat().st_mtime, tz=tz)
-        except OSError:
-            unreadable.append(f.name)
-            continue
-        if not start <= written <= end:
-            outside.append("%s 写于 %s" % (f.name, written.isoformat(timespec="seconds")))
-    if outside:   # name every offender: one at a time is a slower argument with the same ending
+def _window_sentence(e, files, transcript):
+    """探测窗口由引擎算（engine.probe_window：probed_at 起，transcript 写完加容差止，证据目录里每个文件都要落在
+    窗口内，点过名的也一样）；这里只把引擎给的事实写成本端报告的句子——逐个点名越窗文件，修改时间读不出来只记
+    note 不拒渲。窗口不从 ledger 自身时间戳凭空造：transcript 不在就不核（上游已标不可核）。"""
+    window = _engine.probe_window(e, files, transcript)
+    if window is None:
+        return ""
+    if window["end"] is None:
+        e["transcript_note"] = "transcript 时间不可读，探测窗口未核"
+        return ""
+    start = window["start"]
+    stamp = lambda t: datetime.fromtimestamp(t, tz=start.tzinfo).isoformat(timespec="seconds")
+    if window["outside"]:   # name every offender: one at a time is a slower argument with the same ending
         return "证据文件 %s，不在探测窗口 [%s, %s] 内" % (
-            "、".join(outside), start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds"))
-    if unreadable:
-        e["transcript_note"] = "证据文件 %s 修改时间不可读，探测窗口未核" % "、".join(unreadable)
+            "、".join("%s 写于 %s" % (name, stamp(m)) for name, m in window["outside"]),
+            start.isoformat(timespec="seconds"), stamp(window["end"]))
+    if window["unreadable"]:
+        e["transcript_note"] = "证据文件 %s 修改时间不可读，探测窗口未核" % "、".join(window["unreadable"])
     return ""
 
 
@@ -269,13 +223,6 @@ def _git_author_overlap(run_dir):
         return email if email and email in authors else ""
     except Exception:
         return ""
-
-
-def _parse_time(value):
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        return None
 
 
 def _timing_lines(admitted):

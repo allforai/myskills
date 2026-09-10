@@ -1048,3 +1048,69 @@ class TestSmallHonestyFixes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFrozenRunRendersByteIdentically(unittest.TestCase):
+    """A run frozen before the evidence engine was extracted (#58) renders byte for byte as it did then.
+    The golden was captured from the pre-extraction renderer; the fixture walks every seam that moved:
+    the v2 content gate per medium, served_by, the probe window inside and outside, and a refused entry."""
+    GOLDEN = Path(__file__).with_name("fixtures") / "frozen-run.report.md"
+    T0 = datetime.fromisoformat("2026-09-07T10:00:00+08:00").timestamp()
+
+    def _frozen_run(self, tmp):
+        served = {"host": "localhost:3000", "process": "node next dev", "mock_layers": []}
+        facets = [{"id": "F1", "name": "面一", "status": "examined", "requirement_refs": ["R-01", "R-02"],
+                   "surface_ids": ["S1", "S2"], "risk": {"level": "high", "why": "支付主路径"}},
+                  {"id": "F2", "name": "面二", "status": "not_examined", "risk": {"level": "low", "why": "静态页"}}]
+        done = _entry("登录后能进首页吗？")
+        done.update(probed_at="2026-09-07T10:00:00+08:00", served_by=served, surfaces=["S1"], requirement_refs=["R-01"])
+        gap = _entry("空购物车能结账吗？", verdict="gap", ev_dir="evidence/q2/", severity="medium")
+        gap.update(probed_at="2026-09-07T10:03:00+08:00", served_by=served, surfaces=["S2"], requirement_ref="R-02")
+        code = _entry("汇率换算在哪实现？", verdict="drift", ev_dir="evidence/q3/", severity="low")
+        code.update(medium="code", probed_at="2026-09-07T10:05:00+08:00", surfaces=["S1"])
+        unprovable = _entry("推送到达率能测吗？", verdict="unprovable", ev_dir="evidence/q4/")
+        unprovable.update(probed_at="2026-09-07T10:07:00+08:00", surfaces=["S2"])
+        journey = _jentry()
+        journey.update(probed_at="2026-09-07T10:09:00+08:00", served_by=served, surfaces=["S1"])
+        windowed = _entry("订单号真的落库了吗？", ev_dir="evidence/q6/")
+        windowed.update(probed_at="2026-09-07T10:20:00+08:00", served_by=served, surfaces=["S1"],
+                        agent_task={"output_file": str(Path(tmp) / "prober-ok.output")})
+        late = _entry("退款按钮点得动吗？", ev_dir="evidence/q7/")
+        late.update(probed_at="2026-09-07T10:30:00+08:00", served_by=served, surfaces=["S2"],
+                    agent_task={"output_file": str(Path(tmp) / "prober-late.output")})
+        oral = _entry("口头说通过的那条", ev_dir="evidence/q8/")
+        run = _mk_run(tmp, facets, [done, gap, code, unprovable, journey, windowed, late, oral], make_evidence=False)
+        files = {"q1/note.txt": "evidence", "q1/q01-home.png": b"\x89PNG",
+                 "q2/q02-empty-cart.png": b"\x89PNG",
+                 "q3/excerpt.md": "src/rates.ts:42 const rate = 1  // 写死的汇率",
+                 "q4/reason.md": "尝试用 FCM 沙箱发送三次均无回执；本机拿不到设备 token，推送到达率无法自证，卡在设备注册。",
+                 "q5/q05-01-cart.png": "step", "q5/q05-02-order.png": "step",
+                 "q6/q06-db.txt": "orders: 1 row", "q7/q07-refund.png": b"\x89PNG"}
+        for rel, body in files.items():
+            p = run / "evidence" / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(body if isinstance(body, bytes) else body.encode("utf-8"))
+        # transcripts and mtimes are pinned with os.utime, never the wall clock
+        stamps = {"evidence/q6/q06-db.txt": self.T0 + 1230, "evidence/q7/q07-refund.png": self.T0 + 5000}
+        for name, body, ts in (("prober-ok.output", "Files written to evidence/q6/.", self.T0 + 1500),
+                               ("prober-late.output", "Files written to evidence/q7/.", self.T0 + 2100)):
+            (Path(tmp) / name).write_text(body, encoding="utf-8")
+            stamps[name] = ts
+        for rel, ts in stamps.items():
+            os.utime(Path(tmp) / rel, (ts, ts))
+        ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+        ledger.update(ledger_version=2, journeys=[_journey()],
+                      surfaces=[{"id": "S1", "name": "首页"}, {"id": "S2", "name": "购物车"}],
+                      requirements=[{"id": "R-01", "text": "登录后进首页"}, {"id": "R-02", "text": "空车不能结账"},
+                                    {"id": "R-03", "text": "退款原路返回"}],
+                      open_threads=[{"facet": "F2", "q": "静态页的 404 呢？", "leak_point": "路由兜底"}],
+                      patterns=[{"pattern_id": "P1", "hypothesis": "写死的汇率", "sites": [
+                          {"site": "src/rates.ts:42", "facet": "F1", "entry_q": "汇率换算在哪实现？"},
+                          {"site": "src/checkout.ts:10", "facet": "F1", "entry_q": "未实测的位点"}]}])
+        (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+        return run
+
+    def test_frozen_run_matches_golden(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = render(self._frozen_run(tmp))
+        self.assertEqual(report, self.GOLDEN.read_text(encoding="utf-8"))
