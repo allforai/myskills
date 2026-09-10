@@ -153,6 +153,13 @@ test('runNode: artifact gaps invoke repair loop and rerun QA', async () => {
   assert.equal(agent.counters['verify:qa'], 2)
 })
 
+test('auto_fix_once halt for an undeclared coverage loop names the planning declaration', () => {
+  assert.match(core.undeclaredCoverageLoopMessage('concept-acceptance'),
+    /required_repair_loops/)
+  assert.match(core.undeclaredCoverageLoopMessage('concept-acceptance'),
+    /bootstrap/)
+})
+
 test('runNode: missing artifact gate is a hard failure', async () => {
   const agent = makeFakeAgent({
     x: { node_id: 'x', outcome: 'passed', artifacts_written: [], blocking_findings: [] },

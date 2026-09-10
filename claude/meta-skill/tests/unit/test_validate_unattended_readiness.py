@@ -625,3 +625,52 @@ def test_a_workflow_that_plans_verification_but_forgets_its_user_steps_is_not_re
     report = validate_unattended_readiness(tmp_path)
     assert not [b for b in report["blockers"] if b["code"] == "missing_user_steps"]
     assert any(w["code"] == "missing_user_steps" for w in report.get("warnings", []))
+
+
+def _gate_node():
+    return {"node_id": "concept-acceptance", "goal": "coverage gate", "capability": "concept-acceptance",
+            "exit_artifacts": [{"path": ".allforai/concept-acceptance/acceptance-report.json"}]}
+
+
+def _with_policy(tmp_path, on_needs_iteration):
+    _write(tmp_path, ".allforai/bootstrap/run-policy.json", json.dumps({"on_needs_iteration": on_needs_iteration}))
+
+
+def test_auto_fix_once_with_the_coverage_gate_needs_a_declared_repair_loop(tmp_path):
+    _with_workflow(tmp_path, {"nodes": [_design_node(), _gate_node()],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+    _with_policy(tmp_path, "auto_fix_once")
+    report = validate_unattended_readiness(tmp_path)
+    blocker = next(b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop")
+    assert "required_repair_loops" in blocker["message"] and "concept-acceptance" in blocker["message"]
+    assert blocker["node_id"] == "concept-acceptance"
+
+
+def test_halt_with_report_needs_no_loop_for_the_coverage_gate(tmp_path):
+    _with_workflow(tmp_path, {"nodes": [_design_node(), _gate_node()],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+    _with_policy(tmp_path, "halt_with_report")
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop"]
+
+
+def test_a_declared_coverage_loop_satisfies_the_gate(tmp_path):
+    gate, repair, rerun = _gate_node(), {
+        "node_id": "concept-repair", "goal": "repair", "capability": "implement",
+        "hard_blocked_by": ["concept-acceptance"],
+        "exit_artifacts": [{"path": ".allforai/concept-acceptance/repair.json"}]}, {
+        "node_id": "concept-acceptance-rerun", "goal": "rerun", "capability": "concept-acceptance",
+        "hard_blocked_by": ["concept-repair", "concept-acceptance"],
+        "exit_artifacts": [{"path": ".allforai/concept-acceptance/acceptance-report-2.json"}]}
+    _with_workflow(tmp_path, {"nodes": [_design_node(), gate, repair, rerun],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+    for n in ("concept-acceptance", "concept-repair", "concept-acceptance-rerun"):
+        _write(tmp_path, f".allforai/bootstrap/node-specs/{n}.md", "non interactive work")
+    _with_policy(tmp_path, "auto_fix_once")
+    spec = json.loads((tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json").read_text())
+    spec["required_repair_loops"] = [_repair_loop(scope="concept-acceptance", qa_node_ids=["concept-acceptance"],
+                                                  repair_node_id="concept-repair",
+                                                  closure_node_ids=["concept-acceptance-rerun"])]
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(spec))
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop"], report

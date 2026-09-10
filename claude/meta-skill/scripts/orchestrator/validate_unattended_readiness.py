@@ -388,6 +388,46 @@ def _planned_verdict_entry(node: dict) -> str | None:
     return None
 
 
+def coverage_gate_nodes(nodes: list[dict]) -> list[str]:
+    """Node ids of the concept-acceptance coverage gate (ADR-0008): the gate whose missing-mapping list
+    fires on_needs_iteration."""
+    return [n["node_id"] for n in nodes
+            if isinstance(n, dict) and n.get("capability") == "concept-acceptance" and isinstance(n.get("node_id"), str)]
+
+
+def _coverage_gate_loop_blockers(project_root: str, nodes: list[dict], spec: dict,
+                                 blockers: list[dict]) -> None:
+    """auto_fix_once repairs only through a declared loop (ADR-0006). A workflow that carries the coverage
+    gate and that policy without a loop naming the gate would halt at run time as an unauthorized
+    repair; the plan is the fault, so it is refused here where the user can fix it."""
+    policy_path = os.path.join(project_root, ".allforai", "bootstrap", "run-policy.json")
+    try:
+        with open(policy_path, encoding="utf-8") as fh:
+            policy = json.load(fh)
+    except (OSError, ValueError):
+        return
+    if not isinstance(policy, dict) or policy.get("on_needs_iteration") != "auto_fix_once":
+        return
+    loops = spec.get("required_repair_loops") if isinstance(spec, dict) else None
+    declared = set()
+    for loop in loops or []:
+        if isinstance(loop, dict):
+            # qa_node_ids is the gate the loop repairs; closure_node_ids covers the gate's own
+            # rerun when the rerun shares the gate's capability (the coverage gate rerun does) —
+            # it is already inside the declared loop, not a second gate needing one of its own.
+            declared.update(str(q) for q in (loop.get("qa_node_ids") or loop.get("qa_nodes") or []))
+            declared.update(str(q) for q in (loop.get("closure_node_ids") or loop.get("closure_nodes") or []))
+    for gate in coverage_gate_nodes(nodes):
+        if gate not in declared:
+            _add(blockers, "missing_coverage_repair_loop",
+                 f"run-policy.json on_needs_iteration is auto_fix_once and node {gate} is the "
+                 f"concept-acceptance coverage gate, but no unattended-run-readiness-spec.json "
+                 f"required_repair_loops entry names it in qa_node_ids. auto_fix_once repairs only "
+                 f"through a declared loop (ADR-0006): declare one with a repair node hard_blocked_by "
+                 f"{gate} and a rerun of the gate blocked by the repair, or choose halt_with_report.",
+                 node_id=gate)
+
+
 def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[dict],
                             warnings: list[dict] | None = None) -> None:
     """Neither skill calls the other (ADR-0008); the graph may only list them for the user.
@@ -571,6 +611,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     # Decided on the graph as written, before shape faults defer the node list: a planned
     # verdict node is a planning fault the user repairs at bootstrap, whatever else holds.
     _verdict_entry_blockers(workflow, nodes, blockers, warnings)
+    _coverage_gate_loop_blockers(project_root, nodes, readiness_spec, blockers)
     scope_blockers = validate_scope(project_root, workflow)
     blockers.extend(scope_blockers)
     from check_artifacts import document_verification_errors, freshness_states
