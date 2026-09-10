@@ -1265,6 +1265,19 @@ class TestAuthorEvidence(unittest.TestCase):
             self.assertIn("- **门未通过** [F1]", report)
             self.assertNotIn("[G1]", report)
 
+    def test_every_mechanical_medium_is_admitted_as_a_gate(self):
+        # build and contract entries from compile / spec-compliance / security / pipeline-closure land in the
+        # author section as gates (#63); the facet still needs a prober for a verdict
+        for medium, capability in (("build", "compile-verify"), ("contract", "spec-compliance-verify"),
+                                   ("contract", "security-verify"), ("contract", "pipeline-closure-verify")):
+            with tempfile.TemporaryDirectory() as tmp:
+                e = self._author("这道机械门在真实树上过了吗？", medium=medium)
+                e["author"]["capability"] = capability
+                report = render(self._run(tmp, [e]))
+                self.assertIn("## 作者证据", report, medium)
+                self.assertIn("门通过", report, medium)
+                self.assertIn("无法自证：1", report, medium)   # a gate alone never closes a verdict
+
     def test_readback_is_demanded_of_runtime_author_entries_only(self):
         # a suite run has nothing to read back; a runtime capture without readback proves nothing was applied
         for extra in ({"readback": {}}, {"readback": None}):
