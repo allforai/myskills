@@ -136,6 +136,54 @@ def fact_document(returned):
                       "    " + returned]) + "\n"
 
 
+PLAN_JOURNAL = ".allforai/bootstrap/plan-confirmation-journal.json"
+PLAN_CONFIRMATION = ".allforai/bootstrap/plan-confirmation.json"
+
+
+def confirm_plan(root, *, stage="phase-a-delta", reason="Confirmed the presented plan"):
+    """Record one user confirmation of the current graph, as Step 3.4 / Phase A persists it.
+
+    The seeded "completed" nodes only exist on a plan the user already confirmed in an
+    earlier Phase A, so this is pre-existing project state, not evaluator material. Call
+    it only where the scripted history actually presented the plan; a plan changed
+    without it stays unconfirmed on purpose. Never touches the product decision journal.
+    """
+    workflow = json.loads((root / WORKFLOW).read_text())
+    plan = {node["node_id"]: sorted(node.get("hard_blocked_by") or [])
+            for node in workflow["nodes"] if node.get("node_id")}
+    record = (json.loads((root / PLAN_CONFIRMATION).read_text())
+              if (root / PLAN_CONFIRMATION).exists()
+              else {"schema_version": "1.0", "confirmations": []})
+    previous = record["confirmations"][-1]["plan"] if record["confirmations"] else None
+    if previous == plan:
+        return record
+    revision = len(record["confirmations"]) + 1
+    batch_id = f"plan-revision-{revision}"
+    journal = (json.loads((root / PLAN_JOURNAL).read_text()) if (root / PLAN_JOURNAL).exists()
+               else {"schema_version": "1.0", "batches": []})
+    journal["batches"].append({
+        "batch_id": batch_id, "source": "user_session", "topic": "Workflow plan",
+        "user_reference": "bootstrap plan confirmation turn",
+        "decisions": [{"question": "Is this the plan to execute?", "chosen": "Confirmed as presented",
+                       "rationale": reason, "supersedes": None, "intent": {"plan": plan}}],
+    })
+    put(root, PLAN_JOURNAL, journal)
+    entry = {"revision": revision, "stage": "step-3.4" if previous is None else stage,
+             "presented_at": "2026-09-09T10:00:00Z", "plan": plan,
+             "confirmation": {"source": "user",
+                              "reference": f"{PLAN_JOURNAL}#{batch_id}/decisions/0",
+                              "reason": reason}}
+    if previous is not None:
+        entry["delta"] = {
+            "added": sorted(set(plan) - set(previous)),
+            "removed": sorted(set(previous) - set(plan)),
+            "rewired": sorted(k for k in set(plan) & set(previous) if plan[k] != previous[k]),
+        }
+    record["confirmations"].append(entry)
+    put(root, PLAN_CONFIRMATION, record)
+    return record
+
+
 def gate(root, name):
     return str(root / ".allforai/bootstrap/scripts" / name)
 
@@ -215,6 +263,7 @@ def scaffold(root, host, candidate_root):
     (root / "warehouse.py").write_text("stock = 10\n")
     put(root, ".allforai/bootstrap/stock.json", {"status": "passed"})
     put(root, WORKFLOW, {"nodes": [WAREHOUSE], "transition_log": []})
+    confirm_plan(root, reason="Presented the warehouse node at Step 3.4 of the earlier planning round")
     (root / ".allforai/bootstrap/node-specs").mkdir(parents=True, exist_ok=True)
     (root / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
         "---\n" + json.dumps(WAREHOUSE) + "\n---\n" + ATTENTION_CONTRACT_BODY)
@@ -236,6 +285,7 @@ def closed_delivery(root, host, candidate_root):
                                      "batch_id": "scope-1", "user_reference": "user scope turn scope-1",
                                      "reason": "Account export only"})
     plan(root)
+    confirm_plan(root, reason="Presented the export delivery beside the retained warehouse node")
     publish(root, "warehouse", kind="evidence", command=WAREHOUSE_EVIDENCE)
     publish(root, NODE, kind="contract")
     put(root, REPORT, {"status": "passed"})
