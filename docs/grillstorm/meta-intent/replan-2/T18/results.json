@@ -4,7 +4,7 @@
   "parent_issue": "https://github.com/allforai/myskills/issues/8",
   "blocked_by": "https://github.com/allforai/myskills/issues/14",
   "reference_commit": "5c02e24cf993c36591458f87f1c7dcfb66be3a35",
-  "reference_status": "Development reference for the external-change API only. #14 is under active production repair and is not accepted; this commit is not accepted and no evidence gathered against it counts toward #18.",
+  "reference_status": "Development reference for the external-change API only. This commit is not accepted and no evidence gathered against it counts toward #18; the launch candidate is 01146b70.",
   "candidate_accepted": true,
   "launch_candidate": "01146b70e1fe018effbf83dbb678277b657a3783",
   "launch_candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
