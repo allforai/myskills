@@ -1,14 +1,16 @@
 ---
 name: cross-exam
-description: Package with two explicit commands. cross-exam — evidence-backed completion cross-examination, including user-declared journeys walked end-to-end. product-review — product-thinking critique, commercial UI/interaction, and competitor borrow notes, advice only. Neither is automatic. If the user named product-review, read product-review.md and stop; do not run this completion protocol. cross-exam asks "is it really done", product-review asks "is it good for the user"; the usual order is cross-exam first.
+description: Package with three explicit reviews. cross-exam audits completion; product-review critiques product value; keep-code-simple reviews implementation simplicity, advice only. None is automatic. When the user names product-review, follow product-review.md; for keep-code-simple, follow keep-code-simple/SKILL.md. Neither route runs the completion protocol.
 ---
 
 # Package router
 
-This directory is one Codex install (`cross-exam`) with two protocols.
+This directory is one Codex install (`cross-exam`) with three independent review protocols.
 
+- User named **keep-code-simple** → read and follow `./keep-code-simple/SKILL.md` only; do not continue this file. Its nested `SKILL.md` also provides a directly discoverable entry.
 - User named **product-review** → read `./product-review.md` only. Stop.
 - User named **cross-exam** → continue this file.
+- No explicit review named → describe the available entries and stop; do not start an audit.
 
 Do not mix ledgers, verdicts, or loops.
 

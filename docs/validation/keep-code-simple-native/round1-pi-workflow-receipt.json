@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "workflowRunId": "efaa1c00-435c-4ca3-a492-7fd0c77ee968",
+  "state": "complete",
+  "createdAt": 1789035657341,
+  "entries": {
+    "catalog": {
+      "key": "catalog",
+      "agent": "fact-scout",
+      "requestedContext": "fresh",
+      "resolvedContext": "fresh",
+      "continuation": {
+        "runIds": [
+          "070f9eee-e2dc-446d-8d27-b2750ebe5707"
+        ]
+      },
+      "latestRunId": "070f9eee-e2dc-446d-8d27-b2750ebe5707",
+      "resumability": {
+        "state": "resumable"
+      }
+    },
+    "search": {
+      "key": "search",
+      "agent": "fact-scout",
+      "requestedContext": "fresh",
+      "resolvedContext": "fresh",
+      "continuation": {
+        "runIds": [
+          "c1bb3546-cceb-4c6d-b94d-6d729922c123"
+        ]
+      },
+      "latestRunId": "c1bb3546-cceb-4c6d-b94d-6d729922c123",
+      "resumability": {
+        "state": "resumable"
+      }
+    },
+    "billing": {
+      "key": "billing",
+      "agent": "risk-reviewer",
+      "requestedContext": "fresh",
+      "resolvedContext": "fresh",
+      "outputReference": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-2v5evcm7/pi-sessions/subagent-artifacts/outputs/efaa1c00-435c-4ca3-a492-7fd0c77ee968/billing.md",
+      "continuation": {
+        "runIds": [
+          "ce505749-ece9-4d29-94bc-1a7d828e81d1"
+        ]
+      },
+      "latestRunId": "ce505749-ece9-4d29-94bc-1a7d828e81d1",
+      "resumability": {
+        "state": "resumable"
+      }
+    }
+  },
+  "workflowChildren": {
+    "version": 1,
+    "parentToolCallId": "call_lpqz17UlMljV2hPrQsI1QWsf|fc_0aa066fc63fcd4e8016aa284101cd487d0856f0b46ad73e493",
+    "workflowRunId": "efaa1c00-435c-4ca3-a492-7fd0c77ee968",
+    "inventoryComplete": true,
+    "workflowState": "completed",
+    "children": [
+      {
+        "childId": "catalog",
+        "state": "failed",
+        "runId": "070f9eee-e2dc-446d-8d27-b2750ebe5707",
+        "agent": "fact-scout",
+        "sessionName": "fact-scout: 用户显式调用 keep-code-simple src。先完整读取协议 /var/folders/yk/1lzd8...",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      {
+        "childId": "search",
+        "state": "failed",
+        "runId": "c1bb3546-cceb-4c6d-b94d-6d729922c123",
+        "agent": "fact-scout",
+        "sessionName": "fact-scout: 用户显式调用 keep-code-simple src。先完整读取协议 /var/folders/yk/1lzd8...",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      {
+        "childId": "billing",
+        "state": "completed",
+        "runId": "ce505749-ece9-4d29-94bc-1a7d828e81d1",
+        "agent": "risk-reviewer",
+        "sessionName": "risk-reviewer: 用户显式调用 keep-code-simple src。先完整读取协议 /var/folders/yk/1lzd8...",
+        "model": "openai-codex/gpt-6-astra"
+      }
+    ]
+  }
+}

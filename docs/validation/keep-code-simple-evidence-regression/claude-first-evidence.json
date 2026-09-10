@@ -1,0 +1,52 @@
+{
+  "host": "claude",
+  "cwd": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-simple-claude-regression-bopohyff/claude",
+  "argv": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--include-hook-events",
+    "--forward-subagent-text",
+    "--model",
+    "opus",
+    "--plugin-dir",
+    "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-simple-claude-regression-bopohyff/packages/claude",
+    "--add-dir",
+    "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-simple-claude-regression-bopohyff/packages/claude",
+    "--restricted",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "",
+    "--permission-mode",
+    "dontAsk",
+    "--permission-prompts",
+    "none",
+    "--allowedTools",
+    "Read,Glob,Grep,Agent,TaskOutput,Write(./docs/keep-code-simple/**),Edit(./docs/keep-code-simple/**)",
+    "--",
+    "/keep-code-simple src\n这是用户显式请求的真实 skill 验证，不是让你模拟行动。请使用本次已发现的 keep-code-simple skill；如果没有发现该入口，直接报告入口不可用，不手工猜路径代替发现。审查 src 三个独立业务区域，先全局摸底；宿主支持时请实际并发至少两个只读调查任务，以验证派发能力，合理采用当前可用模型。只写 skill 规定的审查报告，不执行项目/测试、不改源码。调查结束后一次列建议和选择题，随后结束等用户选择，不自动实施。报告说明加载的 skill/协议路径、实际并发和模型限制；没运行的步骤如实写没运行。"
+  ],
+  "started": 1789043985.073747,
+  "pid": 33212,
+  "exit_code": 0,
+  "duration_seconds": 405.42,
+  "source_changes": [],
+  "test_execution_marker": false,
+  "reports": [
+    "docs/keep-code-simple/2026-09-10-src/recommendations.md"
+  ],
+  "git_status": "?? docs/\n",
+  "protocol_sha256": "a3413897f01c70fff32075498d755522fa443a876b4ff9e19d6103acf9932ad5",
+  "report_sha256": "bd14a5afb57a2e4d7c445413ecc598083a07e26ed6f903c23fce3ec39fecc1b0",
+  "stdout_sha256": "b7f71e1e15e86fae52c17fb263a73fbda578551104b035a9f1d4de611237d095",
+  "verdict": {
+    "model_provenance": "pass",
+    "risk_certainty": "not_passed",
+    "remaining": [
+      "Invoice-level gateway deduplication omitted from sufficient conditions for duplicate charge.",
+      "ledger lookup assumed to return shared reference despite unknown injected mapping."
+    ]
+  }
+}

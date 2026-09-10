@@ -36,6 +36,9 @@ REQUIRED = [
     "knowledge/cross-exam/visual/platforms/web.md",
     "knowledge/cross-exam/visual/prompts/visual-reviewer.md",
     "knowledge/cross-exam/visual/swiftui/LICENSE",
+    # keep-code-simple — independent advisory protocol, installed without shared/.
+    "skills/keep-code-simple/SKILL.md",
+    "knowledge/keep-code-simple/protocol.md",
     ".claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json",
 ]

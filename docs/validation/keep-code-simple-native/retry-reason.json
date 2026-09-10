@@ -1,0 +1,6 @@
+{
+  "previous_base": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-2v5evcm7",
+  "retry_base": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g",
+  "claude": "Same CLI with explicit -- prompt separator; first failure before model launch: Input must be provided either through stdin or as a prompt argument when using --print. Original fixture source unchanged.",
+  "pi": "Same CLI and pi-subagents protocol, fresh fixture/run. Replace unsupported gpt-5.4-mini fact-scout config with catalog-listed gpt-5.6-luna; no account change, CLI fallback or global config mutation. Prior failing child runs preserved in efaa1c00-435c-4ca3-a492-7fd0c77ee968; prior source unchanged."
+}

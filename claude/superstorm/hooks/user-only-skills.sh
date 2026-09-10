@@ -3,7 +3,7 @@
 # only. A user typing /name is expanded by the CLI and never reaches this hook;
 # a model-side Skill tool call does, and is refused so the model cannot start
 # these heavy, interactive flows on the user's behalf.
-USER_ONLY="superstorm cross-exam product-review"
+USER_ONLY="superstorm cross-exam product-review keep-code-simple"
 
 input=$(cat)
 skill=$(printf '%s' "$input" | python3 -c 'import sys, json

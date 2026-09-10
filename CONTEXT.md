@@ -4,6 +4,18 @@ Plugin development context for generating and executing project-local workflows.
 
 ## Language
 
+**Business-preserving simplification**:
+A simplification that preserves required business capabilities without requiring identical behavior in every technical or exceptional case. Reduced exceptional-case coverage is a trade-off, not automatically equivalent behavior.
+_Avoid_: 100% behavioral equivalence, code compression
+
+**Simplicity review**:
+An advisory assessment of opportunities to reduce implementation and cognitive cost while preserving required business capabilities. It does not authorize source changes; data corruption and money-related failures are high-impact regardless of frequency.
+_Avoid_: automatic refactoring, completion verdict
+
+**Simplicity trade-off**:
+A proposed reduction in implementation complexity whose acceptability depends on business value, exceptional-case coverage, consistency, familiarity, or migration cost. Conflicts between these criteria require human arbitration after investigation, with concrete recommendations presented as choices; unresolved branches remain conditional rather than interrupting investigation. Missing usage evidence leaves the trade-off unconfirmed rather than establishing low impact.
+_Avoid_: low-frequency exemption, agent-approved scope reduction
+
 **Capability**:
 A reusable methodology plus output contract for one kind of work, stored under `knowledge/capabilities/`. It is reference material, not a menu of nodes.
 _Avoid_: skill, node, template

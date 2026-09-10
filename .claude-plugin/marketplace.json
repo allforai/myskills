@@ -12,9 +12,9 @@
     },
     {
       "name": "superstorm",
-      "version": "0.36.0",
+      "version": "0.37.0",
       "source": "./claude/superstorm/",
-      "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm."
+      "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm. Bundles /cross-exam, /product-review and /keep-code-simple as explicit independent reviews."
     },
     {
       "name": "grillstorm",

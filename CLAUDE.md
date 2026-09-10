@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Purpose
 
-This is **myskills** — a dual-platform (Claude Code / Codex) plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
+This is **myskills** — a Claude Code / Codex plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance, with Pi support for `keep-code-simple`. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
 
 ## Directory Structure
 
@@ -23,6 +23,8 @@ myskills/
 │   ├── superstorm-skill/
 │   ├── grillstorm/
 │   └── cross-exam-skill/
+│
+├── pi/cross-exam/            # Pi package: keep-code-simple only (not the completion audit)
 │
 ├── shared/                   # Platform-agnostic assets
 │   ├── scripts/
@@ -140,6 +142,10 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `to-spec`, `to-tick
 
 Do not install retired Codex layer packs (`product-design`, `dev-forge`, `demo-forge`, `code-tuner`, `code-replicate`, `ui-forge`). Those jobs go through `codex/meta-skill`.
 
+**Pi** — install the local package with `pi install /path/to/myskills/pi/cross-exam`, then restart/reload Pi and use `/skill:keep-code-simple [scope]`. Only this review is ported; do not claim the other pipelines run on Pi. Optional, already-installed `pi-subagents` enables concurrent investigation; a bare Pi uses disclosed serial review. Do not install extensions automatically.
+
+`keep-code-simple` is also bundled in Claude's superstorm plugin and in the Codex cross-exam folder (nested `keep-code-simple/SKILL.md`). Keep its shared protocol authoritative at `shared/keep-code-simple/protocol.md`; after edits run `python3 shared/keep-code-simple/sync.py`, then `--check`. Committed mirrors make installed packages self-contained.
+
 ## Key Dependency: mcp-ai-gateway
 
 `shared/mcp-ai-gateway/` provides OpenRouter (cross-model XV + image gen) + Google AI (Imagen 4 / Veo 3.1 / TTS) + fal.ai (FLUX 2 Pro / Kling) in a single process:
@@ -202,7 +208,7 @@ Product, implementation, demo, verify, and tune jobs are meta-skill capabilities
 
 ### Which entry for which situation
 
-Every entry below is user-invoked only. Do **not** set `disable-model-invocation` on them: that drops the entry from the model's skill list entirely, and the user wants them listed. Instead each plugin ships `hooks/user-only-skills.sh`, a `PreToolUse` gate on the Skill tool that refuses model-side calls to these names; a user-typed `/name` is expanded by the CLI and never reaches the hook. Never start one yourself; if it fits, tell the user the command exists.
+Every entry below is user-invoked only. Do **not** set `disable-model-invocation` on them: that drops the entry from the model's skill list entirely, and the user wants them listed. Claude plugins ship `hooks/user-only-skills.sh`, a `PreToolUse` gate on the Skill tool that refuses model-side calls to these names; a user-typed `/name` is expanded by the CLI and never reaches the hook. Codex/Pi entries express this boundary in their skill instructions, not a Claude hook. Never start one yourself; if it fits, tell the user the command exists.
 
 | Situation | Entry | Why this one |
 |---|---|---|
@@ -211,6 +217,7 @@ Every entry below is user-invoked only. Do **not** set `disable-model-invocation
 | Same goal shape, but design must follow Matt Pocock's official skills (grilling → to-spec → to-tickets → tdd → code-review) | `/grillstorm` | Official skills own design; Grillstorm owns routing, DAG, worktree execution, resume, handoff; artifacts under `docs/grillstorm/` |
 | A finished delivery that may be fake-complete; independent evidence wanted | `/cross-exam` | Fresh-context probers gather evidence, deterministic report, records only, refuses to run unattended; user-declared journeys walked end-to-end and judged against an oracle |
 | A finished product; is it useful and sellable for the jobs the user names | `/product-review` | Product-thinking critique, competitor comparison, advice only; same package as cross-exam, different protocol |
+| Code should be simpler while preserving business capabilities | `/keep-code-simple` (Codex: `$keep-code-simple`; Pi: `/skill:keep-code-simple`) | Independent advisory review; investigate first, batch human choices last; never changes source or executes the target project |
 
 `/superstorm` and `/grillstorm` share the execution shape (front-loaded decisions, DAG, concurrent worktrees, supervision, resume); they differ only in the design front end. `/cross-exam` then `/product-review` is the natural order after any of the three: first "is it done", then "is it good".
 

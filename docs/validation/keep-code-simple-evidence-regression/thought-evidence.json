@@ -1,0 +1,70 @@
+{
+  "workflow": "1586cf58-8b1e-4dc4-a986-0e45cadd9890",
+  "receipt_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/pi-subagents-uid-502/async-subagent-runs/1586cf58-8b1e-4dc4-a986-0e45cadd9890/workflow-receipt.json",
+  "receipt_sha256": "c0b27019d184996139a742ba7388b2769ed496473230a8983cada0fb4d25ff5f",
+  "inputs": {
+    "inputs": {
+      "shared/keep-code-simple/protocol.md": "a3413897f01c70fff32075498d755522fa443a876b4ff9e19d6103acf9932ad5",
+      "claude/superstorm/skills/keep-code-simple/SKILL.md": "f5c22cbb762122f22f54233559a31ea7746fc967c9b71cef0dd79e31b20eafff",
+      "fixtures/keep-code-simple/evidence-regression.json": "16a5208d81fb3fc255260db27a80a517d4df6c381f9a8804469cc8b84e7b9f66"
+    },
+    "cases": [
+      {
+        "id": "E01",
+        "prompt_sha256": "3aa0201aeeb2e56667fdf69aff10e01e316eb75f1c221ff3fc43da9601620db7"
+      },
+      {
+        "id": "E02",
+        "prompt_sha256": "1309bd680455b7923a006fa17d565e2534b4abc49d474aa19068da58eab49ff4"
+      },
+      {
+        "id": "E03",
+        "prompt_sha256": "96e63db4f3763160b3d5987839e658b404a1e3b3c19626fe961316fb96285c48"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "E01",
+      "run_id": "a4e2ab8d-b03b-4bc5-9a2d-c2fa3b529296",
+      "status": "completed",
+      "context": "fresh",
+      "models": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "tool_calls": [],
+      "session_path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/fbfb4497-0982-44a2-87d9-d4daa7bde47a/run-0/session.jsonl",
+      "session_sha256": "80c29705f3a7a664ea2029830713c5c94712e7482d75328211489b39ff4628c6",
+      "answer_sha256": "6689012fab1094787b5165b7d1cc2ea2c38255eddb261ec7f9bc3057810f6876",
+      "verdict": "pass"
+    },
+    {
+      "id": "E02",
+      "run_id": "f2611f5b-ad08-4f3d-823b-b228572eca1d",
+      "status": "completed",
+      "context": "fresh",
+      "models": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "tool_calls": [],
+      "session_path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6fd5d468-8f08-431f-9b2a-9c83b00c2520/run-0/session.jsonl",
+      "session_sha256": "0a2f0e20dcf2957c0a5d98189469c22daae704a225a877b7f00a4927e3aff510",
+      "answer_sha256": "56d39fd04265a9a40befa036c00055b5beddf4e0d411b1f290ac95254145bf6d",
+      "verdict": "pass"
+    },
+    {
+      "id": "E03",
+      "run_id": "54faffd6-51bb-41bb-8513-0dd7b28b52df",
+      "status": "completed",
+      "context": "fresh",
+      "models": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "tool_calls": [],
+      "session_path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6d49a79b-5d80-4223-ad88-66a67398230c/run-0/session.jsonl",
+      "session_sha256": "a9e8c48c088566c2f1914e963263d4ede2584913ddc84fb5c4b2652059dd8acd",
+      "answer_sha256": "373fecc35db01bb8caff1d920f9b39814201e5b56ebe901d6274cf4bcf374a4a",
+      "verdict": "pass"
+    }
+  ]
+}

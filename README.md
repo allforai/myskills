@@ -2,14 +2,15 @@
 
 ## Multi-Platform Layout
 
-This repository is organized as two native platform directories:
+This repository provides:
 
 - `claude/` for Claude Code plugins
-- `codex/` for Codex-native skills discovered through `AGENTS.md`
+- `codex/` for Codex-native skill packages
+- `pi/` for Pi skills — currently `keep-code-simple` only
 
-Shared scripts and MCP services live under `shared/`.
+Shared protocols, scripts and MCP services live under `shared/`.
 
-**Claude Code + Codex** 双平台插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。
+**Claude Code + Codex** 插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路；**keep-code-simple 同时支持 Pi**，其他流程尚未移植。
 
 ## ✨ 新增：UI Forge（实现后 UI 锻造）
 
@@ -63,8 +64,8 @@ claude plugin install superstorm@superstorm
 ### Codex
 
 Codex 从 `$CODEX_HOME/skills/`（默认 `~/.codex/skills/`）发现带 `SKILL.md` 的目录。
-从远程获取完整仓库后运行 `bash codex/meta-skill/install.sh` 安装 meta-skill，
-或用 `bash codex/install.sh` 安装整套入口。不要把整个 meta-skill 目录链接或复制进扫描目录：
+获取完整仓库后，使用 Codex 的 skill 安装/发现入口配置下列目录，不运行仓库 `install.sh` 脚本。
+meta-skill 需保留轻量入口与完整包的分离布局；不要把整个 meta-skill 目录链接或复制进扫描目录：
 其内部能力库含大量 `SKILL.md`，会被误注册为独立 Skill。
 
 ```text
@@ -81,6 +82,16 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 
 ---
 
+### Pi：代码简单性审查
+
+```text
+pi install /path/to/myskills/pi/cross-exam
+```
+
+重启或重新加载 Pi 后运行 `/skill:keep-code-simple [scope]`。也可把 `pi/cross-exam/skills/keep-code-simple/` 链接到 `~/.pi/agent/skills/keep-code-simple/`；选一种安装方式，避免同名入口重复加载。
+
+包不自动安装扩展。已有 `pi-subagents` 时可并发并按能力选模型；没有子代理时串行并披露限制。Pi 包当前不提供 cross-exam 完成度审查或 product-review。
+
 ## 你该从哪个插件开始？
 
 | 你的目标 | 推荐入口 | 第一条命令 |
@@ -90,6 +101,7 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 | 官方 grilling + 隔离执行 | grillstorm | `$grillstorm` |
 | 实证完成度盘问 | cross-exam | `/cross-exam` |
 | 产品思维审视（不改代码） | 同一包 | `/product-review`，意见可交给 `$grill-me` |
+| 保留商业功能，让代码更简单（不改代码） | 同一审查包，三端适配 | Claude `/keep-code-simple`；Codex `$keep-code-simple`；Pi `/skill:keep-code-simple` |
 
 ---
 
@@ -114,7 +126,17 @@ QA 层       meta-skill        产品验收→测试锻造→完整性扫描
 
 ### superstorm / grillstorm / cross-exam
 
-大目标自治、官方 grilling 编排、实证完成度盘问。`/product-review` 和 `/cross-exam` 同一包：产品思维审视，只出意见。它们不是层插件，继续独立安装。
+大目标自治、官方 grilling 编排、实证完成度盘问。`product-review`、`keep-code-simple` 和 `cross-exam` 在 Claude/Codex 同包、独立调用；前两者只出意见。它们不是层插件。
+
+### keep-code-simple
+
+默认全项目调查，也支持指定模块或变更集；跨库查已有实现、标准库和依赖，再找统一套路、有益抽象、常见替代和可协商的异常覆盖取舍。保留商业功能不等于技术行为 100% 不变；脏数据和金钱风险永远不是低频小事。可以安全停止，但要查停止前的写入与外部副作用。
+
+先全局摸底，再按模块并发调查；事实定位用快且胜任的模型，关键判断用强模型，争议才追加独立/跨模型复核。型号由宿主实际能力决定，不硬编码。不支持选模则继承，不支持并发则串行并披露；已启动的派发失败不自动换执行方式。
+
+**调查期间不提问、不运行项目/测试、不改源码。** 最后写 `docs/keep-code-simple/<run>/recommendations.md`，直接列具体建议、收益、代价与选择题，统一让人选择；接受建议也不自动实施。零建议是有效结果，未查范围必须披露。
+
+开发此 skill：修改 `shared/keep-code-simple/protocol.md` 后运行 `python3 shared/keep-code-simple/sync.py` 同步三端，再运行 `python3 -m unittest discover -s shared/keep-code-simple -p 'test_*.py'`。检查范围与人工场景见 [维护说明](shared/keep-code-simple/README.md)。
 
 ---
 

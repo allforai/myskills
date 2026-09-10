@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "workflowRunId": "33acf316-396e-4bfa-a41e-f55bc3362132",
+  "state": "complete",
+  "createdAt": 1789036200085,
+  "entries": {
+    "catalog": {
+      "key": "catalog",
+      "agent": "fact-scout",
+      "requestedContext": "fresh",
+      "resolvedContext": "fresh",
+      "outputReference": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g/pi-sessions/subagent-artifacts/outputs/33acf316-396e-4bfa-a41e-f55bc3362132/catalog.md",
+      "continuation": {
+        "runIds": [
+          "f9c6629f-b548-41ba-95f9-af17771ad8f7"
+        ]
+      },
+      "latestRunId": "f9c6629f-b548-41ba-95f9-af17771ad8f7",
+      "resumability": {
+        "state": "resumable"
+      }
+    },
+    "search": {
+      "key": "search",
+      "agent": "fact-scout",
+      "requestedContext": "fresh",
+      "resolvedContext": "fresh",
+      "outputReference": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g/pi-sessions/subagent-artifacts/outputs/33acf316-396e-4bfa-a41e-f55bc3362132/search.md",
+      "continuation": {
+        "runIds": [
+          "4e49c72f-f00a-4d8c-b040-791b4441f3ba"
+        ]
+      },
+      "latestRunId": "4e49c72f-f00a-4d8c-b040-791b4441f3ba",
+      "resumability": {
+        "state": "resumable"
+      }
+    },
+    "billing": {
+      "key": "billing",
+      "agent": "risk-reviewer",
+      "requestedContext": "fresh",
+      "resolvedContext": "fresh",
+      "outputReference": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g/pi-sessions/subagent-artifacts/outputs/33acf316-396e-4bfa-a41e-f55bc3362132/billing.md",
+      "continuation": {
+        "runIds": [
+          "bf1e582d-3d1a-4ea1-87df-1e0a79e348bc"
+        ]
+      },
+      "latestRunId": "bf1e582d-3d1a-4ea1-87df-1e0a79e348bc",
+      "resumability": {
+        "state": "resumable"
+      }
+    }
+  },
+  "workflowChildren": {
+    "version": 1,
+    "parentToolCallId": "call_sPvUYJWd4qNNAmefH2AHLxi3|fc_06ca530ce477eb72016aa28619dbc487d0ba3d46807cc70243",
+    "workflowRunId": "33acf316-396e-4bfa-a41e-f55bc3362132",
+    "inventoryComplete": true,
+    "workflowState": "completed",
+    "children": [
+      {
+        "childId": "catalog",
+        "state": "completed",
+        "runId": "f9c6629f-b548-41ba-95f9-af17771ad8f7",
+        "agent": "fact-scout",
+        "sessionName": "fact-scout: 用户显式 keep-code-simple src 静态建议审查。先完整读取协议 /var/folders/yk/...",
+        "model": "openai-codex/gpt-5.6-luna"
+      },
+      {
+        "childId": "search",
+        "state": "completed",
+        "runId": "4e49c72f-f00a-4d8c-b040-791b4441f3ba",
+        "agent": "fact-scout",
+        "sessionName": "fact-scout: 用户显式 keep-code-simple src 静态建议审查。先完整读取协议 /var/folders/yk/...",
+        "model": "openai-codex/gpt-5.6-luna"
+      },
+      {
+        "childId": "billing",
+        "state": "completed",
+        "runId": "bf1e582d-3d1a-4ea1-87df-1e0a79e348bc",
+        "agent": "risk-reviewer",
+        "sessionName": "risk-reviewer: 用户显式 keep-code-simple src 静态建议审查。先完整读取协议 /var/folders/yk/...",
+        "model": "openai-codex/gpt-6-astra"
+      }
+    ]
+  }
+}
