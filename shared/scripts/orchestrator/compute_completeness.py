@@ -14,13 +14,14 @@ runtime entry whose request went through a mock layer, or whose response is the
 canned fixture the mock serves, is refused with the reason strings cross-exam's
 renderer uses (`_content_reason`) and read as `unverified`. `served_by` is the
 ledger-entry field: `{host, process, mock_layers[], fixtures[]?}`, on the entry's
-`verification` or beside it.
+`verification` or beside it. The fixture comparison and its literals live in
+check_evidence, where the ledger-entry gate (#59) refuses with the same words.
 """
 import json
 import os
 import sys
 
-from check_evidence import derive_state
+from check_evidence import derive_state, fixture_match_reason, response_text
 
 
 def _served_by(entry):
@@ -36,29 +37,7 @@ def _response_text(entry, base_dir):
     ev = (entry.get("verification") or {}).get("evidence_path")
     if not ev:
         return None
-    path = ev if os.path.isabs(ev) else os.path.join(base_dir, ev)
-    try:
-        with open(path, encoding="utf-8", errors="ignore") as f:
-            text = f.read()
-    except OSError:
-        return None
-    try:
-        record = json.loads(text)
-    except ValueError:
-        return text
-    if isinstance(record, dict) and record.get("schema") == "capture_evidence/v1":
-        return record.get("stdout") if isinstance(record.get("stdout"), str) else ""
-    return text
-
-
-def _same_body(a, b):
-    """Byte-for-byte after whitespace, or the same JSON document however it was indented."""
-    if a.strip() == b.strip():
-        return True
-    try:
-        return json.loads(a) == json.loads(b)
-    except ValueError:
-        return False
+    return response_text(ev if os.path.isabs(ev) else os.path.join(base_dir, ev))
 
 
 def hollow_reason(entry, base_dir="."):
@@ -67,20 +46,8 @@ def hollow_reason(entry, base_dir="."):
     layers = served.get("mock_layers")
     if isinstance(layers, list) and layers:
         return "经 mock 层（" + ", ".join(map(str, layers)) + "）的 runtime 不能判 done"
-    fixtures = served.get("fixtures")
-    if not isinstance(fixtures, list) or not fixtures:
-        return ""
     response = _response_text(entry, base_dir)
-    for fixture in fixtures:
-        path = fixture if os.path.isabs(fixture) else os.path.join(base_dir, fixture)
-        try:
-            with open(path, encoding="utf-8", errors="ignore") as f:
-                canned = f.read()
-        except OSError:
-            return f"served_by.fixtures 指向的 {fixture} 读不到，响应无法与 fixture 比对"
-        if response is not None and _same_body(response, canned):
-            return f"响应与 fixture 一致（{fixture}）的 runtime 不能判 done"
-    return ""
+    return fixture_match_reason([] if response is None else [response], served.get("fixtures"), base_dir)
 
 
 def compute_completeness(workflow, base_dir="."):

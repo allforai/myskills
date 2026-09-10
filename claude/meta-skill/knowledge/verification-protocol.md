@@ -51,6 +51,18 @@ and artifact files instead of exercising the real product. This protocol makes
    fixture (`响应与 fixture 一致（…）的 runtime 不能判 done`); a refused entry is `unverified`.
    Whether the feature is hollow beyond that — success returned without doing the work, a
    screen of placeholder data — is a judgement, and it is `/cross-exam`'s (ADR-0008).
+7. **Runtime gates also write ledger-shaped entries.** product-verify, runtime-smoke-verify and
+   test-verify write, beside their human reports, `<run>/evidence-entries/<node_id>.json` in
+   cross-exam's ledger-entry shape: `medium`, `verdict`, `build` (whole-tree identity from the
+   shared engine, host directories excluded and said so in `build_excludes`), `probed_at` with an
+   offset, `evidence.dir` under `<run>/evidence/`, `served_by` as in rule 6, `readback` of every
+   applied axis, `images` + `image_digests`, and the author marker
+   `{pipeline: "meta-skill/run", node_id, capability}`. Record them with
+   `capture_evidence.py entry <run> <draft.json> --node <id> --capability <name>` (it adds build,
+   probed_at, digests and the marker, and refuses a draft that fails) and check them with
+   `check_evidence.py --entries <run> --node <id>`; a gate with a refused, missing or empty entries
+   file is not passed. Each capability text states what its entries must satisfy;
+   `evidence_freshness` binds the file and every cited evidence file as the node's outputs.
 
 ## Anti-fabrication: capture, don't author (L1) + reproduce (L2)
 

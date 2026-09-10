@@ -18,8 +18,12 @@ loads its own siblings; nothing here is on `sys.path`.
 
 - **Build identity** (`identity.py`): commit + working-tree snapshot digest (`git diff HEAD` plus untracked
   file contents) + artifact digest, as `visual-acceptance/platforms/web.md` defines it. Two different
-  uncommitted states on one commit get different values. `build_identity(repo, artifacts)` computes it;
-  `build_reason(recorded, repo, artifacts)` compares a recorded value with the tree now.
+  uncommitted states on one commit get different values. `build_identity(repo, artifacts, exclude)` computes
+  it; `build_reason(recorded, repo, artifacts, exclude)` compares a recorded value with the tree now. `exclude`
+  names repo-relative paths outside the snapshot whether tracked or not — the run directory and evidence the
+  probe itself writes, which must not move the build they record; an entry says what it excluded. Repository
+  variables a git hook exports (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`...) are dropped, so a gate run
+  from inside another repository's hook still identifies the tree it was asked about.
 - **Digest binding of refs** (`ref_digest_reason`, `bindings_reason`, `artifact`, `digest`): a frozen input
   is the file at a ref whose SHA-256 matches the recorded digest, and every capture or report carries the
   run's binding keys verbatim.
@@ -48,8 +52,10 @@ cross-exam prints today, so a case moved here keeps its assertion.
 
 ## Status
 
-Extracted from cross-exam's renderer and the visual acceptance validator (#54). cross-exam and meta-skill
-keep their own copies until the contract ticket points them here; this package changes no caller.
+Extracted from cross-exam's renderer and the visual acceptance validator (#54). meta-skill's runtime gates
+consume it (#59): `scripts/check_evidence.py` loads `engine/evidence.py` and `engine/identity.py` by path to
+validate the ledger-shaped entries `scripts/capture_evidence.py entry` writes. cross-exam keeps its own copies
+until its contract ticket points it here.
 
 Run the suite from this directory (`python3 -m pytest shared/evidence-engine`); mirrors carry the same
 tests and skip the parity check when installed standalone.

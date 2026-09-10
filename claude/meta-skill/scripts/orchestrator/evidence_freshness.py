@@ -169,9 +169,43 @@ def dependencies(root, node, workflow):
                   {producers[p] for p in consumed if p in producers and producers[p] != node['node_id']})
 
 
+def evidence_entries(root, node):
+    """Ledger-shaped entries a verify gate wrote beside its exit artifacts, and every file they cite.
+
+    A gate's run directory is where its exit artifacts live; its entries file is
+    ``<run>/evidence-entries/<node_id>.json`` and each entry's ``evidence.dir`` is a
+    directory under that run. Both are the node's outputs: a swapped screenshot or a
+    dropped entries file is drift in the delivery, not a still-valid verification.
+    An entries file that cannot be parsed is still bound by its fingerprint.
+    """
+    paths: list[str] = []
+    runs = sorted({Path(item['path'] if isinstance(item, dict) else item).parent.as_posix()
+                   for item in node.get('exit_artifacts', [])})
+    for run in runs:
+        entries = run + '/evidence-entries/' + node['node_id'] + '.json'
+        if not (root / entries).is_file():
+            continue
+        paths.append(entries)
+        try:
+            data = read_json(root, entries, {})
+        except ValueError:
+            continue
+        for entry in data.get('entries', []) if isinstance(data, dict) and isinstance(data.get('entries'), list) else []:
+            evidence = entry.get('evidence') if isinstance(entry, dict) else None
+            directory = evidence.get('dir') if isinstance(evidence, dict) else None
+            if not isinstance(directory, str) or not directory or Path(directory).is_absolute():
+                continue
+            target = (root / run / directory).resolve()
+            if not target.is_relative_to(root.resolve()) or not target.is_dir():
+                continue
+            paths.extend(p.relative_to(root.resolve()).as_posix() for p in sorted(target.rglob('*')) if p.is_file())
+    return paths
+
+
 def outputs(root, node, kind='evidence'):
     """Outputs a publication binds: the Node-spec for a contract; the required
-    fact documents, Node-spec and exit artifacts for delivered evidence."""
+    fact documents, Node-spec, exit artifacts and ledger-shaped evidence entries
+    for delivered evidence."""
     paths = []
     spec = '.allforai/bootstrap/node-specs/' + node['node_id'] + '.md'
     if kind == 'evidence':
@@ -180,6 +214,7 @@ def outputs(root, node, kind='evidence'):
         paths.append(spec)
     if kind == 'evidence':
         paths.extend(item['path'] if isinstance(item, dict) else item for item in node.get('exit_artifacts', []))
+        paths.extend(p for p in evidence_entries(root, node) if p not in paths)
     return {p: fingerprint(root, p) for p in paths}
 
 

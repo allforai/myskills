@@ -51,8 +51,10 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    contract/documents; file existence or a no-op is not verification. The helper
    executes it and rejects nonzero exit, missing outputs, or inputs changed
    before/during verification. Contract publication permits execution but cannot
-   prove completion; it binds the Node-spec, while required documents and exit
-   artifacts are bound only when evidence is published.
+   prove completion; it binds the Node-spec, while required documents, exit
+   artifacts and a verify gate's ledger-shaped entries
+   (`<run>/evidence-entries/<node_id>.json` beside its exit artifacts, plus every
+   evidence file those entries cite) are bound only when evidence is published.
 4. After implementation has settled, observe again with `kind:"evidence"` before
    running acceptance and refreshing required documents. Publish that token with
    the real project-specific acceptance command. A newly observed snapshot alone

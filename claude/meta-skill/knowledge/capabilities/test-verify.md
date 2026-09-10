@@ -148,6 +148,55 @@ If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown and the 
 `composite_score` is consumed by downstream nodes (visual-verify, code-tuner, launch-prep).
 `results[].module_id` MUST reference a module declared in bootstrap-profile.json.
 
+### Evidence Entries (ledger shape, ADR-0008)
+
+Beside `test-verify-report.json`, the node writes machine entries in cross-exam's ledger-entry
+shape to `.allforai/test-verify/evidence-entries/<node_id>.json` (`{"schema":
+"evidence-entries/v1", "entries": [...]}`): one entry per `results[]` row — a layer (R2 / R3 / R4)
+run for a module — and one per UI automation path with screenshots. The report keeps its name and
+its pass rates; the entry is the machine record a later `/cross-exam` can verify and admit as
+author evidence instead of rerunning every suite.
+
+An entry is admissible when, and only when, all of the following hold. The shared engine
+(`${CLAUDE_PLUGIN_ROOT}/scripts/engine`) decides the shape; `capture_evidence.py entry` records what
+the node must not author and refuses a draft that fails; `check_evidence.py --entries
+.allforai/test-verify --node <node_id>` re-checks every entry against the tree at gate time.
+**`verdict` cannot be `pass` while any entry is refused, or while the file is missing or empty.**
+
+- `medium` is `runtime`; `verdict` is `done` (the layer met its threshold against the real
+  target), `gap` (it did not), or `unprovable` — a suite whose harness mocks the path under test
+  proves the suite passes, not that the product works, and is recorded as `unprovable` with the
+  passing capture as evidence. `pass_rate` stays in the report; it is not a verdict.
+- `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest +
+  artifact digest), computed with `.allforai`, `.claude`, `.codex` outside it (`build_excludes` on the
+  entry records exactly that scope; any other scope is refused). It must be the identity of the
+  tree at gate time (`构建标识不匹配` otherwise): a suite run before a fix is not evidence for the
+  tree after it.
+- `probed_at` is ISO 8601 with a timezone offset; a naive timestamp is refused.
+- `evidence.dir` is a non-empty directory under `.allforai/test-verify/evidence/` (recommended
+  `evidence/<node_id>/<module_id>-<layer>/`) holding the test runner's captured output — the
+  `capture_evidence/v1` record of the real command, never a pasted summary — and, for UI
+  automation, a screenshot for every state asked for (`states_to_capture`);
+  `evidence.key_observation` gives passed / failed counts and the first failure.
+- `served_by` names where the exercised code's requests went: `host`, `process` (the dev server,
+  emulator or launched binary the tests drove; the runner alone is not a destination) and the mock
+  layers **in effect** in the harness — MSW registered, a mocked client, nock, an in-memory DB
+  (`mock_layers`, `[]` when none). Through a mock layer an entry may be `gap` or `unprovable`,
+  never `done` (`经 mock 层（…）的 runtime 不能判 done`). `fixtures` lists the canned files a
+  fixture-backed test could have answered with; an output identical to one cannot be `done`
+  (`响应与 fixture 一致（…）的 runtime 不能判 done`) — the same field and literals
+  `compute_completeness.py` applies to the transition log.
+- `readback` carries, for every axis a UI automation path applied — viewport or device, theme,
+  locale, role — the value the app itself reported, non-empty; for an API or protocol layer, the
+  target version or endpoint the process reported.
+- `images` lists the screenshots inside `evidence.dir`; `image_digests` (recorded by the writer) must
+  match the files on disk.
+- `author` is `{"pipeline": "meta-skill/run", "node_id": <this node>, "capability": "test-verify"}`:
+  /run wrote it, as the author; cross-exam admits it only as evidence it can verify, never as a
+  verdict.
+
+`evidence_freshness` binds the entries file and every file the entries cite as this node's outputs.
+
 ## Rules
 
 1. **Test commands from node-spec**: Bootstrap generates them per platform and test framework.

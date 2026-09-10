@@ -224,6 +224,57 @@ Output: `.allforai/product-verify/verify-report.json` + `.allforai/product-verif
 ```
 `static_score`, `dynamic_score`, `composite_score` are consumed by code-tuner and launch-prep.
 
+### Evidence Entries (ledger shape, ADR-0008)
+
+Beside the report, the node writes machine entries in cross-exam's ledger-entry shape to
+`.allforai/product-verify/evidence-entries/<node_id>.json` (`{"schema": "evidence-entries/v1",
+"entries": [...]}`): one entry per probe of the running product — a screen in a state, a flow, a
+form round-trip, a real-time delivery check, a parity check on a second client. The report stays
+the human summary and keeps its name; the entry is the machine record a later `/cross-exam` can
+verify and admit as author evidence instead of re-probing everything. Static checks (route, API,
+field parity) stay findings in the report; entries record what was driven.
+
+An entry is admissible when, and only when, all of the following hold. The shared engine
+(`${CLAUDE_PLUGIN_ROOT}/scripts/engine`) decides the shape; `capture_evidence.py entry` records
+what the node must not author and refuses a draft that fails; `check_evidence.py --entries
+.allforai/product-verify --node <node_id>` re-checks every entry against the tree at gate time.
+**The gate is not passed — `dynamic_score` cannot count as passed and `verdict` is `fail`
+— while any entry is refused, or while the file is missing or empty.**
+
+- `medium` is `runtime`; `verdict` is `done | gap | drift | unprovable`. A number or a judgement
+  about the product's worth is not an entry.
+- `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest +
+  artifact digest), computed with the host directories `.allforai`, `.claude`, `.codex` outside it
+  (`build_excludes` on the entry records exactly that scope; any other scope is refused). It must be
+  the identity of the tree when the gate is checked: an entry from an earlier tree, or a tree edited
+  after the capture, is refused by name (`构建标识不匹配`). Two uncommitted states on one commit never
+  share a build.
+- `probed_at` is ISO 8601 with a timezone offset; a naive timestamp is refused
+  (`probed_at 缺时区偏移`).
+- `evidence.dir` is a non-empty directory under `.allforai/product-verify/evidence/` (recommended
+  `evidence/<node_id>/<qNN>/`) holding a screenshot or output file for every state the probe asked for
+  (`states_to_capture`); `evidence.key_observation` says what was seen.
+- `served_by` names where the requests went: `host`, `process`, the mock layers **in effect**
+  (`mock_layers`, `[]` when none; layers checked and found inactive go in `checked_absent`) and the
+  canned fixture files that could have answered instead (`fixtures`, optional). Through a mock layer
+  a probe may record a `gap`, never a `done` (`经 mock 层（…）的 runtime 不能判 done`); an output
+  identical to a declared fixture cannot be `done` either (`响应与 fixture 一致（…）的 runtime 不能判
+  done`). These are the same `served_by` field and the same refusal literals
+  `compute_completeness.py` applies to the transition log, so the two gates cannot disagree.
+- `readback` carries, for every axis the probe applied — theme, locale, zoom, width or viewport,
+  role, device — the value the **app itself** reported (its DOM, its settings screen, its log), as a
+  non-empty value. A Playwright or emulator option that did not take effect cannot pass as coverage.
+- `images` lists the screenshots inside `evidence.dir`; `image_digests` (recorded by the writer) must
+  match the files on disk (`截图内容摘要不匹配`), so a swapped screenshot is not the one the entry
+  looked at.
+- `author` is the marker `{"pipeline": "meta-skill/run", "node_id": <this node>, "capability":
+  "product-verify"}`: /run wrote it, as the author. An entry another node wrote does not pass this
+  gate; cross-exam admits author entries only as evidence it can verify, never as a verdict of its
+  own.
+
+`evidence_freshness` binds the entries file and every file the entries cite as this node's outputs:
+an edited screenshot or a removed entry is drift routed to this node, not a still-valid verification.
+
 ### Multi-Client Feature Parity Verification
 
 When product-concept declares multiple clients for a role (e.g., buyer-web + buyer-mobile),
