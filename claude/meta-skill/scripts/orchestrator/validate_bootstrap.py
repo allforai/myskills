@@ -125,6 +125,24 @@ def _read_node_spec(path: str) -> tuple:
 
 REFERENCE_FIELDS = ("consumers", "hard_blocked_by", "unlocks", "alignment_refs")
 
+# Capabilities that left /run. A workflow or node-spec generated before retirement is
+# refused by name here rather than silently skipped or resolved against a missing file.
+RETIRED_CAPABILITIES = {
+    "hollowness-detector": (
+        "the hollow verdict is cross-exam's, made after the pipeline by a party that did not "
+        "write the code (ADR-0008); its machine-detectable patterns — a mock layer in served_by, "
+        "a response identical to a canned fixture — are refusals in compute_completeness and "
+        "the evidence-entry gate. Remove the node; run /cross-exam after /run instead"
+    ),
+}
+
+
+def _retired_capability_error(node_id: str, capability) -> str:
+    reason = RETIRED_CAPABILITIES.get(capability)
+    if not reason:
+        return ""
+    return f"{node_id} names retired capability '{capability}': {reason}"
+
 
 NODE_SPEC_REQUIRED_ATTENTION_TERMS = (
     "## Attention Contract",
@@ -309,7 +327,9 @@ CANVAS2D_REQUIRED_FAMILIES = {
         "concept-acceptance",
         "concept acceptance",
         "acceptance-report",
-        "final weighted product acceptance",
+        "missing_mappings",
+        "missing behaviour mappings",
+        "coverage gate",
     ),
 }
 
@@ -557,6 +577,8 @@ def validate_workflow(wf_path: str) -> list:
             errors.append(f"workflow.json: {nid} missing 'capability'")
         elif not isinstance(node["capability"], str) or not node["capability"]:
             errors.append(f"workflow.json: {nid} 'capability' must be a non-empty string")
+        elif _retired_capability_error(nid, node["capability"]):
+            errors.append(f"workflow.json: {_retired_capability_error(nid, node['capability'])}")
         if "exit_artifacts" not in node:
             errors.append(f"workflow.json: {nid} missing 'exit_artifacts'")
         elif not isinstance(node["exit_artifacts"], list):
@@ -1841,6 +1863,77 @@ def validate_repair_loop_declaration(bdir: str) -> list:
     return _rendered(repair_loop_declaration_findings(bdir))
 
 
+def coverage_gate_loop(nodes):
+    """The repair loop auto_fix_once needs for the concept-acceptance coverage gate (ADR-0008, #65):
+    one bounded repair hard_blocked_by the gate, then a rerun of the gate blocked by the repair.
+    None when the workflow has no coverage gate."""
+    gates = [n["node_id"] for n in nodes
+             if isinstance(n, dict) and n.get("capability") == "concept-acceptance" and isinstance(n.get("node_id"), str)]
+    if not gates:
+        return None
+    gate = gates[0]
+    return {"scope": "concept-acceptance", "qa_node_ids": [gate], "repair_node_id": gate + "-repair",
+            "closure_node_ids": [gate + "-rerun"], "max_attempts": 1}
+
+
+def coverage_gate_loop_findings(bdir: str) -> list:
+    """auto_fix_once repairs only through a declared loop (ADR-0006, #65).
+
+    `validate_bootstrap.py` only validates `unattended-run-readiness-spec.json` — planning
+    authors it, this CLI does not — so a plan that carries the coverage gate and that policy
+    without a loop naming the gate is refused here, at bootstrap time, before
+    `validate_unattended_readiness.py` catches the same fault again at run readiness. The
+    message matches that readiness blocker (`missing_coverage_repair_loop`) so the user reads
+    one explanation, not two.
+    """
+    findings: list = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    policy_path = os.path.join(bdir, "run-policy.json")
+    spec_path = os.path.join(bdir, "unattended-run-readiness-spec.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(policy_path):
+        return findings
+    try:
+        workflow = _load_json(workflow_path)
+        policy = _load_json(policy_path)
+    except Exception:
+        return findings
+    if not isinstance(policy, dict) or policy.get("on_needs_iteration") != "auto_fix_once":
+        return findings
+    if not isinstance(workflow, dict) or not isinstance(workflow.get("nodes"), list):
+        return findings
+    loop = coverage_gate_loop(workflow["nodes"])
+    if loop is None:
+        return findings
+    gate = loop["qa_node_ids"][0]
+    spec = {}
+    if os.path.exists(spec_path):
+        try:
+            spec = _load_json(spec_path)
+        except Exception:
+            spec = {}
+    declared = set()
+    for existing in (spec.get("required_repair_loops") if isinstance(spec, dict) else None) or []:
+        if isinstance(existing, dict):
+            declared.update(str(q) for q in (existing.get("qa_node_ids") or existing.get("qa_nodes") or []))
+            declared.update(str(q) for q in (existing.get("closure_node_ids") or existing.get("closure_nodes") or []))
+    if gate not in declared:
+        _structural(
+            findings, "missing_coverage_repair_loop",
+            f"run-policy.json on_needs_iteration is auto_fix_once and node {gate} is the "
+            f"concept-acceptance coverage gate, but no unattended-run-readiness-spec.json "
+            f"required_repair_loops entry names it in qa_node_ids. auto_fix_once repairs only "
+            f"through a declared loop (ADR-0006): declare one with a repair node hard_blocked_by "
+            f"{gate} and a rerun of the gate blocked by the repair, or choose halt_with_report.",
+            node_id=gate,
+        )
+    return findings
+
+
+def validate_coverage_gate_loop(bdir: str) -> list:
+    """Rendered coverage-gate repair-loop errors for the bootstrap validator CLI."""
+    return _rendered(coverage_gate_loop_findings(bdir))
+
+
 def _downstream_of(nodes: dict, node_id: str, owner_id: str) -> bool:
     """True when owner_id transitively depends on node_id through hard_blocked_by."""
     seen = set()
@@ -2036,6 +2129,9 @@ def validate_node_spec(path: str) -> list:
         errors.append("frontmatter missing 'node_id' field")
     if "node" in data:
         errors.append("frontmatter forbidden legacy 'node' field; use 'node_id'")
+    retired = _retired_capability_error(str(data.get("node_id", "node-spec")), data.get("capability"))
+    if retired:
+        errors.append(f"frontmatter {retired}")
     for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
         if term not in text:
             errors.append(f"missing attention contract term {term!r}")
@@ -2074,6 +2170,7 @@ def main():
             errors.extend(validate_plan_confirmation(bdir))
             errors.extend(validate_repair_loop_declaration(bdir))
             errors.extend(validate_effect_stage_ownership(bdir))
+            errors.extend(validate_coverage_gate_loop(bdir))
     else:
         sm_path = os.path.join(bdir, "state-machine.json")
         if os.path.exists(sm_path):
@@ -2111,6 +2208,9 @@ __all__ = [
     "plan_confirmation_blockers",
     "validate_repair_loop_declaration",
     "repair_loop_declaration_findings",
+    "coverage_gate_loop",
+    "coverage_gate_loop_findings",
+    "validate_coverage_gate_loop",
     "validate_effect_stage_ownership",
     "effect_stage_ownership_findings",
     "workflow_shape_findings",

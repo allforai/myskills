@@ -1,43 +1,26 @@
-# Capability: hollowness-detector
+# Capability: hollowness-detector (retired)
 
-**Purpose:** the adversarial half of verification honesty. Hunt code that is GREEN BUT
-HOLLOW — compiles / tests pass / report says done, yet the feature does not actually work
-for a real user. This is what inflated TeteChat to 94.65% on a < 30% product.
+> Status: retired (ADR-0008, #55). Kept as a tombstone so a workflow or node-spec generated
+> before retirement resolves this path and reads why it is refused, instead of finding a
+> missing file. `validate_bootstrap.py` refuses any workflow or node-spec that names this
+> capability, by name; do not plan it, do not suppress-rule around it.
 
-**Trigger:** run during the verification phase, AND as a standalone audit on any codebase
-whose completeness is suspect. Independent of the generator.
+If this file is opened by a node: return `NOT_APPLICABLE`. Do not hunt hollow code, do not
+downgrade other nodes, do not write `.allforai/quality/hollowness-report.json`.
 
-## What to hunt (the four hollow patterns)
+## Where the work went
 
-| type | signature | how to confirm |
-|------|-----------|----------------|
-| `fake_success` | handler/UI returns success without doing the work (e.g. `return ok()` / local optimistic state with no real backend call) | trace the call path: does it reach a real service + real persistence? |
-| `mocked_backend` | the "working" feature is wired to a mock/stub/in-memory fake, not the real service | grep for mock/stub/fake/dummy/sample in the production path; check the real endpoint exists and is called |
-| `ui_no_data` | screen renders with hardcoded/sample/placeholder data, not real fetched data | find the data source; is it a literal/fixture or a real query? |
-| `stub_handler` | endpoint returns 200 with canned/empty data; not implemented | call it for real; compare response to a real implementation's contract |
+The verdict "is this feature fake" is a judgement the author of the delivery cannot honestly
+reach from inside its own pipeline; it belongs to `/cross-exam`, run by the user after the
+pipeline, whose prober follows the call path and walks the user's journeys against an oracle.
+`fake_success` and `ui_no_data` live there.
 
-## Method (adversarial, reality-anchored)
+Two of the old patterns need no judgement and stay in `/run` as refusals, with cross-exam's
+reason strings, so a green-but-hollow node is never counted:
 
-1. Take each node claiming `verified` (or `completed`) and its `evidence`.
-2. **Try to falsify the claim.** Follow the real call path from UI/entry → service →
-   persistence. If any hop is fake/mock/missing, it is hollow.
-3. Check the evidence is **authentic**: a screenshot of real data (not a mockup); a test
-   that hits the real path (not a mock); an API transcript with real ids/values.
-4. For every hollow finding, **downgrade** the node and record it.
+| pattern | what refuses it | reason |
+|---------|-----------------|--------|
+| `mocked_backend` — the request went through a mock layer (`served_by.mock_layers` non-empty) | `compute_completeness.py`; the evidence-entry gate (#59) | `经 mock 层（…）的 runtime 不能判 done` |
+| `stub_handler` — the response is the canned fixture the mock serves (`served_by.fixtures`) | `compute_completeness.py`; the evidence-entry gate (#59) | `响应与 fixture 一致（…）的 runtime 不能判 done` |
 
-## Output: `.allforai/quality/hollowness-report.json`
-
-```json
-{
-  "scanned": 152,
-  "hollow_nodes": [
-    {"node_id": "...", "type": "fake_success", "path": "file:line",
-     "evidence": "the call returns ok() without reaching tete-im", "downgrade_to": "unverified"}
-  ],
-  "authentic_evidence": 41,
-  "fabricated_or_missing_evidence": 12
-}
-```
-
-Downgrades feed back into `compute_completeness.py` (a hollow node is `unverified`, never
-counted). Pair with `${CLAUDE_PLUGIN_ROOT}/../knowledge/verification-protocol.md`.
+The evidence contract these refusals read is in `knowledge/verification-protocol.md`.

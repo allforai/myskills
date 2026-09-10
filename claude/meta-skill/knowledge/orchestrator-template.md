@@ -59,15 +59,18 @@ submitted automatically):
 | key | question | options (first = default) |
 |---|---|---|
 | `on_repeated_failure` | The same node fails 3 times, the diagnosis is neither out-of-scope nor converged. | `continue` (keep diagnosing until the caps below stop it) / `halt` (stop and report on the third failure) |
-| `on_needs_iteration` | concept-acceptance returns `needs_iteration`. | `halt_with_report` (write acceptance-report.md, stop; the fix / re-bootstrap / accept choice is made by the human afterwards) / `auto_fix_once` (run one repair loop on the named gaps, re-verify, then stop either way) / `accept` (record `accepted_with_gaps` in assumed-decisions.json and finish the run) |
+| `on_needs_iteration` | The concept-acceptance coverage gate names behaviour mappings without evidence (`missing_mappings` non-empty; an empty list proceeds and asks nothing). | `halt_with_report` (write acceptance-report.md, stop; the fix / re-bootstrap / accept choice is made by the human afterwards) / `auto_fix_once` (the missing list becomes one bounded QA repair request through the gate's declared repair loop and the ledger; the gate reruns, then the run stops either way) / `accept` (record `accepted_with_gaps` in assumed-decisions.json and finish the run) |
 | `on_safety_warning` | A non-blocking safety warning fires (see safety.md). | `continue` (log the warning and go on) / `halt` (stop at the first warning) |
 
 After this section there are no more questions: every later branch reads
 `run-policy.json`, and a branch that would need a fourth answer halts with a report instead.
-The Workflow engine checks this policy before loading the DAG and consumes
-`product_intent.py . --policy-event on_needs_iteration` for durable one-repair
-semantics. Run Policy is never a product decision: unresolved decision_inputs
-return to interactive bootstrap and cannot be approved by continue/accept.
+The Workflow engine checks this policy before loading the DAG and reads
+`product_intent.py . --policy-event on_needs_iteration` when the gate fires; that
+read charges nothing. The one repair `auto_fix_once` grants is an attempt the
+repair-authorization ledger charges against the gate's declared loop, so no second
+accounting of it exists. Run Policy is never a product decision: unresolved
+decision_inputs return to interactive bootstrap and cannot be approved by
+continue/accept.
 
 ### Dynamic preflight reconciliation
 
@@ -257,6 +260,9 @@ never waive, downgrade, or hide a gap.
       `.allforai/bootstrap/completeness-report.json`. **Report the two-column result as the
       headline: VERIFIED (真验过) % vs unverified (只生成没验) %.** Never present "completed
       node count" as completeness — a node without real evidence is `unverified`, never counted.
+      An entry served through a mock layer or answering with a canned fixture is refused in
+      cross-exam's words (`refused[]` in the report) and read as `unverified`; whether a green
+      feature is hollow beyond that is `/cross-exam`'s to judge, after the pipeline (ADR-0008).
    b. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_evidence.py <base>` to list any
       false "verified" claims (evidence missing / self-graded) — these are downgraded.
    c. **Launch gate:** if `completeness-report.json.critical_unverified` is non-empty, the product
@@ -320,14 +326,28 @@ On first iteration if transition_log is non-empty:
 
 ## Termination
 
-- All nodes' exit_artifacts are ready → success report
-- concept-acceptance verdict = needs_iteration → apply `run-policy.json.on_needs_iteration`:
+- All nodes' exit_artifacts are ready → success report. The report ends with
+  `workflow.json.user_steps` in order (`/cross-exam`, then `/product-review`) as the steps
+  the user types next; they are never dispatched, never started by a node, and never
+  reported as done (ADR-0008). An empty list means the project was exempted at bootstrap.
+- concept-acceptance names missing behaviour mappings (`acceptance-report.json.missing_mappings`
+  non-empty; the node result carries the list verbatim) → apply
+  `run-policy.json.on_needs_iteration`. An empty list is the gate passing: proceed, ask nothing.
+  A report that still carries a `verdict`, `overall_score` or `pass_threshold`, or no
+  `missing_mappings` list at all, is refused by name as `invalid_artifact_gate` — it is a
+  scored report, not this gate's output (ADR-0008).
   `halt_with_report` writes acceptance-report.md (with the fix / re-bootstrap / accept options
-  listed for the human to pick afterwards) and stops; `auto_fix_once` runs one repair loop on
-  the named gaps, re-runs concept-acceptance, then stops whatever the verdict; `accept` records
-  `accepted_with_gaps` in assumed-decisions.json and returns a qualified outcome,
-  without marking that node completed or verified; the artifact gate treats an
-  `accepted_with_gaps` report status as blocking. Never ask here.
+  listed for the human to pick afterwards) and stops. `auto_fix_once` makes the missing list
+  a QA failure like any other: it is routed to the gate's declared `required_repair_loops`
+  entry and the repair node is dispatched under a ledger grant (authorize, start, settle —
+  ADR-0005, ADR-0006), never repaired in-node. A gate no loop declares a repair for, or
+  whose budget the ledger shows spent or unknown, halts as an unauthorized repair with
+  `needs_diagnosis`. The recorded policy grants that route once: after the repair delivers
+  the gate reruns, an empty list commits it and stops the run as `iteration_repair_stopped`,
+  a list that still names mappings stops it as `needs_iteration` — whatever budget the loop
+  has left. `accept` records `accepted_with_gaps` in assumed-decisions.json and returns a
+  qualified outcome, without marking that node completed or verified; the artifact gate
+  treats an `accepted_with_gaps` report status as blocking. Never ask here.
 - User interrupts → transition_log is already saved, resume with /run
 - Safety warning → apply `run-policy.json.on_safety_warning`: `continue` logs it and goes on,
   `halt` stops with the warning in the report. Never ask here.

@@ -1205,3 +1205,22 @@ def test_census_id_names_the_census_surface(sample):
 def test_malformed_census_shapes_yield_reasons(sample, census):
     reason = _census_reason(sample, census, surfaces=_narrowed())
     assert isinstance(reason, str) and '普查官' in reason
+
+
+def test_layout_rules_outside_categories_are_refused_not_ignored(sample):
+    """A baseline that puts `layout` at the top level instead of under `categories` used to check nothing."""
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['layout'] = baseline['categories'].pop('layout')
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'layout' in reason and ('categories' in reason or '缺逐类确认' in reason)
+    # the guard itself sees the stray key even when the per-category check would have fired first
+    from validation import pinned_layout_reason
+    direct = pinned_layout_reason(baseline, {})
+    assert 'categories' in direct and 'layout' in direct

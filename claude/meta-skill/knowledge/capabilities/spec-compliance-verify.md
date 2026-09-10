@@ -130,7 +130,7 @@ For each message type in protocol-spec.md:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `.allforai/spec-compliance/spec-compliance-report.json` | `summary.missing`, `summary.drifted` | concept-acceptance | required | Acceptance verdict requires knowing if spec gaps exist |
+| `.allforai/spec-compliance/spec-compliance-report.json` | `summary.missing`, `summary.drifted` | concept-acceptance | required | a mapping whose behaviour depends on a missing or drifted spec item has no evidence and is named in `missing_mappings[]` |
 | `.allforai/spec-compliance/spec-compliance-report.json` | `api_compliance.missing[]`, `db_compliance.missing_tables[]` | pipeline-closure-verify | optional | Pipeline closure can cross-reference spec gaps with flow gaps |
 | `.allforai/spec-compliance/spec-compliance-report.json` | `summary` | launch-prep | required | Launch prep needs overall compliance score before greenlight |
 
@@ -150,3 +150,30 @@ When translating (source code IS the spec).
 
 ### Merge with Product Verify
 For simple projects: add spec compliance as a static check dimension within product-verify.
+
+### Evidence Entries (ledger shape, ADR-0008)
+
+Beside `spec-compliance-report.json`, the node writes machine entries in cross-exam's ledger-entry
+shape to `.allforai/spec-compliance/evidence-entries/<node_id>.json` (`{"schema":
+"evidence-entries/v1", "entries": [...]}`): one entry per artifact it compared. The entry is the
+machine record a later `/cross-exam` admits as a **gate** (`medium: contract` is mechanical media)
+instead of redoing the comparison; it never closes a verdict.
+
+An entry is admissible when, and only when, all of the following hold. The shared engine
+(`${CLAUDE_PLUGIN_ROOT}/scripts/engine`) decides the shape; `capture_evidence.py entry` records what
+the node must not author and refuses a draft that fails; `check_evidence.py --entries
+.allforai/spec-compliance --node <node_id>` re-checks every entry against the tree at gate time.
+**The gate is not passed while any entry is refused, or while the file is missing or empty.**
+
+- `medium` is `contract`; `verdict` is `done` (everything declared is present and matches), `gap`
+  (something is missing or drifted — named in `key_observation`) or `unprovable` (the artifact it
+  compares against is absent). No `served_by`: a comparison has no request destination.
+- `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest +
+  artifact digest), with `.allforai`, `.claude`, `.codex` outside it.
+- `probed_at` carries a timezone offset.
+- `evidence.dir` is a non-empty directory under `.allforai/spec-compliance/evidence/`, relative to the run
+  directory, holding the per-endpoint / per-table / per-message diff it computed as a `.json` or
+  `.md` file — that captured output is what makes the entry admissible; a directory holding only
+  images is refused (`机械门证据无输出文件`).
+- `author` is `{pipeline: "meta-skill/run", node_id, capability: "spec-compliance-verify"}`, written
+  by `capture_evidence.py`, never by hand.

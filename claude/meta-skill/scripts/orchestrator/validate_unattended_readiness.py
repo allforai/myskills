@@ -22,6 +22,11 @@ SAFETY_MARKER = "safety-quarantine.json"
 SAFETY_LOCK = "safety-quarantine.lock"
 LEDGER_LOCK = "repair-authorizations.lock"
 
+# ADR-0008: the entries that judge a delivery from outside it. They follow the pipeline as
+# steps the user types, listed in `workflow.json.user_steps`; a node named after one would
+# put the author's own run in the examiner's seat.
+VERDICT_ENTRIES = ("cross-exam", "product-review")
+
 
 def _load_json(path: Path):
     with path.open(encoding="utf-8") as f:
@@ -365,6 +370,109 @@ def _validate_required_capabilities(
             })
 
 
+def _planned_verdict_entry(node: dict) -> str | None:
+    """The verdict entry a node is named after, or None.
+
+    Matched on the identifier and the capability, case-insensitively and with `_` read as
+    `-`: `cross_exam`, `final-product-review` and `capability: "cross-exam"` all plan the
+    examiner into the run under another spelling.
+    """
+    for field in ("node_id", "capability"):
+        value = node.get(field)
+        if not isinstance(value, str):
+            continue
+        spelled = value.lower().replace("_", "-")
+        for entry in VERDICT_ENTRIES:
+            if entry in spelled:
+                return entry
+    return None
+
+
+def coverage_gate_nodes(nodes: list[dict]) -> list[str]:
+    """Node ids of the concept-acceptance coverage gate (ADR-0008): the gate whose missing-mapping list
+    fires on_needs_iteration."""
+    return [n["node_id"] for n in nodes
+            if isinstance(n, dict) and n.get("capability") == "concept-acceptance" and isinstance(n.get("node_id"), str)]
+
+
+def _coverage_gate_loop_blockers(project_root: str, nodes: list[dict], spec: dict,
+                                 blockers: list[dict]) -> None:
+    """auto_fix_once repairs only through a declared loop (ADR-0006). A workflow that carries the coverage
+    gate and that policy without a loop naming the gate would halt at run time as an unauthorized
+    repair; the plan is the fault, so it is refused here where the user can fix it."""
+    policy_path = os.path.join(project_root, ".allforai", "bootstrap", "run-policy.json")
+    try:
+        with open(policy_path, encoding="utf-8") as fh:
+            policy = json.load(fh)
+    except (OSError, ValueError):
+        return
+    if not isinstance(policy, dict) or policy.get("on_needs_iteration") != "auto_fix_once":
+        return
+    loops = spec.get("required_repair_loops") if isinstance(spec, dict) else None
+    declared = set()
+    for loop in loops or []:
+        if isinstance(loop, dict):
+            # qa_node_ids is the gate the loop repairs; closure_node_ids covers the gate's own
+            # rerun when the rerun shares the gate's capability (the coverage gate rerun does) —
+            # it is already inside the declared loop, not a second gate needing one of its own.
+            declared.update(str(q) for q in (loop.get("qa_node_ids") or loop.get("qa_nodes") or []))
+            declared.update(str(q) for q in (loop.get("closure_node_ids") or loop.get("closure_nodes") or []))
+    for gate in coverage_gate_nodes(nodes):
+        if gate not in declared:
+            _add(blockers, "missing_coverage_repair_loop",
+                 f"run-policy.json on_needs_iteration is auto_fix_once and node {gate} is the "
+                 f"concept-acceptance coverage gate, but no unattended-run-readiness-spec.json "
+                 f"required_repair_loops entry names it in qa_node_ids. auto_fix_once repairs only "
+                 f"through a declared loop (ADR-0006): declare one with a repair node hard_blocked_by "
+                 f"{gate} and a rerun of the gate blocked by the repair, or choose halt_with_report.",
+                 node_id=gate)
+
+
+def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[dict],
+                            warnings: list[dict] | None = None) -> None:
+    """Neither skill calls the other (ADR-0008); the graph may only list them for the user.
+
+    A node that plans `/cross-exam` or `/product-review` is refused by name: `/run` would
+    schedule it as author work, and the examiner's independence is exactly what a node
+    cannot supply. `user_steps` is where a generated workflow names them, so it must name
+    entries — a value the summary cannot print is not a step the user can take.
+    """
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        entry = _planned_verdict_entry(node)
+        if entry:
+            _add(blockers, "verdict_entry_planned_as_node",
+                 f"node plans /{entry} as a node; /run never starts it, because a verdict "
+                 f"on the delivery is not the author's to give (ADR-0008). It is a user "
+                 f"step after the pipeline: remove the node and list it in "
+                 f"workflow.json user_steps.", node_id=_node_id(node))
+    if not isinstance(workflow, dict):
+        return
+    if "user_steps" not in workflow:
+        # a workflow that plans verification has a product to examine afterwards; the steps the
+        # user takes then are part of the workflow, and only an empty list says "nothing to examine"
+        plans_verify = any(isinstance(n, dict) and isinstance(n.get("capability"), str)
+                           and (n["capability"].endswith("-verify") or n["capability"] == "concept-acceptance")
+                           for n in nodes)
+        message = ("workflow.json has no user_steps: the steps the user takes after the run "
+                   "(/cross-exam, then /product-review) are part of the workflow. A project with no "
+                   "product to examine (cli, library-sdk) says so with user_steps: []; silence is "
+                   "not an exemption.")
+        if plans_verify:
+            _add(blockers, "missing_user_steps", message)
+        elif warnings is not None:
+            _add(warnings, "missing_user_steps", message)
+        return
+    steps = workflow.get("user_steps")
+    if (not isinstance(steps, list)
+            or not all(isinstance(step, str) and step.strip() for step in steps)):
+        _add(blockers, "invalid_user_steps",
+             f"workflow.json user_steps must be a list of entry names such as "
+             f"[\"/cross-exam\", \"/product-review\"], got {steps!r}; a step the user "
+             f"cannot read is not one they can take after the run.")
+
+
 def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict],
                                warnings: list[dict]) -> None:
     if not spec or not isinstance(spec.get("required_repair_loops"), list):
@@ -500,6 +608,10 @@ def validate_unattended_readiness(project_root: Path) -> dict:
             workflow = {}
             nodes = []
 
+    # Decided on the graph as written, before shape faults defer the node list: a planned
+    # verdict node is a planning fault the user repairs at bootstrap, whatever else holds.
+    _verdict_entry_blockers(workflow, nodes, blockers, warnings)
+    _coverage_gate_loop_blockers(project_root, nodes, readiness_spec, blockers)
     scope_blockers = validate_scope(project_root, workflow)
     blockers.extend(scope_blockers)
     from check_artifacts import document_verification_errors, freshness_states

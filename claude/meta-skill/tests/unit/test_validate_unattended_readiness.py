@@ -28,7 +28,8 @@ def _minimal_project(tmp_path, *, gate_status="approved", node_spec="non interac
                 "approval_record_path": ".allforai/game-design/approval-records.json",
                 "exit_artifacts": [{"path": ".allforai/game-design/design.json"}],
             }
-        ]
+        ],
+        "user_steps": ["/cross-exam", "/product-review"],
     }
     _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
     _write(tmp_path, ".allforai/bootstrap/node-specs/design.md", node_spec)
@@ -157,7 +158,8 @@ def _project_with_repair_loop(tmp_path, loop):
             {"node_id": "closure-qa", "goal": "closure", "capability": "qa",
              "hard_blocked_by": ["runtime-repair", "runtime-qa"],
              "exit_artifacts": [{"path": ".allforai/quality-checks/closure.json"}]},
-        ]
+        ],
+        "user_steps": ["/cross-exam", "/product-review"],
     }
     _minimal_project(tmp_path)
     _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
@@ -550,3 +552,125 @@ def test_a_missing_repair_ledger_does_not_block_readiness(tmp_path):
     codes = [b["code"] for b in report["blockers"]]
     assert "unreconciled_repair_accounting" not in codes, report
     assert report["status"] == "ready", report
+
+
+# ADR-0008: `/cross-exam` and `/product-review` are user steps after the pipeline, never
+# nodes. A generated workflow lists them at the top level in `user_steps`, where no engine
+# reads them as work; a node that plans either is refused by name at the run boundary.
+def _design_node(**overrides):
+    node = {"node_id": "design", "goal": "design", "capability": "game-design",
+            "human_gate": True,
+            "approval_record_path": ".allforai/game-design/approval-records.json",
+            "exit_artifacts": [{"path": ".allforai/game-design/design.json"}]}
+    node.update(overrides)
+    return node
+
+
+def _with_workflow(tmp_path, workflow):
+    _minimal_project(tmp_path)
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(workflow))
+
+
+@pytest.mark.parametrize("field, value", [
+    ("node_id", "cross-exam"), ("node_id", "product-review"),
+    ("node_id", "Cross_Exam"), ("node_id", "final-product-review"),
+    ("capability", "cross-exam"), ("capability", "product-review"),
+])
+def test_a_node_named_after_a_verdict_entry_is_refused_by_name(tmp_path, field, value):
+    node = _design_node(**{field: value})
+    _with_workflow(tmp_path, {"nodes": [node]})
+    _write(tmp_path, f".allforai/bootstrap/node-specs/{node['node_id']}.md", "non interactive work")
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    blocker = next(b for b in report["blockers"] if b["code"] == "verdict_entry_planned_as_node")
+    assert blocker["node_id"] == node["node_id"]
+    assert "user step" in blocker["message"] and "user_steps" in blocker["message"], blocker
+
+
+def test_user_steps_after_the_pipeline_are_admitted_and_never_scheduled(tmp_path):
+    _with_workflow(tmp_path, {"nodes": [_design_node()],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "ready", report
+    assert report["blockers"] == []
+
+
+@pytest.mark.parametrize("user_steps", ["/cross-exam", {"entry": "/cross-exam"}, [1], [""], [None]])
+def test_user_steps_that_name_no_entry_are_refused_with_a_reason(tmp_path, user_steps):
+    _with_workflow(tmp_path, {"nodes": [_design_node()], "user_steps": user_steps})
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["status"] == "not_ready"
+    assert any(b["code"] == "invalid_user_steps" for b in report["blockers"]), report
+
+
+def test_a_workflow_that_plans_verification_but_forgets_its_user_steps_is_not_ready(tmp_path):
+    # a verify node means there is a product to examine afterwards; the steps the user takes then
+    # are part of the workflow, and only an empty list says "nothing to examine"
+    verify = {**_design_node(), "node_id": "pv", "capability": "product-verify",
+              "exit_artifacts": [{"path": ".allforai/product-verify/verify-report.json"}]}
+    _with_workflow(tmp_path, {"nodes": [_design_node(), verify]})
+    report = validate_unattended_readiness(tmp_path)
+    blocker = next(b for b in report["blockers"] if b["code"] == "missing_user_steps")
+    assert "user_steps" in blocker["message"] and "[]" in blocker["message"]
+    _with_workflow(tmp_path, {"nodes": [_design_node(), verify], "user_steps": []})
+    assert not [b for b in validate_unattended_readiness(tmp_path)["blockers"] if b["code"] == "missing_user_steps"]
+    # a design-only workflow is warned, not blocked
+    _with_workflow(tmp_path, {"nodes": [_design_node()]})
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_user_steps"]
+    assert any(w["code"] == "missing_user_steps" for w in report.get("warnings", []))
+
+
+def _gate_node():
+    return {"node_id": "concept-acceptance", "goal": "coverage gate", "capability": "concept-acceptance",
+            "exit_artifacts": [{"path": ".allforai/concept-acceptance/acceptance-report.json"}]}
+
+
+def _with_policy(tmp_path, on_needs_iteration):
+    _write(tmp_path, ".allforai/bootstrap/run-policy.json", json.dumps({"on_needs_iteration": on_needs_iteration}))
+
+
+def test_auto_fix_once_with_the_coverage_gate_needs_a_declared_repair_loop(tmp_path):
+    _with_workflow(tmp_path, {"nodes": [_design_node(), _gate_node()],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+    _with_policy(tmp_path, "auto_fix_once")
+    report = validate_unattended_readiness(tmp_path)
+    blocker = next(b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop")
+    assert "required_repair_loops" in blocker["message"] and "concept-acceptance" in blocker["message"]
+    assert blocker["node_id"] == "concept-acceptance"
+
+
+def test_halt_with_report_needs_no_loop_for_the_coverage_gate(tmp_path):
+    _with_workflow(tmp_path, {"nodes": [_design_node(), _gate_node()],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+    _with_policy(tmp_path, "halt_with_report")
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop"]
+
+
+def test_a_declared_coverage_loop_satisfies_the_gate(tmp_path):
+    gate, repair, rerun = _gate_node(), {
+        "node_id": "concept-repair", "goal": "repair", "capability": "implement",
+        "hard_blocked_by": ["concept-acceptance"],
+        "exit_artifacts": [{"path": ".allforai/concept-acceptance/repair.json"}]}, {
+        "node_id": "concept-acceptance-rerun", "goal": "rerun", "capability": "concept-acceptance",
+        "hard_blocked_by": ["concept-repair", "concept-acceptance"],
+        "exit_artifacts": [{"path": ".allforai/concept-acceptance/acceptance-report-2.json"}]}
+    _with_workflow(tmp_path, {"nodes": [_design_node(), gate, repair, rerun],
+                              "user_steps": ["/cross-exam", "/product-review"]})
+    for n in ("concept-acceptance", "concept-repair", "concept-acceptance-rerun"):
+        _write(tmp_path, f".allforai/bootstrap/node-specs/{n}.md", "non interactive work")
+    _with_policy(tmp_path, "auto_fix_once")
+    spec = json.loads((tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json").read_text())
+    spec["required_repair_loops"] = [_repair_loop(scope="concept-acceptance", qa_node_ids=["concept-acceptance"],
+                                                  repair_node_id="concept-repair",
+                                                  closure_node_ids=["concept-acceptance-rerun"])]
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(spec))
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop"], report

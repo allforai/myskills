@@ -125,3 +125,30 @@ For simple projects: add security checks as an additional dimension within quali
 For internal tools with no user data, prototype projects, or when security-design was explicitly skipped.
 
 For `architecture_pattern: library-sdk`, `ide-plugin-obsidian`, `ide-plugin-vscode`, or `embedded-firmware`: skip auth/authorization/rate-limiting/transport dimensions (no server endpoints exist). Still run **Check Dimension 6 (Key Management)** and **Check Dimension 7 (Dependency Supply Chain)** — hardcoded secrets and CVEs are risks for any project type.
+
+### Evidence Entries (ledger shape, ADR-0008)
+
+Beside `security-verify-report.json`, the node writes machine entries in cross-exam's ledger-entry
+shape to `.allforai/security-verify/evidence-entries/<node_id>.json` (`{"schema":
+"evidence-entries/v1", "entries": [...]}`): one entry per artifact it compared. The entry is the
+machine record a later `/cross-exam` admits as a **gate** (`medium: contract` is mechanical media)
+instead of redoing the comparison; it never closes a verdict.
+
+An entry is admissible when, and only when, all of the following hold. The shared engine
+(`${CLAUDE_PLUGIN_ROOT}/scripts/engine`) decides the shape; `capture_evidence.py entry` records what
+the node must not author and refuses a draft that fails; `check_evidence.py --entries
+.allforai/security-verify --node <node_id>` re-checks every entry against the tree at gate time.
+**The gate is not passed while any entry is refused, or while the file is missing or empty.**
+
+- `medium` is `contract`; `verdict` is `done` (everything declared is present and matches), `gap`
+  (something is missing or drifted — named in `key_observation`) or `unprovable` (the artifact it
+  compares against is absent). No `served_by`: a comparison has no request destination.
+- `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest +
+  artifact digest), with `.allforai`, `.claude`, `.codex` outside it.
+- `probed_at` carries a timezone offset.
+- `evidence.dir` is a non-empty directory under `.allforai/security-verify/evidence/`, relative to the run
+  directory, holding the per-decision presence check it computed as a `.json` or
+  `.md` file — that captured output is what makes the entry admissible; a directory holding only
+  images is refused (`机械门证据无输出文件`).
+- `author` is `{pipeline: "meta-skill/run", node_id, capability: "security-verify"}`, written
+  by `capture_evidence.py`, never by hand.

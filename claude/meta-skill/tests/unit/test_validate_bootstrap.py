@@ -14,12 +14,14 @@ validate_canvas2d_game_client_profile_flow = _validate_bootstrap.validate_canvas
 validate_game_2d_production_flow = _validate_bootstrap.validate_game_2d_production_flow
 validate_mobile_ui_coverage = _validate_bootstrap.validate_mobile_ui_coverage
 validate_node_spec_contracts = _validate_bootstrap.validate_node_spec_contracts
+validate_node_spec = _validate_bootstrap.validate_node_spec
 validate_node_spec_coverage = _validate_bootstrap.validate_node_spec_coverage
 validate_workflow = _validate_bootstrap.validate_workflow
 effect_stage_ownership_findings = _validate_bootstrap.effect_stage_ownership_findings
 repair_loop_declaration_findings = _validate_bootstrap.repair_loop_declaration_findings
 structural_gate_blockers = _validate_bootstrap.structural_gate_blockers
 workflow_shape_findings = _validate_bootstrap.workflow_shape_findings
+coverage_gate_loop = _validate_bootstrap.coverage_gate_loop
 
 
 def _write_workflow(tmp_path, nodes):
@@ -231,7 +233,7 @@ def test_canvas2d_game_client_mature_profile_passes(tmp_path):
         if "repair-loop" in node_id:
             body += " qa-repair-loop repair and revalidation revalidation-report"
         if "concept-acceptance" in node_id:
-            body += " concept-acceptance acceptance-report final weighted product acceptance"
+            body += " concept-acceptance acceptance-report coverage gate missing_mappings"
         _write_node_spec(tmp_path, node_id, body)
 
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
@@ -274,7 +276,7 @@ def test_canvas2d_game_client_requires_audio_closure_by_default(tmp_path):
             "module_wiring_proofs production consumer visual acceptance runtime probe "
             "asset manifest preload fps memory performance budget legal action "
             "interface cards public module signatures preserved_exports qa-repair-loop "
-            "concept-acceptance acceptance-report final weighted product acceptance",
+            "concept-acceptance acceptance-report coverage gate missing_mappings",
         )
 
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
@@ -319,7 +321,7 @@ def test_canvas2d_game_client_audio_can_be_scope_locked_out(tmp_path):
             "module_wiring_proofs production consumer visual acceptance runtime probe "
             "asset manifest preload fps memory performance budget legal action "
             "interface cards public module signatures preserved_exports qa-repair-loop "
-            "concept-acceptance acceptance-report final weighted product acceptance",
+            "concept-acceptance acceptance-report coverage gate missing_mappings",
         )
 
     _write(tmp_path, "workflow.json", json.dumps({"nodes": nodes}))
@@ -938,3 +940,32 @@ def test_a_well_formed_graph_still_reaches_the_structural_rules(tmp_path):
 
     assert [b["code"] for b in blockers] == ["undeclared_repair_loop_routing"], blockers
     assert blockers[0]["node_id"] == "closure", blockers
+
+
+def test_workflow_naming_a_retired_capability_is_refused_by_name(tmp_path):
+    """hollowness-detector left /run (ADR-0008). A workflow generated before retirement must
+    fail with a reason naming the capability, not run a node that no longer exists."""
+    path = _write_workflow(tmp_path, [_base_node(node_id="hollow-audit", capability="hollowness-detector")])
+
+    errors = validate_workflow(path)
+
+    assert any("hollow-audit" in e and "retired capability 'hollowness-detector'" in e for e in errors), errors
+    assert any("cross-exam" in e for e in errors), errors
+
+
+def test_node_spec_naming_a_retired_capability_is_refused_by_name(tmp_path):
+    spec = _write(tmp_path, "hollow-audit.md", "---\nnode_id: hollow-audit\ncapability: hollowness-detector\n---\n"
+                  + ATTENTION_CONTRACT_BODY)
+
+    errors = validate_node_spec(str(spec))
+
+    assert any("retired capability 'hollowness-detector'" in e for e in errors), errors
+
+
+def test_coverage_gate_loop_names_the_repair_and_rerun_nodes():
+    nodes = [{"node_id": "concept-acceptance", "capability": "concept-acceptance"}]
+    loop = coverage_gate_loop(nodes)
+    assert loop == {"scope": "concept-acceptance", "qa_node_ids": ["concept-acceptance"],
+                    "repair_node_id": "concept-acceptance-repair",
+                    "closure_node_ids": ["concept-acceptance-rerun"], "max_attempts": 1}
+    assert coverage_gate_loop([{"node_id": "design", "capability": "game-design"}]) is None

@@ -1,11 +1,29 @@
 """Expand explicitly approved per-surface axes; never sample or cap cases."""
 import argparse
+import importlib.util
 import inspect
 import itertools
 import hashlib
 import json
 import re
 from pathlib import Path
+
+
+def _engine(name):
+    """The shared evidence engine (ADR-0008), loaded by path under a unique module name: it is mirrored as
+    `engine/` beside this package (`evidence-engine/` in the source tree) and is never on sys.path."""
+    beside = Path(__file__).resolve().parent.parent
+    for candidate in (beside / 'engine', beside / 'evidence-engine'):
+        path = candidate / (name + '.py')
+        if path.is_file():
+            spec = importlib.util.spec_from_file_location('cross_exam_engine_' + name, path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise ImportError('evidence engine %s.py not found beside %s' % (name, beside))
+
+
+engine = _engine('evidence')
 AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orientation')
 DEVICE_RE = re.compile(r'^(\d+)x(\d+)@(\d+(?:\.\d+)?)$')
 
@@ -109,18 +127,8 @@ def check_widths(surface, thresholds, width_range, devices):
     return rng
 
 
-SEGMENT_SPLIT = re.compile(r'[+/,;]')
-TOKEN_SPLIT = re.compile(r'[\s+/,;]+')
-
-
-def value_tokens(value):
-    """An axis value may be compound ("浏览器 zh-CN + 站点 en", "zoom 150% + 字号 20px"). A supported value
-    is present when it equals the whole value, one of its separator-delimited segments, or one whitespace token."""
-    v = value.strip()
-    return {v} | {s.strip() for s in SEGMENT_SPLIT.split(v) if s.strip()} | set(TOKEN_SPLIT.split(v))
-
-
-locale_tokens = value_tokens   # kept for callers written against the locale-only version
+value_tokens = engine.value_tokens   # compound axis values ("浏览器 zh-CN + 站点 en") are the engine's to split
+locale_tokens = value_tokens         # kept for callers written against the locale-only version
 
 
 def required_values(axis, spec):

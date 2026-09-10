@@ -41,6 +41,33 @@ and artifact files instead of exercising the real product. This protocol makes
    missing-evidence claims).
 5. **No upgrading.** Never raise `method` above what you actually did. "Generated but I
    couldn't run it" is `none`, and that is the correct, honest answer.
+6. **Name where the request went.** Runtime evidence (`real-run`/`real-api`/`db-query`/
+   `screenshot` of a running app) carries `served_by: {host, process, mock_layers, fixtures?}`
+   — the host and process that answered, the mock layers **in effect** (MSW registered,
+   json-server / miragejs / nock listening, an explicit stub switch on; `[]` when none), and
+   the canned fixture files that could have answered instead. `compute_completeness.py`
+   refuses, in cross-exam's words, an entry with a non-empty `mock_layers`
+   (`经 mock 层（…）的 runtime 不能判 done`) or whose response is identical to a declared
+   fixture (`响应与 fixture 一致（…）的 runtime 不能判 done`); a refused entry is `unverified`.
+   Whether the feature is hollow beyond that — success returned without doing the work, a
+   screen of placeholder data — is a judgement, and it is `/cross-exam`'s (ADR-0008).
+7. **Runtime gates also write ledger-shaped entries.**
+   product-verify, runtime-smoke-verify, test-verify and visual-verify (runtime media) and
+   compile-verify, spec-compliance-verify, security-verify and pipeline-closure-verify (mechanical
+   media: `build` / `contract`) write, beside their human reports, `<run>/evidence-entries/<node_id>.json` in
+   cross-exam's ledger-entry shape: `medium`, `verdict`, `build` (whole-tree identity from the
+   shared engine, host directories excluded and said so in `build_excludes`), `probed_at` with an
+   offset, `evidence.dir` under `<run>/evidence/`, `served_by` as in rule 6, `readback` of every
+   applied axis, `images` + `image_digests`, and the author marker
+   `{pipeline: "meta-skill/run", node_id, capability}`. Record them with
+   `capture_evidence.py entry <run> <draft.json> --node <id> --capability <name>` (it adds build,
+   probed_at, digests and the marker, and refuses a draft that fails) and check them with
+   `check_evidence.py --entries <run> --node <id>`; a gate with a refused, missing or empty entries
+   file is not passed. Each capability text states what its entries must satisfy;
+   `evidence_freshness` binds the file and every cited evidence file as the node's outputs.
+   visual-verify's entries judge captures of a frozen matrix: its gate is
+   `check_visual_evidence.py --run <run> --node <id>`, which runs the entries check and then the
+   device-axis, readback and reviewer-binding rules its capability text states (#61).
 
 ## Anti-fabrication: capture, don't author (L1) + reproduce (L2)
 
@@ -66,14 +93,16 @@ To fake evidence that survives capture + reverify, the command would have to act
 i.e. you'd have to really make it work. That is the point: **make doing it the easy path.**
 
 (`screenshot` is exempt from the capture-record rule — it's an image; its authenticity is
-checked by the hollowness detector / human, not by reproduction.)
+checked by the second visual review (ADR-0002) and its `served_by`, not by reproduction.)
 
 ## Honest boundary
 
 This is defense-in-depth, not un-gameability. Provenance over content: capture (L1) +
-reproduction (L2) kill free-text and non-reproducing fabrication; the hollowness detector
-(L3, `capabilities/hollowness-detector.md`) checks the command exercises the REAL system (not
-a local fake) and hunts hollow code; the transparent two-column report enables human spot-check
-sampling (L5). A determined faker who stands up a fake service that really passes can still
-fool L1/L2 — that residual is what L3 + human sampling cover. We make the **default path honest**,
-fabrication **expensive and reproduction-checkable**, and the report **transparent**.
+reproduction (L2) kill free-text and non-reproducing fabrication; the `served_by` refusals
+(L3, rule 6) keep a command that answered through a mock layer or with a canned fixture from
+counting; the transparent two-column report enables human spot-check sampling (L5). A
+determined faker who stands up a fake service that really passes, and declares no mock layer,
+can still fool L1–L3 — that residual is not `/run`'s to judge: it is what `/cross-exam` covers
+afterwards, as a party that did not write the code (ADR-0008), plus human sampling. We make
+the **default path honest**, fabrication **expensive and reproduction-checkable**, and the
+report **transparent**.

@@ -95,7 +95,8 @@ def project(root, *, confirmed=False, documents=False, host="claude", source_inp
     }
     if source_inputs is not None:
         node["source_inputs"] = list(source_inputs)
-    write(root, ".allforai/bootstrap/workflow.json", {"nodes": [node], "transition_log": []})
+    write(root, ".allforai/bootstrap/workflow.json",
+          {"nodes": [node], "transition_log": [], "user_steps": ["/cross-exam", "/product-review"]})
     confirm_plan(root, stage="step-3.4", reason="Presented this node list at Step 3.4")
     (root / ".allforai/bootstrap/node-specs/design.md").unlink()
     spec = "---\n" + json.dumps(node) + "\n---\n" + ATTENTION_CONTRACT_BODY

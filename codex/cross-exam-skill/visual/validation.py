@@ -20,6 +20,11 @@ _matrix = _sibling('matrix')
 expand, value_tokens, merged_support = _matrix.expand, _matrix.value_tokens, _matrix.merged_support
 expand_inventory = _matrix.expand_inventory
 locale_tokens = value_tokens
+# The evidence engine (ADR-0008) owns digest binding of refs and in-app readback; this package keeps the
+# matrix, the baseline categories and the census cross-check, and raises where visual_reason expects it to.
+_engine = _matrix.engine
+digest, readback_reason, _readback = _engine.digest, _engine.readback_reason, _engine.readback
+BINDING_KEYS = ('build', 'baseline_digest', 'interaction_digest', 'inventory_digest', 'matrix_digest')
 ANNOTATION_KEYS = {'applicability', 'reason', 'basis'}
 _VERIFIED_IMAGES = set()   # content digests already decoded and verified in this process
 
@@ -29,10 +34,6 @@ AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orient
 CAPTURE_MODES = {'viewport', 'full_page'}
 SCROLLBARS = {'native', 'hidden', 'overlay'}
 SCROLL_PROFILE_KEYS = ('scroll_width', 'client_width', 'scroll_height', 'client_height', 'gutter_px')
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def image_digest(path):
@@ -60,9 +61,7 @@ def image_digest(path):
 
 def frozen_cases(run, config):
     for key in ('inventory', 'matrix'):
-        path = artifact(run, config.get(key + '_ref'))
-        if digest(path) != config.get(key + '_digest'):
-            raise ValueError('页面清单/矩阵摘要不匹配')
+        bound(run, config.get(key + '_ref'), config.get(key + '_digest'), '页面清单/矩阵')
     inventory = read(run, config['inventory_ref'])
     expected = {c['id']: c for c in expand_inventory(inventory)}
     rows = read(run, config['matrix_ref'])
@@ -99,23 +98,31 @@ def frame_digest(path):
         raise ValueError('动态帧无法解码: ' + path.name + ': ' + str(exc)) from exc
 
 
+def _refuse(reason):
+    if reason:
+        raise ValueError(reason)
+
+
 def bindings(obj, config):
-    for key in ('build', 'baseline_digest', 'interaction_digest', 'inventory_digest', 'matrix_digest'):
-        if not config.get(key) or obj.get(key) != config[key]:
-            raise ValueError('证据绑定不匹配: ' + key)
+    """Every capture and report carries the run's binding keys verbatim (the engine decides; this raises)."""
+    _refuse(_engine.bindings_reason(obj, config, BINDING_KEYS))
 
 
-def artifact(root, ref):
-    if not isinstance(ref, str) or not ref:
-        raise ValueError('缺文件引用')
-    path = (root / ref).resolve()
-    if root.resolve() not in path.parents or not path.is_file():
-        raise ValueError('文件缺失或越界: ' + ref)
+def frozen_file(root, ref):
+    """The file a ref names under `root`, or ValueError with the engine's reason (missing, escaping)."""
+    path, reason = _engine.artifact(root, ref)
+    _refuse(reason)
     return path
 
 
+def bound(root, ref, expected, label):
+    """A frozen input is the file at `ref` whose digest is `expected`; `label` names it in the refusal."""
+    _refuse(_engine.ref_digest_reason(root, ref, expected, label))
+    return frozen_file(root, ref)
+
+
 def read(root, ref):
-    return json.loads(artifact(root, ref).read_text())
+    return json.loads(frozen_file(root, ref).read_text())
 
 
 def baseline(run, config):
@@ -125,9 +132,7 @@ def baseline(run, config):
     references = {}
     docs = {}
     for key in ('baseline', 'interaction'):
-        path = artifact(run, config.get(key + '_ref'))
-        if hashlib.sha256(path.read_bytes()).hexdigest() != config.get(key + '_digest'):
-            raise ValueError('基线摘要不匹配')
+        path = bound(run, config.get(key + '_ref'), config.get(key + '_digest'), '基线')
         docs[key] = json.loads(path.read_text())
         for category, value in docs[key].get('categories', {}).items():
             if not isinstance(value, dict):
@@ -135,7 +140,7 @@ def baseline(run, config):
             if value.get('confirmed_at') and value.get('confirmation') and (value.get('rules') or value.get('reason')):
                 confirmed.add(category)
             for ref, expected_digest in value.get('reference_images', {}).items():
-                if image_digest(artifact(run, ref)) != expected_digest:
+                if image_digest(frozen_file(run, ref)) != expected_digest:
                     raise ValueError('基线参考图片已改变')
                 references[ref] = expected_digest
     if not CATEGORIES <= confirmed:
@@ -179,6 +184,9 @@ def pinned_layout_reason(baseline_obj, inventory):
     non-empty allowed empty area. The declaration is the decision; the width literal only guards it (a
     fluid rule that names a width is a contradiction). Otherwise "820px centered" freezes as a rule a wide
     window trivially satisfies and the reviewer has no sentence to cite. Returns '' or the refusal reason."""
+    stray = [k for k in CATEGORIES if k in baseline_obj and k not in (baseline_obj.get('categories') or {})]
+    if stray:
+        return '基线类别 %s 写在了顶层，须放在 categories 之下才会被检查' % ', '.join(sorted(stray))
     rules = ((baseline_obj.get('categories') or {}).get('layout') or {}).get('rules')
     if rules is not None and not isinstance(rules, list):
         return 'layout 规则须是列表'
@@ -259,10 +267,7 @@ def census(ledger, run):
     ref = config.get('census_ref')
     if ref is None:
         return {k: ledger[k] for k in CENSUS_KEYS if k in ledger}, False
-    path = artifact(run, ref)
-    if digest(path) != config.get('census_digest'):
-        raise ValueError('普查官原件摘要不匹配')
-    read = json.loads(path.read_text())
+    read = json.loads(bound(run, ref, config.get('census_digest'), '普查官原件').read_text())
     if not isinstance(read, dict):
         raise ValueError('普查官原件不是对象')
     for key in CENSUS_KEYS:
@@ -353,11 +358,6 @@ def split_groups(cases, ids):
     return ''
 
 
-def _readback(capture):
-    rb = capture.get('readback')
-    return rb if isinstance(rb, dict) else {}
-
-
 def rtl_reason(case, capture, rtl_locales):
     """An RTL locale is only proven rendered RTL by the page's own read-back, not by the locale setting."""
     if not rtl_locales or not (value_tokens(str(case.get('locale', ''))) & set(rtl_locales)):
@@ -379,19 +379,6 @@ def width_readback_reason(case, capture, inventory):
     want = _matrix.effective_width(case.get('device', ''), case.get('orientation', ''), inventory.get('devices'))
     if got != want:
         return 'width 读回值 %d 与用例设备宽度 %d 不符: %s' % (got, want, case.get('id', '?'))
-    return ''
-
-
-def readback_reason(case, capture, support):
-    """Setting an axis is not the same as the app rendering it: for every axis the code declares support on,
-    the capture must carry the value read back inside the app, and it must be one the case claims."""
-    rb = _readback(capture)
-    for axis in support:
-        got = rb.get(axis)
-        if not isinstance(got, str) or not got.strip():
-            return '%s 轴缺应用内读回值: %s' % (axis, case.get('id', '?'))
-        if got.strip() not in value_tokens(str(case.get(axis, ''))):
-            return '%s 轴读回值 %s 与用例 %s 不符: %s' % (axis, got, case.get(axis), case.get('id', '?'))
     return ''
 
 
@@ -443,7 +430,7 @@ def visual_reason(entry, ledger, run):
         if not isinstance(ids, list) or not ids or len(ids) != len(set(ids)) or not set(ids) <= cases.keys():
             raise ValueError('视觉用例引用无效')
         if entry.get('verdict') == 'unprovable':
-            artifact(run / 'evidence', entry.get('visual_failure_ref'))
+            frozen_file(run / 'evidence', entry.get('visual_failure_ref'))
             return None
         frozen = frozen_cases(run, config)
         if not same_matrix(ledger_rows, frozen):
@@ -506,7 +493,7 @@ def visual_reason(entry, ledger, run):
             if len(refs) != len(set(refs)):
                 raise ValueError('重复截图引用不能作为动态帧')
             for ref in refs:
-                actual_digest = image_digest(artifact(evidence, ref))
+                actual_digest = image_digest(frozen_file(evidence, ref))
                 if capture.get('image_digests', {}).get(ref) != actual_digest:
                     raise ValueError('截图内容摘要不匹配')
                 image_hashes[ref] = actual_digest
@@ -515,12 +502,12 @@ def visual_reason(entry, ledger, run):
                 times = capture.get('frame_times_ms', [])
                 if (len(times) != len(refs) or any(type(t) not in (int, float) or not math.isfinite(t) or t < 0 for t in times)
                         or any(a >= b for a, b in zip(times, times[1:]))
-                        or len({frame_digest(artifact(evidence, r)) for r in refs}) < 2):
+                        or len({frame_digest(frozen_file(evidence, r)) for r in refs}) < 2):
                     raise ValueError('动态证据缺有效时序或不同帧内容')
                 clip = capture.get('recording')
                 if not clip or clip in refs:
                     raise ValueError('动态用例缺录屏: ' + cid)
-                clip_path = artifact(evidence, clip)
+                clip_path = frozen_file(evidence, clip)
                 if clip_path.stat().st_size == 0:
                     raise ValueError('动态用例缺录屏: ' + cid)
                 if capture.get('recording_digest') != digest(clip_path):

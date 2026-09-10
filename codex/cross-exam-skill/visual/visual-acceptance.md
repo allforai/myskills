@@ -45,3 +45,9 @@ degradation_ref 指向 {platform: 失败平台 claude|codex, attempts: [{attempt
 reconciliation = {blocking_findings: [session_id:finding_id], disagreements: [双方主张与证据引用]}。主会话另存判断理由，不能修改独立报告内容。
 
 运行环境需要 Pillow（依赖声明见 requirements.txt），用于真实解码 PNG/JPEG；按项目依赖流程安装，缺依赖则记录 unprovable，不能降级为文件头检查。renderer 验证结构/路径/摘要/图片解码/覆盖/报告，并不以像素差或文件存在代替审美判断。所有最终完成度输出只由现有 render_report.py 生成。
+
+## 镜像与消费者
+
+本包只有 `shared/visual-acceptance` 一份源码，`sync.py` 把它整包镜像为四处 `visual/`：cross-exam 两个平台（`claude/superstorm/knowledge/cross-exam/visual`、`codex/cross-exam-skill/visual`）和 meta-skill 两个平台（`claude/meta-skill/scripts/visual`、`codex/meta-skill/scripts/visual`，后者经符号链接指向前者），每处都与证据引擎镜像 `engine/` 并排，`matrix.py` 从自己包旁边找引擎。镜像的是整包而不是只抄 `expand_inventory` 与读回检查：已安装的插件只带自己的根目录，抄出去的函数会在引擎修一次后漂走；`test_mirrors.py` 与 `evidence-engine/test_single_definition.py` 只认镜像。
+
+meta-skill `/run` 的 visual-verify 门（`scripts/check_visual_evidence.py`）从本包读矩阵规则（`matrix.expand_inventory`：device 轴跨每个阈值、触到 `width_range` 两端、桌面下限、`resize-` / `scroll-` 状态、支持值一一入轴）、capture 检查（`validation.web_capture_reason` / `scroll_reason` / `rtl_reason` / `width_readback_reason`，与引擎的 `readback_reason` / `images_reason`）和钉死规则检查（`validation.pinned_layout_reason`），验收标准写在 `claude/meta-skill/knowledge/capabilities/visual-verify.md`。它不读 ledger、不做 `render_report.py` 的裁决，reviewer 拓扑按 meta-skill 自己的 ADR-0002/0003；本文的运行合同（独立取证、只记录不修复、完成度只由 `render_report.py` 产出）不因镜像多了一处而改变。两边对"什么样的 capture 算证据"只能有一个答案，答案在这里。

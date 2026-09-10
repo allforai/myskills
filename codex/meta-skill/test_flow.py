@@ -958,7 +958,8 @@ def try_publish_evidence(tmp_path, node_id):
 
 
 def drive_real_routing(tmp_path, monkeypatch, executor, failing_nodes=frozenset(),
-                       max_iterations=None, on_safety_warning='continue'):
+                       max_iterations=None, on_safety_warning='continue',
+                       on_needs_iteration='halt_with_report'):
     """Run `flow.main()` with the real node selection, recording what it actually chose.
 
     `first_pending_node` is wrapped, not replaced: the driver picks nodes through
@@ -969,7 +970,7 @@ def drive_real_routing(tmp_path, monkeypatch, executor, failing_nodes=frozenset(
     scripts = tmp_path / '.allforai/bootstrap/scripts'
     shutil.copy2(ORCHESTRATOR / 'product_intent.py', scripts)
     write(tmp_path / '.allforai/bootstrap/run-policy.json', {
-        'on_repeated_failure': 'halt', 'on_needs_iteration': 'halt_with_report',
+        'on_repeated_failure': 'halt', 'on_needs_iteration': on_needs_iteration,
         'on_safety_warning': on_safety_warning})
     selected = []
     real_first_pending_node = flow.first_pending_node
@@ -2089,3 +2090,148 @@ def test_a_receipt_for_another_authorization_is_not_permission_to_execute(tmp_pa
         'print(json.dumps(verdict))\n')
     assert flow.authorize_repair_dispatch(tmp_path, workflow, 'repair', ['verify']) is None
     assert flow.settle_repair_dispatch(tmp_path, {'authorization_id': 'mine'}, 'delivered') is False
+
+
+# --- the concept-acceptance coverage gate (ADR 0008) ---
+#
+# The gate names the behaviour mappings that have no evidence; it renders no score and no
+# verdict. A non-empty list fires on_needs_iteration, an empty one proceeds, and under
+# auto_fix_once the list is a bounded QA repair request that reaches the declared repair
+# node only through the canonical ledger (ADR 0005, ADR 0006).
+
+MISSING_MAPPING = [{'mapping_id': 'bm-3', 'behaviour': 'frustration lowers difficulty',
+                    'expected_evidence': 'runtime probe of the next exercise'}]
+
+
+def test_acceptance_gate_reads_the_missing_mapping_list_and_nothing_else(tmp_path):
+    report = tmp_path / flow.ACCEPTANCE_REPORT
+    assert flow.acceptance_gate(tmp_path) == ([], None), 'no report: the gate has not run'
+    write(report, {'gate': 'concept-acceptance', 'missing_mappings': []})
+    assert flow.acceptance_gate(tmp_path) == ([], None), 'every mapping has evidence: proceed'
+    assert not flow.acceptance_requires_iteration(tmp_path)
+    write(report, {'gate': 'concept-acceptance', 'missing_mappings': MISSING_MAPPING})
+    assert flow.acceptance_gate(tmp_path) == (MISSING_MAPPING, None), 'a named mapping fires'
+    assert flow.acceptance_requires_iteration(tmp_path)
+    assert 'missing_mappings contains unresolved' in flow.artifact_status_error(report, tmp_path), \
+        'a non-empty list is the gate\'s QA verdict; the report is not a ready artifact'
+
+
+@pytest.mark.parametrize('report, named', [
+    ({'verdict': 'needs_iteration', 'overall_score': 78, 'pass_threshold': 80, 'gaps': ['x']}, 'verdict'),
+    ({'verdict': 'pass', 'missing_mappings': []}, 'verdict'),
+    ({'gate': 'concept-acceptance', 'gaps': ['x']}, 'missing_mappings'),
+    ({'gate': 'concept-acceptance', 'missing_mappings': 'bm-3'}, 'missing_mappings'),
+])
+def test_a_scored_or_listless_acceptance_report_is_refused_by_name(tmp_path, report, named):
+    write(tmp_path / flow.ACCEPTANCE_REPORT, report)
+    missing, refused = flow.acceptance_gate(tmp_path)
+    assert missing == [] and refused and named in refused, refused
+    assert flow.acceptance_requires_iteration(tmp_path), 'a refusal is never read as proceed'
+
+
+def concept_gate_project(tmp_path, max_attempts=2, declare_loop=True):
+    """implement -> concept gate (QA) -> gate-repair, the gate declared as the loop's obligation."""
+    nodes = [
+        {'node_id': 'implement', 'hard_blocked_by': [], 'exit_artifacts': ['implement.json']},
+        {'node_id': 'concept-gate', 'hard_blocked_by': ['implement'],
+         'exit_artifacts': [flow.ACCEPTANCE_REPORT]},
+        {'node_id': 'gate-repair', 'hard_blocked_by': ['concept-gate'], 'exit_artifacts': ['gate-repair.json']},
+    ]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes, 'transition_log': []})
+    install_repair_ledger(tmp_path)
+    loops = [{'scope': 'concept', 'qa_node_ids': ['concept-gate'], 'repair_node_id': 'gate-repair',
+              'closure_node_ids': [], 'max_attempts': max_attempts}] if declare_loop else []
+    write(tmp_path / '.allforai/bootstrap/unattended-run-readiness-spec.json',
+          {'version': 1, 'required_repair_loops': loops})
+    return nodes
+
+
+def gate_executor(covered_from_attempt):
+    """The gate names a missing mapping until its `covered_from_attempt`-th run."""
+    def executor(project_root, node_id, attempt):
+        if node_id == 'concept-gate':
+            write(project_root / flow.ACCEPTANCE_REPORT, {
+                'gate': 'concept-acceptance', 'attempt': attempt,
+                'missing_mappings': [] if attempt >= covered_from_attempt else MISSING_MAPPING})
+        else:
+            write(project_root / f'{node_id}.json', {'status': 'passed'})
+    return executor
+
+
+def test_a_missing_mapping_is_repaired_once_through_the_ledger_and_the_rerun_proceeds(tmp_path, monkeypatch, capsys):
+    concept_gate_project(tmp_path)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, gate_executor(covered_from_attempt=2),
+                                            max_iterations=8, on_needs_iteration='auto_fix_once')
+    assert executed == ['implement', 'concept-gate', 'gate-repair', 'concept-gate'], executed
+    entries = [(e['repair_node_id'], e['obligations'], e['state'], e['outcome']) for e in ledger_entries(tmp_path)]
+    assert entries == [('gate-repair', ['concept-gate'], 'settled', 'delivered')], \
+        f'the one repair was charged, claimed and settled through the ledger: {entries}'
+    assert '"done": true' in capsys.readouterr().out, 'an empty list after the rerun proceeds'
+
+
+def test_a_mapping_still_missing_after_the_one_recorded_repair_halts_with_its_report(tmp_path, monkeypatch, capsys):
+    concept_gate_project(tmp_path, max_attempts=3)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, gate_executor(covered_from_attempt=99),
+                                            max_iterations=8, on_needs_iteration='auto_fix_once')
+    assert executed == ['implement', 'concept-gate', 'gate-repair', 'concept-gate'], \
+        f'the loop had budget left; the recorded policy is what stopped a second repair: {executed}'
+    assert len(ledger_entries(tmp_path)) == 1, 'nothing further charged'
+    err = json.loads(capsys.readouterr().err)
+    assert err['run_policy_outcome'] == 'iteration halted with report'
+    summary = (tmp_path / '.allforai/concept-acceptance/acceptance-report.md').read_text()
+    assert 'bm-3' in summary and 'score' not in summary.lower()
+
+
+def test_a_missing_mapping_with_no_declared_repair_loop_is_an_unauthorized_repair(tmp_path, monkeypatch, capsys):
+    concept_gate_project(tmp_path, declare_loop=False)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, gate_executor(covered_from_attempt=99),
+                                            max_iterations=8, on_needs_iteration='auto_fix_once')
+    assert executed == ['implement', 'concept-gate'], f'no repair ran and the gate was not rerun: {executed}'
+    assert ledger_entries(tmp_path) == []
+    lines = capsys.readouterr().err.strip().splitlines()
+    assert any('no declared repair loop names the concept-acceptance gate' in line for line in lines), lines
+
+
+def test_a_missing_mapping_whose_budget_is_spent_halts_without_a_dispatch(tmp_path, monkeypatch, capsys):
+    nodes = concept_gate_project(tmp_path, max_attempts=1)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    workflow = {'nodes': nodes, 'transition_log': [
+        {'node': 'implement', 'status': 'completed', 'artifacts_created': ['implement.json']},
+        qa_failed('concept-gate')]}
+    write(tmp_path / 'implement.json', {'status': 'passed'})
+    write(tmp_path / flow.ACCEPTANCE_REPORT, {'gate': 'concept-acceptance', 'missing_mappings': MISSING_MAPPING})
+    stamp_attempt_evidence(tmp_path, workflow, 'concept-gate')
+    repair_dispatched(tmp_path, workflow, 'concept-gate', 'gate-repair', settle='failed')
+    workflow['transition_log'].append({'node': 'gate-repair', 'status': 'failed'})
+    workflow['transition_log'].append(qa_failed('concept-gate'))
+    stamp_attempt_evidence(tmp_path, workflow, 'concept-gate')
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'auto_fix_once' if event else 'ready')
+    assert flow.handle_iteration(tmp_path, workflow) == 6
+    err = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert 'budget is spent' in err['error'] and err['spent'] == 1 and err['budget'] == 1
+    assert len(ledger_entries(tmp_path)) == 1, 'an over-budget repair charges nothing'
+
+
+def test_a_gate_whose_ledger_accounting_is_unknown_halts_rather_than_repairing(tmp_path, monkeypatch, capsys):
+    nodes = concept_gate_project(tmp_path)
+    (tmp_path / flow.REPAIR_LEDGER).write_text('{broken')
+    write(tmp_path / flow.ACCEPTANCE_REPORT, {'gate': 'concept-acceptance', 'missing_mappings': MISSING_MAPPING})
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'auto_fix_once' if event else 'ready')
+    assert flow.handle_iteration(tmp_path, {'nodes': nodes, 'transition_log': []}) == 6
+    err = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+    assert err['spent'] is None and 'accounting is unknown' in err['error']
+
+
+def test_a_scored_acceptance_report_never_opens_a_repair(tmp_path, monkeypatch, capsys):
+    nodes = concept_gate_project(tmp_path)
+    write(tmp_path / flow.ACCEPTANCE_REPORT, {'verdict': 'needs_iteration', 'overall_score': 78, 'gaps': ['x']})
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'auto_fix_once' if event else 'ready')
+    assert flow.handle_iteration(tmp_path, {'nodes': nodes, 'transition_log': []}) == 6
+    assert 'renders no score' in json.loads(capsys.readouterr().err.strip().splitlines()[-1])['error']
+    assert ledger_entries(tmp_path) == []
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'halt_with_report' if event else 'ready')
+    assert flow.handle_iteration(tmp_path, {'nodes': nodes, 'transition_log': []}) == 5
+    assert 'refused' in (tmp_path / '.allforai/concept-acceptance/acceptance-report.md').read_text()

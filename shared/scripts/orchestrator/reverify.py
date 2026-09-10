@@ -6,8 +6,9 @@ passes. Fabricated evidence (a record claiming exit 0 for a command that does no
 actually succeed) fails reproduction.
 
 HONEST BOUND: this proves "the recorded command really passes now", NOT "the command
-exercises the right feature." Relevance is the verify-protocol's / hollowness-detector's
-job; reverify only kills records that don't reproduce.
+exercises the right feature." Relevance is the verify-protocol's job (served_by refusals in
+compute_completeness) and, after the pipeline, cross-exam's (ADR-0008); reverify only kills
+records that don't reproduce.
 """
 import hashlib
 import json

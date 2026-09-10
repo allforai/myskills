@@ -6,6 +6,7 @@ Apply after Step 1 classification. A match means do not emit that node class.
 |---|---|---|
 | `architecture_pattern = library-sdk` | `demo-forge` | language-native tests only |
 | `architecture_pattern = cli` | `demo-forge` | `--help` smoke |
+| `architecture_pattern = library-sdk` or `cli` | `user_steps` `/cross-exam`, `/product-review` (no UI, no product to examine) | `user_steps: []`; the summary states the exemption |
 | `architecture_pattern = embedded-firmware` | `demo-forge` | `pio test` / manual device |
 | `architecture_pattern` starts with `bot-` and no companion HTTP API | `demo-forge` | mock-provider tests |
 | `deployment_platform = vercel` or `deno-deploy` | `infra-design` | document platform as infra |

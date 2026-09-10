@@ -340,6 +340,39 @@ def test_parallel_publication_preserves_both_unrelated_records(tmp_path, host):
 
 
 @pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_ledger_shaped_evidence_entries_are_bound_as_node_outputs(tmp_path, host):
+    """A verify gate's entries file and every file its entries cite are the node's outputs (#59):
+    a swapped screenshot or a removed entries file is drift, not a still-valid delivery."""
+    setup(tmp_path, host)
+    shot = tmp_path / '.allforai/bootstrap/evidence/deliver-export/q01/q01-01.png'
+    shot.parent.mkdir(parents=True)
+    shot.write_bytes(b'\x89PNG-1')
+    entries = '.allforai/bootstrap/evidence-entries/deliver-export.json'
+    write(tmp_path, entries, {'schema': 'evidence-entries/v1', 'entries': [
+        {'medium': 'runtime', 'verdict': 'done', 'build': 'abc-clean', 'probed_at': '2026-09-10T09:00:00+08:00',
+         'evidence': {'dir': 'evidence/deliver-export/q01/'}, 'images': ['q01-01.png'],
+         'author': {'pipeline': 'meta-skill/run', 'node_id': 'deliver-export', 'capability': 'product-verify'}}]})
+    _, observed = invoke(tmp_path, 'observe', node_id='deliver-export')
+    result, published = invoke(tmp_path, 'publish', observation=observed['observation'])
+    assert result.returncode == 0, published
+    state = json.loads((tmp_path / '.allforai/bootstrap/evidence-freshness.json').read_text())
+    bound = state['nodes']['deliver-export']['outputs']
+    assert entries in bound and '.allforai/bootstrap/evidence/deliver-export/q01/q01-01.png' in bound
+    _, checked = invoke(tmp_path, 'check')
+    assert checked['nodes']['deliver-export']['status'] == 'valid'
+    shot.write_bytes(b'\x89PNG-2')
+    _, checked = invoke(tmp_path, 'check')
+    assert checked['nodes']['deliver-export']['status'] == 'stale'
+    assert checked['nodes']['deliver-export']['diff']['outputs'] == {
+        '.allforai/bootstrap/evidence/deliver-export/q01/q01-01.png': 'changed'}
+    assert 'verification' in checked['nodes']['deliver-export']['repair']['responsibilities']
+    shot.write_bytes(b'\x89PNG-1')
+    (tmp_path / entries).unlink()
+    _, checked = invoke(tmp_path, 'check')
+    assert checked['nodes']['deliver-export']['diff']['outputs'][entries] == 'missing'
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
 def test_bootstrap_rejects_node_spec_that_omits_declared_source_contract(tmp_path, host):
     setup(tmp_path, host)
     result = subprocess.run([sys.executable, str(tmp_path / '.allforai/bootstrap/scripts/validate_bootstrap.py'),

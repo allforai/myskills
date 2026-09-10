@@ -120,6 +120,55 @@ Write `.allforai/runtime-smoke/smoke-report.json`:
 }
 ```
 
+## Evidence entries (ledger shape, ADR-0008)
+
+Beside `smoke-report.json`, the node writes machine entries in cross-exam's ledger-entry shape to
+`.allforai/runtime-smoke/evidence-entries/<node_id>.json` (`{"schema": "evidence-entries/v1",
+"entries": [...]}`): one entry per artifact launched, with its `artifacts[]` row in the report as the
+human summary. The report keeps its name and fields; the entry is the machine record a later
+`/cross-exam` can verify and admit as author evidence instead of relaunching everything.
+
+An entry is admissible when, and only when, all of the following hold. The shared engine
+(`${CLAUDE_PLUGIN_ROOT}/scripts/engine`) decides the shape; `capture_evidence.py entry` records what
+the node must not author and refuses a draft that fails; `check_evidence.py --entries
+.allforai/runtime-smoke --node <node_id>` re-checks every entry against the tree at gate time.
+**`overall` cannot be `pass` while any entry is refused, or while the file is missing or empty.**
+
+- `medium` is `runtime`; `verdict` is `done` (clean first API 2xx / expected 4xx), `gap` (the
+  failure this node exists to catch) or `unprovable` (no sandbox for a real dependency, no display
+  for a game client) — never a number.
+- `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest + the
+  digest of the **release artifact** launched, passed as `--artifact`), computed with `.allforai`,
+  `.claude`, `.codex` outside it (`build_excludes` on the entry records exactly that scope; any other
+  scope is refused). It must be the identity of the tree at gate time (`构建标识不匹配` otherwise): a
+  smoke of yesterday's binary on today's tree is not a smoke of today's tree.
+- `probed_at` is ISO 8601 with a timezone offset; a naive timestamp is refused.
+- `evidence.dir` is a non-empty directory under `.allforai/runtime-smoke/evidence/` (recommended
+  `evidence/<node_id>/<module_id>/`) holding the screenshot, the network log and the launch exit
+  code the "What the node does" step 4 records; `evidence.key_observation` names the first API call
+  and its status.
+- `served_by` The node also returns the same `served_by` inside its `verification` result to the run
+  engine; the engine does not count a runtime claim without it. `served_by` names where the artifact's
+  own requests went: `host`, `process` (the launched binary,
+  simulator app or served build, never a test runner) and `mock_layers`. This node does not mock
+  (Implementation notes), so a non-empty `mock_layers` is a finding in itself: such an entry may be
+  `gap` or `unprovable`, never `done` (`经 mock 层（…）的 runtime 不能判 done`). `fixtures` lists any
+  canned file a stub could have answered with; an output identical to one cannot be `done`
+  (`响应与 fixture 一致（…）的 runtime 不能判 done`) — the same field and literals
+  `compute_completeness.py` applies to the transition log.
+- `readback` carries what the artifact itself reported about its environment, as non-empty values:
+  the base URL its HTTP client actually used (from its log or its first captured request, not from
+  the env file), the `document.title` or first-screen state, and any env var the node checked for
+  contract drift. A base URL that differs from what the deployment config says is exactly the
+  env-var contract bug this node hunts, made visible as a readback that does not match.
+- `images` lists the screenshots inside `evidence.dir`; `image_digests` (recorded by the writer) must
+  match the files on disk.
+- `author` is `{"pipeline": "meta-skill/run", "node_id": <this node>, "capability":
+  "runtime-smoke-verify"}`: /run wrote it, as the author; cross-exam admits it only as evidence it
+  can verify, never as a verdict.
+
+`evidence_freshness` binds the entries file and every file the entries cite as this node's outputs.
+
 ## Downstream Consumers
 
 > Bootstrap reads this table to generate Context Pull sections for downstream node-specs.

@@ -38,31 +38,54 @@ entry 引用了 `surfaces` 里没有的 id 一律不算触及并点名；没写 
 的 `requirement_refs`/`requirement_ref` 引用了它；无裁决的按"落在哪个面、该面盘没盘"点名，
 没落任何面的单独点名——需求侧的蒸发和操作面侧的蒸发一样，都必须在报告里留下名字。
 
+作者证据（#60）：带 `author` 标记的 entry 是交付流水线写的，先过引擎的条目形状，再核 readback 非空与
+`build` 是本仓库此刻的树。机械介质（build / test / contract）核过即作**门**，渲染进"作者证据"专节；
+runtime 等其它介质永远只作上下文。门不是裁决：同一问没有实测官 entry 的门按无法自证入账并写明原因——
+作者写的任何东西都关不掉一个 done / gap / drift；核不过的按引擎的理由拒渲。
+
 Usage: python3 render_report.py <run_dir>    # run_dir 内含 ledger.json
 写出 <run_dir>/completion-report.md。exit 0=渲染成功（有拒渲仍为 0，报告内声明）；
 exit 1=ledger 不可读或缺必填键。
 """
+import importlib.util
 import json
-import os
 import re
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
-PATH_LINE = re.compile(r'[\w./\-]+\.[A-Za-z0-9]+:\d+')
-IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg'}
-PROBE_WINDOW_TOLERANCE = 120   # 秒：实测官最后一次写证据与 transcript 收尾落盘之间容许的偏差
+_KNOWLEDGE = Path(__file__).resolve().parents[1] / "knowledge/cross-exam"
 
-import importlib.util
 
-# Load this package's own visual validator by path under a unique module name: a `validation`
-# module already on sys.path (another package, a test process) must never stand in for it.
-_VISUAL_VALIDATION = Path(__file__).resolve().parents[1] / "knowledge/cross-exam/visual/validation.py"
-_spec = importlib.util.spec_from_file_location("cross_exam_visual_validation", _VISUAL_VALIDATION)
-_visual = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_visual)
+def _by_path(name, path):
+    """Load a package module by path under a unique module name: a `validation` or `evidence` module
+    already on sys.path (another package, a test process) must never stand in for this package's own."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_visual = _by_path("cross_exam_visual_validation", _KNOWLEDGE / "visual/validation.py")
 visual_reason, visual_section = _visual.visual_reason, _visual.visual_section
+# The evidence engine (ADR-0008) owns what an entry must carry before it is read: probed_at, the evidence
+# directory, the content gate per medium, served_by, the probe window. This renderer keeps the names its
+# tests patch as aliases and decides nothing the engine already decides.
+_engine = _by_path("cross_exam_engine_evidence", _KNOWLEDGE / "engine/evidence.py")
+PROBE_WINDOW_TOLERANCE = _engine.PROBE_WINDOW_TOLERANCE
+_evidence_files = _engine.evidence_files
+_content_reason = _engine.content_reason
+_parse_time = _engine.parse_time
+_mtime = _engine.mtime
+
+# Author evidence (#60): an entry the delivery pipeline wrote carries an `author` marker. It walks the engine's
+# entry shape plus the build identity of the tree now; a mechanical medium gates, runtime is context, neither
+# is a verdict — the examiner_is_author bias-guard covers every such entry.
+_identity = _by_path("cross_exam_engine_identity", _KNOWLEDGE / "engine/identity.py")
+GATE_MEDIA = _engine.GATE_MEDIA
+AUTHOR_KEYS = ("pipeline", "node_id", "capability")
+HOST_DIR = re.compile(r"^\.[\w.-]+$")   # 宿主隐藏目录（.allforai、.claude、.codex）：作者只能把这些排在构建标识之外
+GATE_STATES = {"done": "门通过", "gap": "门未通过", "drift": "门未通过", "unprovable": "门未核"}
 
 VERDICT_LABELS = {"done": "实证完成", "gap": "缺口",
                   "drift": "跑偏", "unprovable": "无法自证"}
@@ -75,6 +98,10 @@ AUTHOR_NOTE = ("盘问官即交付作者（examiner_is_author）：bias-guard �
                "降级为 low 或 done 需额外独立证据。")
 BASELINE_NONE_NOTE = ("需求基准缺失（baseline: none）：需求覆盖、需求跑偏两镜头"
                       "因无基准关闭，本报告未盘问这两个维度。")
+AUTHOR_EVIDENCE_NOTE = ("作者证据（{pipelines}，带 author 标记）：机械门 {gates} 条经引擎核验后采信，作门不作裁决；"
+                        "运行时等其它介质 {context} 条仅作上下文。bias-guard 对每条作者证据生效——没有独立实测官 entry "
+                        "的问题按无法自证入账，运行时问题仍须独立取证。")
+GATE_ALONE_NOTE = "作者证据只作门（{medium} {state}），裁决须独立实测官取证"
 
 
 def _load(run_dir):
@@ -90,61 +117,14 @@ def _load(run_dir):
 
 
 def _has_evidence(entry, run_dir):
-    d = (entry.get("evidence") or {}).get("dir")
-    if not d:
-        return False
-    p = Path(d) if Path(d).is_absolute() else run_dir / d
-    p = p.resolve()
-    evidence_root = (run_dir / "evidence").resolve()
-    if evidence_root not in p.parents:
-        return False
-    return p.is_dir() and any(p.iterdir())
-
-
-def _evidence_files(entry, run_dir):
-    d = (entry.get("evidence") or {}).get("dir") or ""
-    p = Path(d) if Path(d).is_absolute() else run_dir / d
-    return [f for f in p.iterdir() if f.is_file()] if p.is_dir() else []
-
-
-def _content_reason(e, run_dir):
-    """ledger_version 2 的证据内容门：目录非空只说明有文件，不说明有取证。
-    code 介质要有 路径:行号 的摘录；runtime 介质要有截图或输出文件、且不少于当初要求的状态数，并记请求去向；
-    unprovable 的原因文件要写得出尝试了什么；经过 mock 层的 runtime 不能算 done。"""
-    probed = _parse_time(e.get("probed_at"))
-    if not probed:
-        return "缺 probed_at（ISO 8601）"
-    if probed.tzinfo is None:   # 无偏移的时间在每台渲染机上都是另一个探测窗口
-        return "probed_at 缺时区偏移（如 +08:00）"
-    files = _evidence_files(e, run_dir)
-    medium, verdict = e.get("medium"), e.get("verdict")
-    text = "".join(f.read_text(encoding="utf-8", errors="ignore") for f in files if f.suffix not in IMAGE_SUFFIXES)
-    if verdict == "unprovable":
-        return "" if len(text.strip()) >= 40 else "无法自证缺原因文件（尝试了什么、卡在哪）"
-    if medium == "code" and not PATH_LINE.search(text):
-        return "代码摘录无 路径:行号"
-    if medium == "runtime":
-        images = [f for f in files if f.suffix.lower() in IMAGE_SUFFIXES]
-        outputs = [f for f in files if f.suffix.lower() in {".txt", ".log", ".json", ".md"}]
-        if not images and not outputs:
-            return "运行时证据无截图或输出文件"
-        wanted = e.get("states_to_capture")
-        if isinstance(wanted, list) and wanted and len(files) < len(wanted):
-            return f"要求 {len(wanted)} 个状态只落了 {len(files)} 个文件"
-        served = e.get("served_by")
-        if not isinstance(served, dict) or not served.get("host") or not served.get("process") \
-                or not isinstance(served.get("mock_layers"), list):
-            return "缺请求去向 served_by（host / process / mock_layers）"
-        if served["mock_layers"] and verdict == "done":
-            return "经 mock 层（" + ", ".join(map(str, served["mock_layers"])) + "）的 runtime 不能判 done"
-    return ""
+    return not _engine.evidence_dir(entry, run_dir)[1]
 
 
 def _transcript_reason(e, run_dir):
     """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
     证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
     逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。
-    名字过了关再核探测窗口（见 _probe_window_reason）：目录被提过一次，之后再往里塞的文件不能算实测官写的。"""
+    名字过了关再核探测窗口（引擎的 probe_window_reason）：目录被提过一次，之后再往里塞的文件不能算实测官写的。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -161,41 +141,58 @@ def _transcript_reason(e, run_dir):
         d = d[2:] if d.startswith("./") else d
         if not (d and d in body):
             return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
-    return _probe_window_reason(e, files, p)
+    return _engine.probe_window_reason(e, files, p, read_mtime=_mtime)
 
 
-def _mtime(path):
-    return os.stat(path).st_mtime
-
-
-def _probe_window_reason(e, files, transcript):
-    """探测窗口 [probed_at, transcript mtime + PROBE_WINDOW_TOLERANCE]：实测官从开始到返回的这段时间。
-    证据目录里每个文件的修改时间都要落在窗口内，transcript 点了名的也不例外——点名只证明实测官打算写它，
-    不证明这一份就是它写的；probed_at 晚于 transcript 落盘则窗口为空，一个都不认。
-    读不到文件时间只记 note，不拒渲：文件系统抹掉 mtime 是属性，不是造假。"""
-    start = _parse_time(e.get("probed_at"))
-    if not start:
-        return ""
+def _repo_root(run_dir):
+    """run 目录所在仓库的顶层；不在仓库里就交回 run 目录，让引擎自己说"不是 git 仓库"。"""
     try:
-        end = _mtime(transcript) + PROBE_WINDOW_TOLERANCE
-    except OSError:
-        e["transcript_note"] = "transcript 时间不可读，探测窗口未核"
-        return ""
-    stamp = lambda t: datetime.fromtimestamp(t, start.tzinfo).isoformat()
-    outside, unreadable = [], []
-    for f in files:
-        try:
-            m = _mtime(f)
-        except OSError:
-            unreadable.append(f.name)
-            continue
-        if not start.timestamp() <= m <= end:
-            outside.append(f"{f.name}（{stamp(m)}）")
-    if outside:
-        return "证据文件写于探测窗口之外，窗口 [%s, %s]：%s" % (start.isoformat(), stamp(end), "、".join(outside))
-    if unreadable:
-        e["transcript_note"] = "证据文件时间不可读，探测窗口未核：" + "、".join(unreadable)
-    return ""
+        top = subprocess.run(["git", "-C", str(run_dir), "rev-parse", "--show-toplevel"], capture_output=True,
+                             text=True, timeout=5, check=True).stdout.strip()
+        return Path(top) if top else run_dir
+    except Exception:
+        return run_dir
+
+
+def _author_reason(e, run_dir):
+    """作者证据入账前的核验：先过引擎的条目形状（介质、裁决、build、probed_at 偏移、证据目录与内容、readback 形状、
+    截图摘要），再加作者独有的三条——author 标记齐全；readback 非空（工具自己报的运行对象，如 runner 与用例数，
+    和应用读回一个道理）；记录的 build 是本仓库此刻的树，按 entry 声明的宿主目录加本 run 目录排除后重算。
+    作者只能排除宿主隐藏目录：把产品路径排在身份之外，身份就什么都不说了。"""
+    author = e.get("author")
+    if not isinstance(author, dict) or not all(isinstance(author.get(k), str) and author[k].strip() for k in AUTHOR_KEYS):
+        return "作者标记不完整（pipeline / node_id / capability）"
+    reason = _engine.entry_reason(e, run_dir)
+    if reason:
+        return reason
+    if e.get("medium") == "runtime" and not _engine.readback(e):   # a suite run has nothing to read back
+        return "作者证据缺读回 readback"
+    excludes = e.get("build_excludes") if isinstance(e.get("build_excludes"), list) else []
+    bad = [str(x) for x in excludes if not isinstance(x, str) or not HOST_DIR.match(x)]
+    if bad:
+        return "构建标识排除范围只能是宿主隐藏目录（如 .allforai）: " + "、".join(bad)
+    artifacts = e.get("build_artifacts") if isinstance(e.get("build_artifacts"), list) else []
+    repo = _repo_root(run_dir)
+    try:
+        own = run_dir.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError:
+        own = ""
+    return _identity.build_reason(e.get("build"), repo, [repo / str(a) for a in artifacts],
+                                  excludes + ([own] if own and own != "." else []))
+
+
+def _author_line(e, admitted_by_q):
+    """作者证据一行：门通过与否或"仅上下文"，谁写的、什么介质、哪个 build，以及同一问有没有独立实测官的裁决。"""
+    a, ev = e["author"], e.get("evidence", {})
+    gate = e.get("medium") in GATE_MEDIA
+    probe = admitted_by_q.get(e.get("q"))
+    if probe:
+        tail = f"独立实测：{VERDICT_LABELS[probe['verdict']]}"
+    else:
+        tail = "未独立实测，按无法自证入账" if gate else "待独立实测官取证"
+    return (f"- **{e['gate_state'] if gate else '仅上下文'}** [{e.get('facet', '?')}] {e.get('q', '?')} — {ev.get('key_observation', '')}"
+            f"（{a['pipeline']} · {a['node_id']} · {a['capability']} · 介质 {e.get('medium')} · build {e.get('build')}"
+            f" · 证据：{ev.get('dir', '')}）· {tail}")
 
 
 def _risk_key(facet):
@@ -239,8 +236,9 @@ def _entry_line(e):
     facet_tag = f" [{e.get('facet', '?')}]"
     ref = f" [{e['requirement_ref']}]" if e.get("requirement_ref") else ""
     ev = e.get("evidence", {})
-    note = f" · {e['transcript_note']}" if e.get("transcript_note") else ""
-    return (f"- **{label}**{jtag}{gtag}{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
+    atag = " [作者证据]" if e.get("author") else ""
+    note = "".join(f" · {e[k]}" for k in ("transcript_note", "author_note") if e.get(k))
+    return (f"- **{label}**{atag}{jtag}{gtag}{facet_tag}{ref} {e.get('q', '?')} — {ev.get('key_observation', '')}"
             f"（证据：{ev.get('dir', '')}）{note}")
 
 
@@ -275,13 +273,6 @@ def _git_author_overlap(run_dir):
         return email if email and email in authors else ""
     except Exception:
         return ""
-
-
-def _parse_time(value):
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        return None
 
 
 def _timing_lines(admitted):
@@ -398,8 +389,19 @@ def render(run_dir):
     ledger = _load(run_dir)
     journeys = ledger.get("journeys") or []
     journey_ids = {j.get("id") for j in journeys}
-    admitted, refused = [], []
+    admitted, refused, author_gates, author_context = [], [], [], []
     for e in ledger["entries"]:
+        if "author" in e:   # 交付流水线写的：机械门或上下文，从来不是裁决
+            reason = _author_reason(e, run_dir)
+            if reason:
+                e["refusal_reason"] = reason
+                refused.append(e)
+            elif e.get("medium") in GATE_MEDIA:
+                e["gate_state"] = GATE_STATES[e["verdict"]]
+                author_gates.append(e)
+            else:
+                author_context.append(e)
+            continue
         reason = _refusal_reason(e, journey_ids)
         if not reason:
             reason = visual_reason(e, ledger, run_dir)
@@ -416,9 +418,14 @@ def render(run_dir):
             refused.append(e)
         else:
             admitted.append(e)
-    plain = [e for e in admitted if not e.get("journey")]
-    _assign_gap_ids(plain)
     admitted_by_q = {e.get("q"): e for e in admitted}
+    # 没有独立实测官 entry 的机械门入账为无法自证并说明为什么——作者写的任何东西都关不掉一个裁决
+    gate_alone = [g for g in author_gates if g.get("q") not in admitted_by_q]
+    for g in gate_alone:
+        g["author_note"] = GATE_ALONE_NOTE.format(medium=g.get("medium"), state=g["gate_state"])
+        g["verdict"] = "unprovable"
+    plain = [e for e in admitted if not e.get("journey")] + gate_alone
+    _assign_gap_ids(plain)
     examined_j = [(j, admitted_by_q[j.get("entry_q")]) for j in journeys
                   if j.get("entry_q") in admitted_by_q
                   and admitted_by_q[j.get("entry_q")].get("journey") == j.get("id")
@@ -426,7 +433,7 @@ def render(run_dir):
     examined_j_ids = {j.get("id") for j, _ in examined_j}
     unexamined_j = [j for j in journeys if j.get("id") not in examined_j_ids]
 
-    facets_with_entry = {e.get("facet") for e in admitted}
+    facets_with_entry = {e.get("facet") for e in admitted + gate_alone}
     facets_with_verdict = {e.get("facet") for e in admitted if e.get("verdict") in ("done", "gap", "drift")}
     examined = [f for f in ledger["facets"] if f.get("id") in facets_with_entry]
     only_unprovable = [f for f in examined if f.get("id") not in facets_with_verdict]
@@ -484,6 +491,11 @@ def render(run_dir):
     elif detected:
         out.append("")
         out.append(f"> {AUTHOR_DETECTED_NOTE.format(email=detected)}")
+    if author_gates or author_context:
+        out.append("")
+        out.append("> " + AUTHOR_EVIDENCE_NOTE.format(
+            pipelines="、".join(sorted({e["author"]["pipeline"] for e in author_gates + author_context})),
+            gates=len(author_gates), context=len(author_context)))
     policy = ledger.get("model_policy")
     if isinstance(policy, dict):
         out.append("")
@@ -557,7 +569,7 @@ def render(run_dir):
     else:
         out.append("（无）")
 
-    unprov = [e for e in admitted if e.get("verdict") == "unprovable"]
+    unprov = [e for e in admitted + gate_alone if e.get("verdict") == "unprovable"]
     out.append("")
     out.append("## 无法自证清单（待人工验证，不计为完成也不计为失败）")
     if unprov:
@@ -613,6 +625,11 @@ def render(run_dir):
                            f"（[{s.get('facet', '?')}] 同类嫌疑，未实证）")
     else:
         out.append("（无）")
+
+    if author_gates or author_context:
+        out.append("")
+        out.append("## 作者证据（交付流水线写入——机械门核验后只作门，运行时只作上下文，都不是裁决）")
+        out.extend(_author_line(e, admitted_by_q) for e in author_gates + author_context)
 
     out.extend(visual_section(ledger, admitted, run_dir))
 

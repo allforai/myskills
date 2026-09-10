@@ -90,6 +90,9 @@ PRODUCTION_GAP_FIELDS = (
     "degraded_contracts",
     "blockers",
     "major_findings",
+    # The concept-acceptance coverage gate: behaviour mappings with no evidence. A
+    # non-empty list is that gate's QA verdict, routed like any other (ADR 0008).
+    "missing_mappings",
 )
 
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
@@ -225,6 +228,7 @@ def artifact_status_error(path: Path, project_root: Path | None = None) -> str |
             "contract_gaps",
             "gaps",
             "major_findings",
+            "missing_mappings",
             "remaining_gaps",
             "test_gaps",
             "unresolved_findings",
@@ -1528,15 +1532,61 @@ def goal_based_completion_required(project_root: Path) -> bool:
     return profile.get("completion_mode") == "goal_based"
 
 
+ACCEPTANCE_REPORT = ".allforai/concept-acceptance/acceptance-report.json"
+# What a scored acceptance report carried before ADR 0008. The coverage gate renders none
+# of them: a report that still does is not this gate's output, whatever list it also holds.
+ACCEPTANCE_SCORE_FIELDS = ("verdict", "overall_score", "pass_threshold", "dimensions")
+
+
+def acceptance_gate(project_root: Path) -> tuple[list, str | None]:
+    """(behaviour mappings the coverage gate named as missing, why the report is not the gate's).
+
+    concept-acceptance answers one machine-decidable question: does every behaviour
+    mapping in the concept have evidence, or is it named as missing (ADR 0008). Its report
+    is read for that list only. No report is a gate that has not run — an empty list and
+    no refusal. A report with no readable list, or one that still carries a score,
+    threshold or verdict, is refused by name rather than read as either answer.
+    """
+    report = project_root / ACCEPTANCE_REPORT
+    if not report.exists():
+        return [], None
+    try:
+        data = load_json(report)
+    except (ValueError, OSError):
+        return [], f"{ACCEPTANCE_REPORT} is unreadable"
+    if not isinstance(data, dict):
+        return [], f"{ACCEPTANCE_REPORT} is not a report document"
+    scored = [field for field in ACCEPTANCE_SCORE_FIELDS if field in data]
+    if scored:
+        return [], (f"{ACCEPTANCE_REPORT} carries {', '.join(scored)}; the coverage gate names "
+                    "missing behaviour mappings and renders no score, threshold or verdict")
+    missing = data.get("missing_mappings")
+    if not isinstance(missing, list):
+        return [], (f"{ACCEPTANCE_REPORT} names no missing_mappings list; the gate produced "
+                    "no decidable output")
+    return missing, None
+
+
+def acceptance_gate_node(workflow: dict) -> str | None:
+    """The node whose exit artifact is the coverage gate's report, when the plan has one."""
+    for node in workflow.get("nodes", []):
+        if any(artifact_path(a) == ACCEPTANCE_REPORT for a in node.get("exit_artifacts", [])):
+            return node_identity(node)
+    return None
+
+
+def acceptance_gate_loop(project_root: Path, gate_node: str | None) -> dict | None:
+    """The declared repair loop that names the gate as one of its QA obligations."""
+    if not gate_node:
+        return None
+    return next((loop for loop in declared_repair_loops(project_root)
+                 if gate_node in loop_nodes(loop, "qa_node_ids", "qa_nodes")), None)
+
+
 def acceptance_requires_iteration(project_root: Path) -> bool:
-    report = project_root / ".allforai/concept-acceptance/acceptance-report.json"
-    if report.exists():
-        try:
-            data = load_json(report)
-            if data.get("verdict", data.get("status")) == "needs_iteration":
-                return True
-        except (ValueError, OSError, AttributeError):
-            return True
+    missing, refused = acceptance_gate(project_root)
+    if missing or refused:
+        return True
     acceptance_path = project_root / ".allforai/bootstrap/artifacts/parity-acceptance.md"
     if not acceptance_path.exists():
         return False
@@ -1566,6 +1616,21 @@ than changing sources.
 """
 
 
+RUNTIME_METHODS = ("real-run", "real-api", "db-query", "screenshot")
+
+
+def runtime_verification_reason(result):
+    """A runtime method must say where its requests went; a claim without served_by is not verified."""
+    v = result.get("verification") or {}
+    if v.get("method") not in RUNTIME_METHODS:
+        return ""
+    sb = v.get("served_by")
+    if not isinstance(sb, dict) or not isinstance(sb.get("host"), str) or not isinstance(sb.get("process"), str) \
+            or not isinstance(sb.get("mock_layers"), list):
+        return "runtime verification without served_by (host / process / mock_layers): the node did not say where its requests went"
+    return ""
+
+
 def build_prompt(node_id: str, goal: str, finalize_evidence: bool = False) -> str:
     if finalize_evidence:
         return f"""Continue the generated workflow autonomously.
@@ -1585,7 +1650,7 @@ Requirements:
 3. Complete exactly this node end-to-end. Do not stop after planning.
 4. Create or update any project files required to satisfy the node's exit artifacts.
 5. Append a `transition_log` entry to `.allforai/bootstrap/workflow.json` with `completed` or `failed`.
-6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_gaps`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
+6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_gaps`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, `unresolved_findings`, or `missing_mappings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings.
@@ -1645,7 +1710,17 @@ def policy_action(project_root: Path, event: str | None = None) -> str:
         return "blocked"
 
 
-def handle_iteration(project_root: Path) -> int:
+def handle_iteration(project_root: Path, workflow: dict) -> int | None:
+    """Apply the recorded on_needs_iteration policy to the gate's missing-mapping list.
+
+    Returns the driver's exit code, or None when the gate's declared repair may now be
+    dispatched — through the same ledger-authorized route as any other QA finding, never
+    around it (ADR 0005, ADR 0006). `auto_fix_once` grants that route once: a gate whose
+    obligation the ledger already shows charged halts with its report, and one that no
+    loop declares a repair for, or whose budget is spent or unknown, halts as an
+    unauthorized repair. Nothing here dispatches an executor of its own.
+    """
+    missing, refused = acceptance_gate(project_root)
     action = policy_action(project_root, "on_needs_iteration")
     report = project_root / ".allforai/concept-acceptance/acceptance-report.md"
     report.parent.mkdir(parents=True, exist_ok=True)
@@ -1660,20 +1735,41 @@ def handle_iteration(project_root: Path) -> int:
         # A qualified acceptance does not pass the artifact gate or complete a
         # node. Recheck product prerequisites; leave failing exit artifacts intact.
         return 0 if run_preflight(project_root) == 0 else 6
-    report.write_text("Acceptance needs iteration. Review acceptance-report.json for the gaps.\n"
-                      "At the next interactive entry choose fix, re-bootstrap, or accept; execution asks no new questions.\n")
-    if action == "auto_fix_once":
-        state_path = project_root / ".allforai/bootstrap/run-policy-state.json"
-        state = load_json(state_path) if state_path.exists() else {}
-        if not state.get("iteration_repair_started"):
-            state["iteration_repair_started"] = True
-            state_path.write_text(json.dumps(state) + "\n")
-            repaired = run_codex(project_root, "Apply the recorded auto_fix_once Run Policy: read the current concept-acceptance report, "
-                "repair only its named gaps authorized by existing decision_inputs, rerun concept-acceptance and its independent "
-                "verification, then stop. Do not ask questions or change product requirements; unresolved product choices block repair.")
-            if repaired.returncode == 0 and not acceptance_requires_iteration(project_root) and run_post_checks(project_root):
-                return 0
-    return 5
+    named = "\n".join(f"- {json.dumps(item, ensure_ascii=False)}" for item in missing)
+    report.write_text(
+        (f"Concept acceptance refused: {refused}\n" if refused
+         else f"Behaviour mappings without evidence:\n{named}\n")
+        + "At the next interactive entry choose fix, re-bootstrap, or accept; execution asks no new questions.\n")
+    if action != "auto_fix_once":
+        return 5
+    if refused:
+        print(json.dumps({"passed": False, "done": False, "error": refused}), file=sys.stderr)
+        return 6
+    gate_node = acceptance_gate_node(workflow)
+    loop = acceptance_gate_loop(project_root, gate_node)
+    if loop is None:
+        print(json.dumps({
+            "passed": False, "done": False,
+            "error": "no declared repair loop names the concept-acceptance gate; a missing-mapping "
+                     "repair nobody authorized does not run",
+            "missing_mappings": missing}), file=sys.stderr)
+        return 6
+    repair_node_id = str(loop["repair_node_id"])
+    budget = repair_budget(loop)
+    spent, answered = repair_progress(project_root, workflow, repair_node_id, gate_node)
+    if answered:
+        return None       # the repair delivered; the gate's rerun is what judges it
+    if spent is None or budget is None or spent >= budget:
+        print(json.dumps({
+            "passed": False, "done": False,
+            "error": "the concept-acceptance repair budget is spent or its accounting is unknown; "
+                     "nothing further is charged and no unpaid attempt runs",
+            "obligation": gate_node, "repair_node_id": repair_node_id,
+            "spent": spent, "budget": budget}), file=sys.stderr)
+        return 6
+    if spent >= 1:
+        return 5          # the one recorded repair already ran; the gate still names mappings
+    return None
 
 
 def parse_legacy_args(argv: list[str], project_root: Path) -> tuple[str, int]:
@@ -1767,24 +1863,35 @@ def main() -> int:
                         "against attributable evidence — this is not a QA failure")
                 print(json.dumps(payload), file=sys.stderr)
                 return 6
-        acceptance_node = node is None or any(artifact_path(a) == ".allforai/concept-acceptance/acceptance-report.json"
-                                               for a in node.get("exit_artifacts", []))
+        # The coverage gate's policy is applied whenever the gate, its declared repair node
+        # or the run's end comes up: the declared loop would otherwise route the gate's
+        # failure past a recorded halt_with_report, and a routed repair must still be the
+        # one the policy grants.
+        gate_node = acceptance_gate_node(workflow)
+        gate_loop = acceptance_gate_loop(project_root, gate_node)
+        pending = node_identity(node) if node is not None else None
+        acceptance_node = pending is None or pending == gate_node or (
+            gate_loop is not None and pending == str(gate_loop["repair_node_id"]))
         if acceptance_node and acceptance_requires_iteration(project_root):
-            outcome = handle_iteration(project_root)
-            accepted = outcome == 0 and load_json(project_root / ".allforai/bootstrap/run-policy.json")["on_needs_iteration"] == "accept"
-            print(
-                json.dumps(
-                    {
-                        "passed": outcome == 0 and not accepted,
-                        "done": outcome == 0 and not accepted,
-                        "run_policy_outcome": "accepted_with_gaps" if accepted else "repair verified" if outcome == 0 else "iteration halted with report",
-                    },
-                    indent=2,
-                    ensure_ascii=False,
-                ),
-                file=sys.stderr,
-            )
-            return outcome
+            outcome = handle_iteration(project_root, workflow)
+            if outcome is not None:
+                accepted = outcome == 0 and load_json(
+                    project_root / ".allforai/bootstrap/run-policy.json")["on_needs_iteration"] == "accept"
+                print(
+                    json.dumps(
+                        {
+                            "passed": False,
+                            "done": False,
+                            "run_policy_outcome": "accepted_with_gaps" if accepted else "iteration halted with report",
+                        },
+                        indent=2,
+                        ensure_ascii=False,
+                    ),
+                    file=sys.stderr,
+                )
+                return outcome
+            # The gate's one recorded repair is dispatched below like any other QA finding:
+            # the declared repair node runs under a ledger grant, or nothing runs.
         if node is None:
             if not workflow.get("nodes") or not run_post_checks(project_root):
                 print(json.dumps({"passed": False, "done": False, "error": "final validation failed"}), file=sys.stderr)
