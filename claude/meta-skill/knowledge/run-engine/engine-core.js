@@ -502,6 +502,12 @@ function measuredDelivery(node, gate, open) {
            produced: Object.fromEntries(produced.map(rel => [rel, measured.get(rel).digest])) }
 }
 
+// The halt a user actually sees when auto_fix_once has no declared loop: name the planning
+// declaration, not just "unauthorized", so the fix is found at bootstrap (#65).
+function undeclaredCoverageLoopMessage(gateNodeId) {
+  return `auto_fix_once: no required_repair_loops entry names ${gateNodeId} in qa_node_ids; the repair is unauthorized (ADR-0006). Declare the loop at bootstrap (bootstrap-planning: "The coverage gate's repair loop") or choose halt_with_report.`
+}
+
 // deliveryOnly: this node is the declared repair node of a currently open loop. Its
 // independent gate cannot pass yet — it is `hard_blocked_by` the QA node it repairs, so
 // while that node is failing the repair node's own evidence is stale and the gate
@@ -930,6 +936,12 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       const routed = []
       for (const failure of hardFailures) {
         const loop = repairLoopFor(repair.loops, failure.node_id)
+        if (!loop && failure.iteration_repair) {
+          // auto_fix_once found missing mappings but no declared loop names this gate: the
+          // halt report gets the actionable reason, not just the missing-mapping findings.
+          failure.blocking_findings = [...(failure.blocking_findings || []),
+            { type: 'unauthorized_repair', detail: undeclaredCoverageLoopMessage(failure.node_id) }]
+        }
         if (!loop || !qaReportUsable(failure)) continue
         const budget = repairBudget(loop)
         if (budget === null) continue          // unusable declared budget: route nothing
@@ -1006,7 +1018,7 @@ module.exports = {
   DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA, NODE_GATE_SCHEMA, READINESS_SCHEMA,
   MEASUREMENT_SCHEMA, measuredDelivery, measurePrompt,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
-  qaReportUsable, repairLoopFor, repairBudget,
+  qaReportUsable, repairLoopFor, repairBudget, undeclaredCoverageLoopMessage,
   serializeCommit, runNode, commitNode, runEngine,
   loadDagPrompt, expandPrompt, readinessPrompt, gateNodePrompt, repairPrompt,
   runNodePrompt, commitPrompt, commitFailuresPrompt, repairRoutePrompt,

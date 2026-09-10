@@ -225,6 +225,17 @@ Write `.allforai/bootstrap/unattended-run-readiness-spec.json` with exact
 commands, keys, MCP servers, QA/repair/closure node ids, and human decisions
 that must already exist. `/run` begins with readiness validation.
 
+### The coverage gate's repair loop
+
+When the run policy may answer `on_needs_iteration: auto_fix_once` and the workflow carries the
+concept-acceptance coverage gate, `required_repair_loops` declares a loop naming that gate in
+`qa_node_ids`, and the workflow plans its two nodes: `<gate>-repair` (capability `implement`,
+`hard_blocked_by: [<gate>]`, the one bounded repair) and `<gate>-rerun` (capability
+`concept-acceptance`, `hard_blocked_by: [<gate>-repair, <gate>]`, the rerun that proves it). Without
+the loop, `auto_fix_once` halts at run time as an unauthorized repair (ADR-0006) and the user cannot
+see that the plan was the cause; the readiness gate refuses such a plan
+(`missing_coverage_repair_loop`). `halt_with_report` and `accept` need no loop.
+
 **UI screenshot + reviewer two visual review hard gate:**
 
 Every verification node that exercises a user-facing UI MUST include screenshot

@@ -21,6 +21,7 @@ effect_stage_ownership_findings = _validate_bootstrap.effect_stage_ownership_fin
 repair_loop_declaration_findings = _validate_bootstrap.repair_loop_declaration_findings
 structural_gate_blockers = _validate_bootstrap.structural_gate_blockers
 workflow_shape_findings = _validate_bootstrap.workflow_shape_findings
+coverage_gate_loop = _validate_bootstrap.coverage_gate_loop
 
 
 def _write_workflow(tmp_path, nodes):
@@ -959,3 +960,12 @@ def test_node_spec_naming_a_retired_capability_is_refused_by_name(tmp_path):
     errors = validate_node_spec(str(spec))
 
     assert any("retired capability 'hollowness-detector'" in e for e in errors), errors
+
+
+def test_coverage_gate_loop_names_the_repair_and_rerun_nodes():
+    nodes = [{"node_id": "concept-acceptance", "capability": "concept-acceptance"}]
+    loop = coverage_gate_loop(nodes)
+    assert loop == {"scope": "concept-acceptance", "qa_node_ids": ["concept-acceptance"],
+                    "repair_node_id": "concept-acceptance-repair",
+                    "closure_node_ids": ["concept-acceptance-rerun"], "max_attempts": 1}
+    assert coverage_gate_loop([{"node_id": "design", "capability": "game-design"}]) is None
