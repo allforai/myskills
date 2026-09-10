@@ -1,10 +1,17 @@
-"""Synchronize committed, self-contained Claude/Codex visual acceptance mirrors."""
+"""Synchronize committed, self-contained Claude/Codex visual acceptance mirrors.
+
+The mirror is named `visual` and sits beside the evidence engine mirror (`engine/`) in both cross-exam
+ports and, since #61, under the scripts directory of both meta-skill ports (codex/meta-skill/scripts is a
+symlink to the Claude scripts dir), where visual-verify's gate reaches the matrix and the readback checks
+by path; `matrix.py` finds the engine beside its own package in every mirror."""
 import argparse
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parent
 TARGETS = [SOURCE.parents[1] / 'claude/superstorm/knowledge/cross-exam/visual',
-           SOURCE.parents[1] / 'codex/cross-exam-skill/visual']
+           SOURCE.parents[1] / 'codex/cross-exam-skill/visual',
+           SOURCE.parents[1] / 'claude/meta-skill/scripts/visual',
+           SOURCE.parents[1] / 'codex/meta-skill/scripts/visual']
 SUFFIXES = {'.md', '.py', '.swift'}
 EXTRA = ('swiftui/LICENSE', 'requirements.txt')
 

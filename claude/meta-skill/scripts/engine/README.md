@@ -68,6 +68,9 @@ readback from it, raising where `visual_reason` expects a raise. `test_single_de
 consumer trees and fails on any engine-owned name defined a second time, underscore-prefixed or not.
 meta-skill's runtime gates consume it too (#59): `scripts/check_evidence.py` loads `engine/evidence.py` and
 `engine/identity.py` by path to validate the ledger-shaped entries `scripts/capture_evidence.py entry` writes.
+Since #61 the visual acceptance package is mirrored beside the meta-skill engine mirrors as well
+(`claude/meta-skill/scripts/visual`), so visual-verify's gate (`scripts/check_visual_evidence.py`) reaches
+readback and image binding through the same `visual/matrix.py` → `../engine` path cross-exam uses.
 
 Run the suite from this directory (`python3 -m pytest shared/evidence-engine`); mirrors carry the same
 tests and skip the parity and single-definition checks when installed standalone.

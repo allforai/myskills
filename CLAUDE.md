@@ -101,7 +101,8 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── code-tuner/              # tuner-profile, phase1-4 JSONs, tuner-report, tuner-tasks
 ├── concept-acceptance/      # acceptance-report.json
 ├── runtime-smoke/           # smoke-report.json, evidence-entries/<node>.json + evidence/
-├── visual-verify/           # visual-verify-report.json, screenshots/
+├── visual-verify/           # visual-verify-report.json, surface-inventory.json, case-matrix.json, visual-baseline.json,
+                             # screenshot-manifest.json, visual-review-*.json, evidence-entries/<node>.json + evidence/
 ├── test-verify/             # test-verify-report.json, evidence-entries/<node>.json + evidence/
 ├── translate/               # translation-manifest.json
 ├── launch-prep/             # competitive-research, compliance-checklist, launch-checklist
@@ -110,7 +111,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
                              # safety-quarantine.json, node-specs/, scripts/, learned/
 ```
 
-**Output contract**: JSON files are machine-readable (complete fields, for AI agents and automation); Markdown `*-report.md` files are human-readable summaries. Never duplicate JSON content in Markdown. Runtime verify gates (product-verify, runtime-smoke-verify, test-verify) keep their report names and also write `evidence-entries/<node>.json` in cross-exam's ledger-entry shape (ADR-0008), validated by the shared evidence engine.
+**Output contract**: JSON files are machine-readable (complete fields, for AI agents and automation); Markdown `*-report.md` files are human-readable summaries. Never duplicate JSON content in Markdown. Runtime verify gates (product-verify, runtime-smoke-verify, test-verify, visual-verify) keep their report names and also write `evidence-entries/<node>.json` in cross-exam's ledger-entry shape (ADR-0008), validated by the shared evidence engine. visual-verify captures across the device axis of `shared/visual-acceptance`, mirrored into `claude/meta-skill/scripts/visual` beside the engine mirror (#61).
 
 ## Installing Plugins
 
