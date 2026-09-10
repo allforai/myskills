@@ -119,3 +119,31 @@ different failure modes, different fix strategies.
 
 ### Merge with Another Capability
 For single-platform projects with few components: merge translate + compile-verify into a single node.
+
+### Evidence Entries (ledger shape, ADR-0008)
+
+Beside the build result it reports, the node writes machine entries in cross-exam's ledger-entry
+shape to `.allforai/compile-verify/evidence-entries/<node_id>.json` (`{"schema":
+"evidence-entries/v1", "entries": [...]}`): one entry per build command it ran. The entry is the
+machine record a later `/cross-exam` admits as a **gate** (`medium: build` is mechanical media)
+instead of rerunning the build; it never closes a verdict.
+
+An entry is admissible when, and only when, all of the following hold. The shared engine
+(`${CLAUDE_PLUGIN_ROOT}/scripts/engine`) decides the shape; `capture_evidence.py entry` records what
+the node must not author and refuses a draft that fails; `check_evidence.py --entries
+.allforai/compile-verify --node <node_id>` re-checks every entry against the tree at gate time.
+**The gate is not passed while any entry is refused, or while the file is missing or empty.**
+
+- `medium` is `build`; `verdict` is `done` (the build succeeded), `gap` (it failed — a failed build
+  is an entry, never an omission) or `unprovable` (no toolchain in this environment). No
+  `served_by`: a build has no request destination.
+- `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest +
+  artifact digest), with `.allforai`, `.claude`, `.codex` outside it; the build's own output
+  directory (`dist/`, `build/`, the `.apk`) is named in `build_artifacts` so it enters the identity.
+- `probed_at` carries a timezone offset.
+- `evidence.dir` is a non-empty directory under `.allforai/compile-verify/evidence/`, relative to
+  the run directory, holding the `capture_evidence/v1` record of the real build command — its
+  captured output is what makes the entry admissible; a directory holding only images is refused
+  (`机械门证据无输出文件`).
+- `author` is `{pipeline: "meta-skill/run", node_id, capability: "compile-verify"}`, written by
+  `capture_evidence.py`, never by hand.
