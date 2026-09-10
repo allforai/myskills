@@ -17,7 +17,11 @@ Tree: main @ 3b195f19
 | 7 | 完成检查和执行就绪结果消费这些失效状态，过期证据不能继续证明相关任务完成；本票可通过单独改动输入并重跑检查演示。 | `tests/unit/test_freshness_downgrade.py::test_removing_source_inputs_from_a_published_completed_node_cannot_admit_stale_evidence` | PASS (2 passed in 1.59s) |
 | | | `tests/unit/test_freshness_downgrade.py::test_corrupt_or_unknown_freshness_record_fails_closed_for_every_node` | PASS (12 passed in 11.31s) |
 | 8 | 复用现有 workflow reconciliation、artifact gate 与 readiness 边界；测试源码单点变化、基准变化、不同 dirty 快照、依赖传播、无关保留及重复检查，Claude／Codex 一致。 | `python3 -m pytest -q tests/unit/test_evidence_freshness.py -k "claude or codex" -v` (file is `host`-parametrized; every test above ran under both) | PASS (32 passed in 8.76s) |
+| 9 | 补齐 SG01：观察输入 A 后、证据发布前改成 B，拒绝拿 A 证明 B；实际重新验证 B 后才有效，稳定输入可收敛。 | `claude/meta-skill/tests/unit/test_evidence_freshness.py::test_observe_a_change_b_rejects_publication_until_b_is_reverified`; `test_freeze_idempotence.py::test_identical_product_refreeze_converges_without_new_journal_version_or_replan` | PASS (2 passed — first cited test; all cited tests run and passed) |
+| 10 | 继续依赖 #10 的已确认基准合同；不为制造并发移除真实生产者依赖。额外按需读取若形成实际输入依赖，应记录并参与失效，不能仅靠初始声明漏判。 | `claude/meta-skill/tests/unit/test_evidence_freshness.py::test_baseline_and_additional_reads_invalidate_without_generated_self_loop`; `::test_glob_membership_and_missing_dependency_declarations_are_not_zero_impact` | PASS (2 passed — first cited test; all cited tests run and passed) |
+| 11 | Claude 与 Codex 的实际入口和生成产物消费同一权威规则；脚本测试不冒充真实宿主测试。 | **none by pytest** — requires real Claude and Codex host runs from a clean context (same condition as #15–#18); pytest parity runs are regression reference only | AWAITS HOST RUN |
+| 12 | 基于同步后的当前候选重新验证；历史通过报告仅供回归参考，不直接证明新版本完成。 | **none by pytest** — requires real Claude and Codex host runs from a clean context (same condition as #15–#18); pytest parity runs are regression reference only | AWAITS HOST RUN |
 
 Note: each single-test invocation above selected 2 items (the file's `host` parametrization runs every test under both `claude` and `codex`), except `test_corrupt_or_unknown_freshness_record_fails_closed_for_every_node` (12 items — additionally parametrized per node) and `test_identical_product_refreeze_converges_without_new_journal_version_or_replan` (4 items). All selected items passed in every run.
 
-Verdict: CLOSE
+Verdict: KEEP OPEN (criteria 11, 12 await real Claude + Codex host runs; all pytest-provable criteria PASS)
