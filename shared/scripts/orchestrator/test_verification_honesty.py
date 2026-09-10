@@ -112,6 +112,32 @@ class TestComputeCompleteness(unittest.TestCase):
         r = compute_completeness(wf)
         self.assertEqual(r["critical_unverified"], ["crit"])
 
+    def test_mock_layer_is_refused_in_cross_exams_words(self):
+        # ADR-0008: the hollow judgement is cross-exam's; the machine-detectable part stays.
+        with tempfile.TemporaryDirectory() as d:
+            _capture(os.path.join(d, "ev.json"))
+            v = dict(_verif(evidence_path="ev.json"),
+                     served_by={"host": "localhost:3000", "process": "node", "mock_layers": ["msw"]})
+            wf = {"nodes": [{"node_id": "a"}], "transition_log": [{"node": "a", "status": "completed", "verification": v}]}
+            r = compute_completeness(wf, base_dir=d)
+            self.assertEqual((r["verified"], r["unverified"]), (0, 1))
+            self.assertEqual(r["refused"], [{"node_id": "a", "reason": "经 mock 层（msw）的 runtime 不能判 done"}])
+
+    def test_response_identical_to_fixture_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            _touch(os.path.join(d, "orders.fixture.json"), '{"orders": []}')
+            import json
+            with open(os.path.join(d, "ev.json"), "w") as f:
+                json.dump({"schema": "capture_evidence/v1", "command": ["curl"], "exit_code": 0,
+                           "stdout": '{"orders": []}\n', "stdout_sha256": "abc"}, f)
+            v = dict(_verif(method="real-api", evidence_path="ev.json"),
+                     served_by={"host": "localhost", "process": "node", "mock_layers": [],
+                                "fixtures": ["orders.fixture.json"]})
+            wf = {"nodes": [{"node_id": "a"}], "transition_log": [{"node": "a", "status": "completed", "verification": v}]}
+            r = compute_completeness(wf, base_dir=d)
+            self.assertEqual(r["by_node"][0]["reason"], "响应与 fixture 一致（orders.fixture.json）的 runtime 不能判 done")
+            self.assertEqual(r["verified"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

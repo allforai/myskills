@@ -257,6 +257,9 @@ never waive, downgrade, or hide a gap.
       `.allforai/bootstrap/completeness-report.json`. **Report the two-column result as the
       headline: VERIFIED (真验过) % vs unverified (只生成没验) %.** Never present "completed
       node count" as completeness — a node without real evidence is `unverified`, never counted.
+      An entry served through a mock layer or answering with a canned fixture is refused in
+      cross-exam's words (`refused[]` in the report) and read as `unverified`; whether a green
+      feature is hollow beyond that is `/cross-exam`'s to judge, after the pipeline (ADR-0008).
    b. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_evidence.py <base>` to list any
       false "verified" claims (evidence missing / self-graded) — these are downgraded.
    c. **Launch gate:** if `completeness-report.json.critical_unverified` is non-empty, the product

@@ -125,6 +125,24 @@ def _read_node_spec(path: str) -> tuple:
 
 REFERENCE_FIELDS = ("consumers", "hard_blocked_by", "unlocks", "alignment_refs")
 
+# Capabilities that left /run. A workflow or node-spec generated before retirement is
+# refused by name here rather than silently skipped or resolved against a missing file.
+RETIRED_CAPABILITIES = {
+    "hollowness-detector": (
+        "the hollow verdict is cross-exam's, made after the pipeline by a party that did not "
+        "write the code (ADR-0008); its machine-detectable patterns — a mock layer in served_by, "
+        "a response identical to a canned fixture — are refusals in compute_completeness and "
+        "the evidence-entry gate. Remove the node; run /cross-exam after /run instead"
+    ),
+}
+
+
+def _retired_capability_error(node_id: str, capability) -> str:
+    reason = RETIRED_CAPABILITIES.get(capability)
+    if not reason:
+        return ""
+    return f"{node_id} names retired capability '{capability}': {reason}"
+
 
 NODE_SPEC_REQUIRED_ATTENTION_TERMS = (
     "## Attention Contract",
@@ -557,6 +575,8 @@ def validate_workflow(wf_path: str) -> list:
             errors.append(f"workflow.json: {nid} missing 'capability'")
         elif not isinstance(node["capability"], str) or not node["capability"]:
             errors.append(f"workflow.json: {nid} 'capability' must be a non-empty string")
+        elif _retired_capability_error(nid, node["capability"]):
+            errors.append(f"workflow.json: {_retired_capability_error(nid, node['capability'])}")
         if "exit_artifacts" not in node:
             errors.append(f"workflow.json: {nid} missing 'exit_artifacts'")
         elif not isinstance(node["exit_artifacts"], list):
@@ -2036,6 +2056,9 @@ def validate_node_spec(path: str) -> list:
         errors.append("frontmatter missing 'node_id' field")
     if "node" in data:
         errors.append("frontmatter forbidden legacy 'node' field; use 'node_id'")
+    retired = _retired_capability_error(str(data.get("node_id", "node-spec")), data.get("capability"))
+    if retired:
+        errors.append(f"frontmatter {retired}")
     for term in NODE_SPEC_REQUIRED_ATTENTION_TERMS:
         if term not in text:
             errors.append(f"missing attention contract term {term!r}")
