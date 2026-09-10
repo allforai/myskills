@@ -212,3 +212,21 @@ def test_entry_reason_reads_the_engine_from_the_scripts_directory(project):
     assert entry_reason(entry, project / RUN, project) == ""
     assert entry_reason({**entry, "medium": "oral"}, project / RUN, project) == "非法介质: oral"
     assert entry_reason({**entry, "readback": {"theme": ""}}, project / RUN, project) == "theme 轴缺应用内读回值"
+
+
+def test_test_layer_entries_are_mechanical_gates(project):
+    """A suite run is a mechanical gate (medium test): admitted on its captured output alone, no served_by,
+    so a later /cross-exam admits it as a gate instead of rerunning the suite. A UI path stays runtime."""
+    run = project / RUN
+    (run / "evidence" / NODE / "q05").mkdir(parents=True)
+    (run / "evidence" / NODE / "q05" / "pytest.log").write_text("42 passed in 1.2s\n")
+    gate = {"q": "R2 单元层在真实目标上达标吗？", "facet": "F1", "medium": "test", "verdict": "done",
+            "evidence": {"dir": "evidence/%s/q05/" % NODE, "key_observation": "42 passed"}}
+    entry, reason = write_entry(run, gate, project, NODE, "test-verify")
+    assert reason == "", reason
+    assert entry["medium"] == "test" and "served_by" not in entry
+    (run / "evidence" / NODE / "q06").mkdir(parents=True)
+    (run / "evidence" / NODE / "q06" / "coverage.png").write_bytes(b"\x89PNG")   # a picture is not a captured output
+    bare = {**gate, "evidence": {"dir": "evidence/%s/q06/" % NODE, "key_observation": "x"}}
+    _, reason = write_entry(run, bare, project, NODE, "test-verify")
+    assert "机械门证据无输出文件" in reason

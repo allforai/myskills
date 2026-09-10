@@ -163,10 +163,14 @@ the node must not author and refuses a draft that fails; `check_evidence.py --en
 .allforai/test-verify --node <node_id>` re-checks every entry against the tree at gate time.
 **`verdict` cannot be `pass` while any entry is refused, or while the file is missing or empty.**
 
-- `medium` is `runtime`; `verdict` is `done` (the layer met its threshold against the real
-  target), `gap` (it did not), or `unprovable` — a suite whose harness mocks the path under test
-  proves the suite passes, not that the product works, and is recorded as `unprovable` with the
-  passing capture as evidence. `pass_rate` stays in the report; it is not a verdict.
+- `medium` is `test` for a layer run (R2 / R3 / R4 for a module): a suite run is a mechanical gate,
+  admitted on its captured output alone, and a later `/cross-exam` admits it as a gate instead of
+  rerunning the suite (ADR-0008). `medium` is `runtime` for a UI automation path with screenshots;
+  cross-exam treats those as context and probes the surface itself. `verdict` is `done` (the layer
+  met its threshold against the real target), `gap` (it did not), or `unprovable` — a suite whose
+  harness mocks the path under test proves the suite passes, not that the product works, and is
+  recorded as `unprovable` with the passing capture as evidence. `pass_rate` stays in the report;
+  it is not a verdict.
 - `build` is the whole-tree identity from the engine (commit + working-tree snapshot digest +
   artifact digest), computed with `.allforai`, `.claude`, `.codex` outside it (`build_excludes` on the
   entry records exactly that scope; any other scope is refused). It must be the identity of the
@@ -178,7 +182,7 @@ the node must not author and refuses a draft that fails; `check_evidence.py --en
   `capture_evidence/v1` record of the real command, never a pasted summary — and, for UI
   automation, a screenshot for every state asked for (`states_to_capture`);
   `evidence.key_observation` gives passed / failed counts and the first failure.
-- `served_by` names where the exercised code's requests went: `host`, `process` (the dev server,
+- `served_by` (runtime entries; a `test` entry carries none) names where the exercised code's requests went: `host`, `process` (the dev server,
   emulator or launched binary the tests drove; the runner alone is not a destination) and the mock
   layers **in effect** in the harness — MSW registered, a mocked client, nock, an in-memory DB
   (`mock_layers`, `[]` when none). Through a mock layer an entry may be `gap` or `unprovable`,
