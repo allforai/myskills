@@ -327,6 +327,31 @@ def _assign_gap_ids(plain):
             e["gap_id"] = f"G{n}"
 
 
+STEP_FAILURE_STATUSES = ("stuck", "could_not")
+
+
+def _step_verdict_reason(e):
+    """一条旅程判 done，它自己的 steps 里就不能有 stuck / could_not。
+
+    实测官返回的逐步 status 是它当场的观察；把 entry 改成 done 而不动这些 status，
+    裁决就跑在了证据前面。这一层只看 entry 自身，不需要 transcript。"""
+    if not e.get("journey") or e.get("verdict") != "done":
+        return ""
+    steps = e.get("steps")
+    if steps is None:
+        return ""
+    if not isinstance(steps, list):
+        return "旅程 steps 须是列表"
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict):
+            return f"旅程 steps 第 {index + 1} 项不是对象"
+        status = step.get("status")
+        if status in STEP_FAILURE_STATUSES:
+            return (f"旅程判 done，但第 {step.get('n', index + 1)} 步实测官报 {status}"
+                    f"（{step.get('action', '')}）：裁决不能跑在自己的证据前面")
+    return ""
+
+
 def _refusal_reason(e, journey_ids):
     verdict = e.get("verdict")
     if verdict not in VERDICT_LABELS:
@@ -337,6 +362,9 @@ def _refusal_reason(e, journey_ids):
         return f"非法卡死类型：{e.get('stuck_kind')}"
     if e.get("journey") and verdict == "drift" and not e.get("missed_waypoints"):
         return "缺 missed_waypoints"
+    step_reason = _step_verdict_reason(e)
+    if step_reason:
+        return step_reason
     return None
 
 
