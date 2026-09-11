@@ -120,11 +120,65 @@ def _has_evidence(entry, run_dir):
     return not _engine.evidence_dir(entry, run_dir)[1]
 
 
+def _prober_steps(body):
+    """实测官返回的 JSON 里的 steps；transcript 里没有可解析的就返回 None。
+
+    自检那条规则只写在 prompt 里（「只改格式与措辞，不改任何 status」），没人核。
+    这里把实测官当场返回的 steps 找出来，供台账比对。transcript 允许出现多份（重试、
+    自检后重发），以最后一份为准——那是它最终交出的东西。"""
+    last = None
+    for match in re.finditer(r'\{[^{}]*"steps"\s*:\s*\[', body):
+        start = match.start()
+        depth = 0
+        for index in range(start, len(body)):
+            if body[index] == '{':
+                depth += 1
+            elif body[index] == '}':
+                depth -= 1
+                if depth == 0:
+                    try:
+                        candidate = json.loads(body[start:index + 1])
+                    except ValueError:
+                        break
+                    if isinstance(candidate.get("steps"), list):
+                        last = candidate["steps"]
+                    break
+    return last
+
+
+def _prober_agreement_reason(e, body):
+    """台账的逐步 status 必须和实测官返回的一致。实测官没返回可解析的 JSON 就不比——
+    缺证不定罪。"""
+    if not e.get("journey"):
+        return ""
+    reported = _prober_steps(body)
+    if reported is None:
+        return ""
+    ledger = e.get("steps")
+    if not isinstance(ledger, list):
+        return ""
+    by_n = {}
+    for step in reported:
+        if isinstance(step, dict) and step.get("n") is not None:
+            by_n[str(step["n"])] = step.get("status")
+    for index, step in enumerate(ledger):
+        if not isinstance(step, dict):
+            continue
+        key = str(step.get("n", index + 1))
+        if key not in by_n:
+            continue
+        if step.get("status") != by_n[key]:
+            return (f"第 {key} 步台账记 {step.get('status')}，实测官返回的是 {by_n[key]}："
+                    f"自检只改格式与措辞，不改 status")
+    return ""
+
+
 def _transcript_reason(e, run_dir):
     """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
     证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
     逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。
-    名字过了关再核探测窗口（引擎的 probe_window_reason）：目录被提过一次，之后再往里塞的文件不能算实测官写的。"""
+    名字过了关再核 steps[] 与实测官返回的是否一致，最后核探测窗口（引擎的 probe_window_reason）：
+    目录被提过一次，之后再往里塞的文件不能算实测官写的。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -141,6 +195,9 @@ def _transcript_reason(e, run_dir):
         d = d[2:] if d.startswith("./") else d
         if not (d and d in body):
             return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
+    agreement = _prober_agreement_reason(e, body)
+    if agreement:
+        return agreement
     return _engine.probe_window_reason(e, files, p, read_mtime=_mtime)
 
 
