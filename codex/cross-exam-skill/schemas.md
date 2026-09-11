@@ -195,6 +195,10 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   旅程的实证 entry 带 `journey: "J1"` 与 `steps[]`；`facet` 仍必填（写旅程主要触及的面），`leak_point`
   可省（旅程不挂泄漏点）。`steps[]` 每步 `{n, action, observed, status: done|stuck|could_not,
   evidence}`，`evidence` 是该 entry `evidence.dir` 下的文件名），web 目标另带 `terminal_state: {url, snapshot}`。
+  旅程判 `done` 时 `steps[]` 里不能有 `stuck` / `could_not`，渲染器拒渲并点名那一步——
+  裁决不能跑在自己的证据前面。`agent_task.output_file` 在盘时，渲染器另把实测官返回的
+  `steps[]` 解析出来与台账逐步比对，status 不一致拒渲：实测官的自检只改格式与措辞，
+  不改 status（prober.md）。transcript 里没有可解析的实测官 JSON 就不比——缺证不定罪。
   旅程 `gap` 必填 `stuck_kind` ∈ `no_entry`（无入口）| `not_found`（找不到）| `misleading`（误导）|
   `no_feedback`（无反馈）| `no_recovery`（无恢复路径）| `broken`（系统报错）；旅程 `drift` 必填
   `missed_waypoints[]`。
