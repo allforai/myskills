@@ -120,11 +120,65 @@ def _has_evidence(entry, run_dir):
     return not _engine.evidence_dir(entry, run_dir)[1]
 
 
+def _prober_steps(body):
+    """实测官返回的 JSON 里的 steps；transcript 里没有可解析的就返回 None。
+
+    自检那条规则只写在 prompt 里（「只改格式与措辞，不改任何 status」），没人核。
+    这里把实测官当场返回的 steps 找出来，供台账比对。transcript 允许出现多份（重试、
+    自检后重发），以最后一份为准——那是它最终交出的东西。"""
+    last = None
+    for match in re.finditer(r'\{[^{}]*"steps"\s*:\s*\[', body):
+        start = match.start()
+        depth = 0
+        for index in range(start, len(body)):
+            if body[index] == '{':
+                depth += 1
+            elif body[index] == '}':
+                depth -= 1
+                if depth == 0:
+                    try:
+                        candidate = json.loads(body[start:index + 1])
+                    except ValueError:
+                        break
+                    if isinstance(candidate.get("steps"), list):
+                        last = candidate["steps"]
+                    break
+    return last
+
+
+def _prober_agreement_reason(e, body):
+    """台账的逐步 status 必须和实测官返回的一致。实测官没返回可解析的 JSON 就不比——
+    缺证不定罪。"""
+    if not e.get("journey"):
+        return ""
+    reported = _prober_steps(body)
+    if reported is None:
+        return ""
+    ledger = e.get("steps")
+    if not isinstance(ledger, list):
+        return ""
+    by_n = {}
+    for step in reported:
+        if isinstance(step, dict) and step.get("n") is not None:
+            by_n[str(step["n"])] = step.get("status")
+    for index, step in enumerate(ledger):
+        if not isinstance(step, dict):
+            continue
+        key = str(step.get("n", index + 1))
+        if key not in by_n:
+            continue
+        if step.get("status") != by_n[key]:
+            return (f"第 {key} 步台账记 {step.get('status')}，实测官返回的是 {by_n[key]}："
+                    f"自检只改格式与措辞，不改 status")
+    return ""
+
+
 def _transcript_reason(e, run_dir):
     """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
     证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
     逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。
-    名字对上之后再核探测窗口（见 _window_sentence）：提过目录不等于目录里后来加的文件也是实测官写的。"""
+    名字过了关再核 steps[] 与实测官返回的是否一致，最后核探测窗口（见 _window_sentence）：
+    提过目录不等于目录里后来加的文件也是实测官写的。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -140,6 +194,9 @@ def _transcript_reason(e, run_dir):
     d = d[2:] if d.startswith("./") else d
     if absent and not (d and d in body):
         return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
+    agreement = _prober_agreement_reason(e, body)
+    if agreement:
+        return agreement
     return _window_sentence(e, files, p)
 
 
@@ -347,6 +404,31 @@ def _assign_gap_ids(plain):
             e["gap_id"] = f"G{n}"
 
 
+STEP_FAILURE_STATUSES = ("stuck", "could_not")
+
+
+def _step_verdict_reason(e):
+    """一条旅程判 done，它自己的 steps 里就不能有 stuck / could_not。
+
+    实测官返回的逐步 status 是它当场的观察；把 entry 改成 done 而不动这些 status，
+    裁决就跑在了证据前面。这一层只看 entry 自身，不需要 transcript。"""
+    if not e.get("journey") or e.get("verdict") != "done":
+        return ""
+    steps = e.get("steps")
+    if steps is None:
+        return ""
+    if not isinstance(steps, list):
+        return "旅程 steps 须是列表"
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict):
+            return f"旅程 steps 第 {index + 1} 项不是对象"
+        status = step.get("status")
+        if status in STEP_FAILURE_STATUSES:
+            return (f"旅程判 done，但第 {step.get('n', index + 1)} 步实测官报 {status}"
+                    f"（{step.get('action', '')}）：裁决不能跑在自己的证据前面")
+    return ""
+
+
 def _refusal_reason(e, journey_ids):
     verdict = e.get("verdict")
     if verdict not in VERDICT_LABELS:
@@ -357,6 +439,9 @@ def _refusal_reason(e, journey_ids):
         return f"非法卡死类型：{e.get('stuck_kind')}"
     if e.get("journey") and verdict == "drift" and not e.get("missed_waypoints"):
         return "缺 missed_waypoints"
+    step_reason = _step_verdict_reason(e)
+    if step_reason:
+        return step_reason
     if verdict in ("gap", "drift") and e.get("severity") not in SEVERITY_ORDER:
         return f"非法严重度：{e.get('severity')}"
     return None

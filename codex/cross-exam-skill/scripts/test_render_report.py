@@ -1329,3 +1329,83 @@ class TestAuthorEvidence(unittest.TestCase):
             ledger["ledger_version"] = 2
             (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
             self.assertIn("测试套件在真后端下过吗？（不是 git 仓库或没有提交: ", render(run))
+
+
+class TestStepVerdict(unittest.TestCase):
+    """A journey judged done cannot contain a step its own prober marked stuck or could_not."""
+
+    def _journey_entry(self, verdict, statuses):
+        e = _entry("旅程能走通吗？", verdict=verdict)
+        e["journey"] = "J1"
+        e["steps"] = [{"n": i + 1, "action": f"第 {i+1} 步", "observed": "…",
+                       "status": s, "evidence": "q01-01.png"} for i, s in enumerate(statuses)]
+        if verdict == "gap":
+            e["stuck_kind"] = "blocked"
+        return e
+
+    def test_done_with_a_stuck_step_is_refused_naming_the_step(self):
+        reason = render_report._step_verdict_reason(self._journey_entry("done", ["done", "stuck"]))
+        self.assertIn("第 2 步", reason)
+        self.assertIn("stuck", reason)
+
+    def test_done_with_a_could_not_step_is_refused(self):
+        reason = render_report._step_verdict_reason(self._journey_entry("done", ["could_not"]))
+        self.assertIn("could_not", reason)
+
+    def test_done_with_every_step_done_passes(self):
+        self.assertEqual(render_report._step_verdict_reason(self._journey_entry("done", ["done", "done"])), "")
+
+    def test_a_gap_may_carry_a_stuck_step(self):
+        self.assertEqual(render_report._step_verdict_reason(self._journey_entry("gap", ["done", "stuck"])), "")
+
+    def test_a_non_journey_entry_is_untouched(self):
+        e = _entry("普通问题"); e["verdict"] = "done"
+        self.assertEqual(render_report._step_verdict_reason(e), "")
+
+    def test_a_malformed_steps_list_is_a_reason_not_a_crash(self):
+        e = self._journey_entry("done", ["done"]); e["steps"] = "not a list"
+        self.assertIsInstance(render_report._step_verdict_reason(e), str)
+        e2 = self._journey_entry("done", ["done"]); e2["steps"] = [{"n": 1}, None]
+        self.assertIsInstance(render_report._step_verdict_reason(e2), str)
+
+
+class TestProberAgreement(unittest.TestCase):
+    """The ledger may not report a step status the prober did not report."""
+
+    PROBER_JSON = json.dumps({
+        "steps_taken": ["打开页面"],
+        "could_not": [],
+        "steps": [{"n": 1, "action": "登录", "observed": "进了", "status": "done", "evidence": "a.png"},
+                  {"n": 2, "action": "下单", "observed": "卡在支付", "status": "stuck", "evidence": "b.png"}],
+    }, ensure_ascii=False)
+
+    def _entry_with(self, statuses):
+        e = _entry("旅程能走通吗？", verdict="done")
+        e["journey"] = "J1"
+        e["steps"] = [{"n": i + 1, "action": "x", "observed": "y", "status": s, "evidence": "a.png"}
+                      for i, s in enumerate(statuses)]
+        return e
+
+    def test_a_status_the_prober_never_reported_is_refused(self):
+        body = "前言\n" + self.PROBER_JSON + "\n收尾"
+        reason = render_report._prober_agreement_reason(self._entry_with(["done", "done"]), body)
+        self.assertIn("第 2 步", reason)
+        self.assertIn("stuck", reason)
+
+    def test_matching_statuses_pass(self):
+        body = self.PROBER_JSON
+        self.assertEqual(render_report._prober_agreement_reason(self._entry_with(["done", "stuck"]), body), "")
+
+    def test_a_transcript_without_prober_json_is_not_a_refusal(self):
+        self.assertIsNone(render_report._prober_steps("实测官只写了散文，没有 JSON"))
+        self.assertEqual(render_report._prober_agreement_reason(self._entry_with(["done"]), "散文"), "")
+
+    def test_the_last_prober_json_wins_when_the_transcript_has_several(self):
+        early = json.dumps({"steps": [{"n": 1, "status": "stuck"}]}, ensure_ascii=False)
+        late = json.dumps({"steps": [{"n": 1, "status": "done"}]}, ensure_ascii=False)
+        steps = render_report._prober_steps(early + "\n改完再返回\n" + late)
+        self.assertEqual(steps[0]["status"], "done")
+
+    def test_malformed_prober_json_is_ignored_not_fatal(self):
+        self.assertIsNone(render_report._prober_steps('{"steps": [ oops'))
+        self.assertEqual(render_report._prober_agreement_reason(self._entry_with(["done"]), '{"steps": [ oops'), "")
