@@ -29,3 +29,57 @@ def test_worker_done_stops_the_loop_and_is_acked():
 def test_escalation_is_recorded_and_left_to_the_operator():
     delivery = {"type": "escalation", "message_id": "m3", "delivery_id": "d3", "subject": "Blocked: no git"}
     assert next_action(delivery, {"turns": []}, used=0) == {"kind": "escalation", "message_id": "m3", "ack": None, "used": 0, "snapshot_before": True}
+
+
+def test_a_delivery_is_a_batch_of_messages_acked_once():
+    """Orca returns result.messages[] with a single result.deliveryId. Each message gets its own
+    decision; the batch is acked once, after the batch is processed."""
+    from answer_loop import plan_batch
+    result = {"deliveryId": "d7", "messages": [
+        {"type": "heartbeat", "id": "m1"},
+        {"type": "question", "id": "m2", "body": "Which columns?"},
+    ]}
+    acts, used, done = plan_batch(result, {"turns": ["id, status, total."]}, used=0)
+    assert [a["kind"] for a in acts] == ["ignore", "reply"]
+    assert acts[1]["message_id"] == "m2" and acts[1]["body"] == "id, status, total."
+    assert used == 1 and done is False
+
+
+def test_worker_done_inside_a_batch_ends_the_loop():
+    from answer_loop import plan_batch
+    result = {"deliveryId": "d8", "messages": [{"type": "worker_done", "id": "m3", "outcome": "succeeded"}]}
+    acts, used, done = plan_batch(result, {"turns": []}, used=0)
+    assert done is True and acts[0]["kind"] == "done"
+
+
+# The three real questions the T15/claude/missing-product-docs pilot asked, verbatim first lines.
+PRODUCT_Q = {"type": "question", "id": "mp", "body": "Bootstrap Phase A — one decision, then the plan delta.\n\n决策 orders-csv-export-route（消费节点：implement-orders-csv-export）", "payload": "{}"}
+GATE_CONFIRM = {"type": "question", "id": "mg1", "body": "Bootstrap Step 3.4 — plan confirmation.\n\n项目：retail-sphere\n确认这个节点集和依赖边正确吗？", "payload": '{"options":["confirm","change it"]}'}
+GATE_DELTA = {"type": "question", "id": "mg2", "body": "Bootstrap Phase A — 计划 delta，需要你确认后才能执行。\n\n确认这个 delta 吗？", "payload": '{"options":["confirm","reject"]}'}
+
+
+def test_a_plan_gate_question_takes_an_operational_answer_not_a_scripted_turn():
+    """The private file authorises operational answers for gates: they approve no product topic."""
+    from answer_loop import next_action
+    for q in (GATE_CONFIRM, GATE_DELTA):
+        act = next_action(q, {"turns": ["A PRODUCT ANSWER THAT MUST NOT BE SPENT HERE"]}, used=0)
+        assert act["kind"] == "reply" and act["body"] == "confirm", q["id"]
+        assert act["used"] == 0, "a gate answer must not consume a scripted product turn"
+        assert act["operational"] is True
+
+
+def test_a_product_question_still_consumes_the_next_scripted_turn():
+    from answer_loop import next_action
+    act = next_action(PRODUCT_Q, {"turns": ["Only the signed-in merchant's orders."]}, used=0)
+    assert act["kind"] == "reply" and act["used"] == 1
+    assert act["body"] == "Only the signed-in merchant's orders."
+    assert act.get("operational") is not True
+
+
+def test_a_confirm_option_without_a_plan_marker_is_not_auto_confirmed():
+    """Fail toward the coordinator: an unfamiliar confirm-shaped question is a product question."""
+    from answer_loop import next_action
+    q = {"type": "question", "id": "mx", "body": "Should we charge merchants a subscription fee?",
+         "payload": '{"options":["confirm","reject"]}'}
+    act = next_action(q, {"turns": []}, used=0)
+    assert act["kind"] == "pending", act
