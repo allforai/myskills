@@ -196,13 +196,19 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   每步 `status` 只能是 `done` / `stuck` / `could_not` 之一，`"Stuck"` / `"STUCK"` 这种大小写花招
   一律拒渲并点名那一步与坏值（不是漏网的 stuck）；旅程判 `done` 时 `steps[]` 里不能有
   `stuck` / `could_not`，渲染器拒渲并点名那一步——裁决不能跑在自己的证据前面。
-  `agent_task.output_file` 在盘时，渲染器把实测官当场返回的 `steps[]` 解析出来（transcript
-  多份自检重发以最后一份为准），当作**台账必须兜底的下限**：实测官报过的每个 `n`，台账
-  `steps[]` 里都要能找到对应条目——删条目、清空数组、把 `n` 改到不存在的号，都不能让报过的
-  步骤在台账里消失，缺一个就拒渲并点名缺的 `n`；entry 没挂 `journey` 却收到了带 `steps` 的
-  实测官返回，同样拒渲并点名——journey 的其它检查全靠 `journey` 字段才会跑，删掉它不能当作
-  这条旅程没测过。两边都有的 `n`，status 要对得上，不一致拒渲：实测官的自检只改格式与措辞，
-  不改 status（prober.md）。transcript 里没有可解析的实测官 JSON 就不比——缺证不定罪。
+  `agent_task.output_file` 在盘时，渲染器把实测官当场返回的每一份可解析 `steps[]` 都收进来
+  取**并集**（不是以最后一份为准）：按 `n` 转字符串为键；同一份报告里缺 `n` 的步骤按它在这份
+  报告里的 1-based 序号定位；两份报告在同一个键上给出不同 status 时，留下失败的那份——
+  `stuck` / `could_not` 盖过 `done`，无论哪份先到（自检只能改格式与措辞，不能把一个失败读数
+  洗白成 done）。并出来的这份映射是**台账必须兜底的下限**：实测官报过的每个键，台账 `steps[]`
+  里都要能找到对应条目——删条目、清空数组、发一份更短的自检重发漏掉某一步、把 `n` 改到不存在
+  的号，都不能让报过的步骤在台账里消失，缺一个就拒渲并点名缺的键。台账**声明了旅程**
+  （`journeys[].entry_q` 精确等于这条 entry 的 `q`）却没挂 `journey` 字段，但 transcript 里
+  收到了带 `steps` 的实测官返回，同样拒渲并点名——journey 的其它检查全靠 `journey` 字段才会
+  跑，删掉它不能当作这条旅程没测过；没有声明旅程认领这条 entry 时，transcript 里凑巧出现
+  steps 形状的 JSON（贴的示例、不相关的工具日志）什么都不证明，不拒渲。两边都有的键，status
+  要对得上，不一致拒渲：实测官的自检只改格式与措辞，不改 status（prober.md）。transcript 里
+  一份可解析的实测官 JSON 都没有才不比——缺证不定罪。
   旅程 `gap` 必填 `stuck_kind` ∈ `no_entry`（无入口）| `not_found`（找不到）| `misleading`（误导）|
   `no_feedback`（无反馈）| `no_recovery`（无恢复路径）| `broken`（系统报错）；旅程 `drift` 必填
   `missed_waypoints[]`。
