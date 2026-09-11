@@ -120,13 +120,24 @@ def _has_evidence(entry, run_dir):
     return not _engine.evidence_dir(entry, run_dir)[1]
 
 
-def _prober_steps(body):
-    """实测官返回的 JSON 里的 steps；transcript 里没有可解析的就返回 None。
+def _status_rank(status):
+    """done 排 0，其它（stuck / could_not / 任何坏值）排 1——合并时只在乎"这是不是一个失败读数"，
+    失败读数永远不被 done 盖过，不管哪份报告先到。"""
+    return 0 if status == "done" else 1
 
-    自检那条规则只写在 prompt 里（「只改格式与措辞，不改任何 status」），没人核。
-    这里把实测官当场返回的 steps 找出来，供台账比对。transcript 允许出现多份（重试、
-    自检后重发），以最后一份为准——那是它最终交出的东西。"""
-    last = None
+
+def _prober_steps(body):
+    """实测官在 transcript 里当场返回的 steps，合并成台账必须兜底的下限；一份都解析不出来就
+    返回 None（缺证不定罪）。
+
+    自检那条规则只写在 prompt 里（「只改格式与措辞，不改任何 status，不删 could_not」），没人核。
+    transcript 允许出现多份（重试、自检后重发），这里把每一份能解析出 `steps` 列表的 JSON 都收
+    进来取**并集**——不是以最后一份为准：自检重发一旦更短（漏了一步、把 steps 清空成 []），旧版
+    "以最后一份为准"就会把已经报过的卡住步骤从下限里抹掉。按 `n` 转字符串为键；同一份报告里缺
+    `n` 的步骤按它在这份报告里的 1-based 序号定位（不是全局序号），不再被静默丢弹。两份报告在
+    同一个键上给出不同 status 时，留下失败的那份：`stuck` / `could_not` 盖过 `done`，无论谁先
+    到——自检只能改格式与措辞，不能把一个失败读数洗白成 done。"""
+    merged = None
     for match in re.finditer(r'\{[^{}]*"steps"\s*:\s*\[', body):
         start = match.start()
         depth = 0
@@ -141,50 +152,63 @@ def _prober_steps(body):
                     except ValueError:
                         break
                     if isinstance(candidate.get("steps"), list):
-                        last = candidate["steps"]
+                        if merged is None:
+                            merged = {}
+                        for position, step in enumerate(candidate["steps"], start=1):
+                            if not isinstance(step, dict):
+                                continue
+                            n = step.get("n")
+                            key = str(n) if n is not None else str(position)
+                            status = step.get("status")
+                            if key not in merged or _status_rank(status) > _status_rank(merged[key]):
+                                merged[key] = status
                     break
-    return last
+    return merged
 
 
-def _prober_agreement_reason(e, body):
-    """实测官报过的 steps 是台账必须兜底的下限：报了的每一步台账都得有对应条目，status 要对得上；
-    没报的这一层不管——缺证不定罪。实测官没返回可解析的 JSON 就不比。
+def _prober_agreement_reason(e, body, journeys=None):
+    """实测官报过的 steps（并集，见 `_prober_steps`）是台账必须兜底的下限：报了的每一步台账都得
+    有对应条目，status 要对得上；没报的这一层不管——缺证不定罪。实测官没返回可解析的 JSON 就不比。
 
-    报了 steps 却发现这条 entry 没挂 journey，说明台账把实测官走过的旅程丢了——journey 的其它
-    检查全靠 `e.get("journey")` 才会跑，删掉这个字段就把它们全部关掉，所以这一层不等 journey
-    存在就先比对 reported，缺了就点名，不放过"删 journey 字段"这条最省事的绕过。"""
+    报了 steps 却发现这条 entry 没挂 journey：只有当某条**声明的**旅程（`journeys[].entry_q`
+    精确等于这条 entry 的 `q`）本该落在这条 entry 上时，才说明台账把实测官走过的旅程丢了——
+    没有旅程声明认领这条 entry 时，transcript 里凑巧出现 steps 形状的 JSON（贴的示例、不相关
+    的工具日志）什么都不证明，不能拒渲。journey 的其它检查全靠 `e.get("journey")` 才会跑，删
+    掉这个字段就把它们全部关掉，所以真被声明认领时这一层不等 journey 存在就先比对 reported，
+    缺了就点名，不放过"删 journey 字段"这条最省事的绕过。"""
     reported = _prober_steps(body)
     if reported is None:
         return ""
     if not e.get("journey"):
+        entry_q = e.get("q")
+        claimed = any(j.get("entry_q") == entry_q for j in (journeys or []))
+        if not claimed:
+            return ""
         return "实测官返回了旅程 steps，但这条 entry 没有 journey：台账把实测官走过的旅程丢了"
     ledger = e.get("steps")
     ledger = ledger if isinstance(ledger, list) else []
-    by_n = {}
-    for step in reported:
-        if isinstance(step, dict) and step.get("n") is not None:
-            by_n[str(step["n"])] = step.get("status")
     ledger_by_n = {}
     for index, step in enumerate(ledger):
         if isinstance(step, dict):
             ledger_by_n[str(step.get("n", index + 1))] = step.get("status")
-    missing = [n for n in by_n if n not in ledger_by_n]
+    missing = [n for n in reported if n not in ledger_by_n]
     if missing:
         return ("实测官报了第 %s 步，台账 steps 里没有：删条目、清空数组、把 n 改到不存在的号，"
                 "都不能让报过的步骤在台账里消失" % "、".join(missing))
-    for n, status in by_n.items():
+    for n, status in reported.items():
         if ledger_by_n[n] != status:
             return (f"第 {n} 步台账记 {ledger_by_n[n]}，实测官返回的是 {status}："
                     f"自检只改格式与措辞，不改 status")
     return ""
 
 
-def _transcript_reason(e, run_dir):
+def _transcript_reason(e, run_dir, journeys=None):
     """实测官 transcript 核对：ledger 记了子 agent 的 output_file，transcript 就必须能证明证据是实测官写的——
     证据目录里每个文件名都出现在 transcript 里，或 transcript 提到过该证据目录（脚本循环生成的文件名不会
     逐个出现，但写入目录会）。两者都没有，拒渲。文件不在（换机器、临时目录已清）只标不可核，不拒渲。
     名字过了关再核 steps[] 与实测官返回的是否一致，最后核探测窗口（见 _window_sentence）：
-    提过目录不等于目录里后来加的文件也是实测官写的。"""
+    提过目录不等于目录里后来加的文件也是实测官写的。`journeys` 是 ledger 顶层声明——透传给
+    `_prober_agreement_reason` 判断"entry 没挂 journey"是否真的是被声明认领的旅程被丢了。"""
     task = e.get("agent_task") or {}
     out = task.get("output_file")
     if not out:
@@ -200,7 +224,7 @@ def _transcript_reason(e, run_dir):
     d = d[2:] if d.startswith("./") else d
     if absent and not (d and d in body):
         return "证据文件未出现在实测官 transcript，transcript 也未提及证据目录 %s：%s" % (d or "?", "、".join(absent))
-    agreement = _prober_agreement_reason(e, body)
+    agreement = _prober_agreement_reason(e, body, journeys)
     if agreement:
         return agreement
     return _window_sentence(e, files, p)
@@ -528,7 +552,7 @@ def render(run_dir):
         if not reason and not _has_evidence(e, run_dir):
             reason = "无证据目录"
         if not reason and ledger.get("ledger_version", 1) >= 2:
-            reason = _content_reason(e, run_dir) or _transcript_reason(e, run_dir)
+            reason = _content_reason(e, run_dir) or _transcript_reason(e, run_dir, journeys)
         if not reason:
             missing = _missing_step_files(e, run_dir)
             if missing:

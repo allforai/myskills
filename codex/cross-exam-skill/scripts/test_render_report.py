@@ -1400,11 +1400,15 @@ class TestProberAgreement(unittest.TestCase):
         self.assertIsNone(render_report._prober_steps("实测官只写了散文，没有 JSON"))
         self.assertEqual(render_report._prober_agreement_reason(self._entry_with(["done"]), "散文"), "")
 
-    def test_the_last_prober_json_wins_when_the_transcript_has_several(self):
+    def test_a_failing_status_pins_the_floor_even_when_a_later_report_says_done(self):
+        # #42 residual 3, bypass root cause: _prober_steps is now the UNION across every
+        # parsable report, not "the last one wins" — a self-check resend may only change
+        # format/wording, never soften a status, so a later "done" for the same n cannot
+        # erase an earlier "stuck". _prober_steps also now returns a dict keyed by n (str).
         early = json.dumps({"steps": [{"n": 1, "status": "stuck"}]}, ensure_ascii=False)
         late = json.dumps({"steps": [{"n": 1, "status": "done"}]}, ensure_ascii=False)
         steps = render_report._prober_steps(early + "\n改完再返回\n" + late)
-        self.assertEqual(steps[0]["status"], "done")
+        self.assertEqual(steps["1"], "stuck")
 
     def test_malformed_prober_json_is_ignored_not_fatal(self):
         self.assertIsNone(render_report._prober_steps('{"steps": [ oops'))
@@ -1506,6 +1510,109 @@ class TestProberFloor(unittest.TestCase):
             self.assertIn("实测官返回了旅程 steps", report)
             self.assertIn("没有 journey", report)
             self.assertIn("旅程裁决：实证完成：0", report)
+
+    def test_bypass_a_shrinking_self_check_to_empty_steps_still_pins_the_floor(self):
+        # #42 residual 3 second pass, bypass A: the LAST parsable JSON has `steps: []` (a
+        # self-check re-send with an emptied array). The floor is now the union across every
+        # parsable report in the transcript, so the earlier full report's stuck step still
+        # pins the floor even though the final report shrank to nothing.
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"},
+                {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "done", "evidence": "b.png"}])   # ledger falsely claims all-done
+            shrunk = json.dumps({"steps": []}, ensure_ascii=False)
+            body = self.PROBER_JSON + "\n自检重发，只改格式\n" + shrunk
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + body)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("第 2 步台账记 done，实测官返回的是 stuck", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_bypass_b_a_step_reported_without_n_is_keyed_by_position_not_dropped(self):
+        # #42 residual 3 second pass, bypass B: a reported step with no `n` field used to be
+        # silently dropped by the old `by_n` dict comprehension (`if step.get("n") is not
+        # None`). It is now keyed by its 1-based position within its own report instead.
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"},
+                {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "done", "evidence": "b.png"}])   # ledger falsely claims all-done
+            no_n = json.dumps({"steps": [
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品", "status": "done"},
+                {"action": "点击 确认支付", "observed": "按钮变灰后无变化", "status": "stuck"},
+            ]}, ensure_ascii=False)   # second step reported with no `n`
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + no_n)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("第 2 步台账记 done，实测官返回的是 stuck", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_bypass_f_a_shorter_self_check_resend_omitting_the_stuck_step_still_pins_it(self):
+        # #42 residual 3 second pass, bypass F: two parsable JSONs, the later one shorter (a
+        # self-check re-send that simply omits the stuck step). The union keeps the earlier
+        # report's entry for the n the later report left out.
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"},
+                {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "done", "evidence": "b.png"}])   # ledger falsely claims all-done
+            short = json.dumps({"steps": [{"n": 1, "status": "done"}]}, ensure_ascii=False)
+            body = self.PROBER_JSON + "\n自检后重发（只改格式，漏了第 2 步）\n" + short
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + body)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("第 2 步台账记 done，实测官返回的是 stuck", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_non_journey_entry_with_incidental_steps_shaped_json_is_not_refused(self):
+        # regression: the journey-drop check used to fire whenever the transcript merely
+        # contained steps-shaped JSON and the entry had no `journey` — even an ordinary,
+        # non-journey entry whose transcript happens to paste an unrelated steps-shaped
+        # example. It must now fire only when a DECLARED journey (journeys[].entry_q)
+        # actually claims this entry's q.
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _entry("普通问题（非旅程）", ev_dir="evidence/q9/")
+            e["medium"] = "runtime"
+            e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            transcript = Path(tmp) / "agent.output"
+            e["agent_task"] = {"output_file": str(transcript)}
+            run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
+            d = run / e["evidence"]["dir"]; d.mkdir(parents=True)
+            (d / "note.txt").write_text("outputs", encoding="utf-8")
+            transcript.write_text("Files written to evidence/q9/.\n" + self.PROBER_JSON, encoding="utf-8")
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            ledger["ledger_version"] = 2
+            for x in ledger["entries"]:
+                x.setdefault("probed_at", "2026-09-07T10:00:00+08:00")
+            ledger["journeys"] = [_journey(entry_q="别的旅程入口问题")]   # doesn't claim this entry
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            self.assertNotIn("违规裁决", report)
+            self.assertIn("普通问题（非旅程）", report)
+
+    def test_a_declared_journey_among_several_claiming_this_entry_without_journey_field_is_refused(self):
+        # the genuine drop must still be caught: journeys[].entry_q exactly matches this
+        # entry's q (among several declared journeys, only one of which matches), and the
+        # entry carries no `journey` field.
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"},
+                {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "stuck", "evidence": "b.png"}])   # truthful — isolates the drop path
+            del e["journey"]
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + self.PROBER_JSON)
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            ledger["journeys"] = [_journey(jid="J2", entry_q="别的问题"), _journey()]
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("实测官返回了旅程 steps", report)
+            self.assertIn("没有 journey", report)
 
     def test_route11_miscased_step_status_is_refused_with_no_transcript_at_all(self):
         # closes the combo the review named: casing defeats the exact-string comparison,
