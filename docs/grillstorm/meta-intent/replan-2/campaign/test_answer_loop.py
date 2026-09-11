@@ -83,3 +83,19 @@ def test_a_confirm_option_without_a_plan_marker_is_not_auto_confirmed():
          "payload": '{"options":["confirm","reject"]}'}
     act = next_action(q, {"turns": []}, used=0)
     assert act["kind"] == "pending", act
+
+
+def test_replies_accumulate_across_resumptions_instead_of_overwriting(tmp_path):
+    """A cell is often driven in several invocations (a gate answered by hand between them). Each run
+    must append to the cell's record; overwriting destroys the question-and-answer evidence the
+    evaluator needs."""
+    from answer_loop import merge_replies
+    out = tmp_path / "replies.json"
+    merge_replies(out, {"used_turns": 1, "replies": [{"question": "Which columns?", "answer": "id, status, total",
+                                                      "kind": "scripted-user-turn"}]})
+    merge_replies(out, {"used_turns": 0, "replies": [{"event": "worker_done", "outcome": "succeeded"}]})
+    import json
+    d = json.loads(out.read_text())
+    assert [r.get("question") or r.get("event") for r in d["replies"]] == ["Which columns?", "worker_done"]
+    assert d["used_turns"] == 1, "turns consumed across the whole cell, not just the last invocation"
+    assert len(d["invocations"]) == 2

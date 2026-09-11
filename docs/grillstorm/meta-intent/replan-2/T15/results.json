@@ -43,7 +43,7 @@
       "scenario": "T15/missing-product-docs",
       "host": "claude",
       "status": "unverified",
-      "reason": "Executed; not yet evaluated against the private criteria.",
+      "reason": "环境无法验证: evidence chain incomplete through coordinator process error — the transcript was captured after worker-release so Orca's bounded archive returned contentComplete:false (initial-window-limited, the opening scope exchange lost), and replies.json was overwritten across resumptions. admit_evidence.py exits 1 (invalid-evidence-record: receipt not in the admission shape, raw_dialogue null). A fresh-context evaluator judged the artefacts and partial transcript as passing all five criteria, independently re-running the three validators and recomputing source hashes; that verdict is recorded but cannot admit the cell. Re-run with capture-before-release.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/actor-input.md",
       "attempts": [
         {
@@ -53,7 +53,11 @@
           "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/receipt.json",
           "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture",
           "note": "Actor completed; 19 artifacts. Awaiting fresh-context evaluation against the private criteria.",
-          "host": "claude"
+          "host": "claude",
+          "evaluation": "docs/grillstorm/meta-intent/replan-2/campaign/T15-evaluations/claude-missing-product-docs.md",
+          "evaluator_verdict": "passed (provisional; not admissible)",
+          "admission": "unverified: invalid-evidence-record",
+          "transcript_complete": false
         }
       ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/project"

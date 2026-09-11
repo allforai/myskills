@@ -88,6 +88,25 @@ def snapshot(exe, dispatch, out_dir, k):
     (out_dir / f"snapshot-before-reply-{k:02d}.json").write_text(json.dumps({"exit": code, "at": time.time(), "page": page}, indent=2))
 
 
+def merge_replies(path, record):
+    """Append this invocation's record to the cell's reply log. A cell is usually driven in several
+    invocations — a gate answered by hand between them — and overwriting would destroy the
+    question-and-answer evidence the evaluator is required to judge from."""
+    prior = {}
+    if path.exists():
+        try:
+            prior = json.loads(path.read_text())
+        except ValueError:
+            prior = {"unreadable_prior": path.read_text()[:2000]}
+    replies = (prior.get("replies") or []) + (record.get("replies") or [])
+    invocations = (prior.get("invocations") or []) + [{"used_turns": record.get("used_turns", 0),
+                                                       "replies": len(record.get("replies") or [])}]
+    merged = {"used_turns": sum(i["used_turns"] for i in invocations),
+              "invocations": invocations, "replies": replies}
+    path.write_text(json.dumps(merged, indent=2, ensure_ascii=False))
+    return merged
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dispatch", required=True); ap.add_argument("--script", required=True, type=Path)
@@ -124,7 +143,7 @@ def main():
             if ack:
                 orca(["orchestration", "check", "--ack", ack, "--timeout-ms", "1000"], a.orca)
             break
-    (a.out / "replies.json").write_text(json.dumps({"used_turns": used, "replies": replies}, indent=2, ensure_ascii=False))
+    merge_replies(a.out / "replies.json", {"used_turns": used, "replies": replies})
     print(json.dumps({"dispatch": a.dispatch, "used_turns": used, "last": replies[-1] if replies else None}))
 
 

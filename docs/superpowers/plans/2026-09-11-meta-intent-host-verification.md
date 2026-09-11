@@ -510,7 +510,19 @@ HOST=claude; SCENE=large-code-local-button
 OUT="$ROOT/$HOST/$SCENE/capture"; mkdir -p "$OUT"
 D=$($R/campaign/launch_cell.sh $T $HOST $SCENE | tail -1 | python3 -c "import json,sys;print(json.load(sys.stdin)['dispatch_id'])")
 python3 $R/campaign/answer_loop.py --dispatch "$D" --script "$ROOT/$SCENE-turns.json" --out "$OUT" --orca orca
-python3 $R/T15/capture_worker.py "$D" "$OUT" --orca orca
+python3 $R/T15/capture_worker.py "$D" "$OUT/transcript" --orca orca --pages 30 --limit 200
+```
+
+**Capture before releasing, and check completeness.** Orca's transcript archive is bounded: the
+pilot captured after `worker-release` and got `contentComplete: false` with `initial-window-limited`,
+losing the opening exchange. Run `capture_worker.py` while the dispatch is still held, then read
+`capture.json`'s `limitations` and each page's `contentComplete`. A cell whose transcript is
+incomplete cannot pass — the evaluator is required to judge from the actual dialogue — so record it
+`unverified` with that reason and re-run the cell rather than evaluating a partial record. Release
+only after the capture is complete:
+
+```bash
+orca orchestration worker-release --dispatch "$D" --json
 ```
 
 Expected per cell: `answer_loop` prints `"last": {"event": "worker_done", …}`; `capture_worker` writes `page-0001.stdout.json …` and a `capture.json`. If `answer_loop` ends on `pending` (actor asked beyond the script) or `escalation`, the cell stays `unverified` with that reason — do not improvise an answer.
