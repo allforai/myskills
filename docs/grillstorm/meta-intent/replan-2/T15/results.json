@@ -9,7 +9,7 @@
     "codex": "codex/meta-skill/SKILL.md"
   },
   "required_cells": 14,
-  "executed_cells": 0,
+  "executed_cells": 2,
   "passed_cells": 0,
   "status": "Fresh candidate 01146b70e1fe018effbf83dbb678277b657a3783 exported; all 14 cells unverified pending real host runs. The three historical Codex evaluations and the failed Claude launches below were against the withdrawn e30ccc7c candidate and count for nothing here.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
@@ -43,18 +43,36 @@
       "scenario": "T15/missing-product-docs",
       "host": "claude",
       "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "reason": "Executed; not yet evaluated against the private criteria.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "dispatch": "ctx_7a131d76a246",
+          "run": "run_b67d99c2e0eb",
+          "outcome": "worker_done",
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/receipt.json",
+          "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture",
+          "note": "Actor completed; 19 artifacts. Awaiting fresh-context evaluation against the private criteria.",
+          "host": "claude"
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/project"
     },
     {
       "scenario": "T15/missing-product-docs",
       "host": "codex",
       "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "reason": "环境无法验证: Codex host blocked at its update prompt (codex-update-prompt); never reached agent readiness.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "dispatch": "ctx_528efa3dd043",
+          "run": "run_b67d99c2e0eb",
+          "outcome": "failed:agent_readiness",
+          "note": "Codex TUI blocked at codex-update-prompt (execution-host agentWait reason); the agent never reached readiness, so no cell evidence exists. Environment blocker, not a candidate finding.",
+          "host": "codex"
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/project"
     },
     {
