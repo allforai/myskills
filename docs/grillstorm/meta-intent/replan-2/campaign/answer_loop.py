@@ -102,6 +102,26 @@ def snapshot(exe, dispatch, out_dir, k):
     (out_dir / f"snapshot-before-reply-{k:02d}.json").write_text(json.dumps({"exit": code, "at": time.time(), "page": page}, indent=2))
 
 
+def spent_turns(path):
+    """Scripted turns already delivered for this cell, across every prior invocation. Without this a
+    resumed loop restarts at turn 1 and answers a later question with words meant for an earlier one."""
+    try:
+        return int(json.loads(Path(path).read_text()).get("used_turns") or 0)
+    except (OSError, ValueError, TypeError):
+        return 0
+
+
+def is_foreign(message, own):
+    """True only when a delivery belongs to ANOTHER cell. The sender may be this cell's dispatch, one
+    of its own terminals, or the Run itself (a coordinator reply echoing back)."""
+    handle = message.get("from_handle") or ""
+    if not handle or handle.startswith("run:"):
+        return False
+    if handle == "dispatch:" + (own.get("dispatch") or ""):
+        return False
+    return handle not in (own.get("terminals") or [])
+
+
 def merge_replies(path, record):
     """Append this invocation's record to the cell's reply log. A cell is usually driven in several
     invocations — a gate answered by hand between them — and overwriting would destroy the
@@ -121,6 +141,15 @@ def merge_replies(path, record):
     return merged
 
 
+def cell_terminals(dispatch_json):
+    """Terminal handles this cell owns, from its own worker-start receipt."""
+    try:
+        result = json.loads(Path(dispatch_json).read_text()).get("result", {})
+    except (OSError, ValueError):
+        return []
+    return [e.get("id") for e in result.get("effects") or [] if e.get("kind") == "terminal" and e.get("id")]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dispatch", required=True); ap.add_argument("--script", required=True, type=Path)
@@ -128,7 +157,10 @@ def main():
     ap.add_argument("--run", required=True, help="this cell's own Orca Run; never share one between cells")
     ap.add_argument("--timeout-ms", type=int, default=900000); ap.add_argument("--max-empty", type=int, default=3)
     a = ap.parse_args(); a.out.mkdir(parents=True, exist_ok=True)
-    script = json.loads(a.script.read_text()); used = 0; replies = []; empty = 0; ack = None
+    script = json.loads(a.script.read_text())
+    used = spent_turns(a.out / "replies.json")          # resume where the last invocation stopped
+    own = {"dispatch": a.dispatch, "terminals": cell_terminals(a.out.parent / "dispatch.json")}
+    replies = []; empty = 0; ack = None
     while True:
         args = check_argv(a.run, "worker_done,escalation,question", a.timeout_ms, ack)
         code, result = orca(args, a.orca); ack = None
@@ -139,7 +171,7 @@ def main():
                 replies.append({"event": "stalled", "after_empty_waits": empty}); break
             continue
         empty = 0
-        foreign = [m for m in messages if m.get("from_handle") not in (None, "", "dispatch:" + a.dispatch)]
+        foreign = [m for m in messages if is_foreign(m, own)]
         if foreign:
             # never answer another cell's actor; stop and let the coordinator sort the Run out
             replies.append({"event": "foreign-delivery", "from": [m.get("from_handle") for m in foreign]})

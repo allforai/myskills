@@ -123,3 +123,24 @@ def test_a_loop_without_a_run_refuses_to_start():
         assert "run" in str(exc).lower()
     else:
         raise AssertionError("an empty run must be refused, not defaulted")
+
+
+def test_spent_turns_survive_a_resumption(tmp_path):
+    """A cell is driven in several invocations. If `used` resets, the loop re-delivers turn 1 to a
+    later, different question — which silently answers it with words meant for another."""
+    from answer_loop import merge_replies, spent_turns
+    out = tmp_path / "replies.json"
+    assert spent_turns(out) == 0
+    merge_replies(out, {"used_turns": 1, "replies": [{"question": "Which columns?", "answer": "id, status, total",
+                                                      "kind": "scripted-user-turn"}]})
+    assert spent_turns(out) == 1, "the next invocation must start from the turns already spent"
+
+
+def test_the_cells_own_worker_terminal_is_not_a_foreign_delivery():
+    """from_handle may be the cell's own terminal rather than dispatch:<id>; only another cell is foreign."""
+    from answer_loop import is_foreign
+    own = {"dispatch": "ctx_me", "terminals": ["term_mine"]}
+    assert is_foreign({"from_handle": "dispatch:ctx_me"}, own) is False
+    assert is_foreign({"from_handle": "term_mine"}, own) is False
+    assert is_foreign({"from_handle": "run:run_x"}, own) is False       # coordinator-sourced
+    assert is_foreign({"from_handle": "dispatch:ctx_other"}, own) is True
