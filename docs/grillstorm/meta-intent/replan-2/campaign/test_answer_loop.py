@@ -99,3 +99,27 @@ def test_replies_accumulate_across_resumptions_instead_of_overwriting(tmp_path):
     assert [r.get("question") or r.get("event") for r in d["replies"]] == ["Which columns?", "worker_done"]
     assert d["used_turns"] == 1, "turns consumed across the whole cell, not just the last invocation"
     assert len(d["invocations"]) == 2
+
+
+def test_every_orca_check_is_scoped_to_this_cells_run():
+    """Orca returns the RUN's oldest FIFO delivery, not a dispatch's. Two cells sharing a Run let one
+    coordinator loop consume the other's question — which is how a turn once reached the wrong actor.
+    Every check must therefore name its own run."""
+    from answer_loop import check_argv
+    argv = check_argv(run="run_abc", types="worker_done,escalation,question", timeout_ms=600000, ack=None)
+    assert argv[:2] == ["orchestration", "check"]
+    assert "--run" in argv and argv[argv.index("--run") + 1] == "run_abc"
+    acked = check_argv(run="run_abc", types="question", timeout_ms=1000, ack="d5")
+    assert acked[acked.index("--ack") + 1] == "d5"
+    assert acked[acked.index("--run") + 1] == "run_abc", "an acking check stays scoped too"
+
+
+def test_a_loop_without_a_run_refuses_to_start():
+    """Failing closed: an unscoped loop would silently eat another cell's deliveries."""
+    from answer_loop import check_argv
+    try:
+        check_argv(run="", types="question", timeout_ms=1000, ack=None)
+    except ValueError as exc:
+        assert "run" in str(exc).lower()
+    else:
+        raise AssertionError("an empty run must be refused, not defaulted")

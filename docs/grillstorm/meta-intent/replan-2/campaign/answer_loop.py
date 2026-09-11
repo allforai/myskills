@@ -73,6 +73,20 @@ def plan_batch(result, script, used):
     return acts, used, done
 
 
+def check_argv(run, types, timeout_ms, ack):
+    """Build one `check` invocation, always scoped to this cell's Run.
+
+    Orca hands back the RUN's oldest FIFO delivery, so two cells sharing a Run let one coordinator
+    loop consume the other's question. Each cell therefore gets its own Run and every check names it.
+    """
+    if not run:
+        raise ValueError("check needs an explicit run: an unscoped loop can consume another cell's deliveries")
+    argv = ["orchestration", "check", "--run", run, "--wait", "--types", types, "--timeout-ms", str(timeout_ms)]
+    if ack:
+        argv += ["--ack", ack]
+    return argv
+
+
 def orca(args, exe):
     """Run an Orca command and return (exit, result). Orca wraps every payload in {id, ok, result}."""
     out = subprocess.run([exe, *args, "--json"], capture_output=True, text=True, timeout=1000)
@@ -111,12 +125,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dispatch", required=True); ap.add_argument("--script", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path); ap.add_argument("--orca", default="orca")
+    ap.add_argument("--run", required=True, help="this cell's own Orca Run; never share one between cells")
     ap.add_argument("--timeout-ms", type=int, default=900000); ap.add_argument("--max-empty", type=int, default=3)
     a = ap.parse_args(); a.out.mkdir(parents=True, exist_ok=True)
     script = json.loads(a.script.read_text()); used = 0; replies = []; empty = 0; ack = None
     while True:
-        args = ["orchestration", "check", "--wait", "--types", "worker_done,escalation,question", "--timeout-ms", str(a.timeout_ms)]
-        if ack: args += ["--ack", ack]
+        args = check_argv(a.run, "worker_done,escalation,question", a.timeout_ms, ack)
         code, result = orca(args, a.orca); ack = None
         messages = result.get("messages") or []
         if not messages:
@@ -125,6 +139,14 @@ def main():
                 replies.append({"event": "stalled", "after_empty_waits": empty}); break
             continue
         empty = 0
+        foreign = [m for m in messages if m.get("from_handle") not in (None, "", "dispatch:" + a.dispatch)]
+        if foreign:
+            # never answer another cell's actor; stop and let the coordinator sort the Run out
+            replies.append({"event": "foreign-delivery", "from": [m.get("from_handle") for m in foreign]})
+            merge_replies(a.out / "replies.json", {"used_turns": used, "replies": replies})
+            print(json.dumps({"dispatch": a.dispatch, "used_turns": used,
+                              "last": {"event": "foreign-delivery", "from": [m.get("from_handle") for m in foreign]}}))
+            return
         acts, used, done = plan_batch(result, script, used)
         for act, message in zip(acts, messages):
             if act["snapshot_before"]:
