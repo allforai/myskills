@@ -1,11 +1,68 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Run each battery only when the commit can actually affect it. The meta-skill suite and its
+# validators do not reference claude/superstorm or codex/cross-exam-skill (verified), so a commit
+# touching only those paid ~5 minutes for tests of unrelated code — while the cross-exam renderers
+# themselves went untested here. Anything unrecognised runs everything: unknown means run it.
+changed=$(git diff --cached --name-only --diff-filter=ACMR)
+needs_meta=false
+needs_xexam=false
+for f in $changed; do
+  case "$f" in
+    claude/meta-skill/*|codex/meta-skill/*|shared/scripts/*) needs_meta=true ;;
+    # the shared packages are mirrored into meta-skill AND consumed by cross-exam
+    shared/evidence-engine/*|shared/visual-acceptance/*) needs_meta=true; needs_xexam=true ;;
+    claude/superstorm/*|codex/cross-exam-skill/*) needs_xexam=true ;;
+    docs/*|README.md|MIGRATION.md|.claude-plugin/*) ;;                      # no code path
+    *) needs_meta=true; needs_xexam=true ;;                                  # unknown: run everything
+  esac
+done
+
+# git exports GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE into hook processes, and several suites build a
+# throwaway repo and shell out to git. Clearing them makes those fixtures resolve to themselves.
+# Isolation belongs in the test (see the _git helpers that pass a GIT_*-free env); the hook cannot
+# guess what each suite needs — pinning GIT_INDEX_FILE here breaks suites that legitimately build
+# repos. So the hook does not prevent tampering, it DETECTS it: a stray `git add` in an unisolated
+# test writes this repository's index, and the commit in progress would then capture whatever the
+# test left there. Comparing the staged tree before and after refuses that commit instead.
+run_pytest() { env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX python3 -m pytest -q "$@"; }
+
+staged_tree() { git write-tree 2>/dev/null || echo "unreadable"; }
+STAGED_BEFORE="$(staged_tree)"
+
+check_index_untouched() {
+  local now; now="$(staged_tree)"
+  if [ "$now" != "$STAGED_BEFORE" ]; then
+    echo "[pre-commit] the staged tree changed while the tests ran ($STAGED_BEFORE -> $now)." >&2
+    echo "[pre-commit] a test shelled out to git without clearing GIT_*, so it wrote this index." >&2
+    echo "[pre-commit] refusing: the commit would capture the test's tree. Isolate that test's git" >&2
+    echo "[pre-commit] calls (pass an env with no GIT_* vars), then run: git reset && re-stage." >&2
+    exit 1
+  fi
+}
+
+if [ "$needs_xexam" = true ]; then
+  echo "[pre-commit] pytest cross-exam renderers (per directory: the two test_render_report.py collide)"
+  run_pytest claude/superstorm/scripts
+  run_pytest codex/cross-exam-skill/scripts
+  for pkg in shared/evidence-engine shared/visual-acceptance; do
+    [ -d "$pkg" ] && run_pytest "$pkg"
+  done
+  check_index_untouched
+fi
+
+if [ "$needs_meta" != true ]; then
+  echo "[pre-commit] ok (no meta-skill or shared change; its suite and validators do not cover the touched paths)"
+  exit 0
+fi
+
 echo "[pre-commit] py_compile orchestrator scripts"
 python3 -m py_compile claude/meta-skill/scripts/orchestrator/*.py
 
 echo "[pre-commit] pytest meta-skill unit tests"
-python3 -m pytest claude/meta-skill/tests/unit
+run_pytest claude/meta-skill/tests/unit
+check_index_untouched
 
 echo "[pre-commit] validate bundled skills"
 python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills

@@ -1033,16 +1033,28 @@ class TestSmallHonestyFixes(unittest.TestCase):
         self.assertEqual(_requirement_ids({"requirement_ref": "R-09, R-10"}), {"R-09", "R-10"})
         self.assertEqual(_requirement_ids({"requirement_ref": "R-09（可选）"}), {"R-09（可选）"})
 
-    def test_git_author_overlap_flags_undeclared_self_review(self):
+    @staticmethod
+    def _git(repo, *args):
+        """Run git against the fixture only. Inheriting this process's GIT_* would point these
+        commands at whatever repo invoked the tests — under a pre-commit hook that means a stray
+        `add` writes the real index, and the commit in progress captures it."""
         import subprocess
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        env.update(GIT_AUTHOR_NAME="dev", GIT_AUTHOR_EMAIL="dev@example.com",
+                   GIT_COMMITTER_NAME="dev", GIT_COMMITTER_EMAIL="dev@example.com")
+        subprocess.run(["git", "-C", str(repo), "-c", "commit.gpgsign=false",
+                        "-c", "core.hooksPath=/dev/null", *args],
+                       check=True, capture_output=True, env=env)
+
+    def test_git_author_overlap_flags_undeclared_self_review(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            subprocess.run(["git", "-C", str(repo), "config", "user.email", "dev@example.com"], check=True)
-            subprocess.run(["git", "-C", str(repo), "config", "user.name", "dev"], check=True)
+            self._git(repo.parent, "init", "-q", str(repo))
+            self._git(repo, "config", "user.email", "dev@example.com")
+            self._git(repo, "config", "user.name", "dev")
             (repo / "a.txt").write_text("x", encoding="utf-8")
-            subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
-            subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "init"], check=True)
+            self._git(repo, "add", ".")
+            self._git(repo, "commit", "-q", "-m", "init")
             run = _mk_run(str(repo / "docs/cross-exam/run"), self.FACETS[:1], [_entry("q1")])
             report = render(run)
             self.assertIn("检测到当前 git 用户 dev@example.com", report)
