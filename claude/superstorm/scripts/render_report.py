@@ -126,6 +126,10 @@ def _status_rank(status):
     return 0 if status == "done" else 1
 
 
+PROBER_JSON_WINDOW = 512 * 1024   # 一份实测官返回远小于此；越界即放弃该候选
+PROBER_SCAN_BUDGET = 8 * 1024 * 1024   # 全部候选合计的扫描上限，挡住 O(n^2) 病态输入
+
+
 def _prober_steps(body):
     """实测官在 transcript 里当场返回的 steps，合并成台账必须兜底的下限；一份都解析不出来就
     返回 None（缺证不定罪）。
@@ -138,10 +142,19 @@ def _prober_steps(body):
     同一个键上给出不同 status 时，留下失败的那份：`stuck` / `could_not` 盖过 `done`，无论谁先
     到——自检只能改格式与措辞，不能把一个失败读数洗白成 done。"""
     merged = None
+    budget = PROBER_SCAN_BUDGET
     for match in re.finditer(r'\{[^{}]*"steps"\s*:\s*\[', body):
+        if budget <= 0:
+            break            # pathological input; keep what parsed rather than hang the report
         start = match.start()
         depth = 0
-        for index in range(start, len(body)):
+        # A transcript is an untrusted blob: an unclosed brace would otherwise send this scan to
+        # end-of-text, and one such opener per candidate makes the whole function O(n^2) — thousands
+        # of them hung render outright. A real prober report is far smaller than this window, so
+        # giving up past it loses no genuine report.
+        stop = min(len(body), start + PROBER_JSON_WINDOW)
+        budget -= stop - start
+        for index in range(start, stop):
             if body[index] == '{':
                 depth += 1
             elif body[index] == '}':

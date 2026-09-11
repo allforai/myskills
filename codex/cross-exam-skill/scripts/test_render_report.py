@@ -1662,3 +1662,21 @@ class TestProberFloor(unittest.TestCase):
             self.assertNotIn("违规裁决", report)
             sec = report[report.index("## 旅程完成度"):report.index("## 缺口清单")]
             self.assertIn("transcript 不可核（文件不在）", sec)
+
+
+class TestProberScanBounded(unittest.TestCase):
+    """A transcript is an untrusted blob. The scanner must not degrade to O(n^2) on a pathological one:
+    an unclosed brace once sent each candidate scanning to end-of-text, and thousands of them hung render."""
+
+    def test_a_pathological_transcript_is_scanned_in_bounded_time(self):
+        import time
+        body = ('{"steps":[' * 3000) + ("x" * 2_000_000)
+        start = time.monotonic()
+        result = render_report._prober_steps(body)
+        elapsed = time.monotonic() - start
+        self.assertLess(elapsed, 10.0, f"scan took {elapsed:.1f}s; it must stay bounded")
+        self.assertIsNone(result)
+
+    def test_a_real_report_past_the_window_is_still_found(self):
+        payload = json.dumps({"steps": [{"n": 1, "status": "stuck"}]}, ensure_ascii=False)
+        self.assertEqual(render_report._prober_steps("noise " * 1000 + payload), {"1": "stuck"})
