@@ -1382,3 +1382,137 @@ class TestProberAgreement(unittest.TestCase):
     def test_malformed_prober_json_is_ignored_not_fatal(self):
         self.assertIsNone(render_report._prober_steps('{"steps": [ oops'))
         self.assertEqual(render_report._prober_agreement_reason(self._entry_with(["done"]), '{"steps": [ oops'), "")
+
+
+class TestProberFloor(unittest.TestCase):
+    """#42 residual 4: the prober's reported steps are the floor the ledger must account for.
+    Routes closed: (4) steps deleted, (5) steps: [], (6) journey field deleted (most severe),
+    (7) step renumbered to 99, (11) status miscased, (12) the stuck step deleted alone."""
+
+    FACETS = [{"id": "F1", "name": "面一", "status": "examined"}]
+    PROBER_JSON = json.dumps({
+        "steps": [{"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品", "status": "done"},
+                  {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化", "status": "stuck"}],
+    }, ensure_ascii=False)
+
+    def _run(self, tmp, e, transcript_body):
+        """A journey entry admitted up through the transcript-agreement gate: runtime medium,
+        served_by present, evidence dir non-empty, ledger_version 2, probed_at stamped."""
+        e["medium"] = "runtime"
+        e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+        transcript = Path(tmp) / "agent.output"
+        e["agent_task"] = {"output_file": str(transcript)}
+        run = _mk_run(tmp, self.FACETS, [e], make_evidence=False)
+        d = run / e["evidence"]["dir"]; d.mkdir(parents=True)
+        (d / "note.txt").write_text("outputs", encoding="utf-8")
+        for st in e.get("steps") or []:
+            name = st.get("evidence")
+            if name:
+                (d / name).write_bytes(b"\x89PNG")
+        transcript.write_text(transcript_body, encoding="utf-8")
+        ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+        ledger["ledger_version"] = 2
+        for x in ledger["entries"]:
+            x.setdefault("probed_at", "2026-09-07T10:00:00+08:00")
+        ledger["journeys"] = [_journey()]
+        (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+        return run
+
+    def test_route4_steps_field_deleted_is_refused_naming_missing_steps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry()
+            del e["steps"]
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + self.PROBER_JSON)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("实测官报了第 1、2 步，台账 steps 里没有", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_route5_empty_steps_list_is_refused_naming_missing_steps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[])
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + self.PROBER_JSON)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("实测官报了第 1、2 步，台账 steps 里没有", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_route7_step_renumbered_past_the_prober_report_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            # locally disguised as "done" so _step_verdict_reason has nothing to say — only the
+            # renumbering (n=99 matches no n the prober reported) should trip the new check
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"},
+                {"n": 99, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "done", "evidence": "b.png"}])
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + self.PROBER_JSON)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("实测官报了第 2 步，台账 steps 里没有", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_route12_only_the_stuck_step_deleted_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"}])
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + self.PROBER_JSON)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("实测官报了第 2 步，台账 steps 里没有", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_route6_journey_field_deleted_is_refused_even_with_matching_steps(self):
+        # most severe: every journey check short-circuits on `if not e.get("journey")`, so a
+        # journey that was tested and got stuck could be disguised as never tested
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "a.png"},
+                {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "stuck", "evidence": "b.png"}])
+            del e["journey"]
+            run = self._run(tmp, e, "Files written to evidence/q5/.\n" + self.PROBER_JSON)
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("实测官返回了旅程 steps", report)
+            self.assertIn("没有 journey", report)
+            self.assertIn("旅程裁决：实证完成：0", report)
+
+    def test_route11_miscased_step_status_is_refused_with_no_transcript_at_all(self):
+        # closes the combo the review named: casing defeats the exact-string comparison,
+        # and with no transcript the old agreement check never even ran
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry(steps=[
+                {"n": 1, "action": "打开 /cart", "observed": "购物车显示 1 件商品",
+                 "status": "done", "evidence": "q05-01-cart.png"},
+                {"n": 2, "action": "点击 确认支付", "observed": "按钮变灰后无变化",
+                 "status": "Stuck", "evidence": "q05-02-pay.png"}])
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("违规裁决", report)
+            self.assertIn("不是 done/stuck/could_not 之一", report)
+            self.assertIn("Stuck", report)
+            self.assertIn("旅程 1 条，盘问 0 条", report)
+
+    def test_journey_transcript_note_renders_in_journey_section(self):
+        # rendering gap: transcript_note was set on journey entries but only ever printed by
+        # the plain _entry_line, which journey entries never go through
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry()
+            e["medium"] = "runtime"
+            e["served_by"] = {"host": "localhost:3000", "process": "node", "mock_layers": []}
+            e["agent_task"] = {"output_file": str(Path(tmp) / "missing.output")}
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            ledger = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            ledger["ledger_version"] = 2
+            for x in ledger["entries"]:
+                x.setdefault("probed_at", "2026-09-07T10:00:00+08:00")
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            self.assertNotIn("违规裁决", report)
+            sec = report[report.index("## 旅程完成度"):report.index("## 缺口清单")]
+            self.assertIn("transcript 不可核（文件不在）", sec)

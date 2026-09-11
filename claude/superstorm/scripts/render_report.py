@@ -147,28 +147,34 @@ def _prober_steps(body):
 
 
 def _prober_agreement_reason(e, body):
-    """台账的逐步 status 必须和实测官返回的一致。实测官没返回可解析的 JSON 就不比——
-    缺证不定罪。"""
-    if not e.get("journey"):
-        return ""
+    """实测官报过的 steps 是台账必须兜底的下限：报了的每一步台账都得有对应条目，status 要对得上；
+    没报的这一层不管——缺证不定罪。实测官没返回可解析的 JSON 就不比。
+
+    报了 steps 却发现这条 entry 没挂 journey，说明台账把实测官走过的旅程丢了——journey 的其它
+    检查全靠 `e.get("journey")` 才会跑，删掉这个字段就把它们全部关掉，所以这一层不等 journey
+    存在就先比对 reported，缺了就点名，不放过"删 journey 字段"这条最省事的绕过。"""
     reported = _prober_steps(body)
     if reported is None:
         return ""
+    if not e.get("journey"):
+        return "实测官返回了旅程 steps，但这条 entry 没有 journey：台账把实测官走过的旅程丢了"
     ledger = e.get("steps")
-    if not isinstance(ledger, list):
-        return ""
+    ledger = ledger if isinstance(ledger, list) else []
     by_n = {}
     for step in reported:
         if isinstance(step, dict) and step.get("n") is not None:
             by_n[str(step["n"])] = step.get("status")
+    ledger_by_n = {}
     for index, step in enumerate(ledger):
-        if not isinstance(step, dict):
-            continue
-        key = str(step.get("n", index + 1))
-        if key not in by_n:
-            continue
-        if step.get("status") != by_n[key]:
-            return (f"第 {key} 步台账记 {step.get('status')}，实测官返回的是 {by_n[key]}："
+        if isinstance(step, dict):
+            ledger_by_n[str(step.get("n", index + 1))] = step.get("status")
+    missing = [n for n in by_n if n not in ledger_by_n]
+    if missing:
+        return ("实测官报了第 %s 步，台账 steps 里没有：删条目、清空数组、把 n 改到不存在的号，"
+                "都不能让报过的步骤在台账里消失" % "、".join(missing))
+    for n, status in by_n.items():
+        if ledger_by_n[n] != status:
+            return (f"第 {n} 步台账记 {ledger_by_n[n]}，实测官返回的是 {status}："
                     f"自检只改格式与措辞，不改 status")
     return ""
 
@@ -384,26 +390,32 @@ def _assign_gap_ids(plain):
             e["gap_id"] = f"G{n}"
 
 
+STEP_STATUSES = ("done", "stuck", "could_not")
 STEP_FAILURE_STATUSES = ("stuck", "could_not")
 
 
 def _step_verdict_reason(e):
-    """一条旅程判 done，它自己的 steps 里就不能有 stuck / could_not。
+    """旅程 steps 的两条底线：① 每步 status 只能是 done/stuck/could_not 之一——这是台账形状的
+    最低要求，不看 verdict，"Stuck"/"STUCK" 这种大小写花招在这里就是非法值，不是漏网的 stuck；
+    ② entry 判 done 时自己的 steps 里就不能有 stuck / could_not。
 
     实测官返回的逐步 status 是它当场的观察；把 entry 改成 done 而不动这些 status，
     裁决就跑在了证据前面。这一层只看 entry 自身，不需要 transcript。"""
-    if not e.get("journey") or e.get("verdict") != "done":
+    if not e.get("journey"):
         return ""
     steps = e.get("steps")
     if steps is None:
         return ""
     if not isinstance(steps, list):
         return "旅程 steps 须是列表"
+    verdict_done = e.get("verdict") == "done"
     for index, step in enumerate(steps):
         if not isinstance(step, dict):
             return f"旅程 steps 第 {index + 1} 项不是对象"
         status = step.get("status")
-        if status in STEP_FAILURE_STATUSES:
+        if status not in STEP_STATUSES:
+            return f"旅程第 {step.get('n', index + 1)} 步状态不是 done/stuck/could_not 之一：{status}"
+        if verdict_done and status in STEP_FAILURE_STATUSES:
             return (f"旅程判 done，但第 {step.get('n', index + 1)} 步实测官报 {status}"
                     f"（{step.get('action', '')}）：裁决不能跑在自己的证据前面")
     return ""
@@ -447,6 +459,7 @@ def _journey_block(j, e):
     verdict = e.get("verdict")
     label = VERDICT_LABELS[verdict]
     ev = e.get("evidence", {})
+    note = "".join(f" · {e[k]}" for k in ("transcript_note", "author_note") if e.get(k))
     if verdict == "done":
         head = f"走通，{len(steps)} 步"
     elif verdict == "gap":
@@ -463,7 +476,7 @@ def _journey_block(j, e):
     else:
         head = ev.get("key_observation", "")
     out = ["", f"### {_journey_title(j)} — {label}",
-           f"{head}（证据：{ev.get('dir', '')}）"]
+           f"{head}（证据：{ev.get('dir', '')}）{note}"]
     out.extend(f"- {s.get('n', '?')} {s.get('status', '?')} {s.get('action', '')}"
                f" → {s.get('observed', '')}" for s in steps)
     return out
