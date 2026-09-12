@@ -10,8 +10,8 @@
   },
   "required_cells": 14,
   "executed_cells": 2,
-  "passed_cells": 0,
-  "status": "Fresh candidate 01146b70e1fe018effbf83dbb678277b657a3783 exported; all 14 cells unverified pending real host runs. The three historical Codex evaluations and the failed Claude launches below were against the withdrawn e30ccc7c candidate and count for nothing here.",
+  "passed_cells": 1,
+  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 1/14 cells passed with an admissible evidence chain (T15/missing-product-docs on codex). The remaining cells are unverified; the earlier claude/missing-product-docs run has a passing semantic verdict but an inadmissible chain and must be re-run. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -65,16 +65,40 @@
     {
       "scenario": "T15/missing-product-docs",
       "host": "codex",
-      "status": "unverified",
-      "reason": "环境无法验证: Codex host blocked at its update prompt (codex-update-prompt); never reached agent readiness.",
+      "status": "passed",
+      "reason": "First admissible pass of the campaign. Actor ran on Codex in its own Orca Run (run_1c6fcd30fdaf), reached worker_done, transcript captured before worker-release. admit_evidence.py -> admissible-for-evaluation (56 loaded files bound to the pinned manifest, 50 dialogue messages digest-bound, zero mode/symlink mismatches, zero extra files). A fresh-context evaluator holding evaluator-private.md judged the raw dialogue and artefacts: passed, 7/7 criteria, zero defects, with independent re-runs of all three validators and recomputed source hashes. Two plan gates were answered by the coordinator because the gate classifier requires an options list and Codex asks open-ended; both are recorded in capture/replies.json as operational-gate. The classifier was deliberately not changed mid-campaign.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/actor-input.md",
       "attempts": [
         {
-          "dispatch": "ctx_528efa3dd043",
-          "run": "run_b67d99c2e0eb",
-          "outcome": "failed:agent_readiness",
-          "note": "Codex TUI blocked at codex-update-prompt (execution-host agentWait reason); the agent never reached readiness, so no cell evidence exists. Environment blocker, not a candidate finding.",
-          "host": "codex"
+          "dispatch": "ctx_9a85052d4aa4",
+          "run": "run_1c6fcd30fdaf",
+          "task": "task_8c94bbf7926c",
+          "outcome": "worker_done",
+          "host": "codex",
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/receipt.json",
+          "receipt_original": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/receipt.actor-original.json",
+          "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture",
+          "evaluation": "docs/grillstorm/meta-intent/replan-2/campaign/T15-evaluations/codex-missing-product-docs.md",
+          "evaluator_verdict": "passed",
+          "evaluator_workflow": "wbd115au3",
+          "admission": "admissible-for-evaluation",
+          "transcript_complete": false,
+          "transcript_note": "Orca reported initial-window-limited, its own transcript window bound, not a consequence of release timing; capture preceded worker-release. All 50 retained messages were verified to contain the product question, the scripted answer, both plan gates and both confirms.",
+          "scripted_turns_spent": 1,
+          "coordinator_answered_gates": [
+            "msg_6b70d8ba43e6",
+            "msg_96d816e156c0"
+          ],
+          "not_applicable_drills": [
+            "mismatched-path/hash rejection of admit_evidence.py: no changed-fingerprint case exists in this cell's evidence; covered by test_admit_evidence.py, not by this cell."
+          ],
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "01a093a5-7c5e-7153-8703-ee7b7dd4b0f8",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture/transcript/raw-dialogue.json",
+            "sha256": "587bc597aefff76dfb8afc194314685e624d854ea2c20ba350dd51b3e33598bf"
+          },
+          "loaded_files_bound": 56
         }
       ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/project"
@@ -226,6 +250,11 @@
     {
       "code": "codex-quota",
       "status": "historic-unrevalidated"
+    },
+    {
+      "code": "codex-update-prompt",
+      "status": "cleared",
+      "note": "Orca uses its own sandboxed home (ORCA_CODEX_HOME); dismissed_version set to 0.154.0 there, backup at version.json.bak-before-campaign. Codex reached readiness and completed a cell."
     }
   ],
   "current_launch_failures": [
@@ -245,5 +274,11 @@
     "tree_sha256": "c1114a94d89c2ea8d8e7bc8c496576b9750957e347769980dc75dee006704fc4",
     "reason": "Actual host evaluations found planning and decision-gate defects; the subsequent 2cc347af repair was also rejected in review. Preserve historical evidence but do not launch or admit passes against this candidate.",
     "evidence": "T15-coordinator-boundary-review.md"
-  }
+  },
+  "deferred_after_T15": [
+    {
+      "code": "gate-classifier-open-ended",
+      "note": "answer_loop.is_gate_question requires an options list, so Codex's open-ended plan gates fall through to the coordinator. Fail-safe direction (asks rather than guesses), so it is not changed mid-campaign to keep cells consistent."
+    }
+  ]
 }
