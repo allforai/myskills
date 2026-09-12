@@ -137,7 +137,8 @@ def test_rerunning_normalization_does_not_overwrite_the_preserved_original(tmp_p
         "a second run must not archive the already-normalized receipt over the actor's own")
 
 
-def test_conflicting_session_identities_are_refused_not_resolved_by_search_order(tmp_path):
+def test_session_identities_from_two_host_families_are_refused(tmp_path):
+    """A receipt naming both a Codex session and a Claude session is confused about which host ran."""
     m = load()
     cell, candidate, raw = cell_with(tmp_path, receipt_extra={
         "session_identity": {"claude_code_session_id": "a-different-session"}})
@@ -319,14 +320,17 @@ def test_a_session_reference_url_and_its_bare_id_are_one_identity(tmp_path):
     assert m.build(cell, candidate, raw)["session_id"] == "session_0155F2HLiCPqWEuqu9D5EGkL"
 
 
-def test_genuinely_different_session_ids_are_still_refused(tmp_path):
+def test_two_unrelated_ids_under_the_same_host_family_prefer_the_provider_one(tmp_path):
+    """Same family, different kinds: prefer rather than refuse, which the bridge case requires."""
     m = load()
     cell, candidate, raw = cell_with(tmp_path)
     receipt = json.loads((cell / "receipt.json").read_text())
-    receipt["session_identity"] = {"claude_code_session_uuid": "totally-different-value"}
+    receipt.pop("independent_session_identity")
+    receipt["host"] = "Claude Code"
+    receipt["session_identity"] = {"claude_code_session_id": "provider-one",
+                                   "bridge_session_id": "bridge-two"}
     (cell / "receipt.json").write_text(json.dumps(receipt))
-    with pytest.raises(ValueError, match="conflicting session identities"):
-        m.build(cell, candidate, raw)
+    assert m.build(cell, candidate, raw)["session_id"] == "provider-one"
 
 
 def test_two_different_hosts_named_in_one_receipt_is_refused(tmp_path):
@@ -392,3 +396,71 @@ def test_a_nested_non_read_branch_is_still_refused(tmp_path):
     (cell / "receipt.json").write_text(json.dumps(receipt))
     record = m.build(cell, candidate, raw)
     assert all("safety.md" not in f["path"] for f in record["loaded_files"])
+
+
+def test_a_provider_session_and_a_bridge_session_are_not_a_conflict(tmp_path):
+    """One host recorded both; refusing that as conflicting blocked an otherwise sound cell."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("independent_session_identity")
+    receipt["session"] = {"claude_code_session_id": "1945a6aa-d64e-4d1b-b06e-c6adb8504c07 (CLAUDE_CODE_SESSION_ID)",
+                          "bridge_session_id": "session_01Kj2KL (CLAUDE_CODE_BRIDGE_SESSION_ID)"}
+    receipt["host"] = "Claude Code"
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert record["session_id"] == "1945a6aa-d64e-4d1b-b06e-c6adb8504c07", (
+        "the provider session id is preferred, and the annotation in parentheses is stripped")
+
+
+def test_reads_written_relative_to_the_packet_root_are_still_found(tmp_path):
+    """Eleven of twelve reads silently vanished this way, and the receipt still admitted."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    entry = candidate / "codex" / "meta-skill" / "SKILL.md"
+    receipt["references_loaded"] = [
+        {"path": f"{candidate.name}/codex/meta-skill/SKILL.md",
+         "sha256": hashlib.sha256(entry.read_bytes()).hexdigest()}]
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert any(f["path"] == str(entry) for f in record["loaded_files"])
+    assert record["dropped_reads"] == []
+
+
+def test_an_unresolvable_read_is_reported_not_discarded(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["references_loaded"] = [{"path": "nowhere/at/all.md", "sha256": "0" * 64}]
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert len(record["dropped_reads"]) == 1
+    assert record["dropped_reads"][0]["path"] == "nowhere/at/all.md"
+
+
+def test_a_session_id_carried_under_a_bare_value_key_is_found(tmp_path):
+    """Two receipts put the kind in the container key and the id under "value".
+
+    A leaf-name-only match missed both, and I nearly recorded it as the actor omitting a session
+    identity it had in fact supplied.
+    """
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["independent_session_identity"] = {
+        "source": "CODEX_THREAD_ID environment variable",
+        "value": "01a0976c-3143-7651-ac89-9cb2a7765d6b",
+        "dispatch_id": "ctx_a", "task_id": "task_a"}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert record["session_id"] == "01a0976c-3143-7651-ac89-9cb2a7765d6b"
+
+
+def test_a_bare_value_outside_a_session_container_is_not_taken_as_a_session_id(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["some_other_block"] = {"value": "not-a-session-identity"}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    assert m.build(cell, candidate, raw)["session_id"] == "sess-1"

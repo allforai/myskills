@@ -71,55 +71,103 @@ def normalize_host(value):
     return hits[0]
 
 
-def session_id(receipt):
-    """The one session identity the receipt reports, or a refusal.
+# Session-id keys in the order they are preferred. A receipt may legitimately carry several DIFFERENT
+# kinds of session identity — one host recorded both its provider session UUID and a separate Orca
+# bridge session — so these are not competing claims about one value and must not be refused as a
+# conflict. Only two values under the SAME kind of key are a conflict.
+SESSION_PREFERENCE = ("codex_session_id", "claude_code_session_id", "local_session_id",
+                      "session_uuid", "session_id", "codex_thread_id", "thread_id")
 
-    Hosts name this differently — CODEX_SESSION_ID, claude_code_session_id, claude_code_session_uuid —
-    so the search is structural: any key naming a session id or uuid. If two such keys disagree the
-    receipt is refused rather than resolved by search order: silently preferring whichever key was
-    checked first is how a record starts describing a session that never ran.
-    """
-    direct = receipt.get("session_id")
-    if isinstance(direct, str) and direct:
-        return direct
+
+def session_identities(receipt):
+    """Every session identity the receipt states, keyed by the leaf field that stated it."""
     found = {}
 
     def walk(node, key_path=""):
         if isinstance(node, dict):
             for key, value in node.items():
                 walk(value, f"{key_path}.{key}" if key_path else key)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item, key_path)
         elif isinstance(node, str) and node:
-            leaf = key_path.lower().rsplit(".", 1)[-1]
-            if "session" in leaf and ("id" in leaf or "uuid" in leaf or "thread" in leaf):
-                found[key_path] = node
+            parts = key_path.lower().split(".")
+            leaf = parts[-1]
+            names_session = "session" in leaf and ("id" in leaf or "uuid" in leaf or "thread" in leaf)
+            # Some receipts put the KIND in the container key and the value under a bare "value":
+            # {"independent_session_identity": {"source": "CODEX_THREAD_ID ...", "value": "01a0976c..."}}.
+            # Reading only leaf names missed those entirely and I nearly recorded it as the actor
+            # failing to supply a session identity, which it had supplied.
+            carried = leaf in ("value", "id") and len(parts) > 1 and "session" in parts[-2]
+            if names_session or carried:
+                key = leaf if names_session else parts[-2]
+                found[key] = node.split(" (")[0].strip()
 
     walk(receipt)
-    # A reference URL and the bare id it contains are the same identity, not a conflict.
-    distinct = {v for v in found.values()}
-    if not distinct:
+    return found
+
+
+def session_id(receipt):
+    """The session identity to bind on, chosen by preference rather than by search order.
+
+    Refusing whenever two session strings appeared was too strict: it rejected a receipt that honestly
+    recorded both a provider session UUID and a separate Orca bridge session id, which are different
+    kinds of identity, not two answers to one question. A conflict is now only two different values
+    for the SAME field.
+    """
+    direct = receipt.get("session_id")
+    if isinstance(direct, str) and direct:
+        return direct
+    found = session_identities(receipt)
+    if not found:
         raise ValueError("receipt carries no session identity to normalize")
-    if len(distinct) > 1:
-        shortest = min(distinct, key=len)
-        if all(shortest in v or v in shortest for v in distinct):
-            return shortest
-        raise ValueError(f"receipt reports conflicting session identities: {found}")
-    return distinct.pop()
+    # Identities from two different HOST families in one receipt mean the record is confused about
+    # which host ran, and that must be refused. Two identities from the same family — a provider
+    # session plus an Orca bridge session, say — are different kinds of the same host's identity and
+    # are resolved by preference.
+    families = {h for field in found for token, h in HOSTS.items() if token in field}
+    if len(families) > 1:
+        raise ValueError(f"receipt reports conflicting session identities across hosts: {found}")
+    for field in SESSION_PREFERENCE:
+        if field in found:
+            return found[field]
+    values = set(found.values())
+    if len(values) == 1:
+        return values.pop()
+    shortest = min(values, key=len)
+    if all(shortest in v or v in shortest for v in values):
+        return shortest
+    raise ValueError(f"receipt reports session identities under unrecognised fields: {found}")
 
 
 def loaded_files(receipt, candidate_root):
-    """Every candidate asset the receipt records as actually read, at any depth.
+    """Candidate assets the receipt records as read, plus everything that could NOT be resolved.
 
-    Four actors have used four shapes: `loaded_assets`, `references_loaded_in_full` plus
-    `references_loaded_in_part`, a single `candidate_entry`, and a nested `candidate.loaded[]`. A
-    top-level-only scan found nothing in the fourth and reported zero reads, so discovery walks the
-    whole record and keys on structure — anything carrying a sha256 and a path.
+    Returns (files, dropped). Dropped entries are returned rather than discarded because silence here
+    is the worst outcome: one actor wrote reference paths relative to the PACKET root
+    ("candidate/claude/...") instead of the candidate root, so joining them under the candidate root
+    produced ".../candidate/candidate/..." and eleven of twelve reads vanished. The receipt then
+    ADMITTED on the strength of its one absolute-path entry. A receipt that passes while most of its
+    declared reads were thrown away is worse than one that fails.
 
-    Two guards keep that from over-reporting. Any key ANYWHERE on the path that names a non-read is
-    refused, so a declared skip can never become a claimed read. And every path must resolve inside
-    the pinned candidate, which drops project files, host skill stubs and installed-but-unused copies.
+    Relative paths are therefore tried against the candidate root and against its parent, accepting
+    only results that exist inside the candidate root. Anything still unresolved is reported.
     """
     root = Path(candidate_root).resolve()
-    out, seen = [], set()
+    bases = [root, root.parent]
+    out, dropped, seen = [], [], set()
+
+    def resolve(raw):
+        candidate = Path(raw)
+        if candidate.is_absolute():
+            tries = [candidate]
+        else:
+            tries = [base / candidate for base in bases]
+        for attempt in tries:
+            resolved = attempt.resolve()
+            if resolved.is_relative_to(root) and resolved.is_file():
+                return resolved
+        return None
 
     def harvest(node, key_path=""):
         if any(token in key_path.lower() for token in DENY):
@@ -128,11 +176,12 @@ def loaded_files(receipt, candidate_root):
             digest = node.get("sha256")
             raw = next((node[f] for f in PATH_FIELDS if node.get(f)), None)
             if digest and raw:
-                candidate = Path(raw)
-                path = (candidate if candidate.is_absolute() else root / candidate).resolve()
-                if path.is_relative_to(root) and path.is_file() and str(path) not in seen:
-                    seen.add(str(path))
-                    out.append({"path": str(path), "sha256": digest})
+                resolved = resolve(raw)
+                if resolved is None:
+                    dropped.append({"path": raw, "at": key_path, "reason": "no such file inside the candidate"})
+                elif str(resolved) not in seen:
+                    seen.add(str(resolved))
+                    out.append({"path": str(resolved), "sha256": digest})
             for key, value in node.items():
                 harvest(value, f"{key_path}.{key}" if key_path else key)
         elif isinstance(node, list):
@@ -140,7 +189,7 @@ def loaded_files(receipt, candidate_root):
                 harvest(item, key_path)
 
     harvest(receipt)
-    return sorted(out, key=lambda f: f["path"])
+    return sorted(out, key=lambda f: f["path"]), dropped
 
 
 # Field names hosts use for the Orca ids, mapped to the coordinator record they must agree with.
@@ -223,14 +272,16 @@ def build(cell, candidate_root, raw_dialogue):
     if disagreements:
         raise ValueError(f"actor identity contradicts the coordinator record: {disagreements}")
     raw = Path(raw_dialogue).resolve()
+    resolved_reads, dropped_reads = loaded_files(receipt, candidate_root)
     return {
         "host": normalize_host(host_value(receipt)),
         "session_id": session_id(receipt),
         "orca_identity": binding,
         "source_root": str(Path(candidate_root).resolve()),
-        "loaded_files": loaded_files(receipt, candidate_root),
+        "loaded_files": resolved_reads,
         "raw_dialogue": {"path": str(raw),
                          "sha256": hashlib.sha256(raw.read_bytes()).hexdigest()},
+        "dropped_reads": dropped_reads,
         "normalized_by": ("coordinator; the actor's own record is preserved at "
                           "receipt.actor-original.json. process_incarnation comes from the "
                           "coordinator's launch record, never from the actor; the actor's own "
@@ -288,6 +339,7 @@ def main(argv=None):
     out.write_text(json.dumps(record, indent=2) + "\n")
     print(json.dumps({"written": str(out), "preserved": str(original),
                       "loaded_files": len(record["loaded_files"]),
+                      "dropped_reads": len(record["dropped_reads"]),
                       "actor_agreed_on": record["orca_identity"]["actor_agreed_on"]}))
     return 0
 

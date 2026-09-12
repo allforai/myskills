@@ -274,6 +274,13 @@ def main(argv=None):
                 replies.append({"event": "worker_done", "outcome": message.get("outcome")})
             elif act["kind"] in ("pending", "escalation"):
                 replies.append({"event": act["kind"], "message": message})
+        if any(a_["kind"] == "reply" for a_ in acts):
+            # Persist as soon as a turn actually goes out. Writing only at exit lost a delivered
+            # scripted turn when this loop was stopped mid-run to guard a probe's ordering, and a turn
+            # that was delivered but is missing from the ledger is the worst bookkeeping error there is:
+            # the next invocation would deliver it again.
+            merge_replies(a.out / "replies.json", {"used_turns": used, "replies": replies})
+            replies = []
         ack = result.get("deliveryId")
         if done:
             if ack:

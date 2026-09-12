@@ -49,3 +49,29 @@ approve the named directions and release scope as in reshape.
         "Only verified members of the same group can see requests."]
     # the borrow is scoped: without the batch it stays empty rather than guessing
     assert turns_for(sample, "new-product") == []
+
+
+def test_deny_inferred_intent_borrows_reshapes_detail_answer():
+    """Its script held only the denial and the freeze, so the freeze referenced rules never delivered.
+
+    The actor caught it and refused to invent them, which is correct behaviour and also proof that the
+    script, not the actor, was wrong.
+    """
+    import extract_turns as et
+    private = (PRIVATE if 'PRIVATE' in dir() else None)
+    from pathlib import Path
+    text = (Path(__file__).parent.parent / "T15" / "evaluator-private.md").read_text()
+    turns = et.turns_for(text, "deny-inferred-intent", batch="T15")
+    assert len(turns) == 3, f"denial, borrowed rules, freeze — got {len(turns)}"
+    assert turns[0].startswith("No, maximizing premium merchant subscriptions")
+    assert "verified members of the same group" in turns[1], "the borrowed detail answer must be present"
+    assert "Freeze those as this release scope" in turns[2]
+    assert turns.index(turns[1]) < turns.index(turns[2]), "rules must precede the freeze"
+
+
+def test_new_product_still_borrows_every_turn():
+    import extract_turns as et
+    from pathlib import Path
+    text = (Path(__file__).parent.parent / "T15" / "evaluator-private.md").read_text()
+    assert et.turns_for(text, "new-product", batch="T15") == \
+           et.turns_for(text, "reshape-business-model", batch="T15")

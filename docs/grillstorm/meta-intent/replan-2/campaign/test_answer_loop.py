@@ -309,3 +309,37 @@ def test_a_fresh_question_alongside_a_replay_is_still_answered(monkeypatch, tmp_
     answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
                       "--out", str(out), "--max-empty", "2"])
     assert sent == ["t2"], f"only the new question should be answered, got {sent}"
+
+
+def test_a_delivered_turn_is_persisted_before_the_loop_can_be_killed(monkeypatch, tmp_path):
+    """Writing only at exit lost a delivered scripted turn when the loop was stopped mid-run."""
+    import answer_loop
+    out = tmp_path / "capture"; out.mkdir()
+    (tmp_path / "dispatch.json").write_text(json.dumps({"result": {"effects": []}}))
+    script = tmp_path / "turns.json"; script.write_text(json.dumps({"turns": ["turn one", "turn two"]}))
+    state = {"n": 0}
+
+    class Stop(Exception):
+        pass
+
+    def fake_orca(args, exe):
+        if args[1] == "worker-show":
+            return 0, {"observation": {"status": "live"}}
+        if args[1] == "reply":
+            return 0, {}
+        state["n"] += 1
+        if state["n"] == 1:
+            return 0, {"messages": [{"type": "question", "id": "q1", "body": "first"}],
+                       "deliveryId": "d1"}
+        raise Stop  # stand in for the loop being killed right after the first reply
+
+    monkeypatch.setattr(answer_loop, "orca", fake_orca)
+    try:
+        answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
+                          "--out", str(out), "--max-empty", "2"])
+    except Stop:
+        pass
+    recorded = json.loads((out / "replies.json").read_text())
+    assert recorded["used_turns"] == 1, "the delivered turn must already be in the ledger"
+    assert recorded["replies"][0]["answer"] == "turn one"
+    assert recorded["replies"][0]["question_id"] == "q1"
