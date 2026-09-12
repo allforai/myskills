@@ -10,8 +10,8 @@
   },
   "required_cells": 14,
   "executed_cells": 2,
-  "passed_cells": 0,
-  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 0/14 cells passed. The codex missing-product-docs cell has an admissible evidence chain and a completed actor run, but its passing verdict was withdrawn because the evaluator prompt was truncated; it awaits re-judging with the complete criteria, not a re-run. Every other cell is unverified. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
+  "passed_cells": 1,
+  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 1/14 cells certified: T15/missing-product-docs on codex, with a complete dialogue record and identity bound to a coordinator launch record. The claude half of that scenario ran cleanly but is archived uncertifiable under the old tooling and must be re-run. The remaining 12 cells are unverified. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -90,8 +90,8 @@
     {
       "scenario": "T15/missing-product-docs",
       "host": "codex",
-      "status": "unverified",
-      "reason": "环境无法验证 on two corroboration duties. Re-judged by a fresh evaluator on the complete criteria: every scenario behaviour criterion passes on quoted evidence and the SG02 rejection drill was performed and works, but (1) the provider session id appears only in the actor's own output and no coordinator-side record or Codex session store binds it, and (2) the capture index self-declares full_dialogue_proven false with clipped tool output and a 50-message window, so completeness cannot be certified and the revision-2 confirmation chunk the artefacts cite has no observable tool-result. The withdrawal of the earlier pass was therefore correct on the merits, not only on process. Neither defect requires re-running the actor: the transcript can be re-captured backwards from the cursor the index already holds, and identity needs a coordinator-side capture at dispatch time.",
+      "status": "passed",
+      "reason": "CERTIFIED. Third attempt at this scenario; the first two are archived as uncertifiable and neither failed on the actor's conduct. This run tailed the transcript from dispatch (13 windows plus a final), so full_dialogue_proven is true: the first window returned 1 message against a requested limit of 100, which cannot be truncated, and consecutive overlaps run 1/17/28/30/32/38/47/44/47/50 with no break. Identity is bound to a coordinator record written before the actor produced output, and the actor's own untouched receipt independently names the same dispatch id and terminal handle. A fresh-context evaluator on the complete criteria passed every behaviour criterion on quoted evidence, verified completeness from the raw page bytes rather than the coverage block, corroborated all 52 loaded files with zero uncorroborated, and performed the SG02 rejection drill in scratch. It found two defects: one in the candidate (the finding the campaign exists for) and one blind spot in our own admission gate, since fixed.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/actor-input.md",
       "attempts": [
         {
@@ -148,6 +148,46 @@
             "prompt": "built by build_eval_prompt.py, complete",
             "superseded_prompt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/evaluate-prompt.truncated.md"
           }
+        },
+        {
+          "dispatch": "ctx_b9eade800dff",
+          "run": "run_6cb69f6ac489",
+          "task": "task_e4e0dd73523f",
+          "outcome": "worker_done",
+          "host": "codex",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "01a093d7-3fb6-7ea1-b882-f63b2cbd2eca",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture/raw-dialogue.json",
+            "sha256": "9de10b0740651279323c0d7788124d6ac54d916d6100a591fd85a27c79900858"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/receipt.json",
+          "receipt_original": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/receipt.actor-original.json",
+          "coordinator_identity": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture/coordinator-identity.json",
+          "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "evaluation": "docs/grillstorm/meta-intent/replan-2/campaign/T15-evaluations/codex-missing-product-docs-certified.md",
+          "loaded_files_bound": 52,
+          "transcript_windows": 14,
+          "transcript_union_messages": 59,
+          "transcript_single_window_messages": 0,
+          "transcript_complete": true,
+          "full_dialogue_proven": true,
+          "actor_agreed_with_coordinator_on": [
+            "dispatch_id",
+            "terminal_handle"
+          ],
+          "scripted_turns_spent": 1,
+          "coordinator_answered_gates": [
+            "msg_bf2e494819e2"
+          ],
+          "not_corroborated": [
+            "provider session_id rests on the actor's own environment read; the binding that holds is dispatch id plus process incarnation",
+            "two sub-agent spawns carry encrypted opaque payloads, so four audit artefacts are corroborable as artefacts and as spawns that occurred, not in their internal reasoning",
+            "the actor declined to invent a transcript export path, so there is no host-side file beyond the Orca pages"
+          ],
+          "released": true
         }
       ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/project"
@@ -353,7 +393,8 @@
       ],
       "status": "fixed",
       "fix": "admit_evidence.py now requires the receipt to carry an orca_identity block whose dispatch_id and process_incarnation match a coordinator-identity.json written beside the cell at launch, before the actor exists. A missing, unreadable or incomplete coordinator record, an absent binding, or a binding that disagrees are each a named unverified reason rather than a silent pass. Proof it closes the hole: the codex receipt that previously returned admissible-for-evaluation now returns unverified ['missing-coordinator-identity']. launch_cell.sh writes the coordinator record.",
-      "tests": "test_admit_evidence.py gained cases for a self-named session with no coordinator record, an omitted binding, a binding disagreeing on either field, an unreadable record and a record missing its own fields"
+      "tests": "test_admit_evidence.py gained cases for a self-named session with no coordinator record, an omitted binding, a binding disagreeing on either field, an unreadable record and a record missing its own fields",
+      "also_found_later": "A second, independent hole in the same gate: manifest hashes were consulted only inside the per-asset loop, so a changed candidate was rejected only when the changed file appeared in the receipt's loaded_files. An actor that under-declared its reads shrank the surface being checked. Fixed by verifying every manifest hash at tree level before any receipt claim is considered, and by naming a vanished pinned file instead of letting it surface as the generic invalid-evidence-record. Verified on the real tree: tampering with knowledge/safety.md, which this receipt does not load, now returns unverified."
     },
     {
       "code": "orca-retains-only-50-transcript-messages",
@@ -373,7 +414,19 @@
       "found_by": "T15/missing-product-docs codex re-evaluation",
       "detail": "The generated workflow names capabilities 'implement' and 'closure'; neither has a template in the pinned candidate, while product-verify.md does exist. The actor reported implement's absence honestly and did not mention closure's.",
       "reproducer": "read the cell project's .allforai/bootstrap/workflow.json node capabilities, then list candidate claude/meta-skill/knowledge/capabilities/ for implement*/closure*",
-      "routing": "pending: attach to the owning #9/#10/#11 or downstream ticket"
+      "routing": "pending: found under the withdrawn verdict of an archived attempt; re-confirm against a certified cell before filing, since that attempt's record could not be certified"
+    },
+    {
+      "code": "game-visual-gate-blocks-non-game-workflows",
+      "found_by": "T15/missing-product-docs codex, certified run ctx_b9eade800dff",
+      "severity": "blocks a correct non-game bootstrap from ever passing validate_bootstrap",
+      "detail": "validate_bootstrap.py's game visual gate judges any workflow whose specs contain a visual-QA term, and its guard only skips when there are no visual-QA nodes at all. The blob it substring-matches includes the profile's own negative declarations, so writing the truthful \"is_game_project\": false is itself one of the two things that satisfies the 'game' half of the condition. The error message then blames a 'visible game UI/runtime workflow' for a Next.js CSV export.",
+      "reproducer": "a one-node bootstrap whose node-spec contains 'Take a screenshot of the page.' returns the visible-game error; changing only 'screenshot' to 'image capture' returns no errors",
+      "suggested_seams": [
+        "narrow game detection to positive declarations",
+        "give non-game visual-QA workflows a criteria producer that visual-acceptance.json can satisfy in place"
+      ],
+      "routing": "filed: allforai/myskills#9 comment 5643526591"
     }
   ],
   "admission_contract_change": {

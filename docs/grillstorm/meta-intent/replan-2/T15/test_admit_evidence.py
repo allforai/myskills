@@ -200,3 +200,47 @@ def test_a_coordinator_record_missing_its_own_fields_cannot_admit(tmp_path):
                             capture_output=True, text=True)
     assert result.returncode == 1, result.stdout
     assert "coordinator-identity-incomplete" in json.loads(result.stdout)["reasons"]
+
+
+def test_a_changed_candidate_file_the_receipt_never_loaded_is_still_rejected(tmp_path):
+    """The blind spot: rejection used to be only as broad as the receipt's own declared reads."""
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    unread = root / "claude" / "meta-skill" / "knowledge" / "safety.md"
+    unread.parent.mkdir(parents=True)
+    unread.write_text("pinned but never loaded by this receipt\n")
+    unread.chmod(0o644)
+    document = json.loads(manifest.read_text())
+    relative = str(unread.relative_to(root))
+    document["sha256"][relative] = hashlib.sha256(unread.read_bytes()).hexdigest()
+    document["git_modes"][relative] = "100644"
+    write(manifest, document)
+    admitted = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                              capture_output=True, text=True)
+    assert admitted.returncode == 0, admitted.stdout
+    unread.write_text("pinned but never loaded by this receipt\nand now tampered with\n")
+    rejected = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                              capture_output=True, text=True)
+    assert rejected.returncode == 1, rejected.stdout
+    assert "changed-candidate" in json.loads(rejected.stdout)["reasons"]
+
+
+def test_a_deleted_pinned_file_names_the_cause_instead_of_crashing(tmp_path):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    unread = root / "extra.md"
+    unread.write_text("pinned\n")
+    unread.chmod(0o644)
+    document = json.loads(manifest.read_text())
+    document["sha256"]["extra.md"] = hashlib.sha256(unread.read_bytes()).hexdigest()
+    document["git_modes"]["extra.md"] = "100644"
+    write(manifest, document)
+    assert subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                          capture_output=True, text=True).returncode == 0
+    unread.unlink()
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    report = json.loads(result.stdout)
+    assert "changed-candidate" in report["reasons"]
+    assert "candidate-missing-file" in report["reasons"], (
+        "a vanished pinned file must be named, not surface as invalid-evidence-record")
+    assert report["reasons"] != ["invalid-evidence-record"]

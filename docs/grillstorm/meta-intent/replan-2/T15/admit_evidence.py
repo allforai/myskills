@@ -10,6 +10,26 @@ from pathlib import Path
 
 
 
+
+def tree_fingerprint_reasons(manifest, root):
+    """Verify the WHOLE pinned tree, not only the files this receipt happens to name.
+
+    Checking manifest hashes inside the per-asset loop made "changed candidate" rejection only as
+    broad as the receipt's own declared reads: appending a byte to a manifest-pinned file the receipt
+    did not load still admitted. An actor that under-declares its reads therefore shrank the very
+    surface being checked. The manifest publishes every hash and a tree_sha256, so the candidate is
+    verified as a whole before any receipt claim is considered.
+    """
+    reasons = []
+    for relative, expected in (manifest.get("sha256") or {}).items():
+        path = root / relative
+        if path.is_symlink() or not path.is_file():
+            reasons.append("changed-candidate")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            reasons.append("changed-candidate")
+    return sorted(set(reasons))
+
+
 def coordinator_identity_path(receipt_path):
     """Where the coordinator records the identity it observed, beside the cell's receipt."""
     return receipt_path.resolve().parent / "capture" / "coordinator-identity.json"
@@ -76,6 +96,13 @@ def main():
     symlink_mismatches = []
     for relative, expected_mode in git_modes.items():
         path = root / relative
+        # A pinned path that is simply gone used to raise from lstat and surface as the generic
+        # invalid-evidence-record, hiding which file vanished. Name it instead.
+        if not path.is_symlink() and not path.exists():
+            reasons.append("candidate-missing-file")
+            mode_mismatches.append({"path": relative, "source_git_mode": expected_mode,
+                                    "observed_mode": None})
+            continue
         actual_mode = "120000" if path.is_symlink() else format(path.lstat().st_mode & 0o170777, "06o")
         if actual_mode != expected_mode:
             reasons.append("candidate-mode-mismatch")
@@ -88,6 +115,7 @@ def main():
             reasons.append("candidate-symlink-mismatch")
             symlink_mismatches.append({"path": relative, "source_target": expected_target,
                                        "observed_target": actual_target})
+    reasons.extend(tree_fingerprint_reasons(manifest, root))
     if not receipt.get("session_id"):
         reasons.append("missing-session-identity")
     reasons.extend(identity_binding_reasons(receipt, Path(args.receipt)))
