@@ -19,13 +19,37 @@ def capture_dirs(root):
     return sorted({p.parent for p in Path(root).rglob("capture.json")})
 
 
-def page_messages(page_path):
+def page_messages_of(page_path):
     try:
         obj = json.loads(Path(page_path).read_text())
     except (OSError, ValueError):
         return []
     result = obj.get("result") or {}
     return (result.get("transcript") or {}).get("messages") or result.get("messages") or []
+
+
+RETENTION_CAP = 50  # Orca returns at most this many messages per read; verified at --limit 1000.
+
+
+def window_detail(capture_dir, cap=RETENTION_CAP):
+    """What one window saw, and whether it was saturated.
+
+    Saturation is the whole question. A window that came back with fewer messages than the cap held
+    the transcript's ENTIRE history at that moment, so it starts at message one and nothing can
+    predate it. `limited` is useless for this: Orca reports limited:true even on a 1-message read.
+    """
+    messages = []
+    returned = 0
+    for page in sorted(Path(capture_dir).glob("page-*.stdout.json")):
+        page_messages = page_messages_of(page)
+        messages.extend(page_messages)
+        returned = max(returned, len(page_messages))
+    stamps = [m.get("timestamp") for m in messages if m.get("timestamp")]
+    return {"window": Path(capture_dir).name,
+            "returned": returned,
+            "saturated": returned >= cap,
+            "ids": {m["id"] for m in messages if m.get("id")},
+            "earliest_ms": min(stamps) if stamps else None}
 
 
 def union(root):
@@ -37,7 +61,7 @@ def union(root):
     merged = {}
     for d in capture_dirs(root):
         for page in sorted(d.glob("page-*.stdout.json")):
-            for m in page_messages(page):
+            for m in page_messages_of(page):
                 mid = m.get("id")
                 if not mid:
                     continue
@@ -59,7 +83,13 @@ def gaps(ordered, threshold_ms=120000):
     return out
 
 
-def coverage(ordered, started_at=None):
+def coverage(ordered, started_at=None, root=None):
+    """State plainly whether the record is complete, and on what proof.
+
+    Completeness is not a timestamp tolerance. It is proven when the earliest window was unsaturated,
+    because such a window held the whole history at that instant, and when every later window shares
+    a message with what came before it, so the windows form an unbroken chain rather than islands.
+    """
     stamps = [e["message"].get("timestamp") for e in ordered if e["message"].get("timestamp")]
     cov = {
         "messages": len(ordered),
@@ -69,16 +99,28 @@ def coverage(ordered, started_at=None):
         "internal_gaps": gaps(ordered),
         "single_window_messages": sum(1 for e in ordered if len(e["seen_in"]) == 1),
     }
-    # The front gap is the one that silently destroys a cell's record, so it is always stated.
+    details = []
+    if root is not None:
+        details = [window_detail(d) for d in capture_dirs(root)]
+        details = [d for d in details if d["returned"]]
+        details.sort(key=lambda d: (d["earliest_ms"] or 0, d["window"]))
+    cov["window_reads"] = [{k: d[k] for k in ("window", "returned", "saturated")} for d in details]
+    cov["starts_at_first_message"] = bool(details) and not details[0]["saturated"]
+    cov["first_window"] = details[0]["window"] if details else None
+    broken = []
+    accumulated = set()
+    for index, detail in enumerate(details):
+        # An unsaturated window contains message one, so it can never open a gap.
+        if index and detail["saturated"] and not (detail["ids"] & accumulated):
+            broken.append(detail["window"])
+        accumulated |= detail["ids"]
+    cov["chain_breaks"] = broken
     if started_at and stamps:
-        missing = stamps[0] - int(started_at)
-        cov["front_gap_ms"] = missing
-        cov["covers_dispatch_start"] = missing <= 0
-    elif started_at:
-        cov["front_gap_ms"] = None
-        cov["covers_dispatch_start"] = False
+        # Kept as information only. The delay between creating the Run and the agent's first message
+        # is launch latency, not lost dialogue, so it must not decide completeness.
+        cov["launch_to_first_message_ms"] = stamps[0] - int(started_at)
     cov["full_dialogue_proven"] = bool(
-        stamps and not cov["internal_gaps"] and cov.get("covers_dispatch_start", False))
+        stamps and not cov["internal_gaps"] and cov["starts_at_first_message"] and not broken)
     return cov
 
 
@@ -86,7 +128,7 @@ def build(root, started_at=None):
     ordered = union(root)
     return {"dialogue": [e["message"] for e in ordered],
             "provenance": [{"id": e["message"].get("id"), "seen_in": e["seen_in"]} for e in ordered],
-            "coverage": coverage(ordered, started_at)}
+            "coverage": coverage(ordered, started_at, root)}
 
 
 def main(argv=None):

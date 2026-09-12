@@ -14,6 +14,7 @@ def load():
 
 
 def write_window(root, name, messages, cursor="c1"):
+    """One bounded window. Fewer than 50 messages means Orca was not saturated at that instant."""
     d = root / name
     d.mkdir(parents=True)
     (d / "capture.json").write_text(json.dumps({"dispatchId": "ctx_x", "cursor": cursor}))
@@ -39,16 +40,42 @@ def test_overlapping_windows_dedupe_and_order(tmp_path):
     assert prov["a"] == ["win-0001"]
 
 
-def test_full_dialogue_is_proven_only_when_the_start_is_covered(tmp_path):
+def test_an_unsaturated_first_window_proves_the_record_starts_at_message_one(tmp_path):
+    """A window below the cap held the whole history at that instant, so nothing predates it."""
     m = load()
     write_window(tmp_path, "win-0001", [msg("a", 5000), msg("b", 6000)])
-    late = m.build(tmp_path, started_at=1000)
-    assert late["coverage"]["covers_dispatch_start"] is False
-    assert late["coverage"]["front_gap_ms"] == 4000
-    assert late["coverage"]["full_dialogue_proven"] is False, "a front gap can never be a proven record"
-    covered = m.build(tmp_path, started_at=5000)
-    assert covered["coverage"]["covers_dispatch_start"] is True
-    assert covered["coverage"]["full_dialogue_proven"] is True
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["starts_at_first_message"] is True
+    assert doc["coverage"]["full_dialogue_proven"] is True
+    # Launch latency is reported but must never decide completeness.
+    assert doc["coverage"]["launch_to_first_message_ms"] == 4000
+
+
+def test_a_saturated_first_window_can_never_prove_completeness(tmp_path):
+    m = load()
+    write_window(tmp_path, "win-0001", [msg(f"m{i}", 1000 + i) for i in range(50)])
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["window_reads"][0]["saturated"] is True
+    assert doc["coverage"]["starts_at_first_message"] is False
+    assert doc["coverage"]["full_dialogue_proven"] is False, (
+        "a window at the retention cap may have dropped older history")
+
+
+def test_saturated_windows_that_do_not_overlap_are_reported_as_a_broken_chain(tmp_path):
+    m = load()
+    write_window(tmp_path, "win-0001", [msg(f"a{i}", 1000 + i) for i in range(50)])
+    write_window(tmp_path, "win-0002", [msg(f"b{i}", 90000 + i) for i in range(50)])
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["chain_breaks"] == ["win-0002"]
+    assert doc["coverage"]["full_dialogue_proven"] is False
+
+
+def test_an_unsaturated_later_window_never_counts_as_a_chain_break(tmp_path):
+    m = load()
+    write_window(tmp_path, "win-0001", [msg("a", 1000)])
+    write_window(tmp_path, "win-0002", [msg("z", 90000)])
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["chain_breaks"] == []
 
 
 def test_an_interior_silence_defeats_completeness(tmp_path):
@@ -63,8 +90,8 @@ def test_without_a_start_time_completeness_is_never_claimed(tmp_path):
     m = load()
     write_window(tmp_path, "win-0001", [msg("a", 1000), msg("b", 2000)])
     doc = m.build(tmp_path, started_at=None)
-    assert doc["coverage"]["full_dialogue_proven"] is False
     assert doc["coverage"]["messages"] == 2
+    assert "launch_to_first_message_ms" not in doc["coverage"]
 
 
 def test_unreadable_and_empty_pages_are_skipped_not_fatal(tmp_path):
@@ -87,10 +114,12 @@ def test_messages_without_an_id_are_dropped_rather_than_duplicated(tmp_path):
 
 def test_exit_code_is_nonzero_when_the_record_is_incomplete(tmp_path):
     m = load()
-    write_window(tmp_path, "win-0001", [msg("a", 5000)])
+    write_window(tmp_path, "win-0001", [msg(f"m{i}", 1000 + i) for i in range(50)])
     out = tmp_path / "raw.json"
-    assert m.main([str(tmp_path), "--out", str(out), "--started-at", "1000"]) == 1
-    assert m.main([str(tmp_path), "--out", str(out), "--started-at", "5000"]) == 0
+    assert m.main([str(tmp_path), "--out", str(out), "--started-at", "1000"]) == 1, (
+        "a saturated first window is incomplete")
+    write_window(tmp_path, "win-0000", [msg("m0", 999), msg("m1", 1000)])
+    assert m.main([str(tmp_path), "--out", str(out), "--started-at", "999"]) == 0
 
 
 def test_launcher_starts_the_tailer_before_the_actor_can_finish():
