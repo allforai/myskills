@@ -11,6 +11,7 @@ Usage: merge_transcript.py <capture-root> --out <raw-dialogue.json> [--started-a
 """
 import argparse
 import json
+import os
 from pathlib import Path
 
 
@@ -143,11 +144,39 @@ def coverage(ordered, started_at=None, root=None):
     return cov
 
 
+def tailer_still_running(root):
+    """True when the cell's tailer is alive, so any union built now is a snapshot of a moving target.
+
+    One record was merged mid-capture and named 29 windows while 33 directories later existed. The four
+    late windows happened to add nothing, but that had to be re-derived to know, so the merge now says
+    plainly whether capture was still in progress.
+    """
+    pid_file = Path(root) / "tail.pid"
+    if not pid_file.is_file():
+        return None
+    try:
+        pid = int(pid_file.read_text().strip())
+        os.kill(pid, 0)
+    except (ValueError, OSError):
+        return False
+    return True
+
+
 def build(root, started_at=None):
     ordered = union(root)
+    cov = coverage(ordered, started_at, root)
+    # Record what this merge actually saw, so a later reader can spot a stale record without
+    # rebuilding the union to check.
+    cov["capture_dirs_seen"] = len(capture_dirs(root))
+    running = tailer_still_running(root)
+    cov["tailer_running_at_merge"] = running
+    if running:
+        cov["full_dialogue_proven"] = False
+        cov.setdefault("proof_withheld_because", []).append(
+            "the tailer was still capturing when this union was built; re-merge after it exits")
     return {"dialogue": [e["message"] for e in ordered],
             "provenance": [{"id": e["message"].get("id"), "seen_in": e["seen_in"]} for e in ordered],
-            "coverage": coverage(ordered, started_at, root)}
+            "coverage": cov}
 
 
 def main(argv=None):

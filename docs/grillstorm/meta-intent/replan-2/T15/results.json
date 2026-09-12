@@ -10,8 +10,8 @@
   },
   "required_cells": 14,
   "executed_cells": 2,
-  "passed_cells": 1,
-  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 1/14 cells certified: T15/missing-product-docs on codex, with a complete dialogue record and identity bound to a coordinator launch record. The claude half of that scenario ran cleanly but is archived uncertifiable under the old tooling and must be re-run. The remaining 12 cells are unverified. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
+  "passed_cells": 2,
+  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 2/14 cells certified, and T15/missing-product-docs is the first scenario complete on BOTH hosts. The remaining 12 cells are unverified. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -42,8 +42,8 @@
     {
       "scenario": "T15/missing-product-docs",
       "host": "claude",
-      "status": "unverified",
-      "reason": "环境无法验证: the same structural capture defect as the codex cell. The actor ran cleanly on Claude in its own Run, asked its scope question, received the one scripted turn, asked two further gates answered by the coordinator as operational, and reached worker_done reporting bootstrap blocked with two pending_decision entries for the export route the user declined to choose. But Orca retains only the last 50 transcript messages and --limit does not reach further back (verified at limit 200 and 1000), so the union of four captured windows leaves a 888932 ms front gap: the actor's opening question and the scripted answer are in no window. merge_transcript.py reports full_dialogue_proven false. The receipt is also in the actor's own rich shape and needs coordinator normalization, and its session id is self-reported like the codex one. No evaluation was spent on a cell that cannot be certified. Re-run once launch tails the transcript from dispatch.",
+      "status": "passed",
+      "reason": "CERTIFIED. Third attempt on this host; the earlier two are archived and neither failed on the actor's conduct. 186 messages from 29 windows with every message seen by at least three, the first window returning only the launch dispatch prompt so capture preceded any retention loss, and the 217s interior silence independently confirmed as bracketed by five single windows. This is the first cell whose provider session id is independently corroborated: a host-authored remote_session_change record in the Claude Code transcript the receipt names carries that session URL, and the same transcript carries the dispatch id 14 times. All 21 declared reads verified and none of the six declared non-reads claimed as read. Gates reproduced independently. Critically, both coordinator refusals stayed refused: filename and empty-export download are recorded pending with decision null and the refusal quoted, with no adopted value anywhere.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/actor-input.md",
       "attempts": [
         {
@@ -82,6 +82,51 @@
           ],
           "actor_reported_outcome": "bootstrap blocked, /run not offered; validate_bootstrap failed with 2 pending_decision for the export route the coordinator declined to choose; validate_unattended_readiness not_ready",
           "note": "Observed behaviour worth keeping even though the cell is uncertifiable: refusing to decide the CSV route produced a recorded pending decision that blocks, rather than an invented choice. That is the behaviour the scenario's fourth criterion is about.",
+          "released": true
+        },
+        {
+          "dispatch": "ctx_6f59a4ea188b",
+          "run": "run_3f802a1aa228",
+          "task": "task_1bd8757ffd3f",
+          "outcome": "worker_done",
+          "host": "claude",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "session_01Sib8r1Z3DxW99rm3MwRA2s",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture/raw-dialogue.json",
+            "sha256": "817e9cdffeb07ed4e402d27804f6c0efe914e2039793e37efe7dc44a4bc23a18"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/receipt.json",
+          "receipt_original": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/receipt.actor-original.json",
+          "coordinator_identity": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture/coordinator-identity.json",
+          "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "evaluation": "docs/grillstorm/meta-intent/replan-2/campaign/T15-evaluations/claude-missing-product-docs-certified.md",
+          "loaded_files_bound": 21,
+          "transcript_windows": 29,
+          "transcript_union_messages": 186,
+          "transcript_single_window_messages": 0,
+          "transcript_complete": true,
+          "full_dialogue_proven": true,
+          "session_id_independently_corroborated": true,
+          "actor_agreed_with_coordinator_on": [
+            "dispatch_id",
+            "task_id",
+            "terminal_handle"
+          ],
+          "scripted_turns_spent": 1,
+          "coordinator_answered_gates": [
+            "msg_974411f394e5",
+            "msg_fc8b3e9064af",
+            "msg_0e71133083e4"
+          ],
+          "coordinator_refused": [
+            "D1 download-on-empty",
+            "D2 filename"
+          ],
+          "refusals_held": true,
+          "known_limitation": "Orca's clipping warning is genuine: 25 of 89 tool-call inputs carry a truncation marker, so some message CONTENTS are elided mid-string. No message is missing. 'Every message captured' is the claim that holds; 'every byte of every message' is not.",
           "released": true
         }
       ],
@@ -425,6 +470,16 @@
         "T15/missing-product-docs codex"
       ],
       "status": "fixed"
+    },
+    {
+      "code": "union-built-before-the-tailer-finished",
+      "found": "2026-09-12",
+      "detail": "The claude cell's record was merged while its tailer was still capturing, so coverage names 29 windows while 33 directories now exist. The four later windows contribute no message outside the 186, so completeness is unaffected, but a reader cannot tell the omission is harmless without re-deriving the union.",
+      "fix": "merge only after the tailer exits, and record the capture-directory count observed so staleness is visible. The certified cell's artifacts are NOT re-merged: certified artifacts are frozen, so the tool is fixed for later cells instead.",
+      "affects": [
+        "T15/missing-product-docs claude"
+      ],
+      "status": "fixed for later cells; the certified record is left frozen"
     }
   ],
   "candidate_findings": [
@@ -455,6 +510,14 @@
       "why_it_matters": "The two rules disagree precisely where the answer matters most. With a single independent verification, adding the loop lets the pipeline patch code and re-judge its own verification failure, which is the fake-completion shape cross-exam exists to catch. So the guidance is not merely inconsistent, it points toward the riskier shape in the case where independence is thinnest.",
       "actor_behaviour": "Good: the actor identified the conflict, refused to resolve it by default, stated its lean explicitly as a lean and not a default it would apply on silence, and asked. The coordinator answered (ii) and instructed it to record the inconsistency rather than smooth it over.",
       "routing": "pending: attach to the owning bootstrap-planning/audit-lens ticket"
+    },
+    {
+      "code": "receipt-overstates-clean-room-separation",
+      "found_by": "T15/missing-product-docs claude, certified run ctx_6f59a4ea188b",
+      "severity": "honesty defect in the actor's receipt; collateral, does not affect the cell's verdict",
+      "detail": "The receipt's installed_plugin_not_used block asserts the installed plugin copy's hash differs from the candidate entry and gives its version as 0.16.0. Both are false: the two files hash identically to ac03ae22…, and the file declares 0.14.2, with 0.16.0 being only the plugin-cache directory name. The candidate entry was demonstrably read by absolute path from the candidate tree, so the separation itself held, but a receipt asserting a hash difference that does not exist overstates the evidence it offers.",
+      "reproducer": "sha256 both SKILL.md files and read the version frontmatter of the installed copy",
+      "routing": "pending: attach to the receipt/evidence-honesty ticket line"
     }
   ],
   "admission_contract_change": {

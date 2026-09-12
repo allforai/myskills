@@ -1,5 +1,6 @@
 """A union record must never claim completeness it cannot show."""
 import importlib.util
+import os
 import json
 from pathlib import Path
 
@@ -199,3 +200,31 @@ def test_identity_record_is_complete_when_orca_supplies_both_sides(tmp_path):
     written = json.loads((tmp_path / "capture" / "coordinator-identity.json").read_text())
     assert written["dispatch_id"] == "ctx_a"
     assert written["orca_side"]["dispatch_prompt_processIncarnation"] == "inc_a"
+
+
+def test_a_union_built_while_the_tailer_runs_withholds_proof(tmp_path):
+    """One record named 29 windows while 33 later existed, because it merged mid-capture."""
+    m = load()
+    write_window(tmp_path, "win-0001", [msg("a", 1000), msg("b", 2000)])
+    (tmp_path / "tail.pid").write_text(str(os.getpid()))
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["tailer_running_at_merge"] is True
+    assert doc["coverage"]["full_dialogue_proven"] is False
+    assert doc["coverage"]["proof_withheld_because"]
+
+
+def test_a_union_built_after_the_tailer_exits_can_prove_completeness(tmp_path):
+    m = load()
+    write_window(tmp_path, "win-0001", [msg("a", 1000), msg("b", 2000)])
+    (tmp_path / "tail.pid").write_text("999999999")  # a pid that cannot be alive
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["tailer_running_at_merge"] is False
+    assert doc["coverage"]["full_dialogue_proven"] is True
+
+
+def test_the_merge_records_how_many_capture_dirs_it_saw(tmp_path):
+    m = load()
+    write_window(tmp_path, "win-0001", [msg("a", 1000)])
+    write_window(tmp_path, "win-0002", [msg("a", 1000), msg("b", 2000)])
+    doc = m.build(tmp_path, started_at=1000)
+    assert doc["coverage"]["capture_dirs_seen"] == 2
