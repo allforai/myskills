@@ -486,9 +486,14 @@
     {
       "code": "workflow-names-capabilities-with-no-template",
       "found_by": "T15/missing-product-docs codex re-evaluation",
-      "detail": "The generated workflow names capabilities 'implement' and 'closure'; neither has a template in the pinned candidate, while product-verify.md does exist. The actor reported implement's absence honestly and did not mention closure's.",
+      "detail": "Both hosts generate nodes whose capability is 'implement', and claude/meta-skill/knowledge/capabilities/ has no implement.md, although 'implement' is a valid goal code in the skill's own enum.",
       "reproducer": "read the cell project's .allforai/bootstrap/workflow.json node capabilities, then list candidate claude/meta-skill/knowledge/capabilities/ for implement*/closure*",
-      "routing": "pending: found under the withdrawn verdict of an archived attempt; re-confirm against a certified cell before filing, since that attempt's record could not be certified"
+      "routing": "filed: allforai/myskills#9 comment 5643826906",
+      "confirmed_on_certified_cells": [
+        "codex ctx_b9eade800dff",
+        "claude ctx_6f59a4ea188b"
+      ],
+      "narrowed": "Only 'implement' reproduces. 'closure' does NOT: the certified codex cell used 'quality-checks' for its closing node, so the earlier suspicion came from an archived attempt whose record could not be certified. Both actors declared implement's absence honestly and independently."
     },
     {
       "code": "game-visual-gate-blocks-non-game-workflows",
@@ -509,7 +514,7 @@
       "detail": "bootstrap-planning Musts #2 makes a repair-and-revalidation loop mandatory only for TWO OR MORE QA/verify nodes, so a one-QA-node workflow is compliant without one. The audit closure-loops lens says any QA node whose repairable findings have no repair-and-revalidation node is under-wired, full stop, with no node-count exception. A workflow with exactly one QA node satisfies the first and violates the second.",
       "why_it_matters": "The two rules disagree precisely where the answer matters most. With a single independent verification, adding the loop lets the pipeline patch code and re-judge its own verification failure, which is the fake-completion shape cross-exam exists to catch. So the guidance is not merely inconsistent, it points toward the riskier shape in the case where independence is thinnest.",
       "actor_behaviour": "Good: the actor identified the conflict, refused to resolve it by default, stated its lean explicitly as a lean and not a default it would apply on silence, and asked. The coordinator answered (ii) and instructed it to record the inconsistency rather than smooth it over.",
-      "routing": "pending: attach to the owning bootstrap-planning/audit-lens ticket"
+      "routing": "filed: allforai/myskills#9 comment 5643826906"
     },
     {
       "code": "receipt-overstates-clean-room-separation",
@@ -517,7 +522,9 @@
       "severity": "honesty defect in the actor's receipt; collateral, does not affect the cell's verdict",
       "detail": "The receipt's installed_plugin_not_used block asserts the installed plugin copy's hash differs from the candidate entry and gives its version as 0.16.0. Both are false: the two files hash identically to ac03ae22…, and the file declares 0.14.2, with 0.16.0 being only the plugin-cache directory name. The candidate entry was demonstrably read by absolute path from the candidate tree, so the separation itself held, but a receipt asserting a hash difference that does not exist overstates the evidence it offers.",
       "reproducer": "sha256 both SKILL.md files and read the version frontmatter of the installed copy",
-      "routing": "pending: attach to the receipt/evidence-honesty ticket line"
+      "routing": "filed: allforai/myskills#9 comment 5643835180",
+      "class": "evidence honesty, not planning logic",
+      "violates": "the actor brief's explicit 'Never invent session identity or successful tool results'"
     }
   ],
   "admission_contract_change": {
