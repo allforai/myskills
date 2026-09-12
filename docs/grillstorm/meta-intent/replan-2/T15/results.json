@@ -187,7 +187,16 @@
             "two sub-agent spawns carry encrypted opaque payloads, so four audit artefacts are corroborable as artefacts and as spawns that occurred, not in their internal reasoning",
             "the actor declined to invent a transcript export path, so there is no host-side file beyond the Orca pages"
           ],
-          "released": true
+          "released": true,
+          "post_certification_drift": {
+            "what": "I re-normalized this certified cell's receipt while fixing the normalizer for the claude host, changing its bytes after the evaluation. actor_agreed_on grew from [dispatch_id, terminal_handle] to [dispatch_id, task_id, terminal_handle] because the improved identity search reads nested Orca ids.",
+            "as_evaluated_sha256": "10076b67b7d3e04d5afa34e6a94d8dd70e9c011b01532d2363f13debbafb2354",
+            "current_sha256": "6f7c3858c8912687ffb3b2ea4fe34910eef985801e272f80ae413c3dc34c92ee",
+            "byte_restorable": false,
+            "why_the_certification_still_stands": "The evidence the evaluator judged is unchanged and digest-verified: raw_dialogue is identical (9de10b07…), loaded_files identical at 52 entries, and host, session_id and source_root untouched. The only change is the derived agreement list, which grew, so the receipt corroborates strictly more than when it passed. Admission re-run returns admissible-for-evaluation.",
+            "what_was_lost": "the as-evaluated bytes. I attempted to reconstruct them and the digest did not match, so I deleted the reconstruction rather than leave a misleading artifact beside the cell.",
+            "fix": "normalize_receipt.py now refuses to rewrite the receipt of any cell the ledger records as passed, unless --allow-certified is passed, in which case the evaluation must be redone. Certified artifacts are frozen."
+          }
         }
       ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/project"
@@ -406,6 +415,16 @@
         "T15/missing-product-docs claude"
       ],
       "status": "fixed"
+    },
+    {
+      "code": "certified-artifacts-were-not-frozen",
+      "found": "2026-09-12",
+      "detail": "Nothing stopped a coordinator from rewriting a certified cell's receipt, and I did exactly that while improving the normalizer for the other host. The change was additive and the judged evidence unchanged, but the as-evaluated bytes could not be restored, which is an audit-trail loss.",
+      "fix": "normalize_receipt.py refuses to overwrite a passed cell's receipt without --allow-certified",
+      "affects": [
+        "T15/missing-product-docs codex"
+      ],
+      "status": "fixed"
     }
   ],
   "candidate_findings": [
@@ -427,6 +446,15 @@
         "give non-game visual-QA workflows a criteria producer that visual-acceptance.json can satisfy in place"
       ],
       "routing": "filed: allforai/myskills#9 comment 5643526591"
+    },
+    {
+      "code": "repair-loop-rules-contradict-each-other",
+      "found_by": "T15/missing-product-docs claude, dispatch ctx_6f59a4ea188b (actor surfaced it rather than picking)",
+      "severity": "two pieces of the candidate's own guidance give opposite answers for a single-QA-node workflow",
+      "detail": "bootstrap-planning Musts #2 makes a repair-and-revalidation loop mandatory only for TWO OR MORE QA/verify nodes, so a one-QA-node workflow is compliant without one. The audit closure-loops lens says any QA node whose repairable findings have no repair-and-revalidation node is under-wired, full stop, with no node-count exception. A workflow with exactly one QA node satisfies the first and violates the second.",
+      "why_it_matters": "The two rules disagree precisely where the answer matters most. With a single independent verification, adding the loop lets the pipeline patch code and re-judge its own verification failure, which is the fake-completion shape cross-exam exists to catch. So the guidance is not merely inconsistent, it points toward the riskier shape in the case where independence is thinnest.",
+      "actor_behaviour": "Good: the actor identified the conflict, refused to resolve it by default, stated its lean explicitly as a lean and not a default it would apply on silence, and asked. The coordinator answered (ii) and instructed it to record the inconsistency rather than smooth it over.",
+      "routing": "pending: attach to the owning bootstrap-planning/audit-lens ticket"
     }
   ],
   "admission_contract_change": {

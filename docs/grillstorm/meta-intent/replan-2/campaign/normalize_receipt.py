@@ -16,8 +16,22 @@ import hashlib
 import json
 from pathlib import Path
 
-ASSET_KEYS = ("loaded_assets", "loaded_files", "references_loaded")
+# Key names that record what the actor did NOT read. Harvesting these would turn a declared
+# non-read into a claimed read, which is the one lie normalization must never introduce.
+DENY = ("not_used", "not_loaded", "deliberately_not", "unavailable", "missing", "absent", "skipped")
+PATH_FIELDS = ("abs_path", "resolved_path", "path", "requested_entry_path")
+
 HOSTS = {"codex": "codex", "claude": "claude"}
+
+
+def host_value(receipt):
+    """The host, wherever this receipt put it."""
+    for candidate in (receipt.get("host"),
+                      (receipt.get("session_identity") or {}).get("host") if isinstance(receipt.get("session_identity"), dict) else None,
+                      (receipt.get("host") or {}).get("product") if isinstance(receipt.get("host"), dict) else None):
+        if candidate:
+            return candidate
+    return None
 
 
 def normalize_host(value):
@@ -57,54 +71,103 @@ def session_id(receipt):
 
 
 def loaded_files(receipt, candidate_root):
-    """Every asset the actor recorded that lives inside the pinned candidate tree.
+    """Every candidate asset the receipt records as actually read, whatever the host called the key.
 
-    Assets outside the candidate (the host's own skill stubs, for instance) are deliberately dropped:
-    admission compares against the candidate manifest, and an outside path would read as an extra file.
+    Hosts name these differently and nest them differently: one wrote `loaded_assets`, another
+    `references_loaded_in_full` plus `references_loaded_in_part` plus a single `candidate_entry`.
+    Enumerating key names per host would silently under-report the next host, so discovery is
+    structural: anything carrying a sha256 and a path. Two guards keep that from over-reporting.
+    Keys naming non-reads are refused outright, and every path must resolve inside the pinned
+    candidate, which drops host skill stubs and installed-but-unused plugin copies.
     """
     root = Path(candidate_root).resolve()
+
+    def harvest(value, key_name):
+        if any(token in key_name.lower() for token in DENY):
+            return
+        items = value if isinstance(value, list) else [value]
+        for item in items:
+            if not isinstance(item, dict) or not item.get("sha256"):
+                continue
+            raw = next((item[f] for f in PATH_FIELDS if item.get(f)), None)
+            if raw:
+                yield raw, item["sha256"]
+
     out, seen = [], set()
-    for key in ASSET_KEYS:
-        for asset in receipt.get(key) or []:
-            if not isinstance(asset, dict):
-                continue
-            raw = asset.get("resolved_path") or asset.get("path")
-            if not raw or not asset.get("sha256"):
-                continue
-            path = Path(raw).resolve()
-            if not path.is_relative_to(root) or str(path) in seen:
+    for key, value in receipt.items():
+        for raw, digest in harvest(value, key):
+            candidate = Path(raw)
+            path = (candidate if candidate.is_absolute() else root / candidate).resolve()
+            if not path.is_relative_to(root) or not path.is_file() or str(path) in seen:
                 continue
             seen.add(str(path))
-            out.append({"path": str(path), "sha256": asset["sha256"]})
-    return out
+            out.append({"path": str(path), "sha256": digest})
+    return sorted(out, key=lambda f: f["path"])
+
+
+# Field names hosts use for the Orca ids, mapped to the coordinator record they must agree with.
+# Hosts nest these differently: one wrote them at top level, another under session_identity.orca.
+IDENTITY_ALIASES = {
+    "dispatch_id": ("dispatch_id", "dispatchId"),
+    "terminal_handle": ("terminal_handle", "worker_terminal_handle", "agent_terminal_handle"),
+    "task_id": ("task_id", "taskId"),
+}
+
+
+def claimed_identity(receipt):
+    """Every Orca id the receipt states, found at any depth.
+
+    Looking only at the top level discarded real corroboration: one host recorded its dispatch id,
+    terminal handle and task id under session_identity.orca, and a shallow read saw none of them, so
+    the strongest available agreement evidence was silently dropped.
+    """
+    found = {}
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                for field, aliases in IDENTITY_ALIASES.items():
+                    if key in aliases and isinstance(value, str) and value:
+                        found.setdefault(field, value)
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(receipt)
+    return found
 
 
 def identity_binding(receipt, coordinator_identity):
-    """Bind to what the coordinator observed, and verify what the actor independently reported."""
+    """Bind to what the coordinator observed, and verify every id the actor independently stated."""
     orca_side = coordinator_identity.get("orca_side") or {}
     incarnation = (orca_side.get("dispatch_prompt_processIncarnation")
                    or orca_side.get("terminal_incarnationId"))
     dispatch = coordinator_identity.get("dispatch_id")
     if not dispatch or not incarnation:
         raise ValueError("coordinator identity record is incomplete; cannot bind")
-    disagreements = []
-    for field, observed in (("dispatch_id", dispatch),
-                            ("terminal_handle", orca_side.get("terminal_handle"))):
-        claimed = receipt.get(field)
-        if claimed and observed and claimed != observed:
-            disagreements.append({"field": field, "actor_said": claimed, "coordinator_saw": observed})
+    observed = {"dispatch_id": dispatch,
+                "terminal_handle": orca_side.get("terminal_handle"),
+                "task_id": coordinator_identity.get("task_id")}
+    claimed = claimed_identity(receipt)
+    disagreements, agreed = [], []
+    for field, seen in observed.items():
+        said = claimed.get(field)
+        if not said or not seen:
+            continue
+        if said != seen:
+            disagreements.append({"field": field, "actor_said": said, "coordinator_saw": seen})
+        else:
+            agreed.append(field)
     return ({"dispatch_id": dispatch, "process_incarnation": incarnation,
-             "actor_agreed_on": sorted(f for f in ("dispatch_id", "terminal_handle")
-                                       if receipt.get(f) and receipt.get(f) == (
-                                           dispatch if f == "dispatch_id" else orca_side.get(f)))},
-            disagreements)
+             "actor_agreed_on": sorted(agreed)}, disagreements)
 
 
 def actor_receipt_path(cell):
     """Always normalize from the actor's own words.
 
-    Once receipt.json has been normalized it no longer carries the actor's top-level dispatch_id and
-    terminal_handle, so re-reading it silently loses the actor-agreement evidence that makes the
+    Once receipt.json has been normalized it no longer carries the actor's own dispatch id and
+    terminal handle, so re-reading it silently loses the actor-agreement evidence that makes the
     identity binding worth anything. Prefer the preserved original whenever it exists, which also
     makes normalization idempotent.
     """
@@ -123,7 +186,7 @@ def build(cell, candidate_root, raw_dialogue):
         raise ValueError(f"actor identity contradicts the coordinator record: {disagreements}")
     raw = Path(raw_dialogue).resolve()
     return {
-        "host": normalize_host(receipt.get("host")),
+        "host": normalize_host(host_value(receipt)),
         "session_id": session_id(receipt),
         "orca_identity": binding,
         "source_root": str(Path(candidate_root).resolve()),
@@ -137,14 +200,48 @@ def build(cell, candidate_root, raw_dialogue):
     }
 
 
+def certified_guard(cell, ledger=None, allow=False):
+    """Refuse to rewrite the receipt of a cell already recorded as passed.
+
+    A certified cell's artifacts are what an evaluator judged. Re-normalizing one under improved
+    tooling changed a certified receipt's bytes and the as-evaluated artifact could not be restored,
+    which is an audit-trail loss even though the change only added corroboration. Freeze instead.
+    """
+    if allow:
+        return
+    ledger = Path(ledger) if ledger else (Path(__file__).parent.parent / "T15" / "results.json")
+    if not ledger.is_file():
+        return
+    try:
+        cells = json.loads(ledger.read_text()).get("cells") or []
+    except ValueError:
+        return
+    target = str(Path(cell).resolve())
+    for entry in cells:
+        if entry.get("status") != "passed":
+            continue
+        for attempt in entry.get("attempts") or []:
+            receipt = attempt.get("receipt") or ""
+            if receipt and str(Path(receipt).parent.resolve()) == target:
+                raise SystemExit(
+                    f"refusing to rewrite the receipt of a certified cell ({entry.get('scenario')} "
+                    f"{entry.get('host')}); its artifacts are what the evaluator judged. Pass "
+                    f"--allow-certified only to deliberately re-open it, and re-evaluate afterwards.")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("cell")
     ap.add_argument("--candidate-root", required=True)
     ap.add_argument("--raw-dialogue", required=True)
     ap.add_argument("--out")
+    ap.add_argument("--ledger")
+    ap.add_argument("--allow-certified", action="store_true",
+                    help="deliberately re-open a certified cell; its evaluation must then be redone")
     a = ap.parse_args(argv)
     cell = Path(a.cell)
+    if not a.out:
+        certified_guard(cell, a.ledger, a.allow_certified)
     record = build(cell, a.candidate_root, a.raw_dialogue)
     original = cell / "receipt.actor-original.json"
     if not original.exists():

@@ -111,3 +111,22 @@ made CPython write three `__pycache__` files into the frozen tree. It detected t
 extra-files check, deleted them, and re-verified. I confirmed independently afterwards: 538 manifest
 files and 19 symlinks with zero deviations, zero extra files, no `__pycache__` remaining, and the
 cell's 12 source files unchanged.
+
+
+## Post-certification drift, disclosed
+
+After this cell was certified I re-normalized its receipt while generalizing the normalizer for the
+Claude host, which changed the receipt's bytes. `actor_agreed_on` grew from
+`[dispatch_id, terminal_handle]` to `[dispatch_id, task_id, terminal_handle]`, because the improved
+identity search finds Orca ids nested under `session_identity.orca` where a shallow read saw none.
+
+The certification still stands, because the evidence the evaluator judged is unchanged and
+digest-verified: `raw_dialogue` identical, `loaded_files` identical at 52, and host, session and
+source root untouched. The receipt now corroborates strictly more than when it passed, and admission
+re-run returns `admissible-for-evaluation`.
+
+What was lost is the as-evaluated bytes. The evaluator recorded
+`receipt.json sha256 10076b67…`, and I could not byte-reproduce that artifact; my attempted
+reconstruction hashed differently, so I deleted it rather than leave something misleading beside the
+cell. Certified artifacts should have been frozen at certification, and `normalize_receipt.py` now
+refuses to rewrite the receipt of any cell the ledger records as passed.

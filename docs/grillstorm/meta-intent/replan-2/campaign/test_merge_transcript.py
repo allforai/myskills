@@ -78,12 +78,33 @@ def test_an_unsaturated_later_window_never_counts_as_a_chain_break(tmp_path):
     assert doc["coverage"]["chain_breaks"] == []
 
 
-def test_an_interior_silence_defeats_completeness(tmp_path):
+def test_a_silence_one_window_brackets_is_reported_but_does_not_defeat_completeness(tmp_path):
+    """An actor waiting on a coordinator reply goes quiet for minutes; that is not a hole.
+
+    One window holding both bracketing messages, with nothing between, proves nothing was between.
+    """
     m = load()
     write_window(tmp_path, "win-0001", [msg("a", 1000), msg("b", 500000)])
     doc = m.build(tmp_path, started_at=1000)
-    assert doc["coverage"]["internal_gaps"], "a 499s silence must be reported"
-    assert doc["coverage"]["full_dialogue_proven"] is False
+    gap = doc["coverage"]["internal_gaps"]
+    assert gap and gap[0]["silence_ms"] == 499000, "the silence must still be reported"
+    assert gap[0]["observed_within"] == ["win-0001"]
+    assert gap[0]["explained"] is True
+    assert doc["coverage"]["unexplained_gaps"] == []
+    assert doc["coverage"]["full_dialogue_proven"] is True
+
+
+def test_a_silence_no_single_window_brackets_is_unexplained_and_defeats_completeness(tmp_path):
+    m = load()
+    write_window(tmp_path, "win-0001", [msg("a", 1000)])
+    write_window(tmp_path, "win-0002", [msg("b", 500000)])
+    doc = m.build(tmp_path, started_at=1000)
+    gap = doc["coverage"]["internal_gaps"]
+    assert gap and gap[0]["observed_within"] == []
+    assert gap[0]["explained"] is False
+    assert doc["coverage"]["unexplained_gaps"] == gap
+    assert doc["coverage"]["full_dialogue_proven"] is False, (
+        "no window saw across this silence, so messages may be missing from it")
 
 
 def test_without_a_start_time_completeness_is_never_claimed(tmp_path):

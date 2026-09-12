@@ -163,3 +163,130 @@ def test_normalization_is_idempotent_and_keeps_the_actor_agreement_evidence(tmp_
     assert first == second, "normalization must be idempotent"
     assert second["orca_identity"]["actor_agreed_on"] == ["dispatch_id", "terminal_handle"], (
         "the actor's independent agreement is the evidence; it must survive a re-run")
+
+
+def test_a_declared_non_read_is_never_harvested_as_a_read(tmp_path):
+    """The one lie normalization must not introduce: claiming a read the actor said it skipped."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    skipped = candidate / "claude" / "meta-skill" / "knowledge" / "product-intent.md"
+    skipped.parent.mkdir(parents=True, exist_ok=True)
+    skipped.write_text("routed elsewhere; not read\n")
+    digest = hashlib.sha256(skipped.read_bytes()).hexdigest()
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["references_deliberately_not_loaded"] = [{"path": str(skipped), "sha256": digest}]
+    receipt["installed_plugin_not_used"] = {"path": str(skipped), "sha256": digest}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert all("product-intent.md" not in f["path"] for f in record["loaded_files"]), (
+        "a key naming a non-read must be refused even though it carries a path and a sha256")
+
+
+def test_assets_are_discovered_whatever_the_host_named_the_key(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    extra = candidate / "claude" / "meta-skill" / "knowledge" / "engine.md"
+    extra.parent.mkdir(parents=True, exist_ok=True)
+    extra.write_text("read in part\n")
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("loaded_assets")
+    receipt["references_loaded_in_full"] = [
+        {"path": "codex/meta-skill/SKILL.md",
+         "sha256": hashlib.sha256((candidate / "codex/meta-skill/SKILL.md").read_bytes()).hexdigest()}]
+    receipt["references_loaded_in_part"] = [
+        {"abs_path": str(extra), "sha256": hashlib.sha256(extra.read_bytes()).hexdigest()}]
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    names = [f["path"] for f in record["loaded_files"]]
+    assert len(names) == 2, names
+    assert any("SKILL.md" in n for n in names), "a relative path must resolve against the candidate"
+    assert any("engine.md" in n for n in names), "abs_path must be honoured too"
+
+
+def test_the_host_is_found_when_nested_under_session_identity(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("host")
+    receipt["session_identity"] = {"host": "Claude Code CLI", "claude_code_session_id": "session_y"}
+    receipt.pop("independent_session_identity")
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert record["host"] == "claude"
+    assert record["session_id"] == "session_y"
+
+
+def test_a_recorded_path_that_does_not_exist_is_not_reported_as_loaded(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["loaded_assets"].append({"path": str(candidate / "ghost.md"), "sha256": "0" * 64})
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert all("ghost.md" not in f["path"] for f in record["loaded_files"])
+
+
+def test_orca_ids_nested_under_session_identity_are_found_and_verified(tmp_path):
+    """A shallow read dropped this host's agreement evidence entirely."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("dispatch_id"); receipt.pop("terminal_handle")
+    receipt["session_identity"] = {"orca": {"dispatch_id": "ctx_a", "worker_terminal_handle": "term_a",
+                                            "task_id": "task_a"}}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    identity = json.loads((cell / "capture" / "coordinator-identity.json").read_text())
+    identity["task_id"] = "task_a"
+    (cell / "capture" / "coordinator-identity.json").write_text(json.dumps(identity))
+    record = m.build(cell, candidate, raw)
+    assert record["orca_identity"]["actor_agreed_on"] == ["dispatch_id", "task_id", "terminal_handle"]
+
+
+def test_a_nested_id_that_disagrees_is_still_refused(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("dispatch_id")
+    receipt["session_identity"] = {"orca": {"dispatch_id": "ctx_not_mine"}}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    with pytest.raises(ValueError, match="contradicts the coordinator"):
+        m.build(cell, candidate, raw)
+
+
+def test_refuses_to_rewrite_the_receipt_of_a_certified_cell(tmp_path):
+    """I rewrote a certified receipt and could not restore the as-evaluated bytes."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    ledger = tmp_path / "results.json"
+    ledger.write_text(json.dumps({"cells": [
+        {"scenario": "T15/x", "host": "codex", "status": "passed",
+         "attempts": [{"receipt": str(cell / "receipt.json")}]}]}))
+    with pytest.raises(SystemExit, match="certified cell"):
+        m.main([str(cell), "--candidate-root", str(candidate), "--raw-dialogue", str(raw),
+                "--ledger", str(ledger)])
+    m.main([str(cell), "--candidate-root", str(candidate), "--raw-dialogue", str(raw),
+            "--ledger", str(ledger), "--allow-certified"])
+
+
+def test_an_unverified_cell_is_not_blocked_by_the_guard(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    ledger = tmp_path / "results.json"
+    ledger.write_text(json.dumps({"cells": [
+        {"scenario": "T15/x", "host": "codex", "status": "unverified",
+         "attempts": [{"receipt": str(cell / "receipt.json")}]}]}))
+    assert m.main([str(cell), "--candidate-root", str(candidate), "--raw-dialogue", str(raw),
+                   "--ledger", str(ledger)]) == 0
+
+
+def test_writing_to_an_explicit_out_path_never_touches_the_cell(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    ledger = tmp_path / "results.json"
+    ledger.write_text(json.dumps({"cells": [
+        {"scenario": "T15/x", "host": "codex", "status": "passed",
+         "attempts": [{"receipt": str(cell / "receipt.json")}]}]}))
+    before = (cell / "receipt.json").read_text()
+    assert m.main([str(cell), "--candidate-root", str(candidate), "--raw-dialogue", str(raw),
+                   "--ledger", str(ledger), "--out", str(tmp_path / "elsewhere.json")]) == 0
+    assert (cell / "receipt.json").read_text() == before

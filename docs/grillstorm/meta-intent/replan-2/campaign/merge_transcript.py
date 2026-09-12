@@ -73,13 +73,30 @@ def union(root):
     return ordered
 
 
-def gaps(ordered, threshold_ms=120000):
-    """Silences longer than threshold between consecutive captured messages."""
+def gaps(ordered, threshold_ms=120000, details=None):
+    """Long silences between consecutive captured messages, classified as observed or unexplained.
+
+    A quiet stretch is not evidence of loss. An actor waiting on a coordinator reply emits nothing for
+    minutes, and treating that as a hole would mark exactly the well-behaved cells incomplete. The
+    distinction is decidable: a window is a contiguous suffix of the transcript, so a window holding
+    BOTH the message before the silence and the message after it, with nothing between, proves there
+    was nothing between. Only a silence no single window brackets is unexplained.
+    """
     out = []
-    stamps = [e["message"].get("timestamp") for e in ordered if e["message"].get("timestamp")]
-    for a, b in zip(stamps, stamps[1:]):
-        if b - a > threshold_ms:
-            out.append({"after_ms": a, "before_ms": b, "silence_ms": b - a})
+    timed = [e for e in ordered if e["message"].get("timestamp")]
+    for earlier, later in zip(timed, timed[1:]):
+        silence = later["message"]["timestamp"] - earlier["message"]["timestamp"]
+        if silence <= threshold_ms:
+            continue
+        bracketing = []
+        for detail in details or []:
+            if earlier["message"]["id"] in detail["ids"] and later["message"]["id"] in detail["ids"]:
+                bracketing.append(detail["window"])
+        out.append({"after_ms": earlier["message"]["timestamp"],
+                    "before_ms": later["message"]["timestamp"],
+                    "silence_ms": silence,
+                    "observed_within": bracketing,
+                    "explained": bool(bracketing)})
     return out
 
 
@@ -91,19 +108,21 @@ def coverage(ordered, started_at=None, root=None):
     a message with what came before it, so the windows form an unbroken chain rather than islands.
     """
     stamps = [e["message"].get("timestamp") for e in ordered if e["message"].get("timestamp")]
-    cov = {
-        "messages": len(ordered),
-        "earliest_ms": stamps[0] if stamps else None,
-        "latest_ms": stamps[-1] if stamps else None,
-        "windows": sorted({w for e in ordered for w in e["seen_in"]}),
-        "internal_gaps": gaps(ordered),
-        "single_window_messages": sum(1 for e in ordered if len(e["seen_in"]) == 1),
-    }
     details = []
     if root is not None:
         details = [window_detail(d) for d in capture_dirs(root)]
         details = [d for d in details if d["returned"]]
         details.sort(key=lambda d: (d["earliest_ms"] or 0, d["window"]))
+    found_gaps = gaps(ordered, details=details)
+    cov = {
+        "messages": len(ordered),
+        "earliest_ms": stamps[0] if stamps else None,
+        "latest_ms": stamps[-1] if stamps else None,
+        "windows": sorted({w for e in ordered for w in e["seen_in"]}),
+        "internal_gaps": found_gaps,
+        "unexplained_gaps": [g for g in found_gaps if not g["explained"]],
+        "single_window_messages": sum(1 for e in ordered if len(e["seen_in"]) == 1),
+    }
     cov["window_reads"] = [{k: d[k] for k in ("window", "returned", "saturated")} for d in details]
     cov["starts_at_first_message"] = bool(details) and not details[0]["saturated"]
     cov["first_window"] = details[0]["window"] if details else None
@@ -120,7 +139,7 @@ def coverage(ordered, started_at=None, root=None):
         # is launch latency, not lost dialogue, so it must not decide completeness.
         cov["launch_to_first_message_ms"] = stamps[0] - int(started_at)
     cov["full_dialogue_proven"] = bool(
-        stamps and not cov["internal_gaps"] and cov["starts_at_first_message"] and not broken)
+        stamps and not cov["unexplained_gaps"] and cov["starts_at_first_message"] and not broken)
     return cov
 
 
