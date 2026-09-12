@@ -9,9 +9,9 @@
     "codex": "codex/meta-skill/SKILL.md"
   },
   "required_cells": 14,
-  "executed_cells": 2,
-  "passed_cells": 2,
-  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 2/14 cells certified, and T15/missing-product-docs is the first scenario complete on BOTH hosts. The remaining 12 cells are unverified. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
+  "executed_cells": 3,
+  "passed_cells": 3,
+  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 3/14 cells certified. missing-product-docs is complete on both hosts; large-code-local-button is certified on codex and re-running on claude after an unpinned resume. 11 cells remain.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -25,7 +25,7 @@
       "scenario": "T15/large-code-local-button",
       "host": "claude",
       "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "reason": "环境无法验证 by coordinator error, and re-running. The evaluator returned unverified with a FAIL on candidate identity: session 2, which produced the plan artifacts the cell would be judged on, made ZERO references to the pinned candidate and read the protocol from four plugin cache versions (0.14.1, 0.14.2, 0.15.0, 0.16.0) plus the live checkout. Root cause is mine: actor-input.md names the candidate root four times, my resume input named it zero times. All other criteria passed on quoted evidence, and session 1 was sound and admissible with 113 messages and 12 loaded files. The whole cell is re-run rather than replaying session 2 from my snapshot, because restoring would insert a coordinator write into the project's lineage.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/large-code-local-button/actor-input.md",
       "attempts": [],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/large-code-local-button/project"
@@ -33,10 +33,51 @@
     {
       "scenario": "T15/large-code-local-button",
       "host": "codex",
-      "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "status": "passed",
+      "reason": "CERTIFIED across two authorized sessions. The unwired-decision contrast ran end to end: turn 2 was withheld until the actor's OWN gate run proved a valid generated state (timestamp-ordered, not asserted), the actor recorded the decision as an appended journal batch without touching workflow.json or any node-spec, the copied gate then rejected with four stale_requirement lines, and after the authorized second dispatch reconnected the plan it returned OK. The evaluator reproduced both halves on scratch copies and confirmed red-to-green was not bought by editing the gate: check_decision_inputs.py and product_intent.py are byte-identical between the two states. 253 product files unchanged, three journal batches append-only, history intact.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/large-code-local-button/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "sessions": 2,
+          "authorized_resume": true,
+          "session_1": {
+            "dispatch": "ctx_8f06169580a2",
+            "run": "run_8252b671ff96",
+            "messages": 79,
+            "full_dialogue_proven": true,
+            "receipt": "present, admissible"
+          },
+          "session_2": {
+            "dispatch": "ctx_5a26a43169c8",
+            "run": "run_e2e4cf8ccadd",
+            "messages": 31,
+            "full_dialogue_proven": true,
+            "receipt": "absent (coordinator omission)",
+            "read_candidate_files": 0,
+            "note": "read no protocol at all, working only from scripts copied during session 1, so no unpinned protocol read occurred. That was luck, not design: the same resume input voided the claude cell."
+          },
+          "host": "codex",
+          "outcome": "worker_done",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "01a09651-ab3b-7b13-9d00-4a3ac2c8a516",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/large-code-local-button/session-1/capture/raw-dialogue.json",
+            "sha256": "052d307856eff254f60f2f633625e7efbd221a877d7da2c8bc413777a4437923"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/large-code-local-button/receipt.json",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "loaded_files_bound": 57,
+          "actor_agreed_with_coordinator_on": [
+            "dispatch_id",
+            "task_id",
+            "terminal_handle"
+          ],
+          "gate_before_reconnection": "exit 1, four stale_requirement",
+          "gate_after_reconnection": "exit 0, every decision wired",
+          "released": true
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/large-code-local-button/project"
     },
     {
@@ -492,6 +533,15 @@
         "T15/large-code-local-button claude session 2"
       ],
       "status": "fixed for later resumes; disclosed for this pair"
+    },
+    {
+      "code": "resume-input-did-not-pin-the-candidate-root",
+      "found": "2026-09-13",
+      "severity": "voided a cell whose every other criterion passed",
+      "detail": "The authorized resume input told the actor to continue from saved state but never named the pinned candidate root, which actor-input.md names four times. The claude actor therefore read the protocol from its own plugin cache across four versions and from the live repo, never from the pin, so the artifacts under judgement could not be bound to the version under test. The codex actor escaped only because its second session read no protocol at all.",
+      "why_it_matters": "This is the campaign's core claim failing quietly. The cell had full_dialogue_proven true on both sessions, clean identity binding to the coordinator record, and passing behaviour on every other criterion. A checklist review would have passed it.",
+      "fix": "resume-input-template.md now names the candidate root, forbids reading an installed plugin or cache even when one looks identical or newer, requires the actor to stop rather than substitute, and asks for a receipt scoped to that session's reads. A test pins all of it.",
+      "status": "fixed; claude cell re-running"
     }
   ],
   "candidate_findings": [
@@ -537,6 +587,33 @@
       "routing": "filed: allforai/myskills#9 comment 5643835180",
       "class": "evidence honesty, not planning logic",
       "violates": "the actor brief's explicit 'Never invent session identity or successful tool results'"
+    },
+    {
+      "code": "decision-gate-checks-the-pointer-not-the-content",
+      "found_by": "T15/large-code-local-button codex, evaluator control experiment, independently reproduced by the coordinator",
+      "severity": "the gate can be satisfied without the requirement being absorbed",
+      "detail": "check_decision_inputs.py proves the plan POINTS AT the current requirement revision, not that the node specs took the requirement in. Bumping only the revision integer from 2 to 3 in bootstrap-profile.json and workflow.json, changing nothing else, turns the gate from exit 1 to exit 0 while the node-spec still contains zero mentions of the new requirement (the real recovered state has four). The deeper content check exists but is unreachable: product_intent.py gates _intent_drift on profile['intent_session_path'] == LOCAL at line 83, and a generated bootstrap-profile.json has no such key, so it never fires.",
+      "reproducer": "copy the paused state, bump the revision integers only, run the copied check_decision_inputs.py",
+      "not_an_actor_failure": "this actor did write real content; the hole is latent in the generated gate",
+      "routing": "pending"
+    },
+    {
+      "code": "validator-ignores-task-scope-on-local-change",
+      "found_by": "T15/large-code-local-button claude evaluator",
+      "detail": "validate_bootstrap.py demands Flutter and React Native UI-automation nodes for modules the profile records as non-goals on a local-change route, so a correct local-change plan can never reach passed:true. The actor refused to plan out-of-scope work and reported it instead, which is the right behaviour.",
+      "routing": "pending"
+    },
+    {
+      "code": "skill-does-not-name-the-script-owning-an-operation",
+      "found_by": "T15/large-code-local-button claude evaluator",
+      "detail": "SKILL.md instructs sending {\"operation\":\"external-changes\"} without naming a script; product_intent.py rejects it as an unknown operation, and only knowledge/input-freshness.md reveals the owner is evidence_freshness.py, where it succeeds.",
+      "routing": "pending"
+    },
+    {
+      "code": "opaque-error-names-a-field-the-caller-supplied",
+      "found_by": "T15/large-code-local-button claude evaluator",
+      "detail": "A decide request carrying topic at the request level but not inside actions[].changes is rejected with 'Intent needs id, topic and goal', naming a field the caller believes it provided; adding changes['topic'] makes the identical request succeed.",
+      "routing": "pending"
     }
   ],
   "admission_contract_change": {

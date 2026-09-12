@@ -228,3 +228,17 @@ def test_the_merge_records_how_many_capture_dirs_it_saw(tmp_path):
     write_window(tmp_path, "win-0002", [msg("a", 1000), msg("b", 2000)])
     doc = m.build(tmp_path, started_at=1000)
     assert doc["coverage"]["capture_dirs_seen"] == 2
+
+
+def test_the_resume_template_pins_the_candidate_and_asks_for_a_receipt():
+    """A resume input that named neither let an actor read the protocol from its plugin cache.
+
+    That host's second session touched four cached versions and the live repo, and never the pinned
+    candidate, so the artifacts it produced could not be bound to the version under test.
+    """
+    template = (HERE / "resume-input-template.md").read_text()
+    assert "{{CANDIDATE_ROOT}}" in template, "the resume must name the pinned candidate root"
+    assert "from nowhere else" in template
+    assert "plugin cache" in template, "the failure mode must be named, not implied"
+    assert "{{RECEIPT_PATH}}" in template, "the resume must request a receipt"
+    assert "IN THIS SESSION" in template, "the receipt must scope its reads to this session"
