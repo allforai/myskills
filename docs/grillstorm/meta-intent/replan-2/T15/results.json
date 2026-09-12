@@ -480,6 +480,18 @@
         "T15/missing-product-docs claude"
       ],
       "status": "fixed for later cells; the certified record is left frozen"
+    },
+    {
+      "code": "resume-input-did-not-request-a-receipt",
+      "found": "2026-09-13",
+      "detail": "The authorized session-2 resume input asked the actor to continue from saved state and gave it the user turn, but never asked it to write an evidence receipt. So session 2 has no actor attestation of which candidate files it read. What does bind it: a coordinator identity record written at launch (dispatch and process incarnation), a raw-dialogue union with full_dialogue_proven true and a digest, and the frozen candidate verified unchanged at 538 files across both sessions.",
+      "decision": "NOT patched mid-flight. Sending a receipt request to claude's session 2 while codex's had already finished without one would make the two hosts' second sessions asymmetric. A gap that is identical on both hosts and disclosed is more comparable than one host being held to a stricter standard.",
+      "fix": "the resume template now requests a receipt; applies from the next authorized resume onward",
+      "affects": [
+        "T15/large-code-local-button codex session 2",
+        "T15/large-code-local-button claude session 2"
+      ],
+      "status": "fixed for later resumes; disclosed for this pair"
     }
   ],
   "candidate_findings": [
@@ -531,5 +543,20 @@
     "date": "2026-09-12",
     "why": "The re-evaluation showed 'admissible-for-evaluation' never bound session identity. Strengthening the gate was safe to do now precisely because no cell had passed: there was no earlier pass to invalidate, so no two cells are judged by different gates.",
     "receipt_requirement": "receipts must carry orca_identity {dispatch_id, process_incarnation}. The coordinator supplies it during the sanctioned normalization step from its own launch-time record, which the actor cannot author."
-  }
+  },
+  "protocol_authorizations": [
+    {
+      "code": "follow-up-dispatch-for-large-code-local-button",
+      "granted": "2026-09-13",
+      "granted_by": "user, explicitly, when asked to choose between authorizing a follow-up dispatch, accepting the first half, or rewording the scenario",
+      "what_it_changes": "This scenario's criteria assume the actor stays available for scripted turn 3. It does not, on either host: both treated 'record this new choice before updating the plan, then pause' as grounds to call worker_done, which the worker contract sanctions, and Orca then refuses any further message with dispatch_inactive. Completing the contrast therefore needs a SECOND dispatch per cell, so a cell gains two session identities. Only interrupted-confirmation authorizes that by default; here it is authorized explicitly.",
+      "constraints_kept": [
+        "the resumed session receives only the project's persisted state, the same frozen candidate, and the one user turn",
+        "both session identities are preserved; neither replaces the other",
+        "the first session's evidence is frozen and is not re-captured or re-merged",
+        "the gate rejection already observed in session 1 stands as observed; session 2 shows only the recovery"
+      ],
+      "host_asymmetry_noted": "codex paused AFTER generating the plan and the gate scripts, so its session 1 produced a real gate rejection and session 2 can show the recovery. claude paused EARLIER, before writing any workflow or scripts, so no rejection was ever possible on that host and its session 2 can only show whether it incorporates the decision correctly. That difference is recorded, not smoothed."
+    }
+  ]
 }

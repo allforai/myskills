@@ -158,3 +158,154 @@ def test_resumed_invocations_do_not_double_count_spent_turns(tmp_path):
     assert spent_turns(out) == 1, "a resumption that spends no turn must not advance the count"
     merge_replies(out, {"used_turns": 2, "replies": [{"question": "q2", "answer": "a2", "kind": "scripted-user-turn"}]})
     assert spent_turns(out) == 2, "the count is cumulative, not additive"
+
+
+def drive(monkeypatch, tmp_path, statuses, message_after=None):
+    """Run the loop against a fake Orca and return what it recorded."""
+    import answer_loop
+    state = {"checks": 0}
+
+    def fake_orca(args, exe):
+        if args[1] == "worker-show":
+            return 0, {"observation": statuses}
+        state["checks"] += 1
+        if message_after and state["checks"] >= message_after:
+            return 0, {"messages": [{"type": "worker_done", "delivery_id": "d1"}]}
+        return 0, {"messages": []}
+
+    monkeypatch.setattr(answer_loop, "orca", fake_orca)
+    out = tmp_path / "capture"; out.mkdir()
+    (tmp_path / "dispatch.json").write_text(json.dumps({"result": {"effects": []}}))
+    script = tmp_path / "turns.json"; script.write_text(json.dumps({"turns": ["x"]}))
+    answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
+                      "--out", str(out), "--max-empty", "2"])
+    return json.loads((out / "replies.json").read_text()), state
+
+
+def test_a_live_worker_keeps_the_loop_waiting_instead_of_stalling(monkeypatch, tmp_path):
+    """Two concurrent loops exited 28 seconds before their actors asked anything, on a count alone.
+
+    The bigger fixture simply took longer to reach its first question, so an empty-wait count is not
+    evidence of a stall.
+    """
+    recorded, state = drive(monkeypatch, tmp_path, {"status": "live"}, message_after=6)
+    assert not any(r.get("event") == "stalled" for r in recorded["replies"]), (
+        "a live worker must never be reported as stalled")
+    assert state["checks"] >= 6, "the loop must keep waiting past max-empty while the worker lives"
+
+
+def test_a_dead_worker_still_stalls_with_its_liveness_named(monkeypatch, tmp_path):
+    recorded, _ = drive(monkeypatch, tmp_path, {"status": "exited"})
+    stalled = [r for r in recorded["replies"] if r.get("event") == "stalled"]
+    assert stalled and stalled[-1]["worker_liveness"] == "not live"
+
+
+def test_unverifiable_liveness_is_never_treated_as_death(monkeypatch, tmp_path):
+    """Absence is not proof of exit; it must be reported as unverifiable."""
+    recorded, _ = drive(monkeypatch, tmp_path, {})
+    stalled = [r for r in recorded["replies"] if r.get("event") == "stalled"]
+    assert stalled and stalled[-1]["worker_liveness"] == "unverifiable"
+
+
+def test_a_replayed_question_never_spends_a_second_scripted_turn(monkeypatch, tmp_path):
+    """The real harm: a hand-answered question replayed, and the loop spent turn 2 on it.
+
+    That is how a UTF-8 BOM decision reached an actor before it had asked for anything.
+    """
+    import answer_loop
+    out = tmp_path / "capture"; out.mkdir()
+    # turn 1 was delivered by hand, so its question id is recorded but the delivery was never acked
+    (out / "replies.json").write_text(json.dumps({
+        "used_turns": 1, "invocations": [{"used_turns": 1, "replies": 1}],
+        "replies": [{"question_id": "mq1", "answer": "turn one", "kind": "scripted-user-turn"}]}))
+    (tmp_path / "dispatch.json").write_text(json.dumps({"result": {"effects": []}}))
+    script = tmp_path / "turns.json"
+    script.write_text(json.dumps({"turns": ["turn one", "TURN TWO MUST NOT BE SPENT HERE"]}))
+    sent = []
+
+    def fake_orca(args, exe):
+        if args[1] == "worker-show":
+            return 0, {"observation": {"status": "exited"}}
+        if args[1] == "reply":
+            sent.append(args[args.index("--body") + 1])
+            return 0, {}
+        # the same question replays, carrying a delivery id so it can be acked away
+        return 0, {"messages": [{"type": "question", "id": "mq1", "body": "the same question again"}],
+                   "delivery_id": "d1"}
+
+    monkeypatch.setattr(answer_loop, "orca", fake_orca)
+    answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
+                      "--out", str(out), "--max-empty", "2"])
+    assert "TURN TWO MUST NOT BE SPENT HERE" not in sent, (
+        "a replayed question must not consume the next scripted turn")
+    recorded = json.loads((out / "replies.json").read_text())
+    assert recorded["used_turns"] == 1, "the turn ledger must not advance on a replay"
+    assert any(r.get("event") == "replay-skipped" for r in recorded["replies"])
+
+
+def test_a_replay_that_never_retires_stops_rather_than_spinning(monkeypatch, tmp_path):
+    """Acking should retire a batch; if it keeps coming back, stop and say so."""
+    import answer_loop
+    out = tmp_path / "capture"; out.mkdir()
+    (out / "replies.json").write_text(json.dumps({
+        "used_turns": 1, "invocations": [], "replies": [{"question_id": "mq1", "answer": "t1"}]}))
+    (tmp_path / "dispatch.json").write_text(json.dumps({"result": {"effects": []}}))
+    script = tmp_path / "turns.json"; script.write_text(json.dumps({"turns": ["t1", "t2"]}))
+
+    def fake_orca(args, exe):
+        if args[1] == "worker-show":
+            return 0, {"observation": {"status": "live"}}
+        return 0, {"messages": [{"type": "question", "id": "mq1", "body": "again"}],
+                   "delivery_id": "d1"}
+
+    monkeypatch.setattr(answer_loop, "orca", fake_orca)
+    answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
+                      "--out", str(out), "--max-empty", "2", "--max-replay-skips", "3"])
+    recorded = json.loads((out / "replies.json").read_text())
+    assert recorded["used_turns"] == 1
+    assert sum(1 for r in recorded["replies"] if r.get("event") == "replay-skipped") <= 4
+
+
+def test_a_replay_with_no_delivery_id_stops_instead_of_spinning(monkeypatch, tmp_path):
+    import answer_loop
+    out = tmp_path / "capture"; out.mkdir()
+    (out / "replies.json").write_text(json.dumps({
+        "used_turns": 1, "invocations": [], "replies": [{"question_id": "mq1", "answer": "t1"}]}))
+    (tmp_path / "dispatch.json").write_text(json.dumps({"result": {"effects": []}}))
+    script = tmp_path / "turns.json"; script.write_text(json.dumps({"turns": ["t1", "t2"]}))
+
+    def fake_orca(args, exe):
+        if args[1] == "worker-show":
+            return 0, {"observation": {"status": "live"}}
+        return 0, {"messages": [{"type": "question", "id": "mq1", "body": "again"}]}
+
+    monkeypatch.setattr(answer_loop, "orca", fake_orca)
+    answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
+                      "--out", str(out), "--max-empty", "2"])
+    recorded = json.loads((out / "replies.json").read_text())
+    assert any(r.get("event") == "replay-skipped" for r in recorded["replies"])
+    assert recorded["used_turns"] == 1
+
+
+def test_a_fresh_question_alongside_a_replay_is_still_answered(monkeypatch, tmp_path):
+    import answer_loop
+    out = tmp_path / "capture"; out.mkdir()
+    (out / "replies.json").write_text(json.dumps({
+        "used_turns": 1, "invocations": [], "replies": [{"question_id": "mq1", "answer": "t1"}]}))
+    (tmp_path / "dispatch.json").write_text(json.dumps({"result": {"effects": []}}))
+    script = tmp_path / "turns.json"; script.write_text(json.dumps({"turns": ["t1", "t2"]}))
+    sent = []
+
+    def fake_orca(args, exe):
+        if args[1] == "worker-show":
+            return 0, {"observation": {"status": "exited"}}
+        if args[1] == "reply":
+            sent.append(args[args.index("--body") + 1]); return 0, {}
+        return 0, {"messages": [{"type": "question", "id": "mq1", "body": "replay"},
+                                {"type": "question", "id": "mq2", "body": "genuinely new"}],
+                   "delivery_id": "d1"}
+
+    monkeypatch.setattr(answer_loop, "orca", fake_orca)
+    answer_loop.main(["--dispatch", "ctx_a", "--run", "run_a", "--script", str(script),
+                      "--out", str(out), "--max-empty", "2"])
+    assert sent == ["t2"], f"only the new question should be answered, got {sent}"

@@ -73,6 +73,47 @@ def plan_batch(result, script, used):
     return acts, used, done
 
 
+
+
+def answered_question_ids(path):
+    """Question ids this cell has already answered, in any prior invocation or by hand.
+
+    The FIFO replays an unacknowledged delivery, and a coordinator answering out of band cannot ack
+    it, so without this the loop answers the same question twice and burns a scripted turn on the
+    second pass.
+    """
+    try:
+        recorded = json.loads(Path(path).read_text()).get("replies") or []
+    except (OSError, ValueError):
+        return set()
+    out = set()
+    for entry in recorded:
+        qid = entry.get("question_id")
+        if qid:
+            out.add(qid)
+        pending = entry.get("message")
+        if isinstance(pending, dict) and pending.get("id"):
+            out.add(pending["id"])
+    return out
+
+
+def worker_is_live(dispatch, exe):
+    """True when Orca still observes this dispatch's agent as live.
+
+    Absence is not death. `worker-show`'s observation is PTY liveness, so a True here means keep
+    waiting; False means the process is gone and the loop may stop; None means Orca could not tell,
+    which is also not proof of exit, so it is reported rather than treated as either.
+    """
+    code, result = orca(["orchestration", "worker-show", "--dispatch", dispatch], exe)
+    observation = (result or {}).get("observation") or {}
+    status = observation.get("status")
+    if status == "live":
+        return True
+    if status in ("exited", "dead", "stopped"):
+        return False
+    return None
+
+
 def check_argv(run, types, timeout_ms, ack):
     """Build one `check` invocation, always scoped to this cell's Run.
 
@@ -154,17 +195,18 @@ def cell_terminals(dispatch_json):
     return [e.get("id") for e in result.get("effects") or [] if e.get("kind") == "terminal" and e.get("id")]
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dispatch", required=True); ap.add_argument("--script", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path); ap.add_argument("--orca", default="orca")
     ap.add_argument("--run", required=True, help="this cell's own Orca Run; never share one between cells")
     ap.add_argument("--timeout-ms", type=int, default=900000); ap.add_argument("--max-empty", type=int, default=3)
-    a = ap.parse_args(); a.out.mkdir(parents=True, exist_ok=True)
+    ap.add_argument("--max-replay-skips", type=int, default=5)
+    a = ap.parse_args(argv); a.out.mkdir(parents=True, exist_ok=True)
     script = json.loads(a.script.read_text())
     used = spent_turns(a.out / "replies.json")          # resume where the last invocation stopped
     own = {"dispatch": a.dispatch, "terminals": cell_terminals(a.out.parent / "dispatch.json")}
-    replies = []; empty = 0; ack = None
+    replies = []; empty = 0; ack = None; skipped = 0; answered_here = set()
     while True:
         args = check_argv(a.run, "worker_done,escalation,question", a.timeout_ms, ack)
         code, result = orca(args, a.orca); ack = None
@@ -172,7 +214,17 @@ def main():
         if not messages:
             empty += 1
             if empty >= a.max_empty:
-                replies.append({"event": "stalled", "after_empty_waits": empty}); break
+                # An empty wait is a checkpoint, not a failure. Exiting on a count alone killed two
+                # concurrent loops 28 seconds before their actors asked anything: a bigger fixture
+                # simply takes longer to reach its first question. Enumerate instead, exactly as the
+                # orchestration guide directs, and only stop on positive proof the worker is gone.
+                alive = worker_is_live(a.dispatch, a.orca)
+                if alive:
+                    empty = 0
+                    continue
+                replies.append({"event": "stalled", "after_empty_waits": empty,
+                                "worker_liveness": "not live" if alive is False else "unverifiable"})
+                break
             continue
         empty = 0
         foreign = [m for m in messages if is_foreign(m, own)]
@@ -183,6 +235,29 @@ def main():
             print(json.dumps({"dispatch": a.dispatch, "used_turns": used,
                               "last": {"event": "foreign-delivery", "from": [m.get("from_handle") for m in foreign]}}))
             return
+        # A delivery replays until acknowledged. When a coordinator answers a question by hand it
+        # cannot ack the batch, so the same question comes back and the loop spent the NEXT scripted
+        # turn on it: that is how a UTF-8 BOM decision reached one actor before it had asked anything.
+        # Answer each question id exactly once, whatever the FIFO replays.
+        already = answered_question_ids(a.out / "replies.json") | answered_here
+        stale = [m for m in messages if (m.get("id") or m.get("message_id")) in already]
+        if stale and len(stale) == len(messages):
+            replies.append({"event": "replay-skipped",
+                            "question_ids": [m.get("id") or m.get("message_id") for m in stale]})
+            ack = result.get("delivery_id") or result.get("deliveryId")
+            skipped += 1
+            # Acking should retire the batch. If the same replay keeps coming back the FIFO is not
+            # advancing, and spinning on it forever is worse than stopping and saying so.
+            if not ack or skipped > a.max_replay_skips:
+                merge_replies(a.out / "replies.json", {"used_turns": used, "replies": replies})
+                print(json.dumps({"dispatch": a.dispatch, "used_turns": used,
+                                  "last": {"event": "replay-unackable" if not ack else "replay-not-retiring",
+                                           "skipped": skipped}}))
+                return
+            continue
+        if stale:
+            messages = [m for m in messages if m not in stale]
+            result = dict(result, messages=messages)
         acts, used, done = plan_batch(result, script, used)
         for act, message in zip(acts, messages):
             if act["snapshot_before"]:
@@ -190,7 +265,10 @@ def main():
             if act["kind"] == "reply":
                 orca(["orchestration", "reply", "--id", act["message_id"], "--body", act["body"]], a.orca)
                 # the evaluator must be able to tell a scripted user turn from an operational gate answer
-                replies.append({"question": message.get("body"), "answer": act["body"],
+                answered_here.add(message.get("id") or message.get("message_id"))
+                replies.append({"question": message.get("body"),
+                                "question_id": message.get("id") or message.get("message_id"),
+                                "answer": act["body"],
                                 "kind": "operational-gate" if act.get("operational") else "scripted-user-turn"})
             elif act["kind"] == "done":
                 replies.append({"event": "worker_done", "outcome": message.get("outcome")})

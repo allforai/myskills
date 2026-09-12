@@ -25,13 +25,39 @@ HOSTS = {"codex": "codex", "claude": "claude"}
 
 
 def host_value(receipt):
-    """The host, wherever this receipt put it."""
-    for candidate in (receipt.get("host"),
-                      (receipt.get("session_identity") or {}).get("host") if isinstance(receipt.get("session_identity"), dict) else None,
-                      (receipt.get("host") or {}).get("product") if isinstance(receipt.get("host"), dict) else None):
-        if candidate:
-            return candidate
-    return None
+    """The host, wherever this receipt put it and whatever it called the key.
+
+    Three actors have now used three shapes: a plain string `host`, a nested `session_identity.host`,
+    and a dict `host` keyed on `harness`. Chasing key names one at a time under-reports the next
+    variant, so this searches structurally: any key that looks like a host or harness field whose
+    string value names a known host. Ambiguity is still refused by normalize_host rather than guessed.
+    """
+    found = []
+
+    def walk(node, key_path=""):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                walk(value, f"{key_path}.{key}" if key_path else key)
+        elif isinstance(node, str) and node:
+            leaf = key_path.lower()
+            if not any(token in leaf for token in ("host", "harness", "agent", "product")):
+                return
+            # A host name is a short identifier, not prose and not a path. Without this, a sentence
+            # under host.note that merely mentioned "~/.codex" read as a second host declaration and
+            # the receipt was refused as naming two hosts.
+            if len(node) > 60 or "/" in node or node.count(" ") > 6:
+                return
+            if any(h in node.lower() for h in HOSTS):
+                found.append(node)
+
+    walk(receipt)
+    if not found:
+        return None
+    # Collapse to the set of hosts actually named; a single host named many ways is not ambiguous.
+    named = {h for token, h in HOSTS.items() for value in found if token in value.lower()}
+    if len(named) == 1:
+        return named.pop()
+    return found[0] if len(found) == 1 else " and ".join(sorted(named))
 
 
 def normalize_host(value):
@@ -48,60 +74,72 @@ def normalize_host(value):
 def session_id(receipt):
     """The one session identity the receipt reports, or a refusal.
 
-    Hosts name this differently, so several keys are searched. If two of them disagree the receipt is
-    refused rather than resolved by search order: silently preferring whichever key happened to be
+    Hosts name this differently — CODEX_SESSION_ID, claude_code_session_id, claude_code_session_uuid —
+    so the search is structural: any key naming a session id or uuid. If two such keys disagree the
+    receipt is refused rather than resolved by search order: silently preferring whichever key was
     checked first is how a record starts describing a session that never ran.
     """
     direct = receipt.get("session_id")
     if isinstance(direct, str) and direct:
         return direct
     found = {}
-    for key in ("independent_session_identity", "session_identity"):
-        block = receipt.get(key)
-        if isinstance(block, dict):
-            for field in ("CODEX_SESSION_ID", "claude_code_session_id", "session_id", "CODEX_THREAD_ID"):
-                if block.get(field):
-                    found[f"{key}.{field}"] = block[field]
-    distinct = set(found.values())
+
+    def walk(node, key_path=""):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                walk(value, f"{key_path}.{key}" if key_path else key)
+        elif isinstance(node, str) and node:
+            leaf = key_path.lower().rsplit(".", 1)[-1]
+            if "session" in leaf and ("id" in leaf or "uuid" in leaf or "thread" in leaf):
+                found[key_path] = node
+
+    walk(receipt)
+    # A reference URL and the bare id it contains are the same identity, not a conflict.
+    distinct = {v for v in found.values()}
     if not distinct:
         raise ValueError("receipt carries no session identity to normalize")
     if len(distinct) > 1:
+        shortest = min(distinct, key=len)
+        if all(shortest in v or v in shortest for v in distinct):
+            return shortest
         raise ValueError(f"receipt reports conflicting session identities: {found}")
     return distinct.pop()
 
 
 def loaded_files(receipt, candidate_root):
-    """Every candidate asset the receipt records as actually read, whatever the host called the key.
+    """Every candidate asset the receipt records as actually read, at any depth.
 
-    Hosts name these differently and nest them differently: one wrote `loaded_assets`, another
-    `references_loaded_in_full` plus `references_loaded_in_part` plus a single `candidate_entry`.
-    Enumerating key names per host would silently under-report the next host, so discovery is
-    structural: anything carrying a sha256 and a path. Two guards keep that from over-reporting.
-    Keys naming non-reads are refused outright, and every path must resolve inside the pinned
-    candidate, which drops host skill stubs and installed-but-unused plugin copies.
+    Four actors have used four shapes: `loaded_assets`, `references_loaded_in_full` plus
+    `references_loaded_in_part`, a single `candidate_entry`, and a nested `candidate.loaded[]`. A
+    top-level-only scan found nothing in the fourth and reported zero reads, so discovery walks the
+    whole record and keys on structure — anything carrying a sha256 and a path.
+
+    Two guards keep that from over-reporting. Any key ANYWHERE on the path that names a non-read is
+    refused, so a declared skip can never become a claimed read. And every path must resolve inside
+    the pinned candidate, which drops project files, host skill stubs and installed-but-unused copies.
     """
     root = Path(candidate_root).resolve()
-
-    def harvest(value, key_name):
-        if any(token in key_name.lower() for token in DENY):
-            return
-        items = value if isinstance(value, list) else [value]
-        for item in items:
-            if not isinstance(item, dict) or not item.get("sha256"):
-                continue
-            raw = next((item[f] for f in PATH_FIELDS if item.get(f)), None)
-            if raw:
-                yield raw, item["sha256"]
-
     out, seen = [], set()
-    for key, value in receipt.items():
-        for raw, digest in harvest(value, key):
-            candidate = Path(raw)
-            path = (candidate if candidate.is_absolute() else root / candidate).resolve()
-            if not path.is_relative_to(root) or not path.is_file() or str(path) in seen:
-                continue
-            seen.add(str(path))
-            out.append({"path": str(path), "sha256": digest})
+
+    def harvest(node, key_path=""):
+        if any(token in key_path.lower() for token in DENY):
+            return
+        if isinstance(node, dict):
+            digest = node.get("sha256")
+            raw = next((node[f] for f in PATH_FIELDS if node.get(f)), None)
+            if digest and raw:
+                candidate = Path(raw)
+                path = (candidate if candidate.is_absolute() else root / candidate).resolve()
+                if path.is_relative_to(root) and path.is_file() and str(path) not in seen:
+                    seen.add(str(path))
+                    out.append({"path": str(path), "sha256": digest})
+            for key, value in node.items():
+                harvest(value, f"{key_path}.{key}" if key_path else key)
+        elif isinstance(node, list):
+            for item in node:
+                harvest(item, key_path)
+
+    harvest(receipt)
     return sorted(out, key=lambda f: f["path"])
 
 

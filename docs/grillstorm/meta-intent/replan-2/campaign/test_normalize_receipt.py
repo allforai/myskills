@@ -290,3 +290,105 @@ def test_writing_to_an_explicit_out_path_never_touches_the_cell(tmp_path):
     assert m.main([str(cell), "--candidate-root", str(candidate), "--raw-dialogue", str(raw),
                    "--ledger", str(ledger), "--out", str(tmp_path / "elsewhere.json")]) == 0
     assert (cell / "receipt.json").read_text() == before
+
+
+def test_host_is_found_under_a_harness_key(tmp_path):
+    """Third real shape: host is a dict keyed on 'harness', not 'product' or 'name'."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path, receipt_extra={
+        "host": {"harness": "Claude Code CLI", "version": "2.1.269"}})
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["independent_session_identity"] = {"claude_code_session_uuid": "93215018"}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert record["host"] == "claude"
+    assert record["session_id"] == "93215018"
+
+
+def test_a_session_reference_url_and_its_bare_id_are_one_identity(tmp_path):
+    """A URL containing the id is the same session, not a conflict."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("independent_session_identity")
+    receipt["session_identity"] = {
+        "claude_code_session_id": "session_0155F2HLiCPqWEuqu9D5EGkL",
+        "claude_code_session_reference": "https://claude.ai/code/session_0155F2HLiCPqWEuqu9D5EGkL"}
+    receipt["host"] = "Claude Code"
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    assert m.build(cell, candidate, raw)["session_id"] == "session_0155F2HLiCPqWEuqu9D5EGkL"
+
+
+def test_genuinely_different_session_ids_are_still_refused(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["session_identity"] = {"claude_code_session_uuid": "totally-different-value"}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    with pytest.raises(ValueError, match="conflicting session identities"):
+        m.build(cell, candidate, raw)
+
+
+def test_two_different_hosts_named_in_one_receipt_is_refused(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path, receipt_extra={
+        "host": {"harness": "Claude Code CLI"}, "agent_note": "ran under Codex too"})
+    with pytest.raises(ValueError, match="single host"):
+        m.build(cell, candidate, raw)
+
+
+def test_prose_mentioning_the_other_host_is_not_a_host_declaration(tmp_path):
+    """A note saying nothing was installed into ~/.codex is not a claim to be running on Codex."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path, receipt_extra={
+        "host": {"harness": "Claude Code CLI", "model_id": "claude-opus-5[1m]",
+                 "note": "The candidate was read directly from the candidate source root. Nothing was "
+                         "installed: no plugin marketplace registration, no ~/.claude or ~/.codex skill "
+                         "folder was written."}})
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["independent_session_identity"] = {"claude_code_session_uuid": "93215018"}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    assert m.build(cell, candidate, raw)["host"] == "claude"
+
+
+def test_a_transcript_path_is_not_a_host_declaration(tmp_path):
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path, receipt_extra={
+        "host": {"harness": "Claude Code CLI"},
+        "session_identity": {"host_transcript_path": "/Users/x/.codex/sessions/abc.jsonl",
+                             "claude_code_session_uuid": "u1"}})
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("independent_session_identity")
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    assert m.build(cell, candidate, raw)["host"] == "claude"
+
+
+def test_reads_nested_two_levels_deep_are_discovered(tmp_path):
+    """Fourth real shape: candidate.loaded[] — a top-level scan reported zero reads."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    entry = candidate / "codex" / "meta-skill" / "SKILL.md"
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt.pop("loaded_assets")
+    receipt["candidate"] = {"source_root": str(candidate), "loaded": [
+        {"path": str(entry), "sha256": hashlib.sha256(entry.read_bytes()).hexdigest(),
+         "role": "candidate entry", "loaded": "full"}]}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert len(record["loaded_files"]) == 1
+    assert record["loaded_files"][0]["path"] == str(entry)
+
+
+def test_a_nested_non_read_branch_is_still_refused(tmp_path):
+    """The deny guard must apply to the whole key path, not just the top-level key."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    skipped = candidate / "claude" / "meta-skill" / "knowledge" / "safety.md"
+    skipped.parent.mkdir(parents=True, exist_ok=True)
+    skipped.write_text("declared as not read\n")
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["candidate"] = {"references_deliberately_not_loaded": [
+        {"path": str(skipped), "sha256": hashlib.sha256(skipped.read_bytes()).hexdigest()}]}
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    assert all("safety.md" not in f["path"] for f in record["loaded_files"])
