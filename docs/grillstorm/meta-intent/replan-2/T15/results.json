@@ -10,8 +10,8 @@
   },
   "required_cells": 14,
   "executed_cells": 2,
-  "passed_cells": 1,
-  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 1/14 cells passed with an admissible evidence chain (T15/missing-product-docs on codex). The remaining cells are unverified; the earlier claude/missing-product-docs run has a passing semantic verdict but an inadmissible chain and must be re-run. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
+  "passed_cells": 0,
+  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 0/14 cells passed. The codex missing-product-docs cell has an admissible evidence chain and a completed actor run, but its passing verdict was withdrawn because the evaluator prompt was truncated; it awaits re-judging with the complete criteria, not a re-run. Every other cell is unverified. Historical evaluations against the withdrawn e30ccc7c candidate count for nothing here.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -65,8 +65,8 @@
     {
       "scenario": "T15/missing-product-docs",
       "host": "codex",
-      "status": "passed",
-      "reason": "First admissible pass of the campaign. Actor ran on Codex in its own Orca Run (run_1c6fcd30fdaf), reached worker_done, transcript captured before worker-release. admit_evidence.py -> admissible-for-evaluation (56 loaded files bound to the pinned manifest, 50 dialogue messages digest-bound, zero mode/symlink mismatches, zero extra files). A fresh-context evaluator holding evaluator-private.md judged the raw dialogue and artefacts: passed, 7/7 criteria, zero defects, with independent re-runs of all three validators and recomputed source hashes. Two plan gates were answered by the coordinator because the gate classifier requires an options list and Codex asks open-ended; both are recorded in capture/replies.json as operational-gate. The classifier was deliberately not changed mid-campaign.",
+      "status": "unverified",
+      "reason": "Evidence chain is admissible and the semantic verdict was passed, but the verdict is WITHDRAWN as unsound: the evaluator prompt was hand-assembled and truncated mid-sentence, withholding 2206 of the 4578 characters of applicable criteria. The withheld text carries the evaluator's own corroboration duties (a self-authored receipt alone is insufficient; corroborate session identity, loaded-file completeness and all turns against independent Orca/host records) and the rule that the synthetic test_admit_evidence.py cases count toward zero host cells. That missing rule is exactly what the evaluator needed to refuse its own excuse for skipping the required SG02 rejection drill, which it marked not-applicable while citing those unit tests. Re-evaluation with the complete criteria is required. The actor run, the capture and the admission all stand and need no repeat; only the judging is redone.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/actor-input.md",
       "attempts": [
         {
@@ -79,7 +79,7 @@
           "receipt_original": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/receipt.actor-original.json",
           "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture",
           "evaluation": "docs/grillstorm/meta-intent/replan-2/campaign/T15-evaluations/codex-missing-product-docs.md",
-          "evaluator_verdict": "passed",
+          "evaluator_verdict": "withdrawn (unsound: criteria truncated)",
           "evaluator_workflow": "wbd115au3",
           "admission": "admissible-for-evaluation",
           "transcript_complete": false,
@@ -98,7 +98,19 @@
             "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/capture/transcript/raw-dialogue.json",
             "sha256": "587bc597aefff76dfb8afc194314685e624d854ea2c20ba350dd51b3e33598bf"
           },
-          "loaded_files_bound": 56
+          "loaded_files_bound": 56,
+          "evaluator_verdict_withdrawn": {
+            "original": "passed, 7/7, zero defects",
+            "workflow": "wbd115au3",
+            "cause": "coordinator hand-assembled the evaluator prompt and cut the criteria block at 2372 of 4578 chars",
+            "withheld_rules": [
+              "The evaluator must still corroborate host/session identity, completeness of the loaded-file list, actual tool reads, all conversation turns and artifacts against independent Orca/host records; a self-authored receipt alone is insufficient.",
+              "The eight test_admit_evidence.py cases are explicitly synthetic helper tests and count toward zero host cells.",
+              "Exclude .git runtime metadata from source preservation checks and compare original source paths with source-before.json."
+            ],
+            "consequence": "the required SG02 rejection drill (mismatched loaded path/hash, changed candidate fingerprint) was excused rather than performed",
+            "record": "docs/grillstorm/meta-intent/replan-2/campaign/T15-evaluations/codex-missing-product-docs.md"
+          }
         }
       ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/missing-product-docs/project"
@@ -279,6 +291,16 @@
     {
       "code": "gate-classifier-open-ended",
       "note": "answer_loop.is_gate_question requires an options list, so Codex's open-ended plan gates fall through to the coordinator. Fail-safe direction (asks rather than guesses), so it is not changed mid-campaign to keep cells consistent."
+    }
+  ],
+  "process_defects": [
+    {
+      "code": "evaluator-prompt-truncation",
+      "found": "2026-09-12",
+      "detail": "Evaluator prompts were hand-assembled from evaluator-private.md, and the first one cut the criteria block mid-sentence, silently withholding 48% of the applicable criteria. Fixed by build_eval_prompt.py, which slices by section boundary and asserts every carried paragraph survives; test_build_eval_prompt.py pins the two truncated-away rules by name and rejects a shortened block.",
+      "affects": [
+        "T15/missing-product-docs codex verdict (withdrawn, re-judging)"
+      ]
     }
   ]
 }
