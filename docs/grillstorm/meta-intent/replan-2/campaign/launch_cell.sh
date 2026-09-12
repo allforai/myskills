@@ -28,6 +28,8 @@ echo "$!" > "$CELL/capture/tail.pid"
 # own session id is self-authored, and admission only checks it is non-empty, so this is what an
 # evaluator can actually bind the cell against.
 $ORCA orchestration worker-show --dispatch "$DISPATCH" --json > "$CELL/capture/coordinator-identity.worker-show.json" 2>&1 || true
+python3 "$R/campaign/write_identity.py" "$CELL" "$CELL/dispatch.json" "$RUNF" \
+  "$CELL/capture/coordinator-identity.worker-show.json" || echo "WARNING: coordinator identity incomplete" >&2
 python3 - <<EOF
 import json; r=json.load(open("$CELL/dispatch.json")).get("result", {})
 print(json.dumps({"dispatch_id": r.get("dispatchId"), "run_id": r.get("runId"),

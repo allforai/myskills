@@ -108,3 +108,44 @@ def test_the_tailer_takes_a_final_window_after_the_worker_stops():
     assert "worker no longer live" in tail
     # A poll interval that exceeds the retained window stops producing overlap.
     assert "200s" in tail or "do not raise the interval" in tail.lower()
+
+
+def test_launcher_writes_the_structured_identity_record_admission_reads():
+    """worker-show alone is not enough: admission reads capture/coordinator-identity.json."""
+    launch = (HERE / "launch_cell.sh").read_text()
+    assert "write_identity.py" in launch
+    assert launch.index("write_identity.py") > launch.index("worker-start")
+
+
+def test_identity_record_reports_missing_fields_rather_than_writing_a_hollow_one(tmp_path):
+    spec = importlib.util.spec_from_file_location("wi", HERE / "write_identity.py")
+    wi = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wi)
+    (tmp_path / "d.json").write_text(json.dumps({"result": {}}))
+    (tmp_path / "r.json").write_text(json.dumps({"result": {}}))
+    (tmp_path / "w.json").write_text(json.dumps({"result": {}}))
+    rc = wi.main([str(tmp_path), str(tmp_path / "d.json"), str(tmp_path / "r.json"),
+                  str(tmp_path / "w.json")])
+    assert rc == 1, "an incomplete record must be reported, not silently accepted"
+    written = json.loads((tmp_path / "capture" / "coordinator-identity.json").read_text())
+    assert written["dispatch_id"] is None
+
+
+def test_identity_record_is_complete_when_orca_supplies_both_sides(tmp_path):
+    spec = importlib.util.spec_from_file_location("wi", HERE / "write_identity.py")
+    wi = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wi)
+    (tmp_path / "d.json").write_text(json.dumps({"result": {
+        "dispatchId": "ctx_a", "runId": "run_a", "taskId": "task_a",
+        "prompt": {"processIncarnation": "inc_a", "provider": "codex"},
+        "launch": {"effective": {"agent": "codex"}},
+        "effects": [{"kind": "terminal", "id": "term_a"}]}}))
+    (tmp_path / "r.json").write_text(json.dumps({"result": {"run": {"id": "run_a"}}}))
+    (tmp_path / "w.json").write_text(json.dumps({"result": {
+        "terminal": {"incarnationId": "inc_a", "agentIdentity": "codex"}}}))
+    rc = wi.main([str(tmp_path), str(tmp_path / "d.json"), str(tmp_path / "r.json"),
+                  str(tmp_path / "w.json")])
+    assert rc == 0
+    written = json.loads((tmp_path / "capture" / "coordinator-identity.json").read_text())
+    assert written["dispatch_id"] == "ctx_a"
+    assert written["orca_side"]["dispatch_prompt_processIncarnation"] == "inc_a"
