@@ -289,8 +289,13 @@
   },
   "deferred_after_T15": [
     {
-      "code": "gate-classifier-open-ended",
-      "note": "answer_loop.is_gate_question requires an options list, so Codex's open-ended plan gates fall through to the coordinator. Fail-safe direction (asks rather than guesses), so it is not changed mid-campaign to keep cells consistent."
+      "code": "gate-classifier-never-fires",
+      "detail": "answer_loop.is_gate_question requires an option string equal to 'confirm'. It has now missed every real gate on both hosts: Codex asks open-ended with no options at all, and Claude offered 'confirm plan; choose a/b/c'. Zero gates have ever been auto-answered, so all 14 cells are uniformly coordinator-answered and the campaign stays internally consistent; fixing it mid-campaign would split the cells into two populations.",
+      "conclusion": "The evidence argues for REMOVING the classifier rather than widening it. Real gates bundle a decidable part with an undecidable one: the Claude question paired 'confirm this node set' with 'choose where the CSV is produced', a route the user's own turn does not settle. An automaton answering 'confirm' would have rubber-stamped the second along with the first. The fail-safe protected the measurement, so the human-in-the-loop is the feature, not the gap.",
+      "evidence": [
+        "T15/missing-product-docs codex msg_6b70d8ba43e6, msg_96d816e156c0",
+        "T15/missing-product-docs claude msg_e06eaf13b4e5"
+      ]
     }
   ],
   "process_defects": [
