@@ -75,7 +75,17 @@ def synthetic_receipt(tmp_path):
     receipt = tmp_path / "receipt.json"
     path.chmod(0o644)
     write(manifest, {"sha256": {entry: digest}, "symlinks": {}, "git_modes": {entry: "100644"}})
+    # Admission binds the receipt to identity the coordinator observed at launch, so the fixture
+    # must supply that record too; a receipt that only names itself is no longer admissible.
+    identity_dir = receipt.parent / "capture"
+    identity_dir.mkdir(parents=True, exist_ok=True)
+    write(identity_dir / "coordinator-identity.json",
+          {"dispatch_id": "ctx_synthetic", "orca_side": {
+              "dispatch_prompt_processIncarnation": "inc_synthetic",
+              "terminal_incarnationId": "inc_synthetic"}})
     record = {"host": "codex", "session_id": "synthetic-unit-session",
+              "orca_identity": {"dispatch_id": "ctx_synthetic",
+                                "process_incarnation": "inc_synthetic"},
               "source_root": str(root), "loaded_files": [{"path": str(path), "sha256": digest}],
               "raw_dialogue": {"path": str(raw), "sha256": hashlib.sha256(raw.read_bytes()).hexdigest()}}
     write(receipt, record)
@@ -140,3 +150,53 @@ def test_rejects_changed_git_mode_or_symlink_target(tmp_path, fault):
     assert rejected.returncode == 1, rejected.stdout
     reason = "candidate-mode-mismatch" if fault == "mode" else "candidate-symlink-mismatch"
     assert reason in json.loads(rejected.stdout)["reasons"]
+
+
+def test_a_self_named_session_cannot_be_admitted_without_a_coordinator_record(tmp_path):
+    """The defect the first cell's re-evaluation exposed: session_id alone proved nothing."""
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    (receipt.parent / "capture" / "coordinator-identity.json").unlink()
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "missing-coordinator-identity" in json.loads(result.stdout)["reasons"]
+
+
+def test_a_receipt_that_omits_the_orca_binding_is_unverified(tmp_path):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    record.pop("orca_identity")
+    write(receipt, record)
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "session-identity-unbound" in json.loads(result.stdout)["reasons"]
+
+
+@pytest.mark.parametrize("field", ["dispatch_id", "process_incarnation"])
+def test_a_binding_that_disagrees_with_the_coordinator_is_unverified(tmp_path, field):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    record["orca_identity"][field] = "not-what-the-coordinator-saw"
+    write(receipt, record)
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "session-identity-unbound" in json.loads(result.stdout)["reasons"]
+
+
+def test_an_unreadable_coordinator_record_is_unverified_not_ignored(tmp_path):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    (receipt.parent / "capture" / "coordinator-identity.json").write_text("{not json")
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "unreadable-coordinator-identity" in json.loads(result.stdout)["reasons"]
+
+
+def test_a_coordinator_record_missing_its_own_fields_cannot_admit(tmp_path):
+    root, manifest, receipt, record = synthetic_receipt(tmp_path)
+    write(receipt.parent / "capture" / "coordinator-identity.json",
+          {"dispatch_id": "ctx_synthetic", "orca_side": {}})
+    result = subprocess.run([sys.executable, str(CLI), str(manifest), str(root), str(receipt)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "coordinator-identity-incomplete" in json.loads(result.stdout)["reasons"]

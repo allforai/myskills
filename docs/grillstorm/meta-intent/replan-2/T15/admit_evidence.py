@@ -9,6 +9,46 @@ import json
 from pathlib import Path
 
 
+
+def coordinator_identity_path(receipt_path):
+    """Where the coordinator records the identity it observed, beside the cell's receipt."""
+    return receipt_path.resolve().parent / "capture" / "coordinator-identity.json"
+
+
+def identity_binding_reasons(receipt, receipt_path):
+    """A receipt's session id is self-authored, so it proves nothing on its own.
+
+    Checking only that `session_id` is non-empty let a host name itself. Re-judging the first cell on
+    complete criteria found exactly that: the id appeared nowhere but in the actor's own output, and
+    no coordinator record or provider session store carried it. Orca does expose identity the actor
+    cannot author — the dispatch id and process incarnation, written at launch before the actor
+    exists — so admission now requires the receipt to bind to what the coordinator observed.
+    """
+    reasons = []
+    identity_file = coordinator_identity_path(receipt_path)
+    if not identity_file.is_file():
+        return ["missing-coordinator-identity"]
+    try:
+        observed = json.loads(identity_file.read_text())
+    except ValueError:
+        return ["unreadable-coordinator-identity"]
+    claimed = receipt.get("orca_identity")
+    if not isinstance(claimed, dict):
+        return ["session-identity-unbound"]
+    orca_side = observed.get("orca_side") or {}
+    expected = {
+        "dispatch_id": observed.get("dispatch_id"),
+        "process_incarnation": orca_side.get("dispatch_prompt_processIncarnation")
+                               or orca_side.get("terminal_incarnationId"),
+    }
+    for field, want in expected.items():
+        if not want:
+            reasons.append("coordinator-identity-incomplete")
+        elif claimed.get(field) != want:
+            reasons.append("session-identity-unbound")
+    return sorted(set(reasons))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest")
@@ -50,6 +90,7 @@ def main():
                                        "observed_target": actual_target})
     if not receipt.get("session_id"):
         reasons.append("missing-session-identity")
+    reasons.extend(identity_binding_reasons(receipt, Path(args.receipt)))
     if not receipt.get("raw_dialogue"):
         reasons.append("missing-raw-dialogue")
     else:

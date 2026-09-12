@@ -16,8 +16,21 @@ RUN_ID=$(python3 -c "import json;print(json.load(open('$RUNF'))['result']['run']
 # The spec IS the packet, verbatim, plus the working folder. Nothing else is delivered.
 SPEC="Work only inside $CELL/project. $(cat "$CELL/actor-input.md")"
 $ORCA orchestration worker-start --run "$RUN_ID" --spec "$SPEC" --worktree current --agent "$HOST" --json > "$CELL/dispatch.json"
+DISPATCH=$(python3 -c "import json;print(json.load(open('$CELL/dispatch.json'))['result']['dispatchId'])")
+# Start tailing IMMEDIATELY. Orca keeps only the last 50 transcript messages and cannot be read
+# backwards, so a capture taken when the actor finishes loses the opening exchange and the cell can
+# never be certified. Both T15 missing-product-docs cells were lost that way before this existed.
+mkdir -p "$CELL/capture"
+nohup "$R/campaign/tail_transcript.sh" "$DISPATCH" "$CELL/capture/transcript-windows" 60 \
+  > "$CELL/capture/tail.log" 2>&1 &
+echo "$!" > "$CELL/capture/tail.pid"
+# Coordinator-side identity, written before the actor can report anything about itself. The receipt's
+# own session id is self-authored, and admission only checks it is non-empty, so this is what an
+# evaluator can actually bind the cell against.
+$ORCA orchestration worker-show --dispatch "$DISPATCH" --json > "$CELL/capture/coordinator-identity.worker-show.json" 2>&1 || true
 python3 - <<EOF
 import json; r=json.load(open("$CELL/dispatch.json")).get("result", {})
 print(json.dumps({"dispatch_id": r.get("dispatchId"), "run_id": r.get("runId"),
-                  "task_id": r.get("taskId"), "cell": "$T/$HOST/$SCENE"}))
+                  "task_id": r.get("taskId"), "cell": "$T/$HOST/$SCENE",
+                  "tailing": "$CELL/capture/transcript-windows"}))
 EOF

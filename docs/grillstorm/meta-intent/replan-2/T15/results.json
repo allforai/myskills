@@ -43,7 +43,7 @@
       "scenario": "T15/missing-product-docs",
       "host": "claude",
       "status": "unverified",
-      "reason": "环境无法验证: evidence chain incomplete through coordinator process error — the transcript was captured after worker-release so Orca's bounded archive returned contentComplete:false (initial-window-limited, the opening scope exchange lost), and replies.json was overwritten across resumptions. admit_evidence.py exits 1 (invalid-evidence-record: receipt not in the admission shape, raw_dialogue null). A fresh-context evaluator judged the artefacts and partial transcript as passing all five criteria, independently re-running the three validators and recomputing source hashes; that verdict is recorded but cannot admit the cell. Re-run with capture-before-release.",
+      "reason": "环境无法验证: the same structural capture defect as the codex cell. The actor ran cleanly on Claude in its own Run, asked its scope question, received the one scripted turn, asked two further gates answered by the coordinator as operational, and reached worker_done reporting bootstrap blocked with two pending_decision entries for the export route the user declined to choose. But Orca retains only the last 50 transcript messages and --limit does not reach further back (verified at limit 200 and 1000), so the union of four captured windows leaves a 888932 ms front gap: the actor's opening question and the scripted answer are in no window. merge_transcript.py reports full_dialogue_proven false. The receipt is also in the actor's own rich shape and needs coordinator normalization, and its session id is self-reported like the codex one. No evaluation was spent on a cell that cannot be certified. Re-run once launch tails the transcript from dispatch.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/actor-input.md",
       "attempts": [
         {
@@ -58,6 +58,31 @@
           "evaluator_verdict": "passed (provisional; not admissible)",
           "admission": "unverified: invalid-evidence-record",
           "transcript_complete": false
+        },
+        {
+          "dispatch": "ctx_46d3f4fe182e",
+          "run": "run_64e4aa284a45",
+          "task": "task_588eeddef86b",
+          "outcome": "worker_done",
+          "host": "claude",
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/receipt.json",
+          "capture": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture",
+          "coordinator_identity": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/capture/coordinator-identity.json",
+          "admission": "unverified: invalid-evidence-record (actor's own receipt shape, not normalized)",
+          "evaluator_verdict": "not evaluated",
+          "evaluator_verdict_reason": "the cell cannot be certified for dialogue completeness, so an evaluation would be spent on an uncertifiable cell",
+          "transcript_windows": 4,
+          "transcript_union_messages": 59,
+          "transcript_front_gap_ms": 888932,
+          "transcript_complete": false,
+          "scripted_turns_spent": 1,
+          "coordinator_answered_gates": [
+            "msg_e06eaf13b4e5",
+            "msg_fbac2bf99217"
+          ],
+          "actor_reported_outcome": "bootstrap blocked, /run not offered; validate_bootstrap failed with 2 pending_decision for the export route the coordinator declined to choose; validate_unattended_readiness not_ready",
+          "note": "Observed behaviour worth keeping even though the cell is uncertifiable: refusing to decide the CSV route produced a recorded pending decision that blocks, rather than an invented choice. That is the behaviour the scenario's fourth criterion is about.",
+          "released": true
         }
       ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/missing-product-docs/project"
@@ -326,17 +351,20 @@
       "affects": [
         "every cell admitted so far"
       ],
-      "status": "open"
+      "status": "fixed",
+      "fix": "admit_evidence.py now requires the receipt to carry an orca_identity block whose dispatch_id and process_incarnation match a coordinator-identity.json written beside the cell at launch, before the actor exists. A missing, unreadable or incomplete coordinator record, an absent binding, or a binding that disagrees are each a named unverified reason rather than a silent pass. Proof it closes the hole: the codex receipt that previously returned admissible-for-evaluation now returns unverified ['missing-coordinator-identity']. launch_cell.sh writes the coordinator record.",
+      "tests": "test_admit_evidence.py gained cases for a self-named session with no coordinator record, an omitted binding, a binding disagreeing on either field, an unreadable record and a record missing its own fields"
     },
     {
-      "code": "capture-window-not-from-message-1",
+      "code": "orca-retains-only-50-transcript-messages",
       "found": "2026-09-12",
-      "detail": "capture_worker.py's initial read is a bounded forward window, so a cell's dialogue record can begin after the actor's entry reads and can carry clipped tool output. The evaluator's stated fix is to page backwards from the cursor the capture index already holds; the actor need not be re-run.",
+      "detail": "Orca's worker-read returns at most the last 50 messages of a dispatch transcript and reports limited:true; --limit 200 and --limit 1000 both return the same 50, and the returned cursor pages forward only. There is no backwards read. A capture taken when the actor finishes therefore loses everything older than roughly 450 seconds, which is the whole opening exchange of every cell run so far. Both missing-product-docs cells are uncertifiable for this reason alone.",
+      "fix": "Tail the transcript from dispatch in overlapping windows and take the union as the record. merge_transcript.py builds it, records per-message window provenance, and refuses to report full_dialogue_proven when a front gap or interior silence exists. launch_cell.sh must start the tailer as part of launching.",
       "affects": [
         "T15/missing-product-docs codex",
-        "T15/missing-product-docs claude attempt-1"
+        "T15/missing-product-docs claude"
       ],
-      "status": "open"
+      "status": "fixed"
     }
   ],
   "candidate_findings": [
@@ -347,5 +375,10 @@
       "reproducer": "read the cell project's .allforai/bootstrap/workflow.json node capabilities, then list candidate claude/meta-skill/knowledge/capabilities/ for implement*/closure*",
       "routing": "pending: attach to the owning #9/#10/#11 or downstream ticket"
     }
-  ]
+  ],
+  "admission_contract_change": {
+    "date": "2026-09-12",
+    "why": "The re-evaluation showed 'admissible-for-evaluation' never bound session identity. Strengthening the gate was safe to do now precisely because no cell had passed: there was no earlier pass to invalidate, so no two cells are judged by different gates.",
+    "receipt_requirement": "receipts must carry orca_identity {dispatch_id, process_incarnation}. The coordinator supplies it during the sanctioned normalization step from its own launch-time record, which the actor cannot author."
+  }
 }
