@@ -135,7 +135,11 @@ def merge_replies(path, record):
     replies = (prior.get("replies") or []) + (record.get("replies") or [])
     invocations = (prior.get("invocations") or []) + [{"used_turns": record.get("used_turns", 0),
                                                        "replies": len(record.get("replies") or [])}]
-    merged = {"used_turns": sum(i["used_turns"] for i in invocations),
+    # Each invocation's `used` already starts from spent_turns, so it is cumulative, not a delta:
+    # summing them compounds and the next invocation would skip real turns. Take the high-water mark
+    # rather than the last value, so an invocation that never read the prior count (a crash, a fresh
+    # output directory) cannot rewind the ledger and re-deliver a turn already spent.
+    merged = {"used_turns": max([i["used_turns"] for i in invocations] + [prior.get("used_turns") or 0]),
               "invocations": invocations, "replies": replies}
     path.write_text(json.dumps(merged, indent=2, ensure_ascii=False))
     return merged

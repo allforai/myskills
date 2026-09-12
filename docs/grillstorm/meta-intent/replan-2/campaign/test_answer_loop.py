@@ -144,3 +144,17 @@ def test_the_cells_own_worker_terminal_is_not_a_foreign_delivery():
     assert is_foreign({"from_handle": "term_mine"}, own) is False
     assert is_foreign({"from_handle": "run:run_x"}, own) is False       # coordinator-sourced
     assert is_foreign({"from_handle": "dispatch:ctx_other"}, own) is True
+
+
+def test_resumed_invocations_do_not_double_count_spent_turns(tmp_path):
+    """Each invocation's `used` already starts from spent_turns, so summing them compounds: a cell
+    driven three times reported 4 spent turns for a single scripted answer, and the next invocation
+    would then skip real turns. The cumulative count is the LAST invocation's, not the sum."""
+    from answer_loop import merge_replies, spent_turns
+    out = tmp_path / "replies.json"
+    merge_replies(out, {"used_turns": 1, "replies": [{"question": "q1", "answer": "a1", "kind": "scripted-user-turn"}]})
+    assert spent_turns(out) == 1
+    merge_replies(out, {"used_turns": 1, "replies": [{"event": "pending"}]})      # a gate answered by hand; no turn spent
+    assert spent_turns(out) == 1, "a resumption that spends no turn must not advance the count"
+    merge_replies(out, {"used_turns": 2, "replies": [{"question": "q2", "answer": "a2", "kind": "scripted-user-turn"}]})
+    assert spent_turns(out) == 2, "the count is cumulative, not additive"
