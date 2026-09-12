@@ -1,11 +1,19 @@
-# T15 / codex / missing-product-docs — evaluation (admissible, passed)
+# T15 / codex / missing-product-docs — evaluation (WITHDRAWN, re-judging)
+
+> **WITHDRAWN 2026-09-12 — this verdict was reached on half its criteria.**
+> The evaluator prompt was hand-assembled and truncated at 2372 of 4578 characters. The withheld
+> text carried the evaluator's own corroboration duties and the rule that the synthetic
+> `test_admit_evidence.py` cases count toward zero host cells — the rule needed to refuse the very
+> excuse this evaluator used to mark the SG02 rejection drill not-applicable. The actor run, the
+> capture and the identity admission stand; the judging is redone on the complete criteria, built by
+> `build_eval_prompt.py`. The table below is kept as a record of what was claimed, not as a result.
+> The superseded prompt is preserved beside the cell as `evaluate-prompt.truncated.md`.
 
 Candidate 01146b70, tree ce4a69c0…, dispatch ctx_9a85052d4aa4, run run_1c6fcd30fdaf,
 task task_8c94bbf7926c. Host: Codex, own Orca Run for this cell only.
 Evaluator: fresh context (workflow `wbd115au3`), held `evaluator-private.md`, did not run the actor.
 
-**Cell status: passed.** This is the campaign's first cell whose evidence chain is admissible
-*and* whose semantic verdict is a pass. `admit_evidence.py` →
+**Cell status: unverified, verdict withdrawn.** The evidence chain is admissible. `admit_evidence.py` →
 `admissible-for-evaluation` (56 loaded files bound to the pinned manifest, 50 dialogue
 messages digest-bound, zero mode or symlink mismatches, zero extra files).
 
