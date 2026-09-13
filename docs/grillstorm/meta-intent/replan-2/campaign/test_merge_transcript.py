@@ -242,3 +242,14 @@ def test_the_resume_template_pins_the_candidate_and_asks_for_a_receipt():
     assert "plugin cache" in template, "the failure mode must be named, not implied"
     assert "{{RECEIPT_PATH}}" in template, "the resume must request a receipt"
     assert "IN THIS SESSION" in template, "the receipt must scope its reads to this session"
+
+
+def test_the_gap_threshold_is_published_so_it_need_not_be_guessed():
+    """An evaluator inferred 60s and reported a 106s silence as a missing entry; the real bar is 120s."""
+    m = load()
+    import tempfile, pathlib
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        write_window(root, "win-0001", [msg("a", 1000), msg("b", 2000)])
+        cov = m.build(root, started_at=1000)["coverage"]
+    assert cov["internal_gap_threshold_ms"] == 120000

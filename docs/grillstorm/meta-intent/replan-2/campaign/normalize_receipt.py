@@ -175,6 +175,13 @@ def loaded_files(receipt, candidate_root):
         if isinstance(node, dict):
             digest = node.get("sha256")
             raw = next((node[f] for f in PATH_FIELDS if node.get(f)), None)
+            if raw and not digest and "sha256" in node:
+                # An actor may honestly declare a read it did not hash — one wrote a glob of ~34
+                # capability files it read the first 12 lines of, with "sha256": null. Requiring a
+                # digest silently skipped it, which left a silent path in the very field added to
+                # abolish silence. It cannot be admitted without a digest, but it must be visible.
+                dropped.append({"path": raw, "at": key_path,
+                                "reason": "declared read with no sha256; cannot be bound to the manifest"})
             if digest and raw:
                 resolved = resolve(raw)
                 if resolved is None:

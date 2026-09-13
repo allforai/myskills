@@ -464,3 +464,20 @@ def test_a_bare_value_outside_a_session_container_is_not_taken_as_a_session_id(t
     receipt["some_other_block"] = {"value": "not-a-session-identity"}
     (cell / "receipt.json").write_text(json.dumps(receipt))
     assert m.build(cell, candidate, raw)["session_id"] == "sess-1"
+
+
+def test_a_declared_read_with_a_null_digest_is_reported_not_skipped(tmp_path):
+    """An actor honestly declared a glob read it had not hashed; requiring a digest hid it entirely."""
+    m = load()
+    cell, candidate, raw = cell_with(tmp_path)
+    receipt = json.loads((cell / "receipt.json").read_text())
+    receipt["references_loaded"] = [
+        {"path": "claude/meta-skill/knowledge/capabilities/*.md", "sha256": None,
+         "extent": "first 12 lines of each file only; not hashed individually"}]
+    (cell / "receipt.json").write_text(json.dumps(receipt))
+    record = m.build(cell, candidate, raw)
+    hits = [x for x in record["dropped_reads"] if "capabilities" in x["path"]]
+    assert hits, "a declared read with no digest must appear in dropped_reads"
+    assert "no sha256" in hits[0]["reason"]
+    assert all("capabilities/*.md" not in f["path"] for f in record["loaded_files"]), (
+        "it still must not be admitted, because nothing binds it to the manifest")

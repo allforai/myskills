@@ -114,13 +114,17 @@ def coverage(ordered, started_at=None, root=None):
         details = [window_detail(d) for d in capture_dirs(root)]
         details = [d for d in details if d["returned"]]
         details.sort(key=lambda d: (d["earliest_ms"] or 0, d["window"]))
-    found_gaps = gaps(ordered, details=details)
+    gap_threshold_ms = 120000
+    found_gaps = gaps(ordered, threshold_ms=gap_threshold_ms, details=details)
     cov = {
         "messages": len(ordered),
         "earliest_ms": stamps[0] if stamps else None,
         "latest_ms": stamps[-1] if stamps else None,
         "windows": sorted({w for e in ordered for w in e["seen_in"]}),
         "internal_gaps": found_gaps,
+        # Published so a reader never has to infer it. An evaluator guessed 60s and reported a 106s
+        # silence as a missing entry; it was simply under the real threshold.
+        "internal_gap_threshold_ms": gap_threshold_ms,
         "unexplained_gaps": [g for g in found_gaps if not g["explained"]],
         "single_window_messages": sum(1 for e in ordered if len(e["seen_in"]) == 1),
     }

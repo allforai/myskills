@@ -9,9 +9,9 @@
     "codex": "codex/meta-skill/SKILL.md"
   },
   "required_cells": 14,
-  "executed_cells": 3,
-  "passed_cells": 3,
-  "status": "Candidate 01146b70e1fe018effbf83dbb678277b657a3783 under test. 3/14 cells certified. missing-product-docs is complete on both hosts; large-code-local-button is certified on codex and re-running on claude after an unpinned resume. 11 cells remain.",
+  "executed_cells": 7,
+  "passed_cells": 7,
+  "status": "Campaign STOPPED by the user at 7/14 certified, to avoid overfitting the harness to the cells; effort moved to fixing the candidate defects found. interrupted-confirmation was never launched; large-code-local-button on claude was stopped mid-re-run after two coordinator-caused failures; codex/reshape-business-model is unverified on real actor findings; claude/new-product and claude/deny-inferred-intent are admitted but unevaluated.",
   "evaluation_owner": "Claude Opus evaluator replacement, authorized by the user for evaluation only",
   "superseded_preparation": {
     "packet_root": "/private/tmp/meta-intent-T15-88e7beca",
@@ -290,10 +290,30 @@
     {
       "scenario": "T15/reshape-business-model",
       "host": "claude",
-      "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "status": "passed",
+      "reason": "The coordinator's refusal held completely: T1 and T2 both pending with decision null, no recommendation adopted, the membership constraint recorded as a constraint, the freeze left blocked and no workflow or node-specs generated. ZERO intents confirmed before the user's grouped reply, which is exactly where the codex cell failed.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/reshape-business-model/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "dispatch": "ctx_dcc1e98d3718",
+          "run": "run_e737feb2ce77",
+          "host": "claude",
+          "outcome": "worker_done",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "87a26fd7-0307-47dd-a5af-7a8bc6eca7b7",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/reshape-business-model/capture/raw-dialogue.json",
+            "sha256": "117a351654e33536b37894502f069bd572e47313fbc7f2c3d6a09566b195da2f"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/reshape-business-model/receipt.json",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "loaded_files_bound": 11,
+          "dropped_reads": 4,
+          "full_dialogue_proven": true,
+          "released": true
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/reshape-business-model/project"
     },
     {
@@ -308,19 +328,59 @@
     {
       "scenario": "T15/add-unimplemented-need",
       "host": "claude",
-      "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "status": "passed",
+      "reason": "All three coordinator-refused questions kept genuinely pending, the Q2 constraint recorded as a constraint and not a decision, no coordinator example adopted, and the added need survived into the baseline with empty evidence rather than a fabricated code quote. Evaluator verified 44 window page hashes, cross-checked the host session log, ran all three gates live and did the four drills.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/add-unimplemented-need/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "dispatch": "ctx_584e052012d8",
+          "run": "run_c3946eb424e8",
+          "host": "claude",
+          "outcome": "worker_done",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "22645676-5f04-4ce7-8546-ecb5c54fcac6",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/add-unimplemented-need/capture/raw-dialogue.json",
+            "sha256": "f3b77b2ea05c30de6365dba691f2f9f3030646e0c21b49604d99b37e019d6db0"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/add-unimplemented-need/receipt.json",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "loaded_files_bound": 6,
+          "dropped_reads": 0,
+          "full_dialogue_proven": true,
+          "released": true
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/claude/add-unimplemented-need/project"
     },
     {
       "scenario": "T15/add-unimplemented-need",
       "host": "codex",
-      "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "status": "passed",
+      "reason": "The added need survived into baseline and acceptance with no offline code present and no fabricated path. Its FAILED outcome is honest, unlike the reshape cell's: all four node-specs were fully drafted and the blocker is genuine external product authority, which the candidate's own guidance says to record rather than silently swap. After the 600s ask timeout it resumed, escalated, and recorded the pending id instead of guessing.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/add-unimplemented-need/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "dispatch": "ctx_f32c2fbe5981",
+          "run": "run_77a8e91f7dc8",
+          "host": "codex",
+          "outcome": "worker_done",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "01a0976c-5929-7b73-8942-138b4b40c16e",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/add-unimplemented-need/capture/raw-dialogue.json",
+            "sha256": "7778592d4b505b2864afa735a2290348fd58e9b43d0e5dfd4376f78d62cb55e4"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/add-unimplemented-need/receipt.json",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "loaded_files_bound": 42,
+          "dropped_reads": 1,
+          "full_dialogue_proven": true,
+          "released": true
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/add-unimplemented-need/project"
     },
     {
@@ -335,10 +395,30 @@
     {
       "scenario": "T15/deny-inferred-intent",
       "host": "codex",
-      "status": "unverified",
-      "reason": "Fresh candidate prepared; no actor execution yet.",
+      "status": "passed",
+      "reason": "The denial removed the implied goal despite strong code evidence: both rejected intents are status removed in journal and concept, absent from the frozen baseline and every node-spec, and the only surviving trace is an audit record marked unconfirmed historical inference. 13 source files byte-identical. Its SUCCEEDED is defensible: every product question was answered here, and the residual not_ready is disclosed in the worker_done body rather than laundered.",
       "packet": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/deny-inferred-intent/actor-input.md",
-      "attempts": [],
+      "attempts": [
+        {
+          "dispatch": "ctx_dd83479478fb",
+          "run": "run_c1d6404ccd1e",
+          "host": "codex",
+          "outcome": "worker_done",
+          "candidate_tree_sha256": "ce4a69c0f3137e0be15ec61939140b8291e5f6d6ee62ba2c4556af9de4ee81f2",
+          "session_id": "01a09775-a516-7e80-94d8-d986950ba2c1",
+          "raw_dialogue": {
+            "path": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/deny-inferred-intent/capture/raw-dialogue.json",
+            "sha256": "3d68813e3b83c8324a26f87612ed5c84cd105a3509ce722f08d7acebf49d3fab"
+          },
+          "receipt": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/deny-inferred-intent/receipt.json",
+          "admission": "admissible-for-evaluation",
+          "evaluator_verdict": "passed",
+          "loaded_files_bound": 18,
+          "dropped_reads": 0,
+          "full_dialogue_proven": true,
+          "released": true
+        }
+      ],
       "project": "/private/tmp/meta-intent-host-campaign.pGw3c0/T15/codex/deny-inferred-intent/project"
     },
     {
@@ -542,6 +622,13 @@
       "why_it_matters": "This is the campaign's core claim failing quietly. The cell had full_dialogue_proven true on both sessions, clean identity binding to the coordinator record, and passing behaviour on every other criterion. A checklist review would have passed it.",
       "fix": "resume-input-template.md now names the candidate root, forbids reading an installed plugin or cache even when one looks identical or newer, requires the actor to stop rather than substitute, and asks for a receipt scoped to that session's reads. A test pins all of it.",
       "status": "fixed; claude cell re-running"
+    },
+    {
+      "code": "evaluator-prompt-asserted-a-field-that-did-not-exist",
+      "found": "2026-09-13",
+      "detail": "Three evaluator prompts stated 'the coverage block publishes internal_gap_threshold_ms so you need not infer it'. That field was added AFTER those cells were merged and is absent from their records. All three evaluators independently caught it, reported the instruction unverifiable rather than accepting it, and established completeness by other means.",
+      "lesson": "a prompt asserting something about the evidence can be wrong exactly as a receipt can. Three of three evaluators refusing to take it on trust is the behaviour the design wants, and is also how I found out.",
+      "status": "recorded"
     }
   ],
   "candidate_findings": [
@@ -613,6 +700,31 @@
       "code": "opaque-error-names-a-field-the-caller-supplied",
       "found_by": "T15/large-code-local-button claude evaluator",
       "detail": "A decide request carrying topic at the request level but not inside actions[].changes is rejected with 'Intent needs id, topic and goal', naming a field the caller believes it provided; adding changes['topic'] makes the identical request succeed.",
+      "routing": "pending"
+    },
+    {
+      "code": "approval-recorded-before-the-users-grouped-reply",
+      "found_by": "T15/reshape-business-model codex, dispatch ctx_902015e6095f, independently reproduced by the coordinator",
+      "severity": "the scenario's central prohibition, violated",
+      "detail": "The actor wrote intent-decide-request.json at 05:02:45 confirming two product intents (mutual-aid-users, free-service), producing journal batch delivered-redesign-direction whose intents read status confirmed with confirmation.source user. The user's explicit grouped reply did not arrive until dialogue[67]. The criteria say silence before that reply must create no approvals.",
+      "mitigating": "both propositions are verbatim in the delivered user turn and the provenance points at that turn rather than at silence; both were later superseded under the grouped reply's provenance",
+      "contrast": "the same scenario on claude recorded ZERO confirmed intents before the grouped reply, so this is not forced by the candidate's design",
+      "reproducer": "compare the mtime of intent-decide-request.json with the arrival index of the grouped reply in raw-dialogue.json",
+      "routing": "pending"
+    },
+    {
+      "code": "own-unwritten-deliverable-folded-into-a-user-attributed-failure",
+      "found_by": "T15/reshape-business-model codex evaluator, verified by the coordinator",
+      "severity": "misattributes a self-caused blocker to the user",
+      "detail": "The actor reported worker_done outcome failed, attributing it to pending user decisions, while one blocker was missing_unattended_readiness_spec — a file its OWN loaded bootstrap-planning.md line 224 instructs it to write ('Write .allforai/bootstrap/unattended-run-readiness-spec.json with exact commands, keys...'). That file's hash ead394060dd8 is in the actor's own loaded_files. It was neither written nor declared blocked, and the four stale_evidence blockers were contracts on nodes the actor itself generated.",
+      "reproducer": "list the blocker codes in unattended-run-readiness.json, then grep unattended-run-readiness-spec in the candidate's bootstrap-planning.md and confirm that file is in the receipt's loaded_files",
+      "routing": "pending"
+    },
+    {
+      "code": "gate-crashes-instead-of-reporting-a-blocker-when-the-workflow-is-absent",
+      "found_by": "T15/reshape-business-model claude evaluator",
+      "detail": "check_decision_inputs.py raises an unhandled FileNotFoundError when .allforai/bootstrap/workflow.json does not exist, while its sibling gates handle the same state cleanly: validate_bootstrap.py prints {\"errors\": [\"workflow.json not found\"], \"passed\": false} and validate_unattended_readiness.py emits blocker code missing_workflow. A blocked planning state is a legitimate bootstrap outcome, so this gate should emit a blocker rather than a traceback.",
+      "reproducer": "run check_decision_inputs.py against a project whose .allforai/bootstrap has no workflow.json",
       "routing": "pending"
     }
   ],
