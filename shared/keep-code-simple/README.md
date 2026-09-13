@@ -34,3 +34,25 @@ Run deliberately in disposable fixture projects on each supported host when live
 | Human chooses accept | Records choice only; no source changes, task dispatch, automatic downstream skill or verification claim. |
 
 Live Claude/Codex/Pi runs require those hosts and applicable auth/extensions; static contract tests are not a substitute. Pi's package only ports this review, not the completion or product audits. User-only invocation is enforced by the existing Claude Skill hook; Codex/Pi use explicit instruction boundaries, not an equivalent installed hook or security sandbox.
+
+## Where two rules came from
+
+Two judgement rules were adapted in September 2026 after comparing this protocol against public
+code-simplification skills, notably [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/code-simplification/SKILL.md).
+They were folded into the existing principles rather than added as new sections.
+
+- **Establish why code exists before proposing its removal** (principle 1). Adapted from that skill's
+  Chesterton's Fence step. Our version differs in what happens when the reason cannot be found: it
+  becomes a recorded evidence limit and the recommendation stays conditional, because unreadable intent
+  is not absent intent.
+- **Scale is a cost, and large mechanical changes should be scripted rather than hand-edited**
+  (principle 2). Adapted from that skill's "Rule of 500". We deliberately did NOT copy the 500-line
+  threshold: a fixed number means different things across languages and codebases, and this repo's
+  convention is to state acceptance criteria rather than prescribe method. The rule instead asks for a
+  scale estimate, a split between mechanically executable and human-judgement work, and batch
+  boundaries when one pass is not safe.
+
+That comparison also confirmed two existing strengths worth keeping: this protocol's advice-only and
+no-execution boundary, which the surveyed skills mostly lack (one edits source directly), and its rule
+that data and money are high-impact regardless of frequency, with a safe stop defined by what happens
+to partial writes rather than by whether an exception was raised.
