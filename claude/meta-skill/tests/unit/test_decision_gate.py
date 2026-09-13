@@ -222,3 +222,28 @@ def test_settled_and_non_decision_inputs_leave_unrelated_work_executable(tmp_pat
     assert _repair(tmp_path, SECOND) == {"owner": "interactive-bootstrap",
                                          "responsibilities": ["product-decision"]}
     assert _repair(tmp_path) != {"owner": "interactive-bootstrap", "responsibilities": ["product-decision"]}
+
+
+def test_decision_gate_reports_a_blocker_when_no_workflow_exists_yet(tmp_path):
+    """A bootstrap that paused before plan generation has no workflow, which is a legitimate state.
+
+    The gate used to raise FileNotFoundError there, telling a caller nothing and disagreeing with its
+    siblings: validate_bootstrap.py prints {"errors": ["workflow.json not found"], "passed": false} and
+    validate_unattended_readiness.py emits blocker code missing_workflow.
+    """
+    (tmp_path / ".allforai" / "bootstrap").mkdir(parents=True)
+    result = subprocess.run([sys.executable, str(SCRIPTS / "check_decision_inputs.py"), str(tmp_path)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "missing_workflow" in result.stdout
+    assert "Traceback" not in result.stderr, result.stderr
+
+
+def test_decision_gate_reports_a_blocker_when_the_workflow_is_unreadable(tmp_path):
+    (tmp_path / ".allforai" / "bootstrap").mkdir(parents=True)
+    (tmp_path / ".allforai" / "bootstrap" / "workflow.json").write_text("not json{")
+    result = subprocess.run([sys.executable, str(SCRIPTS / "check_decision_inputs.py"), str(tmp_path)],
+                            capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert "unreadable_workflow" in result.stdout
+    assert "Traceback" not in result.stderr, result.stderr

@@ -4,6 +4,44 @@ import json
 from typing import Any
 
 
+
+def _is_local_session(root, profile):
+    """True when this project's scope is a hand-projected local requirement set.
+
+    `intent_session_path` is written only when THIS CLI creates the profile (see the local-change
+    branch of the draft path). An actor that generates its own bootstrap-profile.json does not set it,
+    and the content check below was gated on it alone — so on a generated profile the deeper
+    requirement-drift check never ran and the gate degraded into an integer comparison: bumping a
+    requirement revision from 2 to 3 in the profile and the workflow, changing nothing else, turned a
+    blocked plan green while the node specs still contained nothing about the new requirement.
+
+    The route is the reliable signal, so fall back to it when the key is absent, requiring the local
+    requirement file to actually exist so a mislabelled profile cannot switch the check on by name.
+    """
+    declared = profile.get("intent_session_path")
+    if declared:
+        return declared == LOCAL
+    # Fall back to the route, but only when the baseline this check reads is actually present.
+    # Turning it on without `intent_scope` made a missing CLI-private key surface as invalid_scope,
+    # i.e. it converted "the deeper check cannot run here" into "your scope is invalid" — a false
+    # accusation dressed as a gate result, which is worse than the hole it was meant to close.
+    return (profile.get("task_route") == "local-change"
+            and "intent_scope" in profile
+            and (Path(root) / LOCAL).exists())
+
+
+# Limits of what a scope check could verify, for callers that want to say so. Never errors: a caller
+# that ignores this list still behaves exactly as before.
+SCOPE_ADVISORIES: list = []
+
+
+def take_scope_advisories():
+    """Drain and return advisories recorded by the most recent validate_scope call."""
+    drained = list(SCOPE_ADVISORIES)
+    SCOPE_ADVISORIES.clear()
+    return drained
+
+
 def validate_scope(project_root, workflow, *, consumed_sources=None):
     """Return typed blockers for the scope consumed by a generated workflow.
 
@@ -12,6 +50,7 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
     If supplied, consumed_sources collects journal paths reached through scoped
     requirements; callers may use them only when the returned blockers are empty.
     """
+    SCOPE_ADVISORIES.clear()
     root = Path(project_root)
     path = root / ".allforai/bootstrap/bootstrap-profile.json"
     try:
@@ -80,8 +119,29 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
         # Fold both histories together in log order so reopened work is not retained.
         retained = _retained_nodes(workflow, scope["requirement_refs"])
         blockers = list(pending)
-        if profile.get("intent_session_path") == LOCAL and scope["requirement_refs"]:
+        if _is_local_session(root, profile) and scope["requirement_refs"]:
             blockers.extend(_local_contract(root, workflow, profile, retained=retained))
+        elif (profile.get("task_route") == "local-change" and scope["requirement_refs"]
+              and "intent_scope" not in profile):
+            # Declare the limit of what was checked, as a WARNING rather than a blocker.
+            #
+            # Blocking here was worse than the hole it closed. Without the baseline this check reads,
+            # the gate silently degrades to verifying that the plan POINTS AT the current requirement
+            # revision — which a bumped integer satisfies while the node specs still say nothing about
+            # the new requirement. But making that a blocker also stopped a plan whose specs HAD
+            # absorbed the requirement, giving correct work the same verdict as the bumped integer.
+            # A false accusation dressed as a gate result is the more expensive error, so the gap is
+            # reported and the caller decides.
+            # Advisories must never enter `blockers`: five callers consume that list as errors, and
+            # flagging entries in place meant filtering in each one — I filtered a single gate and
+            # validate_bootstrap.py promptly reported passed:false on correct work. They go to a
+            # separate sink instead, so a caller opts in to reading them rather than opting out.
+            SCOPE_ADVISORIES.append({
+                "code": "requirement_content_unchecked",
+                "message": ("bootstrap-profile.json has no intent_scope baseline, so requirement "
+                            "content drift was NOT checked: the plan's revision pointers were verified, "
+                            "but not whether the node specs absorbed the requirement. Generate the "
+                            "profile through product_intent.py so this gate can assure content")})
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
             blockers.extend(_product_contract(root, workflow, profile, retained=retained))
         if profile["task_route"] != "product-reconstruction":

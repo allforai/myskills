@@ -225,6 +225,23 @@ Write `.allforai/bootstrap/unattended-run-readiness-spec.json` with exact
 commands, keys, MCP servers, QA/repair/closure node ids, and human decisions
 that must already exist. `/run` begins with readiness validation.
 
+This file is yours to produce. If you cannot complete it, say which input is
+missing and return that as a blocker of your own; do not report it as a blocker
+caused by a decision the user has not made.
+
+## The scope baseline the gates read
+
+`bootstrap-profile.json` must carry `intent_scope`: the requirement ids and
+revisions the plan was generated against, as a baseline the gates can compare
+node specs to. Writing the profile through `product_intent.py` records it for you.
+
+Without it `check_decision_inputs.py` can only verify that the plan POINTS AT the
+current requirement revision, not that the node specs absorbed the requirement.
+A bumped revision integer then satisfies the gate while the specs still say
+nothing about the new decision, so the gate reports
+`requirement_content_unchecked` as an advisory and its pass means less than it
+appears to.
+
 ### The coverage gate's repair loop
 
 When the run policy may answer `on_needs_iteration: auto_fix_once` and the workflow carries the
