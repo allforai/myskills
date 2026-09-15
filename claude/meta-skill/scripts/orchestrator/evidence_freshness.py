@@ -222,6 +222,7 @@ def intent_baseline(root):
     return read_json(root, '.allforai/product-concept/concept-baseline.json', {}).get('intent_baseline', {})
 
 
+@_read_only_gate
 def snapshot(root, node, extra=(), seen=()):
     if node['node_id'] in seen:
         raise ValueError('Cyclic input dependency; impact is uncertain')
@@ -807,7 +808,7 @@ def _source_tree(root):
     result = {}
     for directory, dirs, files in os.walk(root):
         dirs[:] = sorted(d for d in dirs if d not in {'.git', '.allforai', '.claude', '.codex',
-                                                      '__pycache__', '.pytest_cache', 'node_modules', '.venv'})
+                                                      '__pycache__', '.pytest_cache', 'node_modules', '.venv', '.expo'})
         for name in sorted(files):
             path = (Path(directory) / name).relative_to(root).as_posix()
             if name != '.git':

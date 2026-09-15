@@ -1,6 +1,6 @@
 {
   "name": "myskills-meta-skill",
-  "version": "0.18.0-pi.1",
+  "version": "0.18.1-pi.1",
   "private": true,
   "description": "Pi adapter for the myskills product pipeline. Generates .allforai/bootstrap and a project-local /skill:run. Superstorm, grillstorm, cross-exam, and product-review are not in this package.",
   "keywords": ["pi-package"],

@@ -136,3 +136,91 @@ def test_cached_json_directory_is_not_treated_as_missing_state(tmp_path):
     path.mkdir()
     with pytest.raises(IsADirectoryError):
         module.evaluate(tmp_path)
+
+
+@pytest.mark.parametrize('explicit', [None, 'input_dependencies', 'observed_read'])
+def test_expo_working_logs_are_ambient_only_exclusions(tmp_path, monkeypatch, explicit):
+    module = load('evidence_freshness')
+    log = 'mobile/.expo/dev/logs/export.log'
+    app = 'mobile/app/index.tsx'
+    put(tmp_path, log, {'message': 'initial'})
+    put(tmp_path, app, {'screen': 'initial'})
+    node = {'node_id': 'mobile', 'source_inputs': ['mobile/**'], 'exit_artifacts': []}
+    if explicit == 'input_dependencies':
+        node['input_dependencies'] = [log]
+    elif explicit == 'observed_read':
+        put(tmp_path, module.READS, {'mobile': [log]})
+    workflow = {'nodes': [node]}
+    put(tmp_path, module.WORKFLOW, workflow)
+    inputs = module.snapshot(tmp_path, node)
+    assert app in inputs['files']
+    assert (log in inputs['files']) == bool(explicit)
+    assert log not in module.source_tree(tmp_path)
+    put(tmp_path, module.STATE, {'nodes': {'mobile': {'inputs': inputs, 'outputs': {},
+        'source_snapshot': module.inventory(tmp_path, workflow)}}})
+    original = module.outputs
+    changed = False
+    def outputs(*args, **kwargs):
+        nonlocal changed
+        result = original(*args, **kwargs)
+        if not changed:
+            changed = True
+            put(tmp_path, log, {'message': 'Metro wrote a new log while evaluating'})
+        return result
+    monkeypatch.setattr(module, 'outputs', outputs)
+    if explicit:
+        with pytest.raises(ValueError, match='changed during freshness evaluation'):
+            module.evaluate(tmp_path)
+    else:
+        assert module.evaluate(tmp_path)['nodes']['mobile']['status'] == 'valid'
+        put(tmp_path, app, {'screen': 'changed'})
+        assert module.evaluate(tmp_path)['nodes']['mobile']['status'] == 'stale'
+
+
+def test_standalone_snapshot_reuses_ancestors_but_not_next_snapshot(tmp_path, monkeypatch):
+    module = load('evidence_freshness')
+    nodes = graph(tmp_path, module)
+    calls = []
+    original = module._snapshot
+    def snapshot(*args, **kwargs):
+        calls.append(args[1]['node_id'])
+        return original(*args, **kwargs)
+    monkeypatch.setattr(module, '_snapshot', snapshot)
+    before = module.snapshot(tmp_path, nodes[-1])
+    assert len(calls) == len(nodes)
+    assert module._READ_EVALUATION.get() is None
+    put(tmp_path, 'src/data.json', {'version': 2})
+    after = module.snapshot(tmp_path, nodes[-1])
+    assert len(calls) == 2 * len(nodes)
+    assert before != after
+    assert module._READ_EVALUATION.get() is None
+
+
+def test_snapshot_scope_does_not_cross_real_document_verification(tmp_path, monkeypatch):
+    import sys
+    from .test_evidence_freshness import setup
+    module = load('evidence_freshness')
+    setup(tmp_path, 'claude')
+    workflow = json.loads((tmp_path / module.WORKFLOW).read_text())
+    document = 'docs/order-facts.md'
+    put(tmp_path, document, {'status': 'passed'})
+    workflow['nodes'][0].update(required_documents=[document], document_verification={document:
+        [sys.executable, '-c', "from pathlib import Path; Path('orders.py').write_text('changed in document verifier')"]})
+    put(tmp_path, module.WORKFLOW, workflow)
+    observed = module.session(tmp_path, {'operation': 'observe', 'node_id': 'deliver-export'})
+    assert module._READ_EVALUATION.get() is None
+    original = module.subprocess.run
+    calls = []
+    def run(*args, **kwargs):
+        assert module._READ_EVALUATION.get() is None
+        calls.append(args[0])
+        result = original(*args, **kwargs)
+        assert module._READ_EVALUATION.get() is None
+        return result
+    monkeypatch.setattr(module.subprocess, 'run', run)
+    result = module.session(tmp_path, {'operation': 'publish', 'observation': observed['observation'],
+        'verification_command': [sys.executable, '-c', 'pass']})
+    assert len(calls) == 2  # Actual main verification followed by actual document verification.
+    assert result['status'] == 'stale'
+    assert 'document verification' in result['reason']
+    assert module._READ_EVALUATION.get() is None
