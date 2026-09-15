@@ -45,6 +45,8 @@ For each **job in scope**，1 和 2 是前提，3 和 4 是本审查要回答的
 
 前提有 `J` 判定覆盖就直接采信，不重走；没有覆盖就按看到的写一行观察并标未验收。只有在没有 `J` 覆盖、产品对这份工作连入口或终态都没有时，`missing_job` / `broken_path` 才是本审查的发现——那正是对着基线的完成度审计看不见的情况：产品从没承诺过这份工作。
 
+第 3 问会得出「这东西不推进任何一份点名的工作」，按 `decoration` 写出来，不再默默丢掉。但装饰永远是**相对本次点名的工作集**而言：它可能在服务用户这次没点名的工作，所以推荐移除之前先查它为何存在（提交信息、blame、关联 issue、spec），查不到就只能 `defer`。
+
 Default extra pass: search live competitors only for how they create the same progress. Unmapped ideas go under "Out of scope".
 
 ## Lenses (镜头，不是清单)
@@ -54,7 +56,7 @@ Default extra pass: search live competitors only for how they create the same pr
 | Question | Where to look | Lineage |
 |---|---|---|
 | 2 走不走得完（前提，`J` 覆盖时不重走） | 每条路有没有终态；失败有没有恢复路；空态、加载、错误态是不是死路；反向操作（撤销、退出、删除）在不在 | feature-gap journey dimensions |
-| 3 该不该有 | Kano：must-be 缺了是 `missing_job`；one-dimensional 弱是 `broken_path` 或 `ui_friction`；attractive 缺了只在竞品对同一份工作做到时才是 `borrow_*`；indifferent 是装饰，不写 | product-concept Kano anchor |
+| 3 该不该有 | Kano：must-be 缺了是 `missing_job`、one-dimensional 弱是 `broken_path`（两者都只在无 `J` 覆盖时成立）或 `ui_friction`；attractive 缺了只在竞品对同一份工作做到时才是 `borrow_*`；indifferent 是装饰，按 `decoration` 写，代价写不出来就不是发现 | product-concept Kano anchor |
 | 4 商业级够不够 | 首次进入有没有被引导；主线是不是功能菜单；核心动作有没有过程反馈；完成后有没有下一步；空态错误态是不是同一套；有没有回来的理由。反面：压缩版后台、概念 demo、功能清单式设计 | consumer-maturity-patterns |
 | naming `ui_friction` / `interaction_gap` | 用 Nielsen 十条给**已观察到**的摩擦命名，让 grill 时有共同语言。不用它扫产品 | experience-map Nielsen anchor |
 
@@ -100,9 +102,10 @@ Each item:
 
 - `id` stable (`R1`…)
 - `job` one triple from Jobs in scope, by its label
-- `kind`: `missing_job` | `broken_path` | `ui_friction` | `interaction_gap` | `borrow_positioning` | `borrow_feature`；前两种只用于没有 `J` 判定覆盖的工作，被覆盖的留在 Prior evidence，不占 `R` 号
+- `kind`: `missing_job` | `broken_path` | `ui_friction` | `interaction_gap` | `decoration` | `borrow_positioning` | `borrow_feature`；`missing_job` / `broken_path` 只用于没有 `J` 判定覆盖的工作，被覆盖的留在 Prior evidence，不占 `R` 号
+- `claim`: `进展受阻` | `不够商业级` —— 这条建议主张的是哪一件事；`decoration` 与 `borrow_*` 不填
 - `depends_on` other `R` ids, cross-exam `G` or `J` ids, or empty
-- `recommend`: `adopt` | `defer` for kinds observed in the product; `adopt` | `defer` | `reject` for `borrow_*`
+- `recommend`: `adopt` | `defer` for kinds observed in the product; `adopt` | `defer` | `reject` for `borrow_*`。`decoration` 的 `adopt` 含义是**移除**它；只有当本次点名的工作集覆盖了产品的主要用途、且已查明它为何存在时才可 `adopt`，否则 `defer` 并写明它可能服务未点名的工作
 - `tradeoff` one sentence
 - `evidence` paths, URLs, or UI observations — not vibes; `code-only` when no browser
 
@@ -113,10 +116,13 @@ Competitor ideas that do not map to a job in scope go to Out of scope, never int
 - `job` is one of the triples in scope
 - `evidence` is an observation (path, URL, screen state, code line), not "this category has X"
 - `evidence` provenance matches Evidence limits
-- `evidence` shows progress on that job blocked or degraded; "works without it" means delete
+- `claim: 进展受阻` → `evidence` 显示这份工作的进展被卡住或变难；"works without it" means delete
+- `claim: 不够商业级` → `evidence` 指出让陌生人不敢把它当正经产品的**具体那一点**（无引导、核心动作没有过程反馈、做完之后没有去处、同类状态两套说法…）；不要求它妨碍把事做完，但说不出具体是哪一点、只剩「体验不好」就删
 - `reject` appears only on `borrow_positioning` / `borrow_feature`; a product-observed kind you would reject was not friction — delete
 - the item is not a cross-exam gap restated
 - `missing_job` / `broken_path` 不落在已被 `J` 判定覆盖的工作上
+- `decoration` 的 evidence 显示它不推进**任何**一份 in-scope 工作，`tradeoff` 写出它在占用的注意力或维护成本；两者缺一就删
+- `decoration` 推荐 `adopt` 时，报告里有它为何存在的出处；只查到「找不到原因」就降为 `defer`
 - no item rests on a P4 source alone
 
 ## 3. Write and stop
@@ -144,6 +150,7 @@ docs/cross-exam/<run>/completion-report.md — G1 blocks JOB1; J2 (gap, no_feedb
 ### R1 — <title>
 - job: JOB1
 - kind:
+- claim: 进展受阻 | 不够商业级
 - depends_on:
 - recommend: adopt | defer | reject
 - tradeoff:
