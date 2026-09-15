@@ -1,0 +1,84 @@
+{
+  "round": "C01-C03 — claim 拆分后的定向回归",
+  "date": "2026-09-15",
+  "host": "Claude Code Agent 工具，三个独立 fresh-context 子任务，并发",
+  "tested_version": {
+    "commit": "d1abe3f3",
+    "claude/superstorm/skills/product-review/SKILL.md": "b579d4fb81b71832de233f23b954898fb1779e7d01347a19cef2ff7f9d3150d5",
+    "codex/cross-exam-skill/product-review.md": "476f9bc60917dcb71a0457b8c64bf2701010515e212fc18dcc0bbbe2828613ba"
+  },
+  "launch": {
+    "method": "场景模拟；受试者不操作真实产品，动作写成伪调用",
+    "isolation": "单个 packet 文件放在会话 scratchpad，受试者只读该文件；隔离由宿主轨迹核对",
+    "fixtures": {
+      "fixtures/product-review/thought-tests.json": "943ba59e472886fc5443889f8689ed6aba26c9646242f5645bf6eb3fa1121b30"
+    }
+  },
+  "cases": [
+    {
+      "id": "C01",
+      "platform_simulated": "claude",
+      "rerun_of": "P01",
+      "under_test": "第 4 问的产出不再被「没有它也能用」判死；claim 填写与具体那一点",
+      "prompt_sha256": "04ced0802a604cd7af0a8341c350a7a925c75957f7e017876b772e806c970d5f",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pr-packet-C01.md"
+        }
+      ],
+      "duration_ms": 66860,
+      "verdict": "pass",
+      "notes": "四个观察点全中。与 P01 的关键差别：四条全部 claim 不够商业级、全部 adopt，不再出现「工作本身仍能完成」的自相矛盾措辞，也不再有自评最弱的条目。再次拒绝把另外 13 项菜单写成 decoration。"
+    },
+    {
+      "id": "C02",
+      "platform_simulated": "claude",
+      "under_test": "新规则会不会变成后门：四条候选逐条去留",
+      "prompt_sha256": "bb19e4ad0be6e9189df94dac52797489de2b3bb55296535c1b94b631df307f65",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pr-packet-C02.md"
+        }
+      ],
+      "duration_ms": 61961,
+      "verdict": "pass",
+      "notes": "五个观察点全中。(a)「观感不精致」删除且不改写；(b) 三层菜单 claim 进展受阻，因 J1 覆盖而用 ui_friction 而非 broken_path；(c) claim 不够商业级并给出具体那一点；(d) 惯例不是缺口，删除，且拒绝把它塞进 Out of scope（未在别处真看到）。"
+    },
+    {
+      "id": "C03",
+      "platform_simulated": "codex",
+      "under_test": "进展受阻这一支能否被推测混过；会不会改标成商业级来保住条目",
+      "prompt_sha256": "6e457fe57405b810b11a5501b6fdfe531b14b2de3d1bed5b4b22524f5d164a6f",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pr-packet-C03.md"
+        }
+      ],
+      "duration_ms": 52794,
+      "verdict": "pass",
+      "notes": "四个观察点全中。驳回调查员填的 进展受阻（无测量不能断定变慢），明说以该 claim 提交必须删除而不是改写；未改标成不够商业级；额外堵住我判据里没写的退路——拒绝降级成 ui_friction 充数；改按 decoration + defer，claim 按规则留空，并说明升级需要什么证据。"
+    }
+  ],
+  "responses": "responses-c01-c03.md",
+  "responses_sha256": "79548a46e16668bac6a8818102a95cf0dd118976884a7811917628ecbb36b0a9",
+  "observations": [
+    "ui_friction 与 interaction_gap 的边界仍然模糊：同类条目在 C01/C02 里被分到不同 kind。按镜头表的原意，Nielsen 只用来给已观察到的摩擦命名，所以这不影响去留判断，也不是 claim 规则的问题，记为待观察。"
+  ],
+  "limits": [
+    "每个场景一次运行、同一模型，不是重复采样或跨模型复核。",
+    "模拟决策，不是原生宿主验收；Codex 适配只作为输入文本，未启动 Codex。",
+    "没有在真实产品上跑过，噪声率与报告质量仍未知。"
+  ]
+}
