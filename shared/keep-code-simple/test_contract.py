@@ -151,6 +151,23 @@ class GuardTests(unittest.TestCase):
             with self.subTest(guard=guard):
                 self.assertIn(guard, text)
 
+    def test_provenance_and_scale_rules_keep_their_failure_modes(self):
+        text = SYNC.SOURCE.read_text(encoding="utf-8")
+        # Both rules were adapted from public simplification skills (README records the
+        # provenance). What is pinned is where this protocol deliberately diverges: an
+        # unfound reason stays a recorded limit instead of licence to delete, and scale is
+        # estimated and split rather than judged against a fixed line threshold.
+        for guard in (
+            "先查它为何存在",
+            "提交信息、blame、关联 issue",
+            "未能确定引入原因",
+            "规模本身是成本",
+            "哪部分可机械执行、哪部分必须人工判断",
+            "判断「没人用」之前先按原则 1 查它为何被加入",
+        ):
+            with self.subTest(guard=guard):
+                self.assertIn(guard, text)
+
     def test_pi_dispatch_uses_async_discovery_and_single_workflow(self):
         text = (ROOT / PACKAGES[2][0] / PACKAGES[2][1]).read_text(encoding="utf-8")
         for boundary in ('action:"list", capabilities:true', "executable", "runner.available === true",
