@@ -57,6 +57,75 @@ def test_worker_success_cannot_mask_failed_gate(tmp_path):
     assert result['transition_log'][0]['error'] == 'gate failed'
 
 
+@pytest.mark.parametrize('identity', ['node', 'node_id'])
+def test_one_driver_transition_per_attempt(tmp_path, identity):
+    path = tmp_path / 'workflow.json'
+    history = {'node': 'previous', 'status': 'completed', 'artifacts_created': ['old.json']}
+    write(path, {'transition_log': [history]})
+    for attempt in range(3):
+        current = flow.load_json(path)
+        before = len(current['transition_log'])
+        current['transition_log'].extend([
+            {identity: 'n1', 'status': 'completed', 'event': 'completed',
+             'started_at': 'worker-time', 'qa_evidence': {'forged': True}},
+            {'node_id': 'n1', 'status': 'completed'},
+            {'node': 'n1', 'status': 'completed'},
+        ])
+        write(path, current)
+        flow.append_transition_if_missing(path, before, 'n1', 'failed',
+                                          f'attempt-{attempt}', [], 'gate failed')
+        result = flow.load_json(path)
+        assert len(result['transition_log']) == attempt + 2
+        assert result['transition_log'][0] == history
+        latest = result['transition_log'][-1]
+        assert latest['node'] == 'n1'
+        assert latest['started_at'] == f'attempt-{attempt}'
+        assert latest['event'] == 'failed'
+        assert 'qa_evidence' not in latest
+        assert flow.count_consecutive_failures(result, 'n1') == attempt + 1
+        assert flow.stagnant_iteration_count(result) == attempt + 1
+
+
+def test_node_id_worker_stops_after_three_real_attempts(tmp_path, monkeypatch, capsys):
+    node = {'node_id': 'n1', 'exit_artifacts': ['missing.json']}
+    path = tmp_path / '.allforai/bootstrap/workflow.json'
+    write(path, {'nodes': [node]})
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py'])
+    monkeypatch.setattr(flow, 'run_preflight', lambda *a: 0)
+    monkeypatch.setattr(flow, 'run_expanders', lambda *a: True)
+    monkeypatch.setattr(flow, 'first_pending_node', lambda *a: node)
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'ready' if event is None else 'halt')
+    monkeypatch.setattr(flow, 'run_diagnosis', lambda *a: subprocess.CompletedProcess([], 0, 'missing input', ''))
+    calls = []
+
+    def worker(*args):
+        calls.append(args)
+        current = flow.load_json(path)
+        current.setdefault('transition_log', []).append({
+            'node_id': 'n1', 'status': 'failed', 'attempt_id': f'worker-{len(calls)}'})
+        write(path, current)
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    assert flow.main() == 3
+    assert len(calls) == 3
+    current = flow.load_json(path)
+    assert len(current['transition_log']) == 3
+    assert current['diagnosis_history'][-1]['attempts'] == 3
+    assert json.loads(capsys.readouterr().err)['error'] == 'failure threshold reached'
+
+
+def test_legacy_node_id_failures_are_counted():
+    workflow = {'transition_log': [
+        {'node_id': 'n1', 'status': 'completed'},
+        {'node': 'n1', 'status': 'failed'},
+        {'node_id': 'n1', 'status': 'failed'},
+    ]}
+    assert flow.count_consecutive_failures(workflow, 'n1') == 2
+    assert flow.last_failed_transition(workflow, 'n1') == workflow['transition_log'][-1]
+
+
 def test_accepted_with_gaps_is_not_reported_as_a_ready_artifact(tmp_path):
     report = tmp_path / 'report.json'
     write(report, {'status': 'accepted_with_gaps', 'gaps': []})

@@ -447,11 +447,11 @@ def repair_awaiting_finalization(project_root: Path, workflow: dict, repair_node
     if not loops:
         return False
     log = workflow.get("transition_log", [])
-    if not any(repair_delivered(entry) for entry in log if entry.get("node") == repair_node_id):
+    if not any(repair_delivered(entry) for entry in log if entry.get("node", entry.get("node_id")) == repair_node_id):
         return False
     qa_nodes = {qa for loop in loops for qa in loop_nodes(loop, "qa_node_ids", "qa_nodes")}
     for qa_node_id in qa_nodes:
-        latest = next((entry for entry in reversed(log) if entry.get("node") == qa_node_id), None)
+        latest = next((entry for entry in reversed(log) if entry.get("node", entry.get("node_id")) == qa_node_id), None)
         if latest is None or latest.get("status") != "completed":
             return False
     return True
@@ -590,7 +590,7 @@ def repair_progress(project_root: Path, workflow: dict, repair_node_id: str,
     awaiting_repair = False   # this QA node failed and no repair has answered it yet
     answered = False          # a repair delivered after this QA node's last transition
     for entry in workflow.get("transition_log", []):
-        node = entry.get("node")
+        node = entry.get("node", entry.get("node_id"))
         status = entry.get("status")
         if node == qa_node_id:
             awaiting_repair = status == "failed"
@@ -718,7 +718,7 @@ def last_failed_transition(workflow: dict, node_id: str) -> dict | None:
     disk says.
     """
     for entry in reversed(workflow.get("transition_log", [])):
-        if entry.get("node") != node_id:
+        if entry.get("node", entry.get("node_id")) != node_id:
             continue
         return entry if entry.get("status") == "failed" else None
     return None
@@ -1239,7 +1239,7 @@ def _keep_last_transition(transition_log: list, node_id: str, entry: dict) -> No
     position = next(index for index, item in enumerate(transition_log) if item is entry)
     transition_log[:] = [
         item for index, item in enumerate(transition_log)
-        if item is entry or index < position or item.get("node") != node_id
+        if item is entry or index < position or item.get("node", item.get("node_id")) != node_id
     ]
 
 
@@ -1260,10 +1260,17 @@ def append_transition_if_missing(
     # cannot leave a second entry of its own behind this one, or write its own
     # qa_evidence: admission reads the node's latest transition, and only the driver
     # observed the attempt it describes.
-    mine = [entry for entry in transition_log[before_count:] if entry.get("node") == node_id]
+    # Both identity spellings occur in generated worker logs. Coalesce only this
+    # dispatch window: older attempts remain history, not duplicate candidates.
+    mine = [entry for entry in transition_log[before_count:] if entry.get("node", entry.get("node_id")) == node_id]
     if mine:
         entry = mine[0]
-        entry.update(status=status, completed_at=now_iso(), artifacts_created=artifacts_created)
+        entry.update(node=node_id, status=status, started_at=started_at,
+                     completed_at=now_iso(), artifacts_created=artifacts_created)
+        if "node_id" in entry:
+            entry["node_id"] = node_id
+        if "event" in entry:
+            entry["event"] = status
         if error:
             entry["error"] = error
         else:
@@ -1316,7 +1323,7 @@ def append_diagnosis_entry(
 def count_consecutive_failures(workflow: dict, node_id: str) -> int:
     count = 0
     for entry in reversed(workflow.get("transition_log", [])):
-        if entry.get("node") != node_id:
+        if entry.get("node", entry.get("node_id")) != node_id:
             break
         if entry.get("status") == "failed":
             count += 1
