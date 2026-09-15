@@ -80,11 +80,14 @@ class PackageTests(unittest.TestCase):
                 self.assertNotIn("disable-model-invocation: true", text)
                 self.assertIn("never", text.split("---", 2)[1].lower())
 
-    def test_pi_manifest_loads_only_the_ported_skill(self):
+    def test_pi_manifest_loads_keep_code_simple(self):
         package = ROOT / "pi/cross-exam"
         manifest = json.loads((package / "package.json").read_text())
-        self.assertEqual(manifest["pi"], {"skills": ["./skills/keep-code-simple"]})
-        for path in manifest["pi"]["skills"]:
+        skills = manifest["pi"]["skills"]
+        self.assertIn("./skills/keep-code-simple", skills)
+        self.assertIn("./skills/cross-exam", skills)
+        self.assertNotIn("./skills/product-review", skills)
+        for path in skills:
             self.assertTrue((package / path / "SKILL.md").is_file())
 
     def test_codex_router_points_to_the_discoverable_entry(self):

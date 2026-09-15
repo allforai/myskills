@@ -6,11 +6,11 @@ This repository provides:
 
 - `claude/` for Claude Code plugins
 - `codex/` for Codex-native skill packages
-- `pi/` for Pi skills — currently `keep-code-simple` only
+- `pi/` for Pi skills — `meta-skill` (bootstrap → generated `/skill:run`) and `cross-exam` (completion audit + `keep-code-simple`)
 
 Shared protocols, scripts and MCP services live under `shared/`.
 
-**Claude Code + Codex** 插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路；**keep-code-simple 同时支持 Pi**，其他流程尚未移植。
+**Claude Code + Codex** 插件集合，覆盖 **产品设计 → 开发锻造 → QA 验证 → 架构治理** 全链路。**Pi 目前支持 meta-skill、cross-exam 完成度审查与 keep-code-simple**；superstorm、grillstorm 和 product-review 尚未移植。
 
 ## ✨ 新增：UI Forge（实现后 UI 锻造）
 
@@ -82,24 +82,36 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 
 ---
 
-### Pi：代码简单性审查
+### Pi
+
+不要把 `claude/meta-skill` 整树装进 Pi 的 skill 扫描目录：内部能力库含大量 `SKILL.md`，会被误注册为独立 Skill。只用 `pi/` 下的适配包。
 
 ```text
+pi install /path/to/myskills/pi/meta-skill
 pi install /path/to/myskills/pi/cross-exam
 ```
 
-重启或重新加载 Pi 后运行 `/skill:keep-code-simple [scope]`。也可把 `pi/cross-exam/skills/keep-code-simple/` 链接到 `~/.pi/agent/skills/keep-code-simple/`；选一种安装方式，避免同名入口重复加载。
+重启或重新加载 Pi 后：
 
-包不自动安装扩展。已有 `pi-subagents` 时可并发并按能力选模型；没有子代理时串行并披露限制。Pi 包当前不提供 cross-exam 完成度审查或 product-review。
+```text
+/skill:bootstrap [path]     # 分析目标项目，生成 .allforai/bootstrap 与 .pi/skills/run/SKILL.md
+/skill:run [goal]           # 在目标项目执行生成的工作流
+/skill:cross-exam [target]  # 实证完成度盘问；没有独立子代理则拒跑，不自审
+/skill:keep-code-simple [scope]
+```
+
+也可把单个 skill 目录链接到 `~/.pi/agent/skills/<name>/`；与 `pi install` 选一种，避免同名入口重复加载。
+
+包不自动安装扩展。cross-exam **必须**已有 `pi-subagents` 才能跑；缺了就拒绝，绝不降级成自审。meta-skill / keep-code-simple 在没有子代理时串行并披露限制。Pi 包当前不提供 superstorm、grillstorm 或 product-review。
 
 ## 你该从哪个插件开始？
 
 | 你的目标 | 推荐入口 | 第一条命令 |
 |---|---|---|
-| 梳理产品、实现、验收、调优 | meta-skill | `/bootstrap` 然后 `/run`（Codex：`bootstrap` → `.codex/commands/run.md`） |
+| 梳理产品、实现、验收、调优 | meta-skill | `/bootstrap` 然后 `/run`（Codex：`.codex/commands/run.md`；Pi：`/skill:bootstrap` → `/skill:run`） |
 | 大目标自治交付 | superstorm | `/superstorm` |
 | 官方 grilling + 隔离执行 | grillstorm | `$grillstorm` |
-| 实证完成度盘问 | cross-exam | `/cross-exam` |
+| 实证完成度盘问 | cross-exam | `/cross-exam`（Pi：`/skill:cross-exam`，需独立子代理） |
 | 产品思维审视（不改代码） | 同一包 | `/product-review`，意见可交给 `$grill-me` |
 | 保留商业功能，让代码更简单（不改代码） | 同一审查包，三端适配 | Claude `/keep-code-simple`；Codex `$keep-code-simple`；Pi `/skill:keep-code-simple` |
 

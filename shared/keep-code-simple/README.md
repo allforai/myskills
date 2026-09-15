@@ -33,7 +33,7 @@ Run deliberately in disposable fixture projects on each supported host when live
 | Existing report / no surviving suggestions | New suffix without asking/overwriting; zero suggestions produces coverage observations, no fabricated choice or perfection verdict. |
 | Human chooses accept | Records choice only; no source changes, task dispatch, automatic downstream skill or verification claim. |
 
-Live Claude/Codex/Pi runs require those hosts and applicable auth/extensions; static contract tests are not a substitute. Pi's package only ports this review, not the completion or product audits. User-only invocation is enforced by the existing Claude Skill hook; Codex/Pi use explicit instruction boundaries, not an equivalent installed hook or security sandbox.
+Live Claude/Codex/Pi runs require those hosts and applicable auth/extensions; static contract tests are not a substitute. The Pi `cross-exam` package also ports the completion audit as a separate skill; product-review is still not on Pi. User-only invocation is enforced by the existing Claude Skill hook; Codex/Pi use explicit instruction boundaries, not an equivalent installed hook or security sandbox.
 
 ## Where two rules came from
 

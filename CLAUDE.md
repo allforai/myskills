@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Purpose
 
-This is **myskills** — a Claude Code / Codex plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance, with Pi support for `keep-code-simple`. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
+This is **myskills** — a Claude Code / Codex plugin collection covering the full pipeline from product design → development forge → QA validation → architecture governance, with Pi adapters for `meta-skill`, `cross-exam`, and `keep-code-simple`. It is a **plugin development repository**, not a product codebase. The plugins are applied to external user projects.
 
 ## Directory Structure
 
@@ -24,7 +24,9 @@ myskills/
 │   ├── grillstorm/
 │   └── cross-exam-skill/
 │
-├── pi/cross-exam/            # Pi package: keep-code-simple only (not the completion audit)
+├── pi/
+│   ├── meta-skill/           # Pi adapter: /skill:bootstrap → generated /skill:run
+│   └── cross-exam/           # Pi package: /skill:cross-exam + keep-code-simple (not product-review)
 │
 ├── shared/                   # Platform-agnostic assets
 │   ├── scripts/
@@ -143,7 +145,14 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `to-spec`, `to-tick
 
 Do not install retired Codex layer packs (`product-design`, `dev-forge`, `demo-forge`, `code-tuner`, `code-replicate`, `ui-forge`). Those jobs go through `codex/meta-skill`.
 
-**Pi** — install the local package with `pi install /path/to/myskills/pi/cross-exam`, then restart/reload Pi and use `/skill:keep-code-simple [scope]`. Only this review is ported; do not claim the other pipelines run on Pi. Optional, already-installed `pi-subagents` enables concurrent investigation; a bare Pi uses disclosed serial review. Do not install extensions automatically.
+**Pi** — install local packages, then restart/reload Pi. Do not copy `claude/meta-skill` into Pi skill discovery; nested capability `SKILL.md` files would register as independent skills.
+
+```text
+pi install /path/to/myskills/pi/meta-skill
+pi install /path/to/myskills/pi/cross-exam
+```
+
+meta-skill: `/skill:bootstrap [path]`, then `/skill:run [goal]` in the target project. Optional `/skill:setup`, `/skill:journal`, `/skill:journal-merge`. cross-exam: `/skill:cross-exam [target]` — independent fresh-context probers required; refuse rather than self-audit. keep-code-simple: `/skill:keep-code-simple [scope]`. Superstorm, grillstorm, and product-review are not ported. Optional, already-installed `pi-subagents` enables concurrent work; a bare Pi may run meta-skill/keep-code-simple serially with disclosure, but cannot run cross-exam. Do not install extensions automatically.
 
 `keep-code-simple` is also bundled in Claude's superstorm plugin and in the Codex cross-exam folder (nested `keep-code-simple/SKILL.md`). Keep its shared protocol authoritative at `shared/keep-code-simple/protocol.md`; after edits run `python3 shared/keep-code-simple/sync.py`, then `--check`. Committed mirrors make installed packages self-contained.
 
@@ -190,19 +199,19 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 
 ## Platform-Specific Notes
 
-| Aspect | Claude Code | Codex |
-|--------|------------|-------|
-| Entry point | SKILL.md (plugin auto-load) | AGENTS.md |
-| Interaction | AskUserQuestion (structured) | Assume + declare |
-| Tools | `${CLAUDE_PLUGIN_ROOT}` paths | Relative paths |
-| MCP naming | `mcp__plugin_{name}_{server}__*` | Generic descriptions |
+| Aspect | Claude Code | Codex | Pi |
+|--------|------------|-------|----|
+| Entry point | SKILL.md (plugin auto-load) | AGENTS.md | `/skill:name` |
+| Interaction | AskUserQuestion (structured) | Assume + declare | Plain-text questions |
+| Tools | `${CLAUDE_PLUGIN_ROOT}` paths | Relative paths | Package-relative + canonical Claude tree |
+| MCP naming | `mcp__plugin_{name}_{server}__*` | Generic descriptions | Optional gateway via `/skill:setup` |
 
 ## Recommended Workflow (for users of the plugins)
 
 ```
 /bootstrap                # Analyze the target project and generate the workflow
     ↓
-/run <goal>               # Execute generated nodes (Codex: .codex/commands/run.md)
+/run <goal>               # Execute generated nodes (Codex: .codex/commands/run.md; Pi: /skill:run)
 ```
 
 Product, implementation, demo, verify, and tune jobs are meta-skill capabilities, not standalone slash commands.
@@ -213,10 +222,10 @@ Every entry below is user-invoked only. Do **not** set `disable-model-invocation
 
 | Situation | Entry | Why this one |
 |---|---|---|
-| A project that must go from product design through implementation to verification (product concept, experience map, art, game design, verify nodes) | `/bootstrap` → `/run` | The only pipeline with the product-design capabilities and the `.allforai/` data bus |
+| A project that must go from product design through implementation to verification (product concept, experience map, art, game design, verify nodes) | `/bootstrap` → `/run` (Pi: `/skill:bootstrap` → `/skill:run`) | The only pipeline with the product-design capabilities and the `.allforai/` data bus |
 | One large engineering goal to finish autonomously, decisions front-loaded, no product-design phase | `/superstorm` | superpowers brainstorming/plans as the design front end; artifacts under `docs/superpowers/` |
 | Same goal shape, but design must follow Matt Pocock's official skills (grilling → to-spec → to-tickets → tdd → code-review) | `/grillstorm` | Official skills own design; Grillstorm owns routing, DAG, worktree execution, resume, handoff; artifacts under `docs/grillstorm/` |
-| A finished delivery that may be fake-complete; independent evidence wanted | `/cross-exam` | Fresh-context probers gather evidence, deterministic report, records only, refuses to run unattended; user-declared journeys walked end-to-end and judged against an oracle |
+| A finished delivery that may be fake-complete; independent evidence wanted | `/cross-exam` (Pi: `/skill:cross-exam`) | Fresh-context probers gather evidence, deterministic report, records only, refuses to run unattended; user-declared journeys walked end-to-end and judged against an oracle |
 | A finished product; is it useful and sellable for the jobs the user names | `/product-review` | Product-thinking critique, competitor comparison, advice only; same package as cross-exam, different protocol |
 | Code should be simpler while preserving business capabilities | `/keep-code-simple` (Codex: `$keep-code-simple`; Pi: `/skill:keep-code-simple`) | Independent advisory review; investigate first, batch human choices last; never changes source or executes the target project |
 

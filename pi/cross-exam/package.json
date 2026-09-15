@@ -1,10 +1,13 @@
 {
   "name": "myskills-cross-exam",
-  "version": "0.2.0",
+  "version": "0.21.0-pi.1",
   "private": true,
-  "description": "Pi advisory code-simplicity skill; completion and product audits are not yet ported.",
+  "description": "Pi cross-exam completion audit and keep-code-simple advisory review. product-review is not ported.",
   "keywords": ["pi-package"],
   "pi": {
-    "skills": ["./skills/keep-code-simple"]
+    "skills": [
+      "./skills/cross-exam",
+      "./skills/keep-code-simple"
+    ]
   }
 }

@@ -5,7 +5,7 @@ description: Review code simplicity through reuse, consistent patterns, familiar
 
 # keep-code-simple — Pi
 
-用户显式调用 `/skill:keep-code-simple [scope]` 才运行；空参数使用默认范围。此包目前只提供简单性审查，不声称 cross-exam 完成度协议已移植到 Pi。
+用户显式调用 `/skill:keep-code-simple [scope]` 才运行；空参数使用默认范围。不要加载或执行同包的 cross-exam 完成度协议。
 
 先完整读取本文件所在目录的 `./protocol.md`，执行该协议。所有相对资源路径从 skill 目录解析，不从被审查项目 cwd 解析。
 

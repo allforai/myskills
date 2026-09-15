@@ -45,7 +45,9 @@ OpenCode is no longer a supported platform. The `opencode/` tree, `install-openc
 local OpenCode install under `~/.config/opencode` or `~/.opencode/skills/myskills` are
 outside this repo; uninstall those yourself if you no longer need them.
 
-This repository now ships two native platform directories: `claude/` and `codex/`.
+This repository now ships three native platform directories: `claude/`, `codex/`, and `pi/`.
+Pi currently adapts `meta-skill` (`/skill:bootstrap` → generated `/skill:run`) and `cross-exam` (`/skill:cross-exam` plus `keep-code-simple`). product-review is not on Pi.
+Do not install the Claude meta-skill tree into Pi skill discovery.
 
 ## What Changed (earlier multi-platform restructure)
 
