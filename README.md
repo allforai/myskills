@@ -87,9 +87,10 @@ Grillstorm requires official Matt Pocock skills (`grilling`, `grill-with-docs`, 
 不要把 `claude/meta-skill` 整树装进 Pi 的 skill 扫描目录：内部能力库含大量 `SKILL.md`，会被误注册为独立 Skill。只用 `pi/` 下的适配包。
 
 ```text
-pi install /path/to/myskills/pi/meta-skill
-pi install /path/to/myskills/pi/cross-exam
+pi install git:github.com/allforai/myskills
 ```
+
+源码布局下也可以装子包：`pi install /path/to/myskills/pi/meta-skill` 与 `pi install /path/to/myskills/pi/cross-exam`。不要把 `claude/meta-skill` 整树装进 Pi。
 
 重启或重新加载 Pi 后：
 

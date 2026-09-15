@@ -148,9 +148,10 @@ Do not install retired Codex layer packs (`product-design`, `dev-forge`, `demo-f
 **Pi** — install local packages, then restart/reload Pi. Do not copy `claude/meta-skill` into Pi skill discovery; nested capability `SKILL.md` files would register as independent skills.
 
 ```text
-pi install /path/to/myskills/pi/meta-skill
-pi install /path/to/myskills/pi/cross-exam
+pi install git:github.com/allforai/myskills
 ```
+
+Source checkout subpackages also work: `pi install /path/to/myskills/pi/meta-skill` and `pi install /path/to/myskills/pi/cross-exam`.
 
 meta-skill: `/skill:bootstrap [path]`, then `/skill:run [goal]` in the target project. Optional `/skill:setup`, `/skill:journal`, `/skill:journal-merge`. cross-exam: `/skill:cross-exam [target]` — independent fresh-context probers required; refuse rather than self-audit. keep-code-simple: `/skill:keep-code-simple [scope]`. Superstorm, grillstorm, and product-review are not ported. Optional, already-installed `pi-subagents` enables concurrent work; a bare Pi may run meta-skill/keep-code-simple serially with disclosure, but cannot run cross-exam. Do not install extensions automatically.
 

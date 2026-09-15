@@ -1,0 +1,17 @@
+{
+  "name": "myskills",
+  "private": true,
+  "description": "Pi adapters for meta-skill (bootstrap/run) and cross-exam (completion audit + keep-code-simple). Superstorm, grillstorm, and product-review are not in this package.",
+  "keywords": ["pi-package"],
+  "pi": {
+    "skills": [
+      "./pi/meta-skill/skills/meta-skill",
+      "./pi/meta-skill/skills/bootstrap",
+      "./pi/meta-skill/skills/setup",
+      "./pi/meta-skill/skills/journal",
+      "./pi/meta-skill/skills/journal-merge",
+      "./pi/cross-exam/skills/cross-exam",
+      "./pi/cross-exam/skills/keep-code-simple"
+    ]
+  }
+}
