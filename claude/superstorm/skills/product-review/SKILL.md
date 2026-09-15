@@ -19,6 +19,7 @@ Not cross-exam. Do not read `skills/cross-exam/SKILL.md`, do not write a complet
 - **Advice only.** Do not edit the product's source. The only writes are under `docs/product-review/<date>-<slug>/`.
 - **No `.allforai/`.** Do not read or write that tree. Do not call meta-skill capabilities. `docs/cross-exam/` is readable input.
 - **No 37 interaction types. No token/pixel spec audit.** Commercial UI/interaction is in scope; design-system compliance is not.
+- **不做第二遍完成度审计。** 「在不在」「走不走得完」是判断前提，不是本审查的产出：有完成度报告就按它的 `J`/`G` 判定采信，不重走旅程；没有报告就记成未验收前提，并说一次 `/cross-exam` 是判这件事的入口。本审查产出的是「该不该有」「商业级够不够」和同一份工作上的竞品对照。
 - **Do not start grilling.** After the report, tell the user they may `$grill-me` / grilling on that file. Wait.
 
 ## Guiding thought
@@ -35,12 +36,14 @@ Product-concept 用第一性原理是为了**发明**。这边是**审视已经�
 
 ## Questions that apply the thought
 
-For each **job in scope**:
+For each **job in scope**，1 和 2 是前提，3 和 4 是本审查要回答的：
 
-1. **在不在** — 有没有入口去推进这件工作？
-2. **走不走得完** — 进展能不能做完，失败或反向有没有路？
+1. **在不在**（前提）— 有没有入口去推进这件工作？
+2. **走不走得完**（前提）— 进展能不能做完，失败或反向有没有路？
 3. **该不该有** — 这是核心进展还是装饰？
 4. **商业级够不够** — 进展能完成的前提下，陌生人会不会把它当成能卖的产品？
+
+前提有 `J` 判定覆盖就直接采信，不重走；没有覆盖就按看到的写一行观察并标未验收。只有在没有 `J` 覆盖、产品对这份工作连入口或终态都没有时，`missing_job` / `broken_path` 才是本审查的发现——那正是对着基线的完成度审计看不见的情况：产品从没承诺过这份工作。
 
 Default extra pass: search live competitors only for how they create the same progress. Unmapped ideas go under "Out of scope".
 
@@ -50,7 +53,7 @@ Default extra pass: search live competitors only for how they create the same pr
 
 | Question | Where to look | Lineage |
 |---|---|---|
-| 2 走不走得完 | 每条路有没有终态；失败有没有恢复路；空态、加载、错误态是不是死路；反向操作（撤销、退出、删除）在不在 | feature-gap journey dimensions |
+| 2 走不走得完（前提，`J` 覆盖时不重走） | 每条路有没有终态；失败有没有恢复路；空态、加载、错误态是不是死路；反向操作（撤销、退出、删除）在不在 | feature-gap journey dimensions |
 | 3 该不该有 | Kano：must-be 缺了是 `missing_job`；one-dimensional 弱是 `broken_path` 或 `ui_friction`；attractive 缺了只在竞品对同一份工作做到时才是 `borrow_*`；indifferent 是装饰，不写 | product-concept Kano anchor |
 | 4 商业级够不够 | 首次进入有没有被引导；主线是不是功能菜单；核心动作有没有过程反馈；完成后有没有下一步；空态错误态是不是同一套；有没有回来的理由。反面：压缩版后台、概念 demo、功能清单式设计 | consumer-maturity-patterns |
 | naming `ui_friction` / `interaction_gap` | 用 Nielsen 十条给**已观察到**的摩擦命名，让 grill 时有共同语言。不用它扫产品 | experience-map Nielsen anchor |
@@ -68,11 +71,11 @@ Completion: target named; every job in scope written as a triple and read back; 
 
 ## 1. Facts
 
-Completion: evidence limits recorded; prior evidence folded in; every job has evidence for the four questions; competitor notes only for jobs in scope.
+Completion: evidence limits recorded; prior evidence folded in; 每条工作的前提有来源（`J` 号或本次观察+未验收）、3/4 有证据; competitor notes only for jobs in scope.
 
 **Evidence limits, before opening anything.** Record three facts: can the product run here; is a browser or screenshot tool available; is WebSearch available. These become the report's `Evidence limits` line. Without a browser, every `ui_friction` / `interaction_gap` item carries `evidence: code-only` and says so. Never describe an inspection method you did not use.
 
-**Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list and its 旅程完成度 section are prior evidence: for each gap (`G` id) or journey verdict (`J` id) that blocks a job in scope, list it on the `Prior evidence` line with that job. A journey that cross-exam walked through (`done`) is evidence for 在不在 and 走不走得完 on the matching job; a journey `gap` with its `stuck_kind` is the observation. You may re-probe it when the product has moved since that report: note the report date and what you observed differently, and the newer observation stands beside the old one, never silently replacing it. A known gap or blocked journey never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`, `J1`). Absent → write `Prior evidence: none`.
+**Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list and its 旅程完成度 section are prior evidence: for each gap (`G` id) or journey verdict (`J` id) that blocks a job in scope, list it on the `Prior evidence` line with that job. A journey that cross-exam walked through (`done`) is evidence for 在不在 and 走不走得完 on the matching job; a journey `gap` with its `stuck_kind` is the observation. 产品在那份报告之后动过，也不在这里重走旅程补判：记下报告日期与你看到的差异，把该工作的前提标成过期，并说一次 `/cross-exam` 是重新判它的入口。这里的观察永不覆盖那份报告的判定。 A known gap or blocked journey never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`, `J1`). Absent → write `Prior evidence: none`.
 
 Find facts yourself (repo, running UI, WebSearch). Do not ask the user for anything look-up-able.
 
@@ -97,7 +100,7 @@ Each item:
 
 - `id` stable (`R1`…)
 - `job` one triple from Jobs in scope, by its label
-- `kind`: `missing_job` | `broken_path` | `ui_friction` | `interaction_gap` | `borrow_positioning` | `borrow_feature`
+- `kind`: `missing_job` | `broken_path` | `ui_friction` | `interaction_gap` | `borrow_positioning` | `borrow_feature`；前两种只用于没有 `J` 判定覆盖的工作，被覆盖的留在 Prior evidence，不占 `R` 号
 - `depends_on` other `R` ids, cross-exam `G` or `J` ids, or empty
 - `recommend`: `adopt` | `defer` for kinds observed in the product; `adopt` | `defer` | `reject` for `borrow_*`
 - `tradeoff` one sentence
@@ -113,6 +116,7 @@ Competitor ideas that do not map to a job in scope go to Out of scope, never int
 - `evidence` shows progress on that job blocked or degraded; "works without it" means delete
 - `reject` appears only on `borrow_positioning` / `borrow_feature`; a product-observed kind you would reject was not friction — delete
 - the item is not a cross-exam gap restated
+- `missing_job` / `broken_path` 不落在已被 `J` 判定覆盖的工作上
 - no item rests on a P4 source alone
 
 ## 3. Write and stop
@@ -124,6 +128,7 @@ Write `docs/product-review/<run>/recommendations.md`:
 
 ## Jobs in scope
 - JOB1 — who: … / circumstance: … / progress: …
+  - 前提: J2 (done) | 本次观察（未验收） · <one clause>
 
 ## Evidence limits
 runs here: yes|no · browser: yes|no · WebSearch: yes|no · consequence: <one clause>
