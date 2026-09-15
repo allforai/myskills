@@ -49,6 +49,11 @@ python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-r
 
 If the readiness command exits non-zero or `.allforai/bootstrap/unattended-run-readiness.json` has `status != "ready"`, stop immediately. Do not start partial execution and do not silently weaken validation. Report the blockers from `.allforai/bootstrap/unattended-run-readiness.md`.
 Missing scripts, missing/invalid readiness reports, and failed expanders also block execution.
+The native driver records failed helper commands in `.allforai/bootstrap/preflight-result.json`,
+including exit code, elapsed time and stderr. Timeout (`124`) and interruption (`130`)
+are distinct from validation blockers. A failed attempt replaces any old `ready` report
+with `not_ready`; the previous report is retained only as diagnostic context.
+Do not diagnose a command timeout as a missing product decision.
 Before stopping, record `preflight_blocked` with `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
 ## Run Policy — once before the first node
@@ -78,7 +83,35 @@ Before every execution wave, run every idempotent expander declared by `workflow
 4. Decide the next node:
    - prefer nodes whose `hard_blocked_by` nodes are complete
    - prefer nodes whose upstream artifacts already exist
-   - parallelize only when exit artifacts do not overlap
+   - use bounded parallel implementation for eligible independent nodes; reserve
+     `source_inputs`, `exit_artifacts`, and `required_documents` together, including
+     shared manifests such as `package.json`; overlapping reservations stay serial
+   - optional `parallel_write_scopes` in both workflow node and node-spec frontmatter
+     narrows draft writes to a non-empty list of project-relative paths/globs. It must
+     cover every product exit artifact and required document. Omission retains the
+     conservative default; invalid, empty or incomplete declarations fail closed.
+     `source_inputs` and `input_dependencies` remain reads: shared read/read paths
+     may run together, but write/write and write/read overlaps stay serial. For example,
+     two nodes reading `package.json` may declare `content/**` and `mobile/**` writes;
+     neither may modify the manifest. Give shared-file changes one owner with dependencies,
+     or a later serial integration node; do not omit real reads to gain concurrency.
+   - import preflights the entire draft against its write scopes and checks every
+     declared read and write against the batch snapshot, including additions/deletions.
+     Out-of-scope edits or input drift reject that draft before any files are copied.
+     Main-workspace publication stays serial and independently revalidates; changes
+     there to another draft's inputs also invalidate that later draft.
+   - the Codex driver defaults to 2 parallel nodes (`max_parallel_nodes` in
+     `.allforai/codex/execution-policy.json`, integer 1–8; 1 disables parallelism)
+   - parallel workers implement in private filesystem copies. Import only declared
+     file changes after checking input drift; never import worker control-plane state.
+     In the main workspace, publish fresh observations and independently verify each
+     node serially before the driver records completion
+   - QA, repair, acceptance, retries, undeclared/unsafe scopes, and source symlinks
+     stay serial. Independent DAG edges alone do not establish safe concurrency
+   - private copies include local dependencies (symlinks are dereferenced), exclude
+     Git internals, and consume extra disk space. Each eligible node has a draft
+     worker plus a serial verification worker; parallelism is not a speed guarantee.
+     Failed drafts remain in the reported temporary directory for diagnosis
    - skip a node only when the same independent artifact gate passes on current project state
    - re-run a failed node only after addressing the cause
    - a failed QA node with a declared repair loop routes to that repair node first

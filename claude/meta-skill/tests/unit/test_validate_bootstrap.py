@@ -969,3 +969,16 @@ def test_coverage_gate_loop_names_the_repair_and_rerun_nodes():
                     "repair_node_id": "concept-acceptance-repair",
                     "closure_node_ids": ["concept-acceptance-rerun"], "max_attempts": 1}
     assert coverage_gate_loop([{"node_id": "design", "capability": "game-design"}]) is None
+
+
+@pytest.mark.parametrize('spec_scopes', ['', 'parallel_write_scopes: [other/**]\n'])
+def test_parallel_write_scopes_require_matching_node_spec(tmp_path, spec_scopes):
+    _write_workflow(tmp_path, [_base_node(node_id='build', parallel_write_scopes=['src/**'])])
+    (tmp_path / 'node-specs').mkdir()
+    spec = tmp_path / 'node-specs/build.md'
+    spec.write_text('---\nnode_id: build\nexit_artifacts: [.allforai/out.json]\n'
+                    + spec_scopes + '---\n' + ATTENTION_CONTRACT_BODY)
+    assert any('frontmatter parallel_write_scopes' in e for e in validate_node_spec_contracts(str(tmp_path)))
+    spec.write_text(spec.read_text().replace(spec_scopes, '', 1) if spec_scopes else spec.read_text())
+    spec.write_text(spec.read_text().replace('node_id: build\n', 'node_id: build\nparallel_write_scopes: [src/**]\n'))
+    assert not any('frontmatter parallel_write_scopes' in e for e in validate_node_spec_contracts(str(tmp_path)))

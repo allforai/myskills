@@ -9,6 +9,12 @@ while Codex-only runtime helpers live under `.allforai/codex/`.
 from __future__ import annotations
 
 import hashlib
+import fnmatch
+import shutil
+import tempfile
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import signal
@@ -20,6 +26,7 @@ from pathlib import Path
 
 
 DEFAULT_MAX_ITERATIONS = 200
+PARALLEL_EXECUTION = threading.local()
 MAX_CONSECUTIVE_FAILURES_PER_NODE = 3
 # The documented fallback for a declared repair loop that carries no budget at all.
 # A declared budget always wins; an unusable one is never replaced by this.
@@ -1136,7 +1143,7 @@ def exhausted_obligations(project_root: Path, workflow: dict) -> list[str]:
                    exhausted_obligation_pairs(project_root, workflow)})
 
 
-def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, list[str]]:
+def _pending_state(project_root: Path, workflow: dict, candidates: list | None = None) -> tuple[dict | None, list[str]]:
     """(next dispatchable node, ids of pending nodes nothing may dispatch yet)."""
     nodes = workflow.get("nodes", [])
     if safety_halted(project_root):
@@ -1186,6 +1193,7 @@ def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, lis
     # has budget keeps running for that obligation alone (ADR 0005).
     dead_loop_repairs -= repair_nodes
     blocked: list[str] = []
+    ready: list[dict] = []
     selected: dict | None = None
     for node in nodes:
         node_id = node_identity(node)
@@ -1202,6 +1210,7 @@ def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, lis
             blocked.append(node_id)
             continue
         if node_id in repair_nodes:
+            ready.append(node)
             if selected is None:
                 selected = node
             continue
@@ -1216,8 +1225,15 @@ def _pending_state(project_root: Path, workflow: dict) -> tuple[dict | None, lis
         if not dispatchable:
             blocked.append(node_id)
             continue
+        ready.append(node)
         if selected is None:
             selected = node
+    if candidates is not None:
+        candidates.extend(ready)
+    # A reached threshold must be handled before dispatching an unrelated branch.
+    selected = next((n for n in ready
+                     if count_consecutive_failures(workflow, node_identity(n))
+                     >= failure_threshold(project_root, node_identity(n))), selected)
     return selected, blocked
 
 
@@ -1399,7 +1415,7 @@ def script_path(project_root: Path, name: str) -> Path:
 
 def execution_policy(project_root: Path) -> dict:
     path = project_root / ".allforai/codex/execution-policy.json"
-    policy = {"sandbox": "workspace-write", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300}
+    policy = {"sandbox": "workspace-write", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300, "max_parallel_nodes": 2}
     if path.exists():
         supplied = load_json(path)
         if not isinstance(supplied, dict) or set(supplied) - set(policy):
@@ -1410,6 +1426,8 @@ def execution_policy(project_root: Path) -> dict:
     for key in ("node_timeout_seconds", "helper_timeout_seconds"):
         if type(policy[key]) is not int or not 1 <= policy[key] <= 86400:
             raise ValueError(f"{key} must be an integer between 1 and 86400")
+    if type(policy["max_parallel_nodes"]) is not int or not 1 <= policy["max_parallel_nodes"] <= 8:
+        raise ValueError("max_parallel_nodes must be an integer between 1 and 8")
     return policy
 
 
@@ -1432,7 +1450,25 @@ def run_bounded(command: list[str], project_root: Path, timeout: int,
         else:
             proc.kill()
     try:
-        out, err = proc.communicate(input=stdin_text, timeout=timeout)
+        cancel = getattr(PARALLEL_EXECUTION, "cancel", None)
+        if cancel is None:
+            out, err = proc.communicate(input=stdin_text, timeout=timeout)
+        else:
+            deadline = time.monotonic() + timeout
+            pending_input = stdin_text
+            while True:
+                if cancel.is_set():
+                    stop()
+                    out, err = proc.communicate()
+                    return subprocess.CompletedProcess(command, 130, out, err + "\nParallel execution cancelled")
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(command, timeout)
+                try:
+                    out, err = proc.communicate(input=pending_input, timeout=min(0.2, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    pending_input = None
     except subprocess.TimeoutExpired:
         stop()
         out, err = proc.communicate()
@@ -1455,6 +1491,7 @@ def run_script(project_root: Path, name: str, args: list[str],
 
 def run_preflight(project_root: Path) -> int:
     run_script(project_root, "record_run_event.py", [".", "--event", "run_started", "--status", "started", "--message", "codex flow.py invoked"])
+    started = time.monotonic()
     readiness = run_script(project_root, "validate_unattended_readiness.py", [".", "--write-report"])
     report = project_root / ".allforai/bootstrap/unattended-run-readiness.json"
     status = ""
@@ -1464,7 +1501,46 @@ def run_preflight(project_root: Path) -> int:
         except Exception:
             status = ""
     if readiness is None or readiness.returncode != 0:
-        run_script(project_root, "record_run_event.py", [".", "--event", "preflight_blocked", "--status", "blocked", "--message", "unattended readiness failed"])
+        code = readiness.returncode if readiness is not None else None
+        reason = ({124: "preflight_timeout", 130: "preflight_interrupted"}.get(code)
+                  or ("preflight_helper_missing" if readiness is None else "preflight_command_failed"))
+        try:
+            previous = load_json(report) if report.exists() else None
+        except (OSError, ValueError):
+            previous = None
+        detail = {
+            "status": "not_ready", "checked_at": now_iso(), "reason": reason,
+            "command": [sys.executable, str(script_path(project_root, "validate_unattended_readiness.py")), ".", "--write-report"],
+            "returncode": code, "elapsed_seconds": round(time.monotonic() - started, 3),
+            "timeout_seconds": execution_policy(project_root)["helper_timeout_seconds"],
+            "stdout": (readiness.stdout or "")[-4000:] if readiness is not None else "",
+            "stderr": (readiness.stderr or "")[-4000:] if readiness is not None else "helper script missing",
+            "report_used": False, "previous_report": previous,
+        }
+        # Archive the last report as context, never leave its old ready verdict
+        # looking like this failed attempt's result. The next real check replaces it.
+        report.parent.mkdir(parents=True, exist_ok=True)
+        save_json(project_root / ".allforai/bootstrap/preflight-result.json", detail)
+        message = f"{reason}: returncode={code}; {detail['stderr']}"
+        failure_report = {"status": "not_ready", "checked_at": detail["checked_at"],
+                          "blockers": [{"code": reason, "message": message}],
+                          "diagnostic_report": ".allforai/bootstrap/preflight-result.json"}
+        # Ordinary validation failures may have produced genuine current blockers.
+        # Retain them when stdout and the written report agree; an old ready report
+        # or an interrupted command is never admitted this way.
+        if readiness is not None and code not in {124, 130}:
+            try:
+                current = json.loads(readiness.stdout)
+            except (ValueError, TypeError):
+                current = None
+            if isinstance(current, dict) and current == previous and current.get("status") == "not_ready":
+                failure_report["blockers"] += current.get("blockers", [])
+        save_json(report, failure_report)
+        report.with_suffix(".md").write_text(
+            "# Unattended readiness\n\nStatus: not_ready\n\n" + message +
+            "\n\nThe previous readiness report is historical context only; see preflight-result.json.\n",
+            encoding="utf-8")
+        run_script(project_root, "record_run_event.py", [".", "--event", "preflight_blocked", "--status", "blocked", "--message", message])
         run_script(project_root, "summarize_run_log.py", [".", "--write-report"])
         return 6
     if status != "ready":
@@ -1792,18 +1868,302 @@ def parse_legacy_args(argv: list[str], project_root: Path) -> tuple[str, int]:
     return goal, max_iterations
 
 
+# Parallel execution uses private copies, never concurrent writers of workflow,
+# freshness or repair state. Only ordinary implementation nodes are eligible.
+# Validators and repair/closure nodes retain the existing serial protocol.
+PARALLEL_CACHE_DIRS = {".git", "node_modules", ".venv", "__pycache__", ".pytest_cache"}
+
+
+def parallel_control_path(path: str) -> bool:
+    return path in {".allforai", ".codex"} or (path.startswith(".allforai/")
+            and not path.startswith(".allforai/bootstrap/artifacts/")) or path.startswith(".codex/")
+
+
+def parallel_outputs(node: dict) -> list:
+    values = [artifact_path(a) for a in node.get("exit_artifacts", [])]
+    for field in ("required_documents", "required_docs"):
+        for doc in node.get(field) or []:
+            values.append(doc.get("path", "") if isinstance(doc, dict) else doc)
+    return values
+
+
+def valid_parallel_paths(values) -> bool:
+    return isinstance(values, list) and all(
+        isinstance(v, str) and v.strip() == v and v
+        and not Path(v).is_absolute() and ".." not in Path(v).parts
+        and v.removeprefix("./").rstrip("/") not in {"", "."}
+        for v in values)
+
+
+def parallel_reads(node: dict) -> list[str]:
+    return [p.removeprefix("./").rstrip("/") for p in
+            list(node.get("source_inputs") or []) + list(node.get("input_dependencies") or [])]
+
+
+def parallel_scopes(node: dict) -> list[str]:
+    """Explicit writes opt in to shared reads; absent declarations stay conservative."""
+    for field in ("source_inputs", "input_dependencies"):
+        if not valid_parallel_paths(node.get(field, [])):
+            return []
+    outputs = parallel_outputs(node)
+    explicit = "parallel_write_scopes" in node
+    values = node.get("parallel_write_scopes") if explicit else parallel_reads(node) + outputs
+    if not valid_parallel_paths(values) or not valid_parallel_paths(outputs):
+        return []
+    scopes = [v.removeprefix("./").rstrip("/") for v in values]
+    if explicit and (not scopes or any(parallel_control_path(v) for v in scopes)):
+        return []
+    scopes = [v for v in scopes if not parallel_control_path(v)]
+    outputs = [v.removeprefix("./").rstrip("/") for v in outputs]
+    if explicit and any(not parallel_control_path(v) and not scoped_change(v, scopes) for v in outputs):
+        return []
+    return scopes
+
+
+def parallel_conflict(left: dict, right: dict) -> bool:
+    left_writes, right_writes = parallel_scopes(left), parallel_scopes(right)
+    return (scopes_overlap(left_writes, right_writes + parallel_reads(right))
+            or scopes_overlap(right_writes, parallel_reads(left)))
+
+
+def reservation(path: str) -> str:
+    if any(c in path for c in "*?["):
+        prefix = path[:min(path.index(c) for c in "*?[" if c in path)]
+        return prefix.rsplit("/", 1)[0] if "/" in prefix else ""
+    return path.rstrip("/")
+
+
+def scopes_overlap(left: list[str], right: list[str]) -> bool:
+    return any(not a or not b or a == b or a.startswith(b + "/") or b.startswith(a + "/")
+               for a in map(reservation, left) for b in map(reservation, right))
+
+
+def parallel_candidates(project_root: Path, workflow: dict, selected: dict) -> list[dict]:
+    limit = execution_policy(project_root)["max_parallel_nodes"]
+    if limit == 1:
+        return [selected]
+    serial = declared_qa_nodes(project_root) | declared_repair_nodes(project_root)
+    serial.add(acceptance_gate_node(workflow))
+    def eligible(n):
+        return (count_consecutive_failures(workflow, node_identity(n)) == 0
+                and node_identity(n) not in serial
+                and n.get("capability") in {"implement", "generate-artifacts"}
+                and bool(parallel_scopes(n)))
+    if not eligible(selected):
+        return [selected]
+    if not any(node_identity(n) != node_identity(selected) and eligible(n)
+               and not parallel_conflict(n, selected)
+               for n in workflow.get("nodes", [])):
+        return [selected]
+    if any(value.startswith("symlink:") for value in parallel_snapshot(project_root).values()):
+        return [selected]
+    candidates = []
+    _pending_state(project_root, workflow, candidates)
+    # A reached failure threshold is a run-level decision, before any new branch.
+    if any(count_consecutive_failures(workflow, node_identity(n)) >= failure_threshold(project_root, node_identity(n))
+           for n in candidates):
+        return [selected]
+    batch = [selected]
+    for node in candidates:
+        if len(batch) >= limit:
+            break
+        if node_identity(node) == node_identity(selected) or not eligible(node):
+            continue
+        if all(not parallel_conflict(node, other) for other in batch):
+            batch.append(node)
+    return batch
+
+
+def parallel_snapshot(root: Path, include_control: bool = False) -> dict[str, str]:
+    result = {}
+    for directory, dirs, files in os.walk(root, followlinks=False):
+        dirs[:] = [d for d in dirs if d not in PARALLEL_CACHE_DIRS]
+        for name in files + [d for d in dirs if (Path(directory) / d).is_symlink()]:
+            path = Path(directory) / name
+            rel = path.relative_to(root).as_posix()
+            if not include_control and parallel_control_path(rel):
+                continue
+            result[rel] = ("symlink:" + os.readlink(path) if path.is_symlink()
+                           else str(path.stat().st_mode & 0o777) + ":" + hashlib.sha256(path.read_bytes()).hexdigest())
+    return result
+
+
+def scoped_change(path: str, scopes: list[str]) -> bool:
+    return any(path == scope or path.startswith(scope.rstrip("/") + "/")
+               or fnmatch.fnmatchcase(path, scope) for scope in scopes)
+
+
+def import_parallel_changes(root: Path, copy: Path, baseline: dict, node: dict) -> list[str]:
+    after = parallel_snapshot(copy, include_control=True)
+    changes = sorted(p for p in baseline.keys() | after.keys()
+                     if not parallel_control_path(p) and baseline.get(p) != after.get(p))
+    current = parallel_snapshot(root, include_control=True)
+    scopes = parallel_scopes(node)
+    if not scopes:
+        raise ValueError("invalid parallel write declaration")
+    for path in baseline.keys() | current.keys():
+        if scoped_change(path, scopes + parallel_reads(node)) and current.get(path) != baseline.get(path):
+            raise ValueError("parallel source input changed: " + path)
+    # Preflight the ENTIRE patch before writing one file. A source modification by
+    # another branch/user, undeclared output or symlink requires reconciliation.
+    for path in changes:
+        target = root / path
+        if not scoped_change(path, scopes):
+            raise ValueError("parallel worker wrote outside declared scope: " + path)
+        if current.get(path) != baseline.get(path):
+            raise ValueError("parallel merge input changed: " + path)
+        if not target.resolve().is_relative_to(root.resolve()) or (copy / path).is_symlink():
+            raise ValueError("parallel merge refuses symlink: " + path)
+        if after.get(path, "").startswith("symlink:") or baseline.get(path, "").startswith("symlink:"):
+            raise ValueError("parallel merge refuses symlink: " + path)
+    for path in changes:
+        target = root / path
+        if path not in after:
+            target.unlink()
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(copy / path, target)
+    return changes
+
+
+def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str) -> int | None:
+    """Parallel draft execution, followed by serial publication and verification.
+
+    Return None to reschedule. A nonzero return is a run-wide stop. Private
+    copies remain on failure for diagnosis; their reports never release a node.
+    """
+    batch_dir = Path(tempfile.mkdtemp(prefix="meta-flow-parallel-"))
+    baseline = parallel_snapshot(root, include_control=True)
+    copies = []
+    started = now_iso()
+    workflow_path = root / ".allforai/bootstrap/workflow.json"
+    try:
+        for index, node in enumerate(nodes):
+            copy = batch_dir / str(index)
+            shutil.copytree(root, copy, symlinks=False,
+                            ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache"))
+            copies.append(copy)
+    except (OSError, shutil.Error) as exc:
+        print(json.dumps({"error": "could not prepare isolated copies: " + str(exc),
+                          "isolated_copies": str(batch_dir)}), file=sys.stderr)
+        return 6
+    print(json.dumps({"event": "parallel_batch_started", "nodes": [node_identity(n) for n in nodes],
+                      "isolated_copies": str(batch_dir)}), flush=True)
+    cancel = threading.Event()
+    def execute(pair):
+        PARALLEL_EXECUTION.cancel = cancel
+        node, copy = pair
+        prompt = build_prompt(node_identity(node), goal) + (
+            "\nThis is an isolated parallel implementation draft. Do not operate on any other workspace. "
+            "Only change these declared project paths: " + json.dumps(parallel_scopes(node)) +
+            ". Your workflow/freshness records are private and will NOT be imported. "
+            "The driver will publish evidence and independently verify in the main workspace.")
+        try:
+            return run_codex(copy, prompt)
+        except Exception as exc:
+            return subprocess.CompletedProcess([], 1, "", "parallel executor failed: " + str(exc))
+        finally:
+            del PARALLEL_EXECUTION.cancel
+    with ThreadPoolExecutor(max_workers=len(nodes)) as pool:
+        try:
+            results = list(pool.map(execute, zip(nodes, copies)))
+        except KeyboardInterrupt:
+            cancel.set()
+            print(json.dumps({"error": "parallel batch interrupted; no drafts imported",
+                              "isolated_copies": str(batch_dir)}), file=sys.stderr)
+            return 130
+    for node, result in zip(nodes, results):
+        save_json(batch_dir / (node_identity(node).replace("/", "_") + "-result.json"),
+                  {"node": node_identity(node), "returncode": result.returncode,
+                   "stdout_tail": (result.stdout or "")[-4000:],
+                   "stderr_tail": (result.stderr or "")[-4000:]})
+    # Do not accept any speculative branch when ANY branch records a halt.
+    warnings = []
+    for copy in copies:
+        if safety_halted(copy):
+            quarantine_outputs(root, [node_identity(n) for n in nodes], SAFETY_HALT_REASON)
+            return 4
+        reported = read_safety_warnings(copy)
+        if reported is None:
+            quarantine_outputs(root, [node_identity(n) for n in nodes], SAFETY_HALT_REASON)
+            print(json.dumps({"error": "invalid parallel safety report", "isolated_copies": str(batch_dir)}), file=sys.stderr)
+            return 6
+        warnings.extend(reported)
+    root_warnings = read_safety_warnings(root)
+    if root_warnings is None:
+        quarantine_outputs(root, [node_identity(n) for n in nodes], SAFETY_HALT_REASON)
+        return 6
+    warnings.extend(root_warnings)
+    if warnings:
+        save_json(root / ".allforai/bootstrap/run-warnings.json", {"warnings": sorted(set(warnings))})
+    if safety_halted(root) or safety_halt_required(root, warnings):
+        quarantine_outputs(root, [node_identity(n) for n in nodes], SAFETY_HALT_REASON)
+        print(json.dumps({"error": "run-wide safety halt; parallel drafts not imported", "isolated_copies": str(batch_dir)}), file=sys.stderr)
+        return 4
+    batch_passed = True
+    for node, copy, result in zip(nodes, copies, results):
+        node_id = node_identity(node)
+        before_count = len(load_json(workflow_path).get("transition_log", []))
+        error = ""
+        all_ready = False
+        try:
+            if result.returncode in {124, 130}:
+                raise ValueError("parallel draft timed out or was interrupted; revalidate on resume")
+            import_parallel_changes(root, copy, baseline, node)
+            if result.returncode == 0:
+                # Never import copy-bound observations. Reobserve merged inputs and
+                # refresh documents serially, then run the SAME independent gate.
+                result = run_codex(root, build_prompt(node_id, goal) +
+                    "\nImplementation was imported from an isolated draft. Reuse it. "
+                    "Reobserve inputs and reverify all acceptance commands here; "
+                    "publish fresh evidence for THIS workspace before finishing.")
+                post = read_safety_warnings(root)
+                if post is None or safety_halted(root) or safety_halt_required(root, post):
+                    quarantine_outputs(root, [node_identity(n) for n in nodes], SAFETY_HALT_REASON)
+                    append_transition_if_missing(workflow_path, before_count, node_id, "failed", started, [],
+                                                 "run-wide safety halt during parallel publication")
+                    return 6 if post is None else 4
+                all_ready = result.returncode == 0 and independent_artifact_gate(root, node_id)
+            if not all_ready:
+                error = (result.stderr or result.stdout or "independent artifact gate failed")[-600:]
+        except (OSError, ValueError) as exc:
+            error = str(exc)
+        batch_passed = batch_passed and all_ready
+        artifacts = [artifact_path(a) for a in node.get("exit_artifacts", []) if artifact_ready(root, artifact_path(a))]
+        append_transition_if_missing(workflow_path, before_count, node_id,
+                                     "completed" if all_ready else "failed", started, artifacts, error or None)
+        print(json.dumps({"event": "parallel_node_verified", "node": node_id,
+                          "all_exit_artifacts_ready": all_ready, "error": error}), flush=True)
+        if result.returncode in {124, 130}:
+            return result.returncode
+    if batch_passed:
+        shutil.rmtree(batch_dir)
+    else:
+        print(json.dumps({"event": "parallel_drafts_retained", "isolated_copies": str(batch_dir)}), flush=True)
+    return None
+
+
 def main() -> int:
     project_root = find_project_root(Path.cwd())
     goal, max_iterations = parse_legacy_args(sys.argv, project_root)
     workflow_path = project_root / ".allforai/bootstrap/workflow.json"
     preflight = run_preflight(project_root)
     if preflight != 0:
+        diagnostic = {}
+        try:
+            report = load_json(project_root / ".allforai/bootstrap/unattended-run-readiness.json")
+            if report.get("diagnostic_report") == ".allforai/bootstrap/preflight-result.json":
+                detail = load_json(project_root / report["diagnostic_report"])
+                diagnostic = {"preflight": {k: v for k, v in detail.items() if k != "previous_report"}}
+        except (OSError, ValueError):
+            pass
         print(
             json.dumps(
                 {
                     "passed": False,
                     "done": False,
                     "error": "unattended readiness preflight blocked execution",
+                    **diagnostic,
                 },
                 indent=2,
                 ensure_ascii=False,
@@ -1969,6 +2329,13 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 4
+
+        batch = parallel_candidates(project_root, workflow, node)
+        if len(batch) > 1:
+            outcome = run_parallel_batch(project_root, workflow, batch, goal)
+            if outcome is not None:
+                return outcome
+            continue
 
         before_count = len(workflow.get("transition_log", []))
         started_at = now_iso()

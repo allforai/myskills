@@ -202,3 +202,22 @@ rewritten by implementation. `accepted_with_gaps` is a qualified Run Policy
 outcome and a blocking artifact status: it cannot become verified or completed.
 Unattended execution reports unresolved freshness prerequisites; product choices
 return to interactive bootstrap. Existing Run Policy and visual-review rules apply.
+
+
+### Read-only evaluation reuse
+
+A single Python freshness gate may reuse parsed JSON, file fingerprints, inventory,
+dependency edges and shared-ancestor snapshots. The reuse belongs only to that
+read-only call (including nested external-change observation), and is discarded
+before returning. Snapshot keys include the node contract and extra reads; cycle
+checks and dynamically recorded dependencies still apply. Dependency propagation
+uses the same graph and stops once verdicts converge.
+
+Before returning a verdict, the gate checks the contents and metadata of observed
+files, declared dependency-glob membership, and the product source tree again.
+Changed inputs reject the evaluation rather than extending the cache's lifetime.
+Product source glob checks preserve the existing generated-file and runtime-cache
+exclusions. Missing inputs remain observed, so creating one invalidates the read.
+No reuse crosses observation/publication, an actual verification command, or a
+later gate. Publication inside the read-only context is rejected. This optimization
+does not replace validation with file existence or raise execution timeouts.

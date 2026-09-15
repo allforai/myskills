@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import wraps
 import json
 import os
 import subprocess
@@ -20,16 +22,105 @@ READS = '.allforai/bootstrap/observed-input-dependencies.json'
 EXTERNAL = '.allforai/bootstrap/external-changes.json'
 
 
+# Caches exist only inside one read-only gate. Never reuse them across observe,
+# publish, a verification subprocess, or a later gate in the same interpreter.
+_READ_EVALUATION = ContextVar('freshness_read_evaluation', default=None)
+
+
+def _file_version(path):
+    try:
+        stat = path.stat()
+        return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+    except FileNotFoundError:
+        return None
+
+
+class _ReadEvaluation:
+    def __init__(self, root):
+        self.root = root.resolve()
+        self.files = {}
+        self.memo = {}
+        self.expansions = {}
+        self.tree = None
+
+    def content(self, path):
+        # Keep the unresolved path too: replacing a symlink must invalidate reads.
+        key = str(path.absolute())
+        if key not in self.files:
+            before = _file_version(path)
+            content = path.read_bytes() if path.is_file() else None
+            after = _file_version(path)
+            if before != after:
+                raise ValueError('Inputs changed during freshness evaluation: ' + key)
+            self.files[key] = (after, content)
+        return self.files[key][1]
+
+    def verify(self):
+        # Recheck bytes as well as metadata, including previously missing files.
+        # This is a boundary check, not a long-lived stat-only freshness cache.
+        for key, (version, content) in self.files.items():
+            path = Path(key)
+            before = _file_version(path)
+            current = path.read_bytes() if path.is_file() else None
+            if before != version or _file_version(path) != before or current != content:
+                raise ValueError('Inputs changed during freshness evaluation: ' + key)
+        for paths, previous in self.expansions.items():
+            if expand_paths(self.root, list(paths)) != previous:
+                raise ValueError('Input membership changed during freshness evaluation')
+        if self.tree is not None and source_tree(self.root) != self.tree:
+            raise ValueError('Source tree changed during freshness evaluation')
+        for key, (version, _) in self.files.items():
+            if _file_version(Path(key)) != version:
+                raise ValueError('Inputs changed during freshness evaluation: ' + key)
+
+
+def _read_only_gate(function):
+    @wraps(function)
+    def wrapped(root, *args, **kwargs):
+        active = _READ_EVALUATION.get()
+        if active is not None:
+            if active.root != root.resolve():
+                raise ValueError('Freshness evaluation cannot cross project roots')
+            return function(root, *args, **kwargs)
+        context = _ReadEvaluation(root)
+        token = _READ_EVALUATION.set(context)
+        try:
+            result = function(root, *args, **kwargs)
+        finally:
+            _READ_EVALUATION.reset(token)
+        context.verify()  # No verdict escapes if inputs moved during the gate.
+        return result
+    return wrapped
+
+
+def _memoized(key, compute):
+    context = _READ_EVALUATION.get()
+    if context is None:
+        return compute()
+    if key not in context.memo:
+        context.memo[key] = compute()
+    return context.memo[key]
+
+
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 def read_json(root, path, default=None):
     target = root / path
-    return json.loads(target.read_text()) if target.exists() else default
+    context = _READ_EVALUATION.get()
+    if context is None:
+        return json.loads(target.read_text()) if target.exists() else default
+    if target.is_dir():
+        raise IsADirectoryError(str(target))
+    content = context.content(target)
+    return (_memoized(('json', str(target.absolute())), lambda: json.loads(content))
+            if content is not None else default)
 
 
 def write_json(root, path, value):
+    if _READ_EVALUATION.get() is not None:
+        raise ValueError('Cannot publish inside a read-only freshness evaluation')
     target = root / path
     target.parent.mkdir(parents=True, exist_ok=True)
     content = json.dumps(value, sort_keys=True, indent=2) + '\n'
@@ -65,10 +156,16 @@ def fingerprint(root, path):
     target = (root / path).resolve()
     if not target.is_relative_to(root.resolve()):
         raise ValueError('Input must be inside project: ' + path)
-    return hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None
+    context = _READ_EVALUATION.get()
+    if context is None:
+        return hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None
+    def calculate():
+        content = context.content(root / path)
+        return hashlib.sha256(content).hexdigest() if content is not None else None
+    return _memoized(('fingerprint', str((root / path).absolute())), calculate)
 
 
-def expand_paths(root, paths):
+def expand_paths(root, paths, *, track=True):
     if not isinstance(paths, list) or not all(isinstance(p, str) and p for p in paths):
         raise ValueError('Input dependencies must be a list of project paths or globs')
     expanded: set[str] = set()
@@ -82,6 +179,12 @@ def expand_paths(root, paths):
             expanded.update(p.relative_to(root).as_posix() for p in (root / path).rglob('*') if p.is_file())
         else:
             expanded.add(path)
+    context = _READ_EVALUATION.get()
+    if context is not None and track:
+        key = tuple(paths)
+        previous = context.expansions.setdefault(key, expanded)
+        if previous != expanded:
+            raise ValueError('Input membership changed during freshness evaluation')
     return expanded
 
 
@@ -122,9 +225,16 @@ def intent_baseline(root):
 def snapshot(root, node, extra=(), seen=()):
     if node['node_id'] in seen:
         raise ValueError('Cyclic input dependency; impact is uncertain')
+    return _memoized(('snapshot', digest(node), tuple(sorted(set(extra)))),
+                     lambda: _snapshot(root, node, extra, seen))
+
+
+def _snapshot(root, node, extra=(), seen=()):
+    if node['node_id'] in seen:
+        raise ValueError('Cyclic input dependency; impact is uncertain')
     extra = set(extra) | set(observed_reads(root).get(node['node_id'], []))
     workflow = read_json(root, WORKFLOW, {})
-    source_files = expand_paths(root, node.get('source_inputs', []))
+    source_files = expand_paths(root, node.get('source_inputs', []), track=False)
     product_files = inventory(root, workflow)
     source_files = {p for p in source_files if p in product_files or not (root / p).exists()}
     paths = source_files | expand_paths(root, node.get('input_dependencies', [])) | extra
@@ -157,6 +267,10 @@ def snapshot(root, node, extra=(), seen=()):
 
 
 def dependencies(root, node, workflow):
+    return _memoized(('dependencies', digest(node)), lambda: _dependencies(root, node, workflow))
+
+
+def _dependencies(root, node, workflow):
     producers = {item['path'] if isinstance(item, dict) else item: n['node_id']
                  for n in workflow.get('nodes', [])
                  for item in [*n.get('exit_artifacts', []), *n.get('required_documents', [])]}
@@ -311,6 +425,7 @@ def scope_blockers(root, workflow):
     return grouped
 
 
+@_read_only_gate
 def routed_external_changes(root):
     """Detected external changes grouped by the delivery they reach.
 
@@ -428,7 +543,7 @@ def owned_inputs(root, workflow, state):
     """Every path some node declares, observed or recorded as a consumed input."""
     owned = {p for n in workflow.get('nodes', [])
              for field in ('source_inputs', 'input_dependencies')
-             for p in expand_paths(root, n.get(field, []))}
+             for p in expand_paths(root, n.get(field, []), track=field != 'source_inputs')}
     owned.update(p for record in state['nodes'].values() for p in record.get('extra', []))
     owned.update(p for record in state['nodes'].values() for p in record.get('inputs', {}).get('files', {}))
     owned.update(p for paths in observed_reads(root).values() for p in paths)
@@ -675,6 +790,15 @@ def external_changes(root):
 
 
 def source_tree(root):
+    context = _READ_EVALUATION.get()
+    if context is None:
+        return _source_tree(root)
+    if context.tree is None:
+        context.tree = _source_tree(root)
+    return context.tree
+
+
+def _source_tree(root):
     """Every project file outside the flow's own working directories.
 
     Workflow-independent on purpose: a verification must not appear to move the
@@ -692,6 +816,10 @@ def source_tree(root):
 
 
 def inventory(root, workflow):
+    return _memoized(('inventory',), lambda: _inventory(root, workflow))
+
+
+def _inventory(root, workflow):
     generated = {item['path'] if isinstance(item, dict) else item
                  for node in workflow.get('nodes', []) for item in node.get('exit_artifacts', [])}
     generated.update(workflow.get('generated_outputs', []))
@@ -699,6 +827,7 @@ def inventory(root, workflow):
     return {path: value for path, value in source_tree(root).items() if path not in generated}
 
 
+@_read_only_gate
 def evaluate(root):
     workflow = read_json(root, WORKFLOW, {})
     state = read_json(root, STATE, {'nodes': {}})
@@ -747,9 +876,11 @@ def evaluate(root):
             if unknown and valid:
                 result[node['node_id']] = {'status': 'uncertain', 'readiness_status': 'uncertain',
                                           'reason': 'Unmapped product input changed'}
+    graph = {n['node_id']: dependencies(root, n, workflow) for n in workflow.get('nodes', [])}
     for _ in workflow.get('nodes', []):
+        previous = digest(result)
         for node in workflow['nodes']:
-            stale_upstream = [dep for dep in dependencies(root, node, workflow)
+            stale_upstream = [dep for dep in graph[node['node_id']]
                               if result.get(dep, {}).get('status') != 'valid']
             if stale_upstream:
                 entry = result[node['node_id']]
@@ -759,8 +890,10 @@ def evaluate(root):
                     stale_diff = entry.setdefault('diff', {})
                     stale_diff['upstream'] = sorted(set(stale_diff.get('upstream', [])) | set(stale_upstream))
                     entry['repair'] = repair_responsibility(root, node, stale_diff, blockers, external)
-            if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in dependencies(root, node, workflow)):
+            if any(result.get(dep, {}).get('readiness_status') != 'valid' for dep in graph[node['node_id']]):
                 result[node['node_id']]['readiness_status'] = 'stale'
+        if digest(result) == previous:
+            break
     for node_id, entry in result.items():
         # Every gate reading this must be able to tell drift whose impact a verification
         # established from drift whose impact nothing has: the second is unknown, not

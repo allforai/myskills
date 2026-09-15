@@ -6,7 +6,7 @@ Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fil
 
 For a node consuming `task_scope` requirements, mirror workflow
 `requirement_refs`, `responsibilities`, `decision_inputs` and `source_inputs`
-(plus `input_dependencies`, `required_documents` and `document_verification` when declared) in YAML
+(plus `input_dependencies`, `parallel_write_scopes`, `required_documents` and `document_verification` when declared) in YAML
 frontmatter. `source_inputs` names the project-relative product source the
 node's documents and evidence trace to; write explicit `[]` only when no
 product source is relevant. A scoped node without it cannot pass any gate.
@@ -375,3 +375,19 @@ wire protocol — NOT just REST routes. Include in the stitch node-spec:
 - Authoritative server state synchronization: which game state fields the server owns vs. client predicts
 - Client reconciliation flow: how server corrections are applied to client-side predicted state
 - Verify: every message type the client sends has a matching server handler; every server broadcast has a matching client receiver
+
+
+### Optional Codex parallel draft write contract
+
+`parallel_write_scopes` is an optional non-empty list of project-relative write paths
+or globs, identical in workflow and node-spec frontmatter. It must cover all product
+exit artifacts and required documents; driver control state is excluded. Without
+it, Codex conservatively reserves reads and outputs as potential writes. With it,
+`source_inputs` and `input_dependencies` still declare all reads, including shared
+manifests. Read/read overlap is allowed; write/read and write/write overlap is not.
+For example, nodes that both read `package.json` can reserve `content/**` and
+`mobile/**` respectively. Neither draft may change `package.json`; assign that
+change to one ordered owner or a serial integration node. Draft import rejects an
+entire patch on any out-of-scope write or changed declared input before copying
+files, and serial publication must independently reverify fresh main-workspace
+state. Never remove a real input merely to make branches appear independent.

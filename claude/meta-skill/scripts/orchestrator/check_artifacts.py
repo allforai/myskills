@@ -16,6 +16,7 @@ registers a read, or publishes anything.
 """
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -467,7 +468,38 @@ def input_declaration_errors(node: dict) -> list:
         for path in value:
             if os.path.isabs(path) or ".." in path.replace(os.sep, "/").split("/"):
                 errors.append(f"'{field}' entry {path!r} must be a relative project path without '..'")
+    errors.extend(parallel_write_declaration_errors(node))
     errors.extend(document_verification_errors(node))
+    return errors
+
+
+def parallel_write_declaration_errors(node: dict) -> list:
+    """Optional Codex draft write contract; shared reads do not grant write access."""
+    if "parallel_write_scopes" not in node:
+        return []
+    scopes = node["parallel_write_scopes"]
+    def control(p):
+        return p.rstrip("/") in {".allforai", ".codex"} or (p.startswith(".allforai/") and not p.startswith(".allforai/bootstrap/artifacts/")) or p.startswith(".codex/")
+    if not isinstance(scopes, list) or not scopes or any(
+        not isinstance(p, str) or not p or p.strip() != p or os.path.isabs(p)
+        or ".." in Path(p).parts or p.removeprefix("./").rstrip("/") in {"", "."}
+        or control(p.removeprefix("./")) for p in scopes
+    ):
+        return ["'parallel_write_scopes' must be a non-empty list of safe project-relative write paths or globs, excluding driver control state"]
+    scopes = [p.removeprefix("./").rstrip("/") for p in scopes]
+    artifacts = node.get("exit_artifacts", [])
+    outputs = [a.get("path", "") if isinstance(a, dict) else a for a in artifacts] if isinstance(artifacts, list) else []
+    for field in ("required_documents", "required_docs"):
+        values = node.get(field)
+        if isinstance(values, list):
+            outputs += [p.get("path", "") if isinstance(p, dict) else p for p in values]
+    errors = []
+    for path in outputs:
+        if not isinstance(path, str) or not path:
+            continue  # Existing artifact/document shape validators own this error.
+        path = path.removeprefix("./").rstrip("/")
+        if not control(path) and not any(path == p or path.startswith(p + "/") or fnmatch.fnmatchcase(path, p) for p in scopes):
+            errors.append(f"'parallel_write_scopes' does not cover declared output {path!r}")
     return errors
 
 

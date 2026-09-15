@@ -156,6 +156,46 @@ def test_preflight_requires_report(tmp_path, monkeypatch):
     assert flow.run_preflight(tmp_path) == 0
 
 
+@pytest.mark.parametrize('code,reason', [(124, 'preflight_timeout'), (130, 'preflight_interrupted'), (1, 'preflight_command_failed')])
+def test_preflight_preserves_failure_and_invalidates_old_ready(tmp_path, monkeypatch, capsys, code, reason):
+    report_path = tmp_path / '.allforai/bootstrap/unattended-run-readiness.json'
+    write(report_path, {'status': 'ready', 'checked_at': 'old-attempt'})
+    def helper(root, name, args):
+        return subprocess.CompletedProcess([], code if name == 'validate_unattended_readiness.py' else 0,
+                                           '', 'Timed out after 300s' if code == 124 else 'failure details')
+    monkeypatch.setattr(flow, 'run_script', helper)
+    assert flow.run_preflight(tmp_path) == 6
+    report = flow.load_json(report_path)
+    assert report['status'] == 'not_ready'
+    assert report['blockers'][0]['code'] == reason
+    result = flow.load_json(tmp_path / '.allforai/bootstrap/preflight-result.json')
+    assert result['returncode'] == code
+    assert result['previous_report']['checked_at'] == 'old-attempt'
+    assert result['report_used'] is False
+    assert capsys.readouterr().err == ''
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': []})
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py'])
+    assert flow.main() == 6
+    response = json.loads(capsys.readouterr().err)
+    assert response['preflight']['returncode'] == code
+    assert response['preflight']['stderr'] == result['stderr']
+
+
+def test_preflight_keeps_current_validation_blockers(tmp_path, monkeypatch):
+    path = tmp_path / '.allforai/bootstrap/unattended-run-readiness.json'
+    blocker = {'code': 'missing_runtime', 'message': 'example executable is missing'}
+    report = {'status': 'not_ready', 'blockers': [blocker]}
+    def helper(root, name, args):
+        if name == 'validate_unattended_readiness.py':
+            write(path, report)
+            return subprocess.CompletedProcess([], 1, json.dumps(report), '')
+        return subprocess.CompletedProcess([], 0, '', '')
+    monkeypatch.setattr(flow, 'run_script', helper)
+    assert flow.run_preflight(tmp_path) == 6
+    assert blocker in flow.load_json(path)['blockers']
+
+
 def test_final_validation_failure_blocks_done(tmp_path, monkeypatch, capsys):
     write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes':[{'node_id':'n1'}]})
     monkeypatch.chdir(tmp_path)
@@ -2304,3 +2344,276 @@ def test_a_scored_acceptance_report_never_opens_a_repair(tmp_path, monkeypatch, 
     monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'halt_with_report' if event else 'ready')
     assert flow.handle_iteration(tmp_path, {'nodes': nodes, 'transition_log': []}) == 5
     assert 'refused' in (tmp_path / '.allforai/concept-acceptance/acceptance-report.md').read_text()
+
+
+def parallel_node(name, inputs=None):
+    return {'node_id': name, 'capability': 'implement',
+            'source_inputs': inputs or [f'{name}/**'], 'exit_artifacts': [f'{name}/report.json']}
+
+
+@pytest.mark.parametrize('left,right', [
+    (['package.json'], ['package.json']),
+    (['scripts/verify-*.ts'], ['scripts/verify-b.ts']),
+    (['tests/contracts/**'], ['tests/contracts/new.ts']),
+    (['src'], ['src/new/file.py']),
+    (['*.json'], ['mobile/index.ts']),
+])
+def test_parallel_reservations_detect_shared_paths(left, right):
+    assert flow.scopes_overlap(left, right)
+
+
+def test_parallel_reservations_allow_disjoint_branches():
+    assert not flow.scopes_overlap(['content/**'], ['mobile/**'])
+    node = parallel_node('mobile')
+    node['required_docs'] = [{'path': 'docs/common.json'}]
+    assert flow.scopes_overlap(flow.parallel_scopes(node), ['docs/common.json'])
+
+
+def test_parallel_selection_is_bounded_and_skips_conflicts(tmp_path, monkeypatch):
+    nodes = [parallel_node('a'), parallel_node('b', ['a/shared']), parallel_node('c'), parallel_node('d')]
+    monkeypatch.setattr(flow, '_pending_state', lambda root, workflow, candidates: candidates.extend(nodes))
+    batch = flow.parallel_candidates(tmp_path, {'nodes': nodes}, nodes[0])
+    assert [n['node_id'] for n in batch] == ['a', 'c']
+    write(tmp_path / '.allforai/codex/execution-policy.json', {'max_parallel_nodes': 1})
+    assert flow.parallel_candidates(tmp_path, {'nodes': nodes}, nodes[0]) == [nodes[0]]
+
+
+@pytest.mark.parametrize('value', [0, 9, True, '2'])
+def test_parallel_limit_invalid(tmp_path, value):
+    write(tmp_path / '.allforai/codex/execution-policy.json', {'max_parallel_nodes': value})
+    with pytest.raises(ValueError):
+        flow.execution_policy(tmp_path)
+
+
+def test_parallel_retries_and_repair_nodes_stay_serial(tmp_path, monkeypatch):
+    nodes = [parallel_node('a'), parallel_node('b')]
+    monkeypatch.setattr(flow, '_pending_state', lambda root, workflow, candidates: candidates.extend(nodes))
+    monkeypatch.setattr(flow, 'declared_repair_nodes', lambda root: {'b'})
+    assert flow.parallel_candidates(tmp_path, {'nodes': nodes}, nodes[0]) == [nodes[0]]
+    monkeypatch.setattr(flow, 'declared_repair_nodes', lambda root: set())
+    workflow = {'nodes': nodes, 'transition_log': [{'node_id': 'a', 'status': 'failed'}]}
+    assert flow.parallel_candidates(tmp_path, workflow, nodes[0]) == [nodes[0]]
+
+
+def test_parallel_merge_rejects_entire_patch_when_scope_or_inputs_change(tmp_path):
+    root, copy = tmp_path / 'root', tmp_path / 'copy'
+    write(root / 'a/input.json', {'v': 1})
+    baseline = flow.parallel_snapshot(root)
+    import shutil
+    shutil.copytree(root, copy)
+    write(copy / 'a/report.json', {'status': 'passed'})
+    write(copy / 'package.json', {'unsafe': True})
+    with pytest.raises(ValueError, match='outside declared scope'):
+        flow.import_parallel_changes(root, copy, baseline, parallel_node('a'))
+    assert not (root / 'a/report.json').exists()
+    (copy / 'package.json').unlink()
+    write(root / 'a/input.json', {'v': 2})
+    with pytest.raises(ValueError, match='source input changed'):
+        flow.import_parallel_changes(root, copy, baseline, parallel_node('a'))
+    assert not (root / 'a/report.json').exists()
+
+
+def test_parallel_workers_overlap_but_publication_and_gates_are_serial(tmp_path, monkeypatch):
+    import threading
+    nodes = [parallel_node('a'), parallel_node('b')]
+    workflow = {'nodes': nodes}
+    path = tmp_path / '.allforai/bootstrap/workflow.json'
+    write(path, workflow)
+    barrier = threading.Barrier(2)
+    events = []
+    def worker(root, prompt):
+        name = 'a' if 'Selected node: a\n' in prompt else 'b'
+        if root != tmp_path:
+            events.append(('draft', name))
+            barrier.wait(timeout=5)  # Fails if execution was accidentally serial.
+            write(root / f'{name}/report.json', {'status': 'passed'})
+            write(root / '.allforai/bootstrap/evidence-freshness.json', {'private': name})
+            return subprocess.CompletedProcess([], 0, '', '')
+        events.append(('publish', name))
+        assert not (root / '.allforai/bootstrap/evidence-freshness.json').exists()
+        assert (root / f'{name}/report.json').exists()
+        # The independent driver must replace a worker's forged verdict.
+        state = flow.load_json(path)
+        state.setdefault('transition_log', []).append({'node_id': name, 'status': 'completed'})
+        write(path, state)
+        return subprocess.CompletedProcess([], 0, '', '')
+    def gate(root, name):
+        events.append(('gate', name))
+        return name == 'b'
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'independent_artifact_gate', gate)
+    assert flow.run_parallel_batch(tmp_path, workflow, nodes, 'test') is None
+    assert set(events[:2]) == {('draft', 'a'), ('draft', 'b')}
+    assert events[2:] == [('publish', 'a'), ('gate', 'a'), ('publish', 'b'), ('gate', 'b')]
+    log = flow.load_json(path)['transition_log']
+    assert [(entry['node'], entry['status']) for entry in log] == [('a', 'failed'), ('b', 'completed')]
+
+
+def test_parallel_warning_halts_every_branch_before_import(tmp_path, monkeypatch):
+    nodes = [parallel_node('a'), parallel_node('b')]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes})
+    def worker(root, prompt):
+        name = 'a' if 'Selected node: a\n' in prompt else 'b'
+        write(root / f'{name}/report.json', {'status': 'passed'})
+        if name == 'b':
+            write(root / flow.SAFETY_WARNINGS, {'warnings': ['review required']})
+        return subprocess.CompletedProcess([], 0, '', '')
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'safety_halt_required', lambda root, warnings: bool(warnings))
+    assert flow.run_parallel_batch(tmp_path, {'nodes': nodes}, nodes, 'test') == 4
+    assert flow.safety_halted(tmp_path)
+    assert not (tmp_path / 'a/report.json').exists()
+    assert not (tmp_path / 'b/report.json').exists()
+
+
+def test_parallel_canonical_required_documents_are_reserved():
+    node = parallel_node('a')
+    node['required_documents'] = ['docs/shared.json']
+    assert flow.scopes_overlap(flow.parallel_scopes(node), ['docs/shared.json'])
+
+
+def test_parallel_cancellation_kills_running_process(tmp_path):
+    import threading
+    import time
+    cancelled = threading.Event()
+    result = []
+    def run():
+        flow.PARALLEL_EXECUTION.cancel = cancelled
+        try:
+            result.append(flow.run_bounded([sys.executable, '-c', 'import time; time.sleep(30)'], tmp_path, 30))
+        finally:
+            del flow.PARALLEL_EXECUTION.cancel
+    worker = threading.Thread(target=run)
+    worker.start()
+    time.sleep(0.1)
+    cancelled.set()
+    worker.join(timeout=3)
+    assert not worker.is_alive()
+    assert result[0].returncode == 130
+
+
+def test_parallel_does_not_share_dependency_symlinks(tmp_path, monkeypatch):
+    # node_modules/.bin links are common; dereference them in private copies so
+    # an absolute symlink cannot grant a worker a second writer into the source.
+    target = tmp_path / 'node_modules/tool/main.js'
+    target.parent.mkdir(parents=True)
+    target.write_text('original')
+    link = tmp_path / 'node_modules/.bin/tool'
+    link.parent.mkdir(parents=True)
+    link.symlink_to(target)
+    nodes = [parallel_node('a'), parallel_node('b')]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes})
+    def worker(root, prompt):
+        name = 'a' if 'Selected node: a\n' in prompt else 'b'
+        if root != tmp_path:
+            assert not (root / 'node_modules/.bin/tool').is_symlink()
+            (root / 'node_modules/.bin/tool').write_text('private change')
+        write(root / f'{name}/report.json', {'status': 'passed'})
+        return subprocess.CompletedProcess([], 0, '', '')
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
+    assert flow.run_parallel_batch(tmp_path, {'nodes': nodes}, nodes, 'test') is None
+    assert target.read_text() == 'original'
+
+
+def test_main_dispatches_default_parallel_wave_then_finishes(tmp_path, monkeypatch):
+    import threading
+    nodes = [parallel_node('a'), parallel_node('b')]
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': nodes})
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py', 'test', '3'])
+    monkeypatch.setattr(flow, 'run_preflight', lambda root: 0)
+    monkeypatch.setattr(flow, 'run_expanders', lambda *args: True)
+    monkeypatch.setattr(flow, 'run_post_checks', lambda root: True)
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'ready' if event is None else 'halt')
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda root, name: (root / f'{name}/report.json').exists())
+    barrier = threading.Barrier(2)
+    calls = []
+    def worker(root, prompt):
+        name = 'a' if 'Selected node: a\n' in prompt else 'b'
+        calls.append((root == tmp_path, name))
+        if root != tmp_path:
+            barrier.wait(timeout=5)
+        write(root / f'{name}/report.json', {'status': 'passed'})
+        return subprocess.CompletedProcess([], 0, '', '')
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    assert flow.main() == 0
+    assert set(calls[:2]) == {(False, 'a'), (False, 'b')}
+    assert calls[2:] == [(True, 'a'), (True, 'b')]
+
+
+def test_reached_failure_threshold_precedes_independent_work(tmp_path, monkeypatch):
+    nodes = [parallel_node('fresh'), parallel_node('failed')]
+    workflow = {'nodes': nodes, 'transition_log': [
+        {'node_id': 'failed', 'status': 'failed'} for _ in range(3)]}
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *args: False)
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'failed'
+
+
+
+def test_explicit_parallel_shared_reads_and_write_conflicts(tmp_path, monkeypatch):
+    nodes = [parallel_node('a', ['package.json', 'a/**']),
+             parallel_node('b', ['./package.json', 'b/**'])]
+    for n in nodes:
+        n['parallel_write_scopes'] = [n['node_id'] + '/**']
+    monkeypatch.setattr(flow, '_pending_state', lambda root, workflow, candidates: candidates.extend(nodes))
+    assert flow.parallel_candidates(tmp_path, {'nodes': nodes}, nodes[0]) == nodes
+    nodes[0]['parallel_write_scopes'].append('package.json')
+    assert flow.parallel_candidates(tmp_path, {'nodes': nodes}, nodes[0]) == [nodes[0]]
+    nodes[1]['parallel_write_scopes'].append('package.json')
+    assert flow.parallel_conflict(*nodes)
+
+
+@pytest.mark.parametrize('scopes', [None, [], 'a/**', ['../a'], ['/a'], ['.'],
+                                   ['.allforai'], ['.codex/run.md'], ['other/**']])
+def test_explicit_parallel_invalid_contract_fails_closed(tmp_path, scopes):
+    node = parallel_node('a')
+    node['parallel_write_scopes'] = scopes
+    assert flow.parallel_scopes(node) == []
+    with pytest.raises(ValueError, match='invalid parallel write declaration'):
+        flow.import_parallel_changes(tmp_path, tmp_path, {}, node)
+
+
+@pytest.mark.parametrize('mutation', ['worker_read_write', 'read_drift', 'new_read', 'deleted_read', 'dependency_drift'])
+def test_explicit_parallel_patch_rejects_readonly_changes_and_read_drift(tmp_path, mutation):
+    import shutil
+    root, copy = tmp_path / 'root', tmp_path / 'copy'
+    write(root / 'package.json', {'v': 1})
+    write(root / 'config/build.json', {'v': 1})
+    node = parallel_node('a', ['package.json', 'config/**'])
+    node['input_dependencies'] = ['.allforai/contracts/api.json']
+    node['parallel_write_scopes'] = ['a/**']
+    write(root / '.allforai/contracts/api.json', {'v': 1})
+    baseline = flow.parallel_snapshot(root, include_control=True)
+    shutil.copytree(root, copy)
+    write(copy / 'a/report.json', {'status': 'passed'})
+    if mutation == 'worker_read_write':
+        write(copy / 'package.json', {'v': 2})
+    elif mutation == 'new_read':
+        write(root / 'config/new.json', {'v': 2})
+    elif mutation == 'deleted_read':
+        (root / 'package.json').unlink()
+    elif mutation == 'dependency_drift':
+        write(root / '.allforai/contracts/api.json', {'v': 2})
+    else:
+        write(root / 'package.json', {'v': 2})
+    with pytest.raises(ValueError, match='outside declared scope|source input changed'):
+        flow.import_parallel_changes(root, copy, baseline, node)
+    assert not (root / 'a/report.json').exists()
+
+
+def test_explicit_parallel_disjoint_patches_share_unchanged_input(tmp_path):
+    import shutil
+    root = tmp_path / 'root'
+    write(root / 'package.json', {'v': 1})
+    baseline = flow.parallel_snapshot(root)
+    for name in ['a', 'b']:
+        copy = tmp_path / name
+        copy.mkdir()
+        write(copy / 'package.json', {'v': 1})
+        write(copy / name / 'report.json', {'status': 'passed'})
+        node = parallel_node(name, ['package.json'])
+        node['parallel_write_scopes'] = [name + '/**']
+        assert flow.import_parallel_changes(root, copy, baseline, node) == [name + '/report.json']
+    assert (root / 'a/report.json').exists() and (root / 'b/report.json').exists()

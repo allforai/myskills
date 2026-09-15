@@ -225,3 +225,22 @@ def test_explicit_production_policy_does_not_make_asset_gap_complete(tmp_path):
 
     assert result["all_exist"] is False
     assert result["artifacts"][0]["status_error"]["field"] == "asset_gaps"
+
+
+@pytest.mark.parametrize('scopes', [[], None, 'a/**', ['../a'], ['.allforai'], ['b/**']])
+def test_parallel_write_contract_invalid_blocks_admission(scopes):
+    checker = load("check_artifacts")
+    node = {'source_inputs': ['package.json'], 'exit_artifacts': ['a/report.json'],
+            'parallel_write_scopes': scopes}
+    assert checker.input_declaration_errors(node)
+
+
+def test_parallel_write_contract_covers_outputs_but_not_shared_reads():
+    checker = load("check_artifacts")
+    node = {'source_inputs': ['package.json'], 'exit_artifacts': ['a/report.json'],
+            'parallel_write_scopes': ['a/**']}
+    assert checker.input_declaration_errors(node) == []
+    node['required_documents'] = ['docs/a.md']
+    assert checker.parallel_write_declaration_errors(node)
+    node['parallel_write_scopes'].append('docs/a.md')
+    assert checker.parallel_write_declaration_errors(node) == []

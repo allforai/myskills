@@ -1150,7 +1150,7 @@ def validate_node_spec_contracts(bdir: str) -> list:
         # Both directions: a contract declared on one side only is invisible to the gates
         # that read the other. A document promised in the spec alone has no workflow
         # entry to verify, and a deferred effect owner named there alone routes nothing.
-        for field in ('source_inputs', 'input_dependencies', 'required_documents',
+        for field in ('source_inputs', 'input_dependencies', 'parallel_write_scopes', 'required_documents',
                       'document_verification', 'downstream_effect_owner'):
             if field not in node and field not in data:
                 continue
