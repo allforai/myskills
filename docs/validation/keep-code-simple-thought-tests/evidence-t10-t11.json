@@ -1,0 +1,63 @@
+{
+  "round": "T10/T11 — adf3ed54 的两条规则",
+  "date": "2026-09-15",
+  "host": "Claude Code Agent 工具，两个独立 fresh-context 子任务，并发",
+  "launch": {
+    "method": "场景模拟；受试者不操作真实项目，动作写成伪调用",
+    "isolation": "与 2026-09-10 轮不同：协议/适配/场景由主会话预先拼成单个 packet 文件放在会话 scratchpad，受试者只读该文件，而不是把全文内联进提示。cwd 为实现仓库，因此隔离依赖宿主轨迹核对，见 observed_tool_calls。",
+    "inputs": {
+      "shared/keep-code-simple/protocol.md": "d6da2b2306e51d86f3683615b724f44fbfa7c35edde5495e8712f98344802b04",
+      "codex/cross-exam-skill/keep-code-simple/SKILL.md": "9f3edb9b1f899e6f8204c7dad68c1624a6b047f8a9d031f8c972194b0dab39e8",
+      "pi/cross-exam/skills/keep-code-simple/SKILL.md": "dc1cf0b6aaf3e66e1a6692445b0ba74ad01cd81e1130d258d7d384fe22e481b5",
+      "fixtures/keep-code-simple/thought-tests.json": "ee2ca512b815e71a38b79ee66c00d6919c9ee617999a173a507727448cd9d454"
+    },
+    "inputs_unchanged_after_round": true
+  },
+  "cases": [
+    {
+      "id": "T10",
+      "platform_simulated": "codex",
+      "rule_under_test": "原则 1/6：先查它为何存在；查不到就是证据限制，建议保持条件性",
+      "prompt_sha256": "02bf6cf8cbacc172cf18e3237d474130069b966a1ec50290834c69390ab81ed5",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹中的 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/packet-T10.md"
+        }
+      ],
+      "observed_tool_calls_source": "主会话按 tool_use 事件提取子任务 JSONL，与受试者自报一致",
+      "duration_ms": 44192,
+      "verdict": "pass",
+      "notes": "四个观察点全中。额外正确之处：指出 apps/ingest 的输入来自上游数据源，仓库内无调用方不证明运行时无该号型，属于正确应用「搜索无命中不能当不存在的全局证明」。风险措辞保持条件性（可能产出错号），未写成必然事故。瑕疵：引用的关键原句里带入了与本场景无关的「轻模型的概括不能代替关键判断」。"
+    },
+    {
+      "id": "T11",
+      "platform_simulated": "pi",
+      "rule_under_test": "原则 2：规模本身是成本；机械与人工判断分开；给分批边界",
+      "prompt_sha256": "9877b342d50172398b4f334a46fe8a26ea1e7afb0974c431c82139d01f532362",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹中的 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/packet-T11.md"
+        }
+      ],
+      "observed_tool_calls_source": "主会话按 tool_use 事件提取子任务 JSONL，与受试者自报一致",
+      "duration_ms": 33948,
+      "verdict": "pass",
+      "notes": "五个观察点全中。超出判据预期：首选方案是把 query_one 改成一行委托，消除重复实现而 210 处调用不动，把「彻底删除 query_one」降为条件性并推荐保留薄封装——先找不付规模成本的改法，而不是把大范围机械改动做得更规矩。判据只要求正确处理规模，没有要求这一步。"
+    }
+  ],
+  "responses": "responses-t10-t11.md",
+  "responses_sha256": "de03eb274e7364d22966aec8f176b83c4f848fbdd3f271549c8332ca413356ce",
+  "limits": [
+    "两个场景各只有一次运行，同一模型，不是重复采样或跨模型复核。",
+    "这是模拟决策，不是三端原生宿主验收；T10 的 codex 适配与 T11 的 pi 适配都只作为输入文本，没有启动那两个 harness。",
+    "受试者没有真实项目可读，所以「不索权/不执行」只在其声明的动作层面成立，不等于系统级禁止已被验证。"
+  ]
+}
