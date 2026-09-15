@@ -38,6 +38,24 @@ and recorded freshness state are valid. Malformed declarations or unreadable sta
 even retained nodes because their dependency impact cannot be established.
 Project docs under `docs/bootstrap/` may be updated, but they should not be the only completion signal for a node.
 
+## Active Supervision and Failure Notifications
+
+Starting a process or dispatching a worker does not complete `/run`. Keep the
+calling agent active until the independent final gate passes or a recorded policy
+or concrete blocker requires stopping. Do not end the turn with a launch receipt.
+Poll running work at intervals of at most 60 seconds and give the user a concise
+progress update at least once per minute while work continues. Report a detected
+failure promptly: the affected node, observed error, whether repair is underway,
+and the next check. Logs alone are not a user notification.
+
+A process heartbeat proves liveness only, not progress or successful verification.
+If a worker exits, a tool session disappears, or a timeout fires, inspect its exit
+status and persisted result immediately. Preserve failure history and follow the
+recorded retry/diagnosis policy; do not wait indefinitely for an exited worker or
+restart it blindly. If stopping is required, report the exact blocker and remaining
+work in the final reply. Do not imply background execution will continue after the
+turn ends unless a persistent supervised runner actually exists.
+
 ## Preflight Gate
 
 Before executing any workflow node:

@@ -1431,15 +1431,23 @@ def execution_policy(project_root: Path) -> dict:
     return policy
 
 
+PROCESS_HEARTBEAT_SECONDS = 30
+
+
 def run_bounded(command: list[str], project_root: Path, timeout: int,
                 stdin_text: str | None = None) -> subprocess.CompletedProcess[str]:
-    """Bound the whole subprocess group, including children of CLI/helper processes."""
+    """Bound child processes and emit progress without exposing arguments or payloads."""
+    started = time.monotonic()
+    def event(kind, **details):
+        print(json.dumps({"event": kind, "elapsed_seconds": round(time.monotonic() - started, 3),
+                          **details}), flush=True)
     try:
         proc = subprocess.Popen(command, cwd=project_root, text=True,
                                 stdin=subprocess.PIPE if stdin_text is not None else None,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, start_new_session=(os.name == "posix"))
     except OSError as exc:
+        event("subprocess_failed", returncode=127, reason="launch_failed")
         return subprocess.CompletedProcess(command, 127, "", str(exc))
     def stop():
         if os.name == "posix":
@@ -1451,32 +1459,41 @@ def run_bounded(command: list[str], project_root: Path, timeout: int,
             proc.kill()
     try:
         cancel = getattr(PARALLEL_EXECUTION, "cancel", None)
-        if cancel is None:
-            out, err = proc.communicate(input=stdin_text, timeout=timeout)
-        else:
-            deadline = time.monotonic() + timeout
-            pending_input = stdin_text
-            while True:
-                if cancel.is_set():
-                    stop()
-                    out, err = proc.communicate()
-                    return subprocess.CompletedProcess(command, 130, out, err + "\nParallel execution cancelled")
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise subprocess.TimeoutExpired(command, timeout)
-                try:
-                    out, err = proc.communicate(input=pending_input, timeout=min(0.2, remaining))
-                    break
-                except subprocess.TimeoutExpired:
-                    pending_input = None
+        deadline = started + timeout
+        next_heartbeat = started + PROCESS_HEARTBEAT_SECONDS
+        pending_input = stdin_text
+        while True:
+            if cancel is not None and cancel.is_set():
+                stop()
+                out, err = proc.communicate()
+                event("subprocess_failed", pid=proc.pid, returncode=130, reason="cancelled")
+                return subprocess.CompletedProcess(command, 130, out, err + "\nParallel execution cancelled")
+            current = time.monotonic()
+            if current >= deadline:
+                raise subprocess.TimeoutExpired(command, timeout)
+            if current >= next_heartbeat:
+                event("subprocess_running", pid=proc.pid, timeout_seconds=timeout)
+                next_heartbeat = current + PROCESS_HEARTBEAT_SECONDS
+            wait = min(deadline - current, next_heartbeat - current)
+            if cancel is not None:
+                wait = min(wait, 0.2)
+            try:
+                out, err = proc.communicate(input=pending_input, timeout=wait)
+                break
+            except subprocess.TimeoutExpired:
+                pending_input = None
     except subprocess.TimeoutExpired:
         stop()
         out, err = proc.communicate()
+        event("subprocess_failed", pid=proc.pid, returncode=124, reason="timeout")
         return subprocess.CompletedProcess(command, 124, out, err + f"\nTimed out after {timeout}s")
     except KeyboardInterrupt:
         stop()
         out, err = proc.communicate()
+        event("subprocess_failed", pid=proc.pid, returncode=130, reason="interrupted")
         return subprocess.CompletedProcess(command, 130, out, err + "\nInterrupted by user")
+    if proc.returncode:
+        event("subprocess_failed", pid=proc.pid, returncode=proc.returncode, reason="nonzero_exit")
     return subprocess.CompletedProcess(command, proc.returncode, out, err)
 
 

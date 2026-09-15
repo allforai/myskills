@@ -2617,3 +2617,44 @@ def test_explicit_parallel_disjoint_patches_share_unchanged_input(tmp_path):
         node['parallel_write_scopes'] = [name + '/**']
         assert flow.import_parallel_changes(root, copy, baseline, node) == [name + '/report.json']
     assert (root / 'a/report.json').exists() and (root / 'b/report.json').exists()
+
+
+def test_subprocess_heartbeat_visible_before_child_exits(tmp_path):
+    # Observe the real supervisor pipe while its child is still sleeping.
+    code = f'''import importlib.util, pathlib, sys
+spec = importlib.util.spec_from_file_location("flow", {str(ROOT / 'knowledge/flow-template.py')!r})
+flow = importlib.util.module_from_spec(spec); spec.loader.exec_module(flow)
+flow.PROCESS_HEARTBEAT_SECONDS = 0.05
+result = flow.run_bounded([sys.executable, "-c", "import time; time.sleep(0.4); print('child-result')"], pathlib.Path({str(tmp_path)!r}), 3)
+assert result.stdout.strip() == 'child-result'
+'''
+    parent = subprocess.Popen([sys.executable, '-c', code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        import selectors
+        with selectors.DefaultSelector() as selector:
+            selector.register(parent.stdout, selectors.EVENT_READ)
+            assert selector.select(timeout=2), 'heartbeat was buffered until completion'
+        event = json.loads(parent.stdout.readline())
+        assert event['event'] == 'subprocess_running'
+        assert parent.poll() is None
+        _, err = parent.communicate(timeout=4)
+        assert parent.returncode == 0, err
+    finally:
+        if parent.poll() is None:
+            parent.kill(); parent.communicate()
+
+
+def test_subprocess_failure_notifies_without_leaking_payload(tmp_path, capsys):
+    result = flow.run_bounded([sys.executable, '-c', "import sys; print('private-payload', file=sys.stderr); sys.exit(7)"], tmp_path, 3)
+    notification = capsys.readouterr()
+    event = json.loads(notification.out)
+    assert event['event'] == 'subprocess_failed' and event['returncode'] == 7
+    assert 'private-payload' not in notification.out + notification.err
+    assert result.stderr.strip() == 'private-payload'
+
+
+def test_subprocess_timeout_notifies(tmp_path, capsys):
+    result = flow.run_bounded([sys.executable, '-c', 'import time; time.sleep(2)'], tmp_path, 0.1)
+    assert result.returncode == 124
+    event = json.loads(capsys.readouterr().out)
+    assert event['reason'] == 'timeout' and event['returncode'] == 124

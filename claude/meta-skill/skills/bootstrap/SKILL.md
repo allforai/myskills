@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 argument-hint: [path]
-version: "0.18.1"
+version: "0.18.2"
 description: Analyze the target project and generate its .allforai/ workflow (product concept, experience map, art, game design, verify nodes) for /run. User-invoked only via /bootstrap; never invoke it yourself.
 ---
 
