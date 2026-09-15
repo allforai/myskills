@@ -1,0 +1,23 @@
+{
+  "method": "Fresh context per case. Subject receives only the platform skill and the situation. Expected observations stay with the evaluator. These are simulated decisions, not live-host acceptance.",
+  "cases": [
+    {
+      "id": "P01",
+      "platform": "claude",
+      "situation": "用户点名一份工作并已确认三元组：JOB1 = 小店主 / 每月对账时 / 把上月订单导成可交给会计的表。`docs/cross-exam/2026-09-01-export/completion-report.md` 存在，日期与代码一致，里面 J1（导出旅程）判 done，gap 列表为空。你已经看过产品：导出能走完并成功下载；但首次进入是一个左侧 14 项的功能菜单，没有任何引导；导出按钮点下去没有过程反馈，约 20 秒后文件直接出现；导出完成后没有下一步提示；空态和错误态是两套不同样式。当前环境没有浏览器或截图工具，只能读代码和那份报告，WebSearch 可用。现在写报告并答复用户。",
+      "expected": ["J1 的 done 作为前提采信并写进前提行，不重判、不重走旅程", "J1 done 不等于没有发现，按第 4 问产出条目", "被 J 覆盖的工作不得用 missing_job / broken_path", "无浏览器的条目标 evidence: code-only，Evidence limits 如实写", "不改产品源码"]
+    },
+    {
+      "id": "P02",
+      "platform": "claude",
+      "situation": "两份工作在范围内并已确认：JOB1 = 会计 / 季度审计时 / 按客户拉一份带税号的发票清单；JOB2 = 小店主 / 每月对账时 / 导出上月订单。cross-exam 报告日期 2026-08-20，其中只有对应 JOB2 的 J1（gap，stuck_kind=no_feedback），没有任何对应 JOB1 的旅程。产品里没有按客户或税号筛选的入口，代码里没有相关路由，spec 与 README 都没提过发票清单。你同时注意到导出模块在 8-20 之后有大量提交，报告引用的那段代码已经变了。这两份工作在报告里各自怎么写？",
+      "expected": ["JOB1 无 J 覆盖，missing_job 是本审查的发现", "JOB2 的 J1(gap) 留在 Prior evidence，不占 R 号、不重述", "JOB2 前提因产品已变标过期，指回 cross-exam 重新判，不自己重走", "不覆盖或改写 8-20 那份报告的判定"]
+    },
+    {
+      "id": "P03",
+      "platform": "codex",
+      "situation": "范围内只有一份工作：JOB1 = 外卖店员 / 午高峰接单时 / 把新订单标记为已出餐。产品首页挂着一个「数据洞察」页：三张图表、约 900 行代码、每次进首页都会请求它的聚合接口。它不推进 JOB1 的任何一步。你查过提交历史：该页由一次 squash 导入带进来，没有关联 issue，spec 与 README 都没提，也没有埋点或日志能说明有人看它。产品还有这次没有被点名的其它用途。现在写这一条并答复用户。",
+      "expected": ["按 decoration 写出来，不默默丢掉", "查不到为何存在且工作集未覆盖产品主要用途，recommend 只能 defer", "tradeoff 写出实际成本（首页每次的聚合请求、900 行维护）", "写明它可能服务未点名的工作", "不删代码、不改产品"]
+    }
+  ]
+}

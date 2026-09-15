@@ -1,0 +1,88 @@
+{
+  "round": "P01-P03 — 缩范围与 decoration 之后的首轮思维测试",
+  "date": "2026-09-15",
+  "host": "Claude Code Agent 工具，三个独立 fresh-context 子任务，并发",
+  "tested_version": {
+    "commit": "3a7ff89a",
+    "note": "本轮之后才有的自检规则拆分（claim 字段）未在此轮受测",
+    "claude/superstorm/skills/product-review/SKILL.md": "327f75615dbf3656578039ed269ebf45fb37f27507238a6a2be0ed90e320275b",
+    "codex/cross-exam-skill/product-review.md": "8d4ae403a0a1aed1efc02c26b049166b67dd45a6fe79ddb85c01738d1b533a53"
+  },
+  "launch": {
+    "method": "场景模拟；受试者不操作真实产品，动作写成伪调用",
+    "isolation": "协议全文与场景拼成单个 packet 文件放在会话 scratchpad，受试者只读该文件；cwd 为实现仓库，隔离由宿主轨迹核对",
+    "fixtures": {
+      "fixtures/product-review/thought-tests.json": "6b65d7f14e7ae8ddabc1b3c49ebed7441d3d8fc73c333c353839c6640a6fe2e3",
+      "fixtures/product-review/subject-prompt.md": "181ce38cf30f4dd22a778350048d631f75047eca03e5d924f7c42794e179218f"
+    }
+  },
+  "cases": [
+    {
+      "id": "P01",
+      "platform_simulated": "claude",
+      "under_test": "旅程已判 done 时前提采信、第 4 问仍要出产出、被 J 覆盖不得用 missing_job/broken_path",
+      "prompt_sha256": "309d33fce5cee5e8f130dddcd7a752f42637c61db778bc2de4a51d1c14023737",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pr-packet-P01.md"
+        }
+      ],
+      "duration_ms": 73242,
+      "verdict": "pass",
+      "notes": "五个观察点全中。额外正确：拒绝把另外 13 个菜单项写成 decoration（工作集未覆盖主要用途、未查明为何存在）。同时暴露规则冲突：R3 自述「工作本身仍能完成」仍被保留、R4 自评最弱，按当时的自检规则「works without it 就删」这两条都该删，但它们正是第 4 问的核心产出。"
+    },
+    {
+      "id": "P02",
+      "platform_simulated": "claude",
+      "under_test": "无 J 覆盖时 missing_job 成立；被覆盖的留在 Prior evidence；报告后代码变动不自行重走",
+      "prompt_sha256": "72307e31ef459987b96a2c010515c01889a88b45a604b63260c383eb22088006",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pr-packet-P02.md"
+        }
+      ],
+      "duration_ms": 44383,
+      "verdict": "pass",
+      "notes": "四个观察点全中。只读 git log 仅用于记录漂移，未重走旅程；明确不覆盖旧报告判定。"
+    },
+    {
+      "id": "P03",
+      "platform_simulated": "codex",
+      "under_test": "decoration 写得出来；查不到为何存在且工作集未覆盖主要用途时只能 defer；成本必须写出",
+      "prompt_sha256": "22be91f761c6da1007c425774aeb0002398403f287b974155a79f70c241bb47e",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子任务轨迹 assistant metadata",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pr-packet-P03.md"
+        }
+      ],
+      "duration_ms": 49604,
+      "verdict": "pass",
+      "notes": "五个观察点全中。额外正确：拒绝顺手加第二条 ui_friction（「凭『应该会变慢』写条目过不了自查」）；并告知用户补哪两件事可把 defer 升为可执行的移除。"
+    }
+  ],
+  "responses": "responses.md",
+  "found_defect": {
+    "what": "自检规则「evidence 要显示进展被卡住或降级；works without it 就删」与第 4 问（商业级够不够）的产出互斥：无引导、无过程反馈、完成后无去处、同类状态两套说法，都是「没有它也能做完事」的东西。",
+    "origin": "缩范围那一步只改了产出什么，没有同步改筛选规则。",
+    "fix": "新增 `claim`（进展受阻 | 不够商业级），删除规则按 claim 分两支；商业级条目要指出具体那一点，不要求它妨碍把事做完。修复未在本轮受测。"
+  },
+  "limits": [
+    "每个场景一次运行、同一模型，不是重复采样或跨模型复核。",
+    "模拟决策，不是原生宿主验收；Codex 适配只作为输入文本，未启动 Codex。",
+    "受试者没有真实产品可看，所以「不改源码/不重走旅程」只在其声明的动作层面成立。",
+    "修复后的规则（claim 分支）尚未重跑任何场景。"
+  ],
+  "responses_sha256": "e505dca37572373ece152185ffe88fb740c29c0f85b67d9cdb82e51010ce362e"
+}
