@@ -7,10 +7,10 @@ description: >
   node-specs, .allforai/bootstrap/workflow.json, and .codex/commands/run.md. For one large
   engineering goal without a product-design phase, use superstorm or grillstorm instead.
 metadata:
-  version: "0.18.3-codex.2"
+  version: "0.19.0-codex.1"
 ---
 
-# Meta-Skill v0.18.3-codex.2
+# Meta-Skill v0.19.0-codex.1
 
 > Unified workflow generator for Codex: bootstrap a project once, then execute the generated run entry.
 > User-invoked only. Do not start bootstrap implicitly; the user must invoke `$meta-skill` or explicitly ask to bootstrap the project.
