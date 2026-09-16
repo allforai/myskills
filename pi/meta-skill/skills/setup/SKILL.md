@@ -27,7 +27,6 @@ description: >
 | Capability | Pi check | Purpose |
 |------------|----------|---------|
 | browser automation | 当前会话是否已有 Playwright/浏览器工具 | UI verification |
-| Stitch UI | 当前会话是否已有 Stitch 工具 | high-fidelity visual generation |
 | ai-gateway | `../../mcp-ai-gateway/dist/index.js` 存在 | search / image / model gateway |
 
 ### API-key-backed services
@@ -56,8 +55,8 @@ description: >
 
 ## Step 1: Status Dashboard
 
-至少报告：gateway 构建、浏览器自动化、Stitch、四个 API key。
-附降级说明：无浏览器则跳过动态 UI 验证；无 Stitch 则用文本视觉规格；无搜索 key 则用已有搜索或用户材料；无图/视频服务则跳过媒体增强。
+至少报告：gateway 构建、浏览器自动化、四个 API key。
+附降级说明：无浏览器则跳过动态 UI 验证；无搜索 key 则用已有搜索或用户材料；无图/视频服务则跳过媒体增强。
 
 `check` 模式在仪表板后停止。
 
@@ -65,7 +64,7 @@ description: >
 
 - 缺 gateway build：执行或说明构建步骤
 - 缺 env：请用户提供，不要编造 key
-- 缺浏览器 / Stitch：说明前提和降级路径，不要代装
+- 缺浏览器：说明前提和降级路径，不要代装
 
 ## Step 3: Impact Analysis
 

@@ -1,5 +1,4 @@
-import os
-import sys
+import pytest
 
 from ..module_isolation import load
 
@@ -174,34 +173,39 @@ description: Test skill.
     assert any("orphan bundled skill" in error for error in errors)
 
 
-def test_validate_skill_tree_requires_optional_stitch_contract_for_app_handoff(tmp_path):
+@pytest.mark.parametrize(
+    "pack,child",
+    [
+        ("app-design", "ui-input-handoff-generation"),
+        ("game-ui", "ui-mockup-generation"),
+    ],
+)
+def test_validate_skill_tree_accepts_ui_contract_without_external_provider(tmp_path, pack, child):
     _write_pack(
         tmp_path,
-        "app-design",
-        """---
-name: app-design
+        pack,
+        f"""---
+name: {pack}
 description: Parent.
 ---
 
-Stitch availability must not block unattended `/run`
-${CLAUDE_PLUGIN_ROOT}/skills/app-design/30-generate/ui-input-handoff-generation/SKILL.md
+${{CLAUDE_PLUGIN_ROOT}}/skills/{pack}/30-generate/{child}/SKILL.md
 """,
     )
     _write_skill(
         tmp_path,
-        "app-design/30-generate/ui-input-handoff-generation",
-        """---
-name: app-design-30-generate-ui-input-handoff-generation
+        f"{pack}/30-generate/{child}",
+        f"""---
+name: {pack}-30-generate-{child}
 description: Test skill.
 ---
 
 ## Invocation Contract
 
 ```json
-{"skill":"app-design/ui-input-handoff-generation","mode":"generate","output_root":".allforai/app-design/handoff"}
+{{"skill":"{pack}/{child}","mode":"generate","output_root":".allforai/{pack}"}}
 ```
 """,
     )
 
-    errors = validate_skill_tree(str(tmp_path))
-    assert any("optional Stitch" in error or "non-blocking Stitch" in error for error in errors)
+    assert validate_skill_tree(str(tmp_path)) == []

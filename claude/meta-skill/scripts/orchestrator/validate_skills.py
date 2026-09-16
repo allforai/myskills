@@ -38,18 +38,6 @@ PATH_KEYS = {
     "bootstrap_profile",
 }
 
-STITCH_OPTIONAL_STATUS_TERMS = (
-    "optional_stitch_mockups",
-    "used | skipped_optional | failed_nonblocking",
-    "Stitch",
-)
-
-STITCH_NONBLOCKING_TERMS = (
-    "Do not return `FAILED_VALIDATION` solely because Stitch is unavailable",
-    "Stitch availability must not block unattended `/run`",
-    "Stitch UI is optional and non-blocking",
-)
-
 
 def _parse_frontmatter(text: str):
     match = FRONTMATTER_RE.search(text)
@@ -127,16 +115,6 @@ def _all_reference_text(skill_root: Path) -> str:
     return "\n".join(chunks)
 
 
-def _pack_text(skill_root: Path, pack_name: str) -> str:
-    pack = skill_root / pack_name / "PACK.md"
-    if not pack.exists():
-        return ""
-    try:
-        return pack.read_text()
-    except Exception:
-        return ""
-
-
 def _referenced_skill_paths(skill_root: Path) -> set[str]:
     text = _all_reference_text(skill_root)
     refs = set()
@@ -170,7 +148,6 @@ def validate_skill_tree(skill_root: str) -> list:
         return [f"{skill_root}: no SKILL.md or PACK.md files found"]
 
     referenced_paths = _referenced_skill_paths(root)
-    app_stitch_child = root / "app-design/30-generate/ui-input-handoff-generation/SKILL.md"
 
     for path in skill_files:
         rel = path.relative_to(root)
@@ -211,15 +188,6 @@ def validate_skill_tree(skill_root: str) -> list:
         if not description:
             errors.append(f"{rel}: frontmatter missing description")
 
-        if rel_str in {
-            "app-design/30-generate/ui-input-handoff-generation/SKILL.md",
-            "game-ui/30-generate/ui-mockup-generation/SKILL.md",
-        }:
-            for term in STITCH_OPTIONAL_STATUS_TERMS:
-                if term not in text:
-                    errors.append(f"{rel}: missing optional Stitch contract term {term}")
-            if not any(term in text for term in STITCH_NONBLOCKING_TERMS):
-                errors.append(f"{rel}: missing explicit non-blocking Stitch rule")
         for target in CANONICAL_SKILL_PATH_RE.findall(text):
             target_path = root / target
             if not target_path.exists():
@@ -264,17 +232,6 @@ def validate_skill_tree(skill_root: str) -> list:
                             f"{rel}: json block {idx} path '{artifact_path}' under {key} "
                             "is not an .allforai or plugin-root path"
                         )
-
-    app_design_pack_text = _pack_text(root, "app-design")
-    if (
-        app_stitch_child.exists()
-        and "Stitch availability must not block unattended `/run`" not in app_design_pack_text
-    ):
-        errors.append("app-design/PACK.md: missing app-design Stitch non-blocking pack rule")
-    game_ui_pack = root / "game-ui/PACK.md"
-    game_ui_pack_text = _pack_text(root, "game-ui")
-    if game_ui_pack.exists() and "Do not use Stitch for game-world art" not in game_ui_pack_text:
-        errors.append("game-ui/PACK.md: missing game-ui Stitch scope boundary")
 
     for pack in pack_files:
         text = pack.read_text()

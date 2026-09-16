@@ -1,5 +1,5 @@
 ---
-description: "检测和配置外部能力（Playwright、OpenRouter、Brave Search、Google AI、Stitch UI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
+description: "检测和配置外部能力（Playwright、OpenRouter、Brave Search、Google AI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
 argument-hint: "[check|reset|update|impact]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
@@ -29,7 +29,6 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | 能力 | 探测方式 | 用途 |
 |------|---------|------|
 | Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | UI 自动化：验证、E2E 测试、死链扫描 |
-| Stitch UI | `mcp__plugin_meta-skill_stitch__create_project` 或 `mcp__stitch__create_project` 可用性 | 高保真 UI 视觉稿生成（Google Stitch） |
 | 批量生图 (image-batch) | `.claude/settings.json` 中 `image-batch` mcpServer 存在 + node_modules 已安装 | 批量图片生成（通过已登录浏览器，无需 Playwright 重登录，仅 macOS） |
 
 ### API Key 服务（需配置密钥）
@@ -83,14 +82,14 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 2. **若未注册**（settings.json 不存在或无 `image-batch` 条目）：
    - 尝试自动检测：`find . -name "mcp-image-batch" -type d -maxdepth 4 2>/dev/null | head -1`
    - 找到 → 记录路径，报告「image-batch 目录已找到但未注册」
-   - 未找到 → 报告「image-batch 未安装」，继续（Step 1.5c 引导安装）
+   - 未找到 → 报告「image-batch 未安装」，继续（Step 1.5b 引导安装）
 
 3. **若已注册**：
    ```bash
    ls "${MCP_CGPT_DIR}/node_modules/@modelcontextprotocol" 2>/dev/null
    ```
    - 存在 → 报告「image-batch 依赖已安装」
-   - 不存在 → 报告「image-batch 依赖缺失，需运行 npm install」，Step 1.5c 中补装
+   - 不存在 → 报告「image-batch 依赖缺失，需运行 npm install」，Step 1.5b 中补装
 
 ### Step 1: 检测当前状态
 
@@ -164,16 +163,6 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 3. **平台检查**：
    - 非 macOS → **⚠️ 仅支持 macOS**（osascript 依赖）
 
-#### 1g. Stitch UI
-
-1. **检查 MCP 工具**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_stitch__create_project` 或 `mcp__stitch__create_project`（任一前缀、任一列表匹配即通过）
-   - 可用 → **✅ 就绪**
-   - 不可用 → 检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在
-     - 凭证存在 → 检查是否包含 `quota_project_id` 字段：
-       - 有 → **⚠️ OAuth 已完成但 MCP 未加载**（可能需要重启 Claude Code）
-       - 无 → **⚠️ OAuth 已完成但缺少 quota project**（需运行 Step 1.5b 补充配置）
-     - 凭证不存在 → **❌ 未配置**（需先完成 OAuth 和 quota project 配置）
-
 #### 状态仪表板输出
 
 展示所有外部能力的状态汇总：
@@ -184,7 +173,6 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 | 能力 | 类型 | 状态 | 用途 |
 |------|------|------|------|
 | Playwright | 用户级 MCP | {✅ 就绪 / ❌ 未安装} | UI 自动化 |
-| Stitch UI | 用户级 MCP | {✅ 就绪 / ⚠️ 缺 OAuth / ❌ 未安装} | UI 视觉稿 |
 | 批量生图 (image-batch) | 项目 MCP | {✅ 就绪 / ⚠️ 依赖未装 / ❌ 未注册} | 批量图片生成（通过浏览器，无需重登录） |
 | OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | XV 交叉验证 |
 | Google AI (MCP) | AI Gateway | {就绪/未就绪} | AI 生图/生视频/TTS |
@@ -203,7 +191,6 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
   生图: Google Imagen 4 → OpenAI GPT Image → FLUX 2 Pro → 跳过
   生视频: Google Veo 3.1 → Kling → 跳过
   Playwright 不可用 → 无降级（提示安装）
-  Stitch 不可用 → 跳过视觉稿，使用文字规格
 ```
 
 **模式分支**：
@@ -298,115 +285,6 @@ ls "${MCP_CGPT_DIR}/node_modules/@modelcontextprotocol"
 使用方式：Chrome 打开 chatgpt.com 并登录后，在对话中说
 「用 check_setup 检查环境」→「用 start_batch 跑 /path/to/prompts.json」
 ```
-
-#### 1.5c. Stitch UI（若未就绪）
-
-使用 AskUserQuestion 询问：
-
-**「Stitch UI 未就绪，用于生成高保真 UI 视觉稿。是否安装？」**
-
-选项：
-- **安装** — 注册 MCP + 引导 OAuth
-- **跳过** — 暂不安装（ui-design 将只生成文字规格，跳过视觉稿）
-
-##### 选择「安装」时：
-
-**Step 1: 安装 stitch-mcp**
-
-检查 `stitch-mcp` 是否已全局安装：
-```bash
-which stitch-mcp
-```
-- 已安装 → 跳过
-- 未安装 → 安装：`npm install -g @_davideast/stitch-mcp`
-
-> **注意**: 不要用 `npx -y @_davideast/stitch-mcp proxy` 启动 Stitch MCP。npx 启动太慢会导致 MCP 握手超时。必须全局安装后用 `stitch-mcp proxy` 直接启动。
-
-**Step 2: 检查 OAuth 凭证**
-
-检查 `~/.stitch-mcp/config/application_default_credentials.json` 是否存在：
-- 存在 → 继续 Step 3
-- 不存在 → 使用内置 Python 脚本完成 OAuth：
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py
-```
-
-脚本会自动打开浏览器完成 Google OAuth。如果浏览器无法打开（如远程服务器），使用手动模式：
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/stitch_oauth.py --manual
-```
-
-手动模式会打印一个 URL，用户在任意浏览器打开授权后，将验证码粘贴回终端。
-
-OAuth 凭证长期有效（以年计），只需做一次。
-
-**Step 3: 配置 quota project**
-
-读取 `~/.stitch-mcp/config/application_default_credentials.json`，检查是否包含 `quota_project_id` 字段：
-- 已有 → 跳过
-- 缺失 → 需要配置。使用 ADC 的 refresh_token 调用 Google API 列出用户的 GCP 项目：
-
-```python
-# 用 refresh_token 换取 access_token，然后调用 cloudresourcemanager API
-GET https://cloudresourcemanager.googleapis.com/v1/projects?pageSize=10
-Authorization: Bearer {access_token}
-```
-
-展示项目列表，让用户选择一个（优先推荐名称含 "Gemini" 或 "AI" 的项目）。然后将选中的 project ID 写入 ADC 文件的 `quota_project_id` 字段。
-
-如果用户没有任何 GCP 项目，提示：
-```
-需要一个 Google Cloud 项目作为 Stitch API 的计费项目。
-1. 访问 https://console.cloud.google.com/projectcreate
-2. 创建一个项目（名称随意）
-3. 重新运行 /setup
-```
-
-**Step 4: 创建 token 刷新包装脚本**
-
-`stitch-mcp proxy` 需要 `STITCH_ACCESS_TOKEN` 环境变量，不读取 ADC 文件。
-因此需要一个包装脚本在每次启动时用 refresh_token 换取 access_token：
-
-```bash
-cat > ~/.claude/stitch-mcp-start.sh << 'SCRIPT'
-#!/bin/bash
-ADC="$HOME/.stitch-mcp/config/application_default_credentials.json"
-if [ ! -f "$ADC" ]; then
-  echo "ERROR: Stitch ADC not found at $ADC" >&2
-  exit 1
-fi
-REFRESH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.stitch-mcp/config/application_default_credentials.json')); print(d['refresh_token'])")
-ACCESS_TOKEN=$(curl -s -X POST 'https://oauth2.googleapis.com/token' \
-  -d "client_id=764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com" \
-  -d "client_secret=d-FL95Q19q7MQmFpd7hHD0Ty" \
-  -d "refresh_token=$REFRESH_TOKEN" \
-  -d "grant_type=refresh_token" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-export STITCH_ACCESS_TOKEN="$ACCESS_TOKEN"
-exec stitch-mcp proxy
-SCRIPT
-chmod +x ~/.claude/stitch-mcp-start.sh
-```
-
-> **说明**：脚本每次 Claude Code 启动时自动刷新 token（有效期 1 小时），无需手动维护。
-
-**Step 5: 注册 Stitch MCP 到插件配置**
-
-读取 `${CLAUDE_PLUGIN_ROOT}/.mcp.json`，检查是否包含 `stitch` 服务器配置：
-- 已有且 command 为包装脚本 → 跳过
-- 缺失或 command 仍为 `stitch-mcp` → 添加/替换 `.mcp.json` 的 `mcpServers` 中：
-```json
-"stitch": {
-  "command": "/Users/aa/.claude/stitch-mcp-start.sh",
-  "args": []
-}
-```
-
-> **注意**：`/Users/aa` 替换为实际用户主目录（`$HOME`）的绝对路径。
-
-提示重启 Claude Code 后生效。
 
 ### Step 2: 引导获取 Key
 
@@ -648,7 +526,6 @@ fal.ai API Key 获取步骤：
 
 MCP 工具（用户级 claude mcp add -s user）:
   Playwright       {✅ 就绪 / ❌ 未安装}   UI 自动化
-  Stitch UI        {✅ 就绪 / ⚠️ MCP 已注册但缺 OAuth / ❌ 未安装}   UI 视觉稿（Google Stitch）
 
 项目 MCP（.claude/settings.json）:
   批量生图         {✅ 就绪 / ⚠️ 依赖未装 / ❌ 未注册}   批量图片生成（通过浏览器，无需重登录）
@@ -687,7 +564,6 @@ API Key（环境变量）:
 
 MCP 工具（Step 1.5 已引导安装）:
   Playwright     {已安装/已跳过/之前已就绪}  UI 自动化
-  Stitch UI      {已安装/已跳过/之前已就绪}  UI 视觉稿
 
 下一步：重启 Claude Code 后运行 /setup check 验证连接。
 ```

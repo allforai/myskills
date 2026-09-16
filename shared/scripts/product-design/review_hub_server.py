@@ -2807,10 +2807,6 @@ def load_ui_experience_map():
     return {}
 
 
-def load_ui_stitch_index():
-    return C.load_json(os.path.join(UI_DIR, "stitch-index.json")) or {}
-
-
 def load_ui_feedback():
     fb = C.load_json(UI_FEEDBACK_PATH)
     if fb:
@@ -2818,24 +2814,8 @@ def load_ui_feedback():
     return {"round": 1, "submitted_at": None, "screens": {}}
 
 
-def get_ui_stitch_html(screen_id):
-    """Read Stitch-generated HTML for a screen."""
-    path = os.path.join(UI_DIR, "stitch", f"{screen_id}.html")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            return f.read()
-    return None
-
-
 def get_ui_preview_html(screen_id, spec):
     """Extract preview HTML from preview/ files or generate skeleton."""
-    # Try stitch HTML first
-    stitch_dir = os.path.join(UI_DIR, "stitch")
-    if os.path.isdir(stitch_dir):
-        stitch_path = os.path.join(stitch_dir, f"{screen_id}.html")
-        if os.path.exists(stitch_path):
-            with open(stitch_path, encoding="utf-8") as f:
-                return f.read()
     # Try preview directory
     preview_dir = os.path.join(UI_DIR, "preview")
     if os.path.isdir(preview_dir):
@@ -2898,9 +2878,6 @@ body{{margin:0;padding:24px;font-family:-apple-system,system-ui,sans-serif;backg
 def render_ui_screen_html(screen_id):
     """Serve preview HTML for iframe embedding."""
     spec = load_ui_spec()
-    stitch = get_ui_stitch_html(screen_id)
-    if stitch:
-        return stitch
     preview = get_ui_preview_html(screen_id, spec)
     if preview:
         return preview
@@ -2915,7 +2892,6 @@ def render_ui_page():
         return _placeholder_page("ui", "UI Review - No Data")
 
     sm = load_ui_experience_map()
-    stitch_index = load_ui_stitch_index()
     feedback = load_ui_feedback()
     fb_screens = feedback.get("screens", {})
 
@@ -2931,7 +2907,6 @@ def render_ui_page():
         for s in role_groups[role]:
             sid = s.get("id", "")
             fb_s = fb_screens.get(sid, {})
-            has_stitch = os.path.exists(os.path.join(UI_DIR, "stitch", f"{sid}.html"))
             itype = s.get("interaction_type", "")
             role_screens.append({
                 "id": sid,
@@ -2939,7 +2914,6 @@ def render_ui_page():
                 "itype": itype,
                 "status": fb_s.get("status", "pending"),
                 "pin_count": len(fb_s.get("pins", [])),
-                "has_stitch": has_stitch,
             })
         if role_screens:
             tree_data.append({"id": role, "name": role, "screens": role_screens})
@@ -3005,7 +2979,6 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#f8fa
 .ui-tree-badges{{display:flex;gap:3px;margin-left:auto;flex-shrink:0}}
 .ui-tree-badge{{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600}}
 .ui-tree-badge.pins{{background:#fff3bf;color:#92400e}}
-.ui-tree-badge.stitch{{background:#ede9fe;color:#7c3aed}}
 .ui-tree-name{{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 /* Preview panel */
 .ui-preview-panel{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
@@ -3105,7 +3078,6 @@ function uiRenderTree(filter){{
       item.className='ui-tree-item'+(s.id===uiCurrentSid?' active':'')+(s.status!=='pending'?' status-'+s.status:'');
       item.dataset.sid=s.id;
       let badges='';
-      if(s.has_stitch)badges+='<span class="ui-tree-badge stitch">S</span>';
       if(s.pin_count)badges+='<span class="ui-tree-badge pins">'+s.pin_count+'</span>';
       item.innerHTML='<span class="ui-tree-name">'+uiEscH(s.name)+'</span>'
         +(s.itype?'<span class="ui-tree-itype">'+uiEscH(s.itype)+'</span>':'')

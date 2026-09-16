@@ -25,7 +25,6 @@ Optional capabilities are grouped into three classes:
 | Capability | Codex check | Purpose |
 |------------|-------------|---------|
 | browser automation | look for a Playwright-capable tool in the current session | UI verification and automation |
-| Stitch UI | look for a Stitch-capable tool in the current session | high-fidelity visual generation |
 | ai-gateway | `.mcp.json` present + `./mcp-ai-gateway/dist/index.js` exists | model gateway for search / image / model calls |
 
 ### API-key-backed services
@@ -60,7 +59,6 @@ Report at least:
 
 - gateway build status
 - browser automation readiness
-- Stitch readiness
 - OpenRouter key readiness
 - Google AI key readiness
 - fal.ai key readiness
@@ -69,7 +67,6 @@ Report at least:
 Include downgrade guidance:
 
 - no browser automation -> skip dynamic browser verification
-- no Stitch -> use text-only visual specs
 - no Brave Search -> use Codex web search or user-provided references
 - no image/video services -> skip media generation enhancements
 
@@ -81,7 +78,7 @@ Otherwise:
 
 - for missing gateway build: instruct or execute build steps
 - for missing env vars: ask the user to provide or configure them
-- for missing browser automation / Stitch: explain installation prerequisites and the degraded workflow
+- for missing browser automation: explain installation prerequisites and the degraded workflow
 
 ## Step 3: Update Impact Analysis
 
