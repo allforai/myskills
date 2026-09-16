@@ -563,7 +563,8 @@ def unmapped_changes(root, workflow, state):
     tasks = set()
     for node_id, record in state['nodes'].items():
         previous = record.get('source_snapshot', {})
-        unknown = {p for p in set(previous) | set(current) if previous.get(p) != current.get(p)} - owned
+        unknown = {p for p in set(previous) | set(current)
+                   if source_path_included(p) and previous.get(p) != current.get(p)} - owned
         if not unknown:
             continue
         tasks.add(node_id)
@@ -807,13 +808,21 @@ def _source_tree(root):
     """
     result = {}
     for directory, dirs, files in os.walk(root):
-        dirs[:] = sorted(d for d in dirs if d not in {'.git', '.allforai', '.claude', '.codex', '.local',
-                                                      '__pycache__', '.pytest_cache', 'node_modules', '.venv', '.expo'})
+        dirs[:] = sorted(d for d in dirs if d not in SOURCE_TREE_EXCLUDED_DIRS)
         for name in sorted(files):
             path = (Path(directory) / name).relative_to(root).as_posix()
             if name != '.git':
                 result[path] = fingerprint(root, path)
     return result
+
+
+SOURCE_TREE_EXCLUDED_DIRS = {'.git', '.allforai', '.claude', '.codex', '.local',
+                             '__pycache__', '.pytest_cache', 'node_modules', '.venv', '.expo'}
+
+
+def source_path_included(path):
+    """Apply current source-tree exclusions to legacy recorded snapshots too."""
+    return not any(part in SOURCE_TREE_EXCLUDED_DIRS for part in Path(path).parts)
 
 
 def inventory(root, workflow):
@@ -872,7 +881,8 @@ def evaluate(root):
             result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers, external)
         if record:
             previous = record.get('source_snapshot', {})
-            unknown = {p for p in set(previous) | set(current) if previous.get(p) != current.get(p)} - owned
+            unknown = {p for p in set(previous) | set(current)
+                       if source_path_included(p) and previous.get(p) != current.get(p)} - owned
             uncertain_inputs.update(unknown)
             if unknown and valid:
                 result[node['node_id']] = {'status': 'uncertain', 'readiness_status': 'uncertain',

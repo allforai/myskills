@@ -126,6 +126,26 @@ def test_local_runtime_files_are_outside_product_source_inventory(tmp_path, host
 
 
 @pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_legacy_snapshot_local_runtime_files_do_not_become_removed_product_inputs(tmp_path, host):
+    setup(tmp_path, host)
+    _, observation = invoke(tmp_path, 'observe', node_id='deliver-export')
+    result, published = invoke(tmp_path, 'publish', observation=observation['observation'])
+    assert result.returncode == 0 and published['status'] == 'valid'
+
+    state_path = tmp_path / '.allforai/bootstrap/evidence-freshness.json'
+    state = json.loads(state_path.read_text())
+    state['nodes']['deliver-export']['source_snapshot']['.local/legacy-runtime.yaml'] = 'legacy-fingerprint'
+    write(tmp_path, '.allforai/bootstrap/evidence-freshness.json', state)
+
+    _, checked = invoke(tmp_path, 'check')
+    _, external = invoke(tmp_path, 'external-changes')
+
+    assert checked['nodes']['deliver-export']['status'] == 'valid'
+    assert '.local/legacy-runtime.yaml' not in checked.get('uncertain_inputs', [])
+    assert external == {'status': 'clear', 'changes': []}
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
 def test_baseline_and_additional_reads_invalidate_without_generated_self_loop(tmp_path, host):
     setup(tmp_path, host)
     (tmp_path / 'policy.txt').write_text('region = JP')
