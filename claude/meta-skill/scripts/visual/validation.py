@@ -169,6 +169,13 @@ QUANTITY = re.compile(r'\d+(?:\.\d+)?\s*(?:px|pt|dp|r?em|%|像素)', re.IGNORECA
 
 WIDTH_CATEGORIES = ('spacing', 'components', 'direction', 'typography', 'navigation', 'states', 'feedback',
                     'icons', 'color', 'motion', 'environment')
+# A length outside the layout class is only a pinned WIDTH when the sentence is about width: 14px body
+# text, an 8px gap, a 6px progress bar and an 8px scrollbar are sizes, and demanding they "move back to
+# layout and declare both ends" would push every baseline into writing its type scale without numbers —
+# which is how a reviewable rule becomes an unreviewable one. "宽 320–480px" still has to move.
+# 「列」names a column ("消息列 820px 居中"), but 「列表」is a list and 「标签栏」a tab bar — a 2px underline
+# on one is not a pinned width.
+WIDTH_WORD = re.compile(r'width|(?<!等)宽|列(?!表)')
 
 
 def _rule_text(rule):
@@ -228,7 +235,7 @@ def pinned_layout_reason(baseline_obj, inventory):
     for category in WIDTH_CATEGORIES:
         other = (baseline_obj.get('categories') or {}).get(category)
         for rule in (other.get('rules') if isinstance(other, dict) else None) or []:
-            if isinstance(rule, str) and WIDTH_LITERAL.search(rule):
+            if isinstance(rule, str) and WIDTH_LITERAL.search(rule) and WIDTH_WORD.search(rule):
                 return '%s 类里藏着钉死宽度的规则，须移到 layout 类并写两端: %s' % (category, rule)
     return ''
 

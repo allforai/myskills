@@ -69,6 +69,7 @@ def _by_path(name, path):
 
 _visual = _by_path("cross_exam_visual_validation", _PACKAGE / "visual/validation.py")
 visual_reason, visual_section = _visual.visual_reason, _visual.visual_section
+_rules = _by_path("cross_exam_rule_consistency", _PACKAGE / "rule_consistency.py")
 # The evidence engine (ADR-0008) owns what an entry must carry before it is read: probed_at, the evidence
 # directory, the content gate per medium, served_by, the probe window. This renderer keeps the names its
 # tests patch as aliases and decides nothing the engine already decides.
@@ -544,6 +545,7 @@ def _journey_block(j, e):
 def render(run_dir):
     run_dir = Path(run_dir)
     ledger = _load(run_dir)
+    rule_review = _rules.evaluate(ledger, run_dir)
     journeys = ledger.get("journeys") or []
     journey_ids = {j.get("id") for j in journeys}
     admitted, refused, author_gates, author_context = [], [], [], []
@@ -560,6 +562,8 @@ def render(run_dir):
                 author_context.append(e)
             continue
         reason = _refusal_reason(e, journey_ids)
+        if not reason and e.get("verdict") == "done":
+            reason = _rules.done_reason(rule_review, _requirement_ids(e))
         if not reason:
             reason = visual_reason(e, ledger, run_dir)
         if not reason and not _has_evidence(e, run_dir):
@@ -679,6 +683,7 @@ def render(run_dir):
         out.append("")
         out.extend(timing)
 
+    out.extend(rule_review["lines"])
     requirements = ledger.get("requirements")
     if requirements is not None:
         out.extend(_requirement_section(requirements, ledger["facets"], examined_ids, admitted))

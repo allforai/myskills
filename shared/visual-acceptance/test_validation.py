@@ -1063,6 +1063,42 @@ def _refresh_manifest(sample):
     write('evidence/q1/manifest.json', manifest)
 
 
+def test_a_font_size_outside_layout_is_not_a_pinned_width(sample):
+    """14px 正文、8px 间距、6px 进度条都不是布局宽度：写进 typography/spacing 不该被要求「移回 layout 并写两端」。
+    校验器此前把任何长度字面量都当成钉死宽度，于是一份写得具体的基线反而整轮拒渲。"""
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['typography']['rules'] = ['正文 14px/1.5，界面里不出现第二种正文字号。']
+    baseline['categories']['spacing']['rules'] = ['间距只用三档：--gap 8px、--pad 16px、--margin 24px。']
+    baseline['categories']['feedback']['rules'] = ['长任务显示 6px 高进度条，日志区最高 240px 后自己滚。']
+    # 等宽 is "monospace" and 列表 is "list": neither pins a column width, and both carry the characters
+    # a width sentence would ("宽", "列").
+    baseline['categories']['components']['rules'] = ['代码用等宽栈：正文内代码 13px；卡片列表各行之间 12px。']
+    baseline['categories']['navigation']['rules'] = ['活动标签在标签栏里用 2px 强调色下划线。']
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    assert visual_reason(entry, ledger, root) is None
+
+
+def test_a_pinned_width_outside_layout_is_still_refused(sample):
+    """宽度字面量加上「宽」字就是钉死一个布局宽度：那句话必须搬回 layout 并写两端。"""
+    root, write, cfg, case, report, entry, ledger = sample
+    baseline = json.loads((root / cfg['baseline_ref']).read_text())
+    baseline['categories']['components']['rules'] = ['对话框固定在窗口中心，宽 320–480px，操作按钮右对齐。']
+    cfg['baseline_digest'] = cfg['interaction_digest'] = write(cfg['baseline_ref'], baseline)
+    for ref in ('evidence/q1/manifest.json', 'evidence/q1/review.json'):
+        obj = json.loads((root / ref).read_text())
+        for holder in obj.get('captures', [obj]):
+            holder['baseline_digest'] = holder['interaction_digest'] = cfg['baseline_digest']
+        write(ref, obj)
+    reason = visual_reason(entry, ledger, root)
+    assert reason and 'components' in reason and '移到 layout' in reason
+
+
 def test_census_range_without_a_minimum_checks_only_the_wide_end(sample):
     """A window the code never gives a minimum width to (no CSS min-width, no minWidth option): the census
     reports min null rather than inventing one, and the run must still be able to freeze a matrix

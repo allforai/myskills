@@ -15,13 +15,25 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 双审身份和阻断项并集；失败裁决拒渲，未关联有效裁决的用例一律未验收。
 文件结构校验无法证明图片来源或模型确实看图，主会话必须核对取证工具记录。
 
+## 规则一致性扩展
+
+合同与判别见 [rule-consistency.md](rule-consistency.md)，独立审查输入/输出见 [prompts/rules.md](prompts/rules.md)。
+新 run 使用 ledger_version=3，必须记录 rule_consistency；v2 的全部证据门继续生效。
+规则来源及报告按摘要绑定，原文按行号核对；候选的 pending/confirmed_conflict/deferred 不算产品失败，
+但会阻断受影响需求的 done。缺报告、报告无效或无法确定影响范围时，全部 done 暂不采信。
+只有绑定当前报告、带用户原话/时区时间/effective_rule 的 clarified 才解除该候选的阻断。
+无规则可比必须明确 not_applicable 及原因，不能以空报告宣称一致。
+旧 v1/v2 缺此扩展仅标未做规则对比，不追溯拒收；存在扩展就核验，不能靠旧版本绕过已登记的候选。
+规则候选单独渲染，不进 G/J、操作面触及、需求裁决或完成度计数；语义判断不是 Python 校验器完成的。
+
 ## ledger.json（盘问官逐问实时落盘，中断不丢）
 
 ```json
 {
   "schema_version": 1,
   "run_id": "stable UUID",
-  "ledger_version": 2,
+  "ledger_version": 3,
+  "rule_consistency": {"status": "not_examined", "reason": "规则来源尚未审查"},
   "target": "被盘问对象（人类可读名）",
   "target_backend": {"kind": "real|mock|mixed", "how_known": "intake 时用户确认 + 普查官 mock_layers"},
   "baseline": "superstorm-registry|spec|readme|user|none",
@@ -95,7 +107,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 }
 ```
 
-- **`ledger_version: 2`**（新 run 必写；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
+- **`ledger_version >= 2`**（新 run 写 3；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
   - `code` 介质的摘录文件至少含一个 `路径:行号`；"看过了没问题"这种 note 拒渲。
   - `runtime` 介质至少一张截图或一个输出文件；entry 记 `states_to_capture`（派发时要的状态清单），证据文件数
     不少于状态数；必记 `served_by`（请求打到的 host、服务进程、**正在生效**的 mock 层列表——MSW service worker
@@ -225,6 +237,7 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
 
 依次：总览（面/问/四类裁决计数——"盘问 N 面"只数有 done|gap|drift 的面，仅无法自证的面另计；实证完成按介质分列"运行时 / 代码 / 台账"，旅程裁决计数与普通裁决计数
 分列；有 `surfaces` 时加"操作面 N 个，裁决触及 M 个"；baseline=none 时声明关闭的镜头）→
+规则一致性（来源/分组覆盖、双方原文、候选与用户处理；未审/未澄清明示，不计产品缺口）→
 需求覆盖（有 `requirements` 时："基准 N 条，有裁决 M 条，无裁决 K 条"，逐条列裁决或点名落在哪个面）→
 逐面完成度（只含普通 entry，"X 问中 Y 问实证通过 · 操作面 K 个，裁决触及 T 个，未触及逐个点名"，
 逐条链证据）→ 旅程完成度（每条已盘问旅程：走通

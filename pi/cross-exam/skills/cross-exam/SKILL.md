@@ -1,7 +1,7 @@
 ---
 name: cross-exam
 description: >
-  Evidence-backed completion audit of a delivery, including user-declared journeys;
+  Evidence-backed completion audit of a delivery, including rule consistency and user-declared journeys;
   records, never fixes. User-invoked only via /skill:cross-exam; never invoke it
   yourself. Requires independent fresh-context subagents; refuse rather than self-audit.
 ---
@@ -42,6 +42,7 @@ Pi 能发现 skill **不等于**有子代理。只使用当前已加载的能力
 - `$ROOT/lenses.md`
 - `$ROOT/prompts/{prober,census,sites,sweep}.md`
 - `$ROOT/schemas.md`
+- `$ROOT/rule-consistency.md`、`$ROOT/prompts/rules.md`（定靶后、基线冻结前必读）
 - `$ROOT/scripts/ledger_store.py`（有则用来加锁写 ledger）
 - `$ROOT/scripts/render_report.py`
 - `$ROOT/visual/visual-acceptance.md`（用户选了视觉 facet 之后）
@@ -53,13 +54,14 @@ Pi 能发现 skill **不等于**有子代理。只使用当前已加载的能力
 ### 1. 派发
 
 主会话是盘问官：出牌、对话、解读证据、裁决、写 ledger、跑 `render_report.py`。
-实测官 / 普查官 / 枚举官 / 扫全实测官 / 视觉 reviewer / 复核官都是 **fresh-context 子代理**。
+实测官 / 普查官 / 规则审查官 / 枚举官 / 扫全实测官 / 视觉 reviewer / 复核官都是 **fresh-context 子代理**。
 期望隔离：派发输入只含协议规定的 prompt 全文 + 输入 JSON；**不夹带怀疑、预期答案、oracle、waypoints**。
 
 每当 canonical 写 `spawn_agent` / `wait_agent` / `Agent(...)` / `fork_turns:"none"`：
 
 - 用 **一个顶层** `subagent` 调用，`workflowScript`、`async:true`、明确 `cwd`（被测项目）、`context:"fresh"`。
-- 普查官、复核官、视觉 reviewer：一次一个 `runs.run`。
+- 普查官、规则审查官、复核官、视觉 reviewer：一次一个 `runs.run`。
+- 规则审查官专用 `prompts/rules.md`，可读全部规则快照（对账例外），但不接收预期冲突；这些材料不传给运行实测官。
 - 互不依赖的实测官（扫全扇出、并行旅程）用同一工作流里的 `runs.all`。`runs.all` 返回有序数组。
 - **不要用 git worktree 隔离实测官。** 他们必须打同一棵被测树、同一本地/开发实例。隔离的是对话上下文，不是工作区。同一模拟器/设备一次只由一个实测官操作。
 - 子代理只许写派发给它的 `evidence_dir`（及该问约定的截图/视觉批次目录）。禁止改产品源码，禁止写 `ledger.json` 或 `completion-report.md`。
@@ -71,7 +73,7 @@ Pi 能发现 skill **不等于**有子代理。只使用当前已加载的能力
 ### 2. 模型
 
 技能不写死模型字面量。定靶 0b 读**当前**可派模型列表（`subagent` list / 当前会话模型），推荐规则与 canonical 相同。
-派发时读 ledger `model_policy`，不读记忆。普查官、视觉 reviewer、复核官从不降档。
+派发时读 ledger `model_policy`，不读记忆。普查官、规则审查官、视觉 reviewer、复核官从不降档。
 
 ### 3. 提问
 
@@ -80,7 +82,7 @@ Pi 没有 `AskUserQuestion`。牌、定面勾选、旅程确认、扫全模板�
 
 ### 4. 台账与报告
 
-新 run 写 `ledger_version: 2`。有 `ledger_store.py` 就用它加锁写；没有则直接写 `docs/cross-exam/<日期>-<目标slug>/ledger.json`，仍须每问立刻落盘。
+新 run 写 `ledger_version: 3` 并初始化 `rule_consistency`；执行 canonical §0c 规则对比，候选只交用户澄清，不改产品或扩大范围。有 `ledger_store.py` 就用它加锁写；没有则直接写 `docs/cross-exam/<日期>-<目标slug>/ledger.json`，仍须每问立刻落盘。
 报告只由 `python3 $ROOT/scripts/render_report.py docs/cross-exam/<run>/` 渲染。禁止口述生成完成度报告。
 
 ### 5. 后续用户步骤

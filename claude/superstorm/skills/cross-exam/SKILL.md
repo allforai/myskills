@@ -1,7 +1,7 @@
 ---
 name: cross-exam
 argument-hint: [target]
-description: Evidence-backed completion audit of a delivery, including user-declared journeys; records, never fixes. User-invoked only via /cross-exam; never invoke it yourself.
+description: Evidence-backed completion audit of a delivery, including rule consistency and user-declared journeys; records, never fixes. User-invoked only via /cross-exam; never invoke it yourself.
 ---
 
 # cross-exam — 实证完成度盘问
@@ -95,7 +95,8 @@ reviewer）和作者自审时的复核官永远继承会话模型。哪怕降了
 5. **run 目录**：`docs/cross-exam/<日期>-<目标slug>/`。检测到未收敛 run
    （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开；
    续接时读旧 ledger 的 `open_threads` 作为起手牌候选。
-6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/cross-exam/schemas.md`），新 run 写 `ledger_version: 2`。
+6. 初始化/载入 `ledger.json`（schema 见 `$ROOT/knowledge/cross-exam/schemas.md`），新 run 写 `ledger_version: 3`，
+   `rule_consistency: {status: "not_examined", reason: "规则来源尚未审查"}`。
 7. **作者证据入账（有则读，无则跳过）**：交付流水线（meta-skill `/run` 的 product-verify / runtime-smoke-verify /
    test-verify 等门）在目标项目 `.allforai/<gate>/evidence-entries/<node_id>.json` 留下带 `author` 标记的 ledger 形条目时，
    读进本 run：每条的证据目录复制到 `evidence/author/<node_id>/…`，条目字段**原样**入账（`author`、`build`、`build_excludes`、
@@ -107,12 +108,24 @@ reviewer）和作者自审时的复核官永远继承会话模型。哪怕降了
    摘要过期、缺 readback、probed_at 无偏移、标记不全）按引擎的理由拒渲点名。读作者证据是为了少重跑构建与测试、知道作者
    看过哪些运行时问题，不是为了少派实测官。
 
+## 0c. 规则一致性（定靶后必做，先于基线冻结）
+
+读取 `$ROOT/knowledge/cross-exam/rule-consistency.md`，按其中的来源快照 → 独立规则审查官 → 用户澄清
+流程执行；固定 prompt 为 `$ROOT/knowledge/cross-exam/prompts/rules.md`。它比较规则与规则，不替代实测。
+规则审查官属判断角色，继承会话模型、不降档；只给完整对账材料，不给盘问官预期冲突。
+来源包括需求、非目标、设计/交互约束、验收条件和用户确认；需求基准优先级不意味着只读第一份文档。
+不同版本/平台/角色、明确例外不直接判冲突；范围排除与依赖该范围的条件规则必须对账。
+未审、候选待澄清或确认冲突但未解决，都不能冻结受影响的验收依据；renderer 拒收相关 done，
+不会把规则候选当作运行 bug。用户可以暂缓，报告如实列出；无规则来源也必须按协议声明，不能记“通过”。
+
 ## 1. 定面（facet map）
 
 **UI 目标**：自动列出可选 `visual-acceptance` facet。用户选中后读取
 `$ROOT/knowledge/cross-exam/visual/visual-acceptance.md`，执行实图采集、逐类基线确认、
 全矩阵和独立视觉评审。视觉裁决必须通过 renderer 校验，不能源码通过。
 用户未选择则记录未验收。SwiftUI 规则内置，无需另装 Skill。
+视觉/交互候选基线新增或修改规则时，先将用户确认原话加入 §0c 来源并重审，再冻结两份基线；
+未澄清的主题范围不能被直接丢出矩阵来绕过规则审查。
 
 **先独立 census 播种，再由你摆面——别让"你想到要盘什么"成为覆盖上限。** facet 表最危险的
 盲区是"你根本没想到要盘的那块"：盘问官持怀疑但也带盲区，只凭 hunch + 读代码摆面，交付里整类
@@ -165,6 +178,7 @@ reviewer）和作者自审时的复核官永远继承会话模型。哪怕降了
 3. **改写读回**：每条选中的旅程改写成三元组加 oracle（`done_looks_like` + `stuck_looks_like`），读
    回用户确认。一轮改写后仍无 `who` 或 `progress` 的不是旅程——说明缺哪部分，用户补一次，仍缺就
    不收。`stuck_looks_like` 空的同样退回补一次："没报错"不是 oracle，要写出卡死长什么样。
+   新增/改写的 oracle 先作为来源回到 §0c 审查，再冻结；不可把相互冲突的期望同时交给后续裁决。
 4. **落盘**：确认的旅程写入 `journeys[]`，`status: not_examined`，带 `risk`（这份工作的分量 + 若真走
    不通的破坏面）。未选的候选不入台账。`step_budget` 默认 15，按旅程长度调。
 
@@ -275,7 +289,7 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
 
 用户喊停或选中的面盘完 →
 `python3 $ROOT/scripts/render_report.py docs/cross-exam/<run>/` →
-把 completion-report.md 呈给用户。报告四类裁决计数（普通与旅程分列，实证完成按介质分列）、需求覆盖
+把 completion-report.md 呈给用户。报告四类裁决计数（普通与旅程分列，实证完成按介质分列）、规则一致性（原文对照、用户处理、未审/未澄清；不混入产品缺口）、需求覆盖
 （基准 N 条，有裁决 M 条；无裁决的按落在哪个面点名，没落面的单独点名）、逐面"X 问中 Y 问实证通过 ·
 操作面 K 个，裁决触及 T 个，未触及逐个点名"、
 旅程完成度（每条走通 N 步或卡在第 K 步加卡死类型）、缺口清单（可直接转修复任务）、无法自证清单、未盘问声明、缺陷模式（patterns：每类

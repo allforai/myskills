@@ -9,3 +9,4 @@ node_modules/
 product-design-skill/
 .DS_Store
 .claude/worktrees/
+/.pi/
