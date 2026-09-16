@@ -241,6 +241,24 @@ def _int_range(rng):
     return rng['min'], rng['max']
 
 
+def _census_range(rng):
+    """The census's width range, where either end may be null: code that sets no minimum window width (no
+    CSS min-width, no minWidth option) has no minimum to read, and inventing one would be a claim about the
+    code. Returns (min|None, max|None), or None when the shape is not a width range."""
+    if not isinstance(rng, dict) or not any(k in rng for k in ('min', 'max')):
+        return None
+    ends = []
+    for key in ('min', 'max'):
+        end = rng.get(key)
+        if end is None:
+            ends.append(None)
+        elif isinstance(end, int) and not isinstance(end, bool):
+            ends.append(end)
+        else:
+            return None
+    return tuple(ends)
+
+
 def _census_surface(surface, read):
     """The census entry this inventory surface came from: same id, the same entry when ids were renamed, or
     the entry the surface names in `census_id`."""
@@ -298,17 +316,19 @@ def census_width_reason(read, inventory):
             return 'inventory 的 form_factor %s 弱于普查官读出的 %s' % (declared, read_ff)
     read_range = read.get('width_range')
     if read_range is not None:
-        got = _int_range(read_range)
+        got = _census_range(read_range)
         if got is None:
             return '普查官的 width_range 形状无效'
         mine = _int_range(inventory.get('width_range'))
-        if mine is None:
-            return 'inventory 未声明 width_range，普查官读出 %d..%d' % got
-        if mine[1] < got[1]:
+        if mine is None and any(end is not None for end in got):
+            return 'inventory 未声明 width_range，普查官读出 %s..%s' % ('?' if got[0] is None else got[0],
+                                                                       '?' if got[1] is None else got[1])
+        # An end the census could not read binds nothing: the user confirms that end in the environment class.
+        if mine is not None and got[1] is not None and mine[1] < got[1]:
             return 'inventory 的 width_range.max %d 低于普查官读出的 %d' % (mine[1], got[1])
-        if mine[0] > got[0]:
+        if mine is not None and got[0] is not None and mine[0] > got[0]:
             return 'inventory 的 width_range.min %d 高于普查官读出的 %d' % (mine[0], got[0])
-        read_surfaces = read.get('ui_surfaces', [])
+        read_surfaces = read.get('ui_surfaces', []) if any(end is not None for end in got) else []
         if not isinstance(read_surfaces, list):
             return '普查官的 ui_surfaces 形状无效'
         for sf in inventory.get('surfaces') or []:
@@ -447,7 +467,11 @@ def visual_reason(entry, ledger, run):
         if not bound and not census_obj and _ui_target(inventory):
             raise ValueError('普查官原件缺失（census_ref）')
         census_support = merged_support(census_obj.get('axis_support'), census_obj.get('locales'))
+        # An axis the matrix does not model (reduced_motion, contrast) cannot be crossed into cases, but it
+        # is still something the census read from the code: visual_section names it instead of refusing.
         for axis, spec in census_support.items():
+            if axis not in AXES:
+                continue
             declared = support.get(axis) or {}
             dropped = set((spec or {}).get('supported') or []) - set(declared.get('supported') or [])
             if dropped:
@@ -584,6 +608,13 @@ def visual_reason(entry, ledger, run):
     return None
 
 
+def unmodeled_axes(census_obj):
+    """Axes the census read that this protocol has no matrix dimension for, as {axis: [values]}."""
+    support = merged_support((census_obj or {}).get('axis_support'), (census_obj or {}).get('locales'))
+    return {axis: list((spec or {}).get('supported') or [])
+            for axis, spec in sorted(support.items()) if axis not in AXES}
+
+
 def visual_section(ledger, admitted, run=None):
     config = ledger.get('visual_acceptance')
     if not config:
@@ -593,6 +624,12 @@ def visual_section(ledger, admitted, run=None):
            f"审查模式：{config.get('review_mode')}；文件校验不代替实际看图。",
            (f"普查官原件：{config.get('census_ref')}（摘要绑定）" if config.get('census_ref') is not None else
             '普查官原件：未绑定 census_ref，宽度与支持值只按 ledger 顶层键比对，缺键即不比。'), '']
+    if run is not None:
+        extra = unmodeled_axes(census(ledger, run)[0])
+        if extra:
+            out.append('普查官读出、矩阵未建模的轴（不进任何计数，需人工判断要不要单独验收）：' + '；'.join(
+                f"{axis}：{', '.join(str(v) for v in values) or '（未列值）'}" for axis, values in extra.items()))
+            out.append('')
     counts = dict.fromkeys(['done','gap','drift','unprovable','not_examined','not_applicable','abstracted'], 0)
     rows = [c for c in (ledger.get('visual_cases') or []) if isinstance(c, dict)]
     if run is not None:

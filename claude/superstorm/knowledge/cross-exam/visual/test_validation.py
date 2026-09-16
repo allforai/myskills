@@ -1055,6 +1055,41 @@ def test_inventory_width_range_may_widen_but_never_narrow_the_census(sample):
     assert _census_reason(sample, {'width_range': CENSUS_RANGE}) is None
 
 
+def _refresh_manifest(sample):
+    """Re-stamp the capture with the current inventory digest after a test rewrote the inventory."""
+    root, write, cfg, case, report, entry, ledger = sample
+    manifest = json.loads((root / 'evidence/q1/manifest.json').read_text())
+    manifest['captures'][0]['inventory_digest'] = cfg['inventory_digest']
+    write('evidence/q1/manifest.json', manifest)
+
+
+def test_census_range_without_a_minimum_checks_only_the_wide_end(sample):
+    """A window the code never gives a minimum width to (no CSS min-width, no minWidth option): the census
+    reports min null rather than inventing one, and the run must still be able to freeze a matrix
+    (LocalModelDesk, 2026-09-13: a null min refused the whole visual acceptance)."""
+    open_low = {'min': None, 'max': 1920, 'basis': 'no minWidth in main.ts; 1920 display'}
+    assert _census_reason(sample, {'width_range': open_low}) is None            # inventory 1200..1600 is free to pick a min
+    reason = _census_reason(sample, {'width_range': {**open_low, 'max': 2560}})
+    assert reason and '2560' in reason                                          # the wide end is still binding
+    unknown = {'min': None, 'max': None, 'basis': 'neither end is set in code'}
+    assert _census_reason(sample, {'width_range': unknown}) is None
+    reason = _census_reason(sample, {'width_range': {'min': None, 'max': '1920'}})
+    assert reason and '形状无效' in reason
+
+
+def test_census_axis_outside_the_protocol_is_recorded_not_refused(sample):
+    """The census may read a real axis the matrix does not model (reduced_motion, contrast). Refusing the
+    whole run hides every other visual rule; the report names the axis as outside the matrix instead
+    (LocalModelDesk, 2026-09-13: an extra axis refused the visual acceptance)."""
+    root, write, cfg, case, report, entry, ledger = sample
+    _bind_census(sample, {'axis_support': {'reduced_motion': {'supported': ['no-preference', 'reduce'],
+                                                              'basis': 'app.css:160'}}})
+
+    assert visual_reason(entry, ledger, root) is None
+    section = '\n'.join(visual_section(ledger, [entry], root))
+    assert 'reduced_motion' in section and 'no-preference' in section and '矩阵' in section
+
+
 def test_inventory_without_width_range_cannot_hide_a_census_range(sample):
     surfaces = [{'id': 'home', 'axes': {a: ['default'] for a in AXES}}]
     reason = _census_reason(sample, {'width_range': CENSUS_RANGE}, width_range=None, surfaces=surfaces,
