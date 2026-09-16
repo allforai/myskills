@@ -1400,9 +1400,15 @@ def transition_artifacts(entry: dict) -> list[str]:
     return []
 
 
-def stagnant_iteration_count(workflow: dict) -> int:
+def stagnant_iteration_count(workflow: dict, start_index: int = 0) -> int:
+    """Count artifact-free transitions recorded during the supervised run.
+
+    Historical transitions describe earlier invocations and must not make a fresh
+    invocation stagnant before it dispatches its first node.
+    """
     count = 0
-    for entry in reversed(workflow.get("transition_log", [])):
+    transitions = workflow.get("transition_log", [])
+    for entry in reversed(transitions[max(0, start_index):]):
         if transition_artifacts(entry):
             break
         count += 1
@@ -2164,6 +2170,7 @@ def main() -> int:
     project_root = find_project_root(Path.cwd())
     goal, max_iterations = parse_legacy_args(sys.argv, project_root)
     workflow_path = project_root / ".allforai/bootstrap/workflow.json"
+    run_transition_start = len(load_json(workflow_path).get("transition_log", []))
     preflight = run_preflight(project_root)
     if preflight != 0:
         diagnostic = {}
@@ -2332,7 +2339,7 @@ def main() -> int:
                 return 3
 
         stagnation_cap = stagnation_limit(project_root)
-        if stagnant_iteration_count(workflow) >= stagnation_cap:
+        if stagnant_iteration_count(workflow, run_transition_start) >= stagnation_cap:
             print(
                 json.dumps(
                     {

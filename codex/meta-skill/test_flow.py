@@ -86,6 +86,18 @@ def test_one_driver_transition_per_attempt(tmp_path, identity):
         assert flow.stagnant_iteration_count(result) == attempt + 1
 
 
+def test_stagnation_count_can_ignore_transitions_from_previous_runs():
+    workflow = {'transition_log': [
+        {'node': f'old-{i}', 'status': 'failed', 'artifacts_created': []}
+        for i in range(8)
+    ]}
+    start = len(workflow['transition_log'])
+    assert flow.stagnant_iteration_count(workflow, start) == 0
+    workflow['transition_log'].append(
+        {'node': 'current', 'status': 'failed', 'artifacts_created': []})
+    assert flow.stagnant_iteration_count(workflow, start) == 1
+
+
 def test_node_id_worker_stops_after_three_real_attempts(tmp_path, monkeypatch, capsys):
     node = {'node_id': 'n1', 'exit_artifacts': ['missing.json']}
     path = tmp_path / '.allforai/bootstrap/workflow.json'
