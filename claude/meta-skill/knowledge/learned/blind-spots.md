@@ -211,3 +211,33 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
   Module Ghost Routes
 - **Status**: `closed`
 - **First reported in**: 2026-04-14 retrospective
+
+## 2026-09-17 — A pass with no denominator (the check was never seen to fail)
+
+- **Class**: a check reports "pass" without establishing what it could have
+  failed on. Two shapes, one law: evidence gathered at a self-chosen point
+  reported as unconditional, and a regression test never observed red.
+- **Missed**: (1) LocalModelDesk cross-exam ran four journeys, all verdict
+  `done`; the chat view does not follow the content while a long answer
+  streams, reported by the user right after the audit closed. The prober
+  self-selects its path, so every unconstrained dimension takes its cheapest
+  value — one short question, empty library, first run — and the defect lives
+  outside that point. (2) The regression test written for that fix passed
+  twice with the fix short-circuited: first the content never overflowed, then
+  "at bottom" was trivially true at `scrollTop = 0` because the content barely
+  exceeded the viewport.
+- **Why missed**: coverage discipline existed for surfaces (K facets, T
+  touched) and for defect patterns (N sites, M probed), but not for a
+  journey's *instance space*; `done` rendered as an unconditional "走通".
+  And nothing in the pipeline asks a new test to demonstrate it can go red.
+- **Minimum prevention**: (1) a journey's `circumstance` is the instance
+  slot — the report renders `done` scoped to it, the prober records the
+  instance it actually used, and declined journey candidates are named
+  instead of vanishing; (2) after any fix, short-circuit the fix and re-run:
+  the new test must go red, in both directions where the behaviour has two.
+- **Capability added**: cross-exam §1b + `schemas.md` (journey scope,
+  `instance`, `journey_candidates`) + `scripts/render_report.py`; the
+  red-first rule still needs a home in a verify capability.
+- **Status**: `scheduled` — cross-exam half ships; the red-first check is
+  not yet an automatic gate.
+- **First reported in**: LocalModelDesk 2026-09-17 scroll-follow session

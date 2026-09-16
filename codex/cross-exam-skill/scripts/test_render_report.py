@@ -423,10 +423,72 @@ class TestJourneys(unittest.TestCase):
             self.assertIn("实证完成：0 · 缺口：0", overview)   # 普通计数不含旅程
             sec = report[report.index("## 旅程完成度"):report.index("## 缺口清单")]
             self.assertIn("J1 回头客 · 购物车里已有一件商品 · 完成支付并拿到订单号", sec)
-            self.assertIn("走通，2 步", sec)
+            self.assertIn("在此情形下走通（购物车里已有一件商品），2 步", sec)
             self.assertIn("- 1 done 打开 /cart → 购物车显示 1 件商品", sec)
             facet_sec = report[report.index("## 逐面完成度"):report.index("## 旅程完成度")]
             self.assertNotIn("J1 走得通吗？", facet_sec)
+
+    def test_journey_done_never_renders_unconditional_pass(self):
+        """探针自选路径，没被 circumstance 约束的维度它一律取最便宜的值（最短输入、最空的库、
+        只跑一遍）。所以 done 只在那个点上成立，报告不许把它渲成无条件的"走通"——渲成无条件的，
+        读者就把一个点的证据当成整条旅程的结论。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_jentry()])
+            _with_journeys(run, [_journey()])
+            sec = render(run)
+            sec = sec[sec.index("## 旅程完成度"):sec.index("## 缺口清单")]
+            self.assertNotIn("走通，2 步", sec)          # 无条件措辞必须消失
+            self.assertIn("购物车里已有一件商品", sec.split("\n")[3])   # 作用域和裁决在同一行
+
+    def test_journey_done_without_circumstance_says_so(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            j = _journey()
+            j["circumstance"] = ""
+            run = _mk_run(tmp, self.FACETS, [_jentry()])
+            _with_journeys(run, [j])
+            report = render(run)
+            self.assertIn("在此情形下走通（情形未写）", report)
+
+    def test_journey_renders_the_instance_the_prober_reported(self):
+        """实测官自报的处境（prober.md 的 instance）是这条裁决的作用域，原样渲出来。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            e = _jentry()
+            e["instance"] = ["购物车 1 件", "首次结账", "等待 3 秒"]
+            run = _mk_run(tmp, self.FACETS, [e])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("实测处境：购物车 1 件；首次结账；等待 3 秒", report)
+
+    def test_journey_without_instance_is_flagged_not_refused(self):
+        """缺 instance 不拒渲——它是作用域声明不是证据合同；但必须说出来，静默省略等于
+        默认这一趟覆盖了全部处境。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_jentry()])
+            _with_journeys(run, [_journey()])
+            report = render(run)
+            self.assertIn("实测官没报处境，这条裁决的作用域不明", report)
+            self.assertNotIn("违规裁决", report)
+            self.assertIn("旅程裁决：实证完成：1", report)
+
+    def test_declined_journey_candidates_are_named_not_vanished(self):
+        """未选的面要写 not_examined + risk；未选的旅程候选从前直接蒸发，于是报告说得出
+        "旅程全部走通"而没人看得见候选里还剩什么。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            run = _mk_run(tmp, self.FACETS, [_jentry()])
+            _with_journeys(run, [_journey()])
+            L = json.loads((run / "ledger.json").read_text(encoding="utf-8"))
+            L["journey_candidates"] = [
+                {"id": "C1", "body": "新客 · 首次下单 · 拿到订单号", "declined_by_user": "这次先不盘新客"},
+                {"id": "C2", "body": "回头客 · 库里 500 条订单 · 翻到上个月"}]
+            (run / "ledger.json").write_text(json.dumps(L, ensure_ascii=False), encoding="utf-8")
+            report = render(run)
+            unex = report[report.index("## 未盘问声明"):report.index("## 未拉的线")]
+            self.assertIn("旅程候选 新客 · 首次下单 · 拿到订单号（C1）", unex)
+            self.assertIn("用户原话：这次先不盘新客", unex)
+            self.assertIn("旅程候选 回头客 · 库里 500 条订单 · 翻到上个月（C2）", unex)
+            self.assertIn("未记用户原话", unex)
+            self.assertIn("旅程 1 条，盘问 1 条", report)   # 候选不进任何计数
+            self.assertIn("旅程裁决：实证完成：1", report)
 
     def test_journey_gap_renders_stuck_step_kind_and_tag(self):
         with tempfile.TemporaryDirectory() as tmp:

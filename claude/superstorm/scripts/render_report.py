@@ -26,7 +26,9 @@
 
 可选 `journeys`（旅程声明）渲染为"旅程完成度"专节。旅程没有自报"已查"的通道：
 `entry_q` 精确匹配到被采信 entry 且该 entry 的 `journey` 等于旅程 id 才算已盘问，
-否则进"未盘问声明"（前缀"旅程"）并按 risk 排序。entry 带 `journey` 但 journeys 里
+否则进"未盘问声明"（前缀"旅程"）并按 risk 排序；顶层 `journey_candidates`（摆过而用户
+没选的候选）同列渲染，前缀"旅程候选"。旅程 `done` 按 `circumstance` 渲作用域，不渲无条件的
+"走通"，并附实测官自报的 `instance`（这一趟实际用的处境）——缺了标"作用域不明"，不拒渲。entry 带 `journey` 但 journeys 里
 查无此 id、或旅程 gap 的 `stuck_kind` 不在六种之内，一律拒渲并点名；旅程 drift 缺
 `missed_waypoints` 同样拒渲并点名。旅程裁决计数与普通裁决计数分列，互不掺入。
 
@@ -492,6 +494,31 @@ def _dangling_note(j, admitted):
     return "".join(f" · 有 journey={jid} 的 entry 但 entry_q 对不上：{q}" for q in notes)
 
 
+def _journey_scope(j):
+    """`done` 的作用域 = circumstance。探针自选路径，凡是没被 circumstance 约束的维度它一律取最便宜
+    的值（最短的输入、最空的库、只跑一遍、全新状态），所以"走通"从来只是"在这个情形下走通"。渲染成
+    无条件的"走通"，就是把一个点上的证据说成整条旅程的结论——旅程侧的分母就在这一行。"""
+    return (j.get("circumstance") or "").strip() or "情形未写"
+
+
+def _instance_note(e):
+    """实测官自报的"这一趟实际用的处境"（prober.md 的 instance）。缺了不拒渲，但必须说出来：
+    作用域不明本身是读者要知道的事，静默省略等于默认它覆盖了全部处境。"""
+    inst = e.get("instance")
+    if isinstance(inst, str):
+        inst = [inst]
+    items = [str(s).strip() for s in (inst or []) if str(s).strip()]
+    return " · 实测处境：" + "；".join(items) if items else " · 实测官没报处境，这条裁决的作用域不明"
+
+
+def _candidate_line(c):
+    """§1b 摆出来而用户没选的旅程候选。未选的面要写 not_examined + risk，未选的旅程从前直接蒸发，
+    于是报告说得出"N 条旅程全部走通"而没人看得见候选里还剩什么。"""
+    why = (c.get("declined_by_user") or "").strip()
+    return (f"- 旅程候选 {c.get('body', '?')}（{c.get('id', '?')}）— 用户未选，不计入任何完成度"
+            f" · {('用户原话：' + why) if why else '未记用户原话'}")
+
+
 def _journey_block(j, e):
     steps = e.get("steps", [])
     verdict = e.get("verdict")
@@ -499,7 +526,7 @@ def _journey_block(j, e):
     ev = e.get("evidence", {})
     note = "".join(f" · {e[k]}" for k in ("transcript_note", "author_note") if e.get(k))
     if verdict == "done":
-        head = f"走通，{len(steps)} 步"
+        head = f"在此情形下走通（{_journey_scope(j)}），{len(steps)} 步"
     elif verdict == "gap":
         label = f"{label}（{e.get('severity', '?')}，{STUCK_KINDS.get(e.get('stuck_kind'))}）"
         stuck = next((s for s in steps if s.get("status") == "stuck"), None)
@@ -514,7 +541,7 @@ def _journey_block(j, e):
     else:
         head = ev.get("key_observation", "")
     out = ["", f"### {_journey_title(j)} — {label}",
-           f"{head}（证据：{ev.get('dir', '')}）{note}"]
+           f"{head}（证据：{ev.get('dir', '')}）{_instance_note(e)}{note}"]
     out.extend(f"- {s.get('n', '?')} {s.get('status', '?')} {s.get('action', '')}"
                f" → {s.get('observed', '')}" for s in steps)
     return out
@@ -720,10 +747,14 @@ def render(run_dir):
     out.append("")
     out.append("## 未盘问声明（按风险排序）")
     unexamined_items = ([(f["name"], f, "facet") for f in not_examined]
-                        + [("旅程 " + _journey_body(j), j, "journey") for j in unexamined_j])
+                        + [("旅程 " + _journey_body(j), j, "journey") for j in unexamined_j]
+                        + [("", c, "candidate") for c in (ledger.get("journey_candidates") or [])])
     if unexamined_items:
         unexamined_items.sort(key=lambda it: _risk_key(it[1]))
         for name, item, kind in unexamined_items:
+            if kind == "candidate":
+                out.append(_candidate_line(item))
+                continue
             line = _not_examined_line(name, item)
             if kind == "journey":
                 line += _dangling_note(item, admitted)
