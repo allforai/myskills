@@ -807,7 +807,7 @@ def _source_tree(root):
     """
     result = {}
     for directory, dirs, files in os.walk(root):
-        dirs[:] = sorted(d for d in dirs if d not in {'.git', '.allforai', '.claude', '.codex',
+        dirs[:] = sorted(d for d in dirs if d not in {'.git', '.allforai', '.claude', '.codex', '.local',
                                                       '__pycache__', '.pytest_cache', 'node_modules', '.venv', '.expo'})
         for name in sorted(files):
             path = (Path(directory) / name).relative_to(root).as_posix()

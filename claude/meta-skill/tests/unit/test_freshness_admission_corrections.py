@@ -83,6 +83,25 @@ _ABSENT = object()
 
 
 @pytest.mark.parametrize("host", HOSTS)
+def test_declared_pending_node_without_publication_does_not_block_runner_start(tmp_path, host):
+    project(tmp_path, confirmed=True, host=host, source_inputs=["orders.py"])
+    (tmp_path / ".allforai/bootstrap/export-report.json").unlink(missing_ok=True)
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account]\n")
+
+    checked = _artifacts(tmp_path)
+    assert checked["all_exist"] is False
+    assert checked["freshness"]["readiness_status"] == "stale"
+    assert checked["freshness"]["diff"]["evidence"] == "unpublished"
+    assert checked["freshness"]["diff"]["outputs"] == {
+        ".allforai/bootstrap/export-report.json": "missing"
+    }
+
+    code, report = _readiness(tmp_path)
+    assert code == 0 and report["status"] == "ready", report["blockers"]
+    assert not _blockers(report, "stale_evidence")
+
+
+@pytest.mark.parametrize("host", HOSTS)
 def test_intent_aware_node_without_source_inputs_fails_closed_until_declared_and_published(tmp_path, host):
     project(tmp_path, confirmed=True, host=host, source_inputs=None)
     write(tmp_path, ".allforai/bootstrap/export-report.json", {"status": "passed"})

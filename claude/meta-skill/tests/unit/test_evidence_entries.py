@@ -78,14 +78,19 @@ def test_write_entry_records_what_the_agent_cannot_author(project):
     assert reason == ""
     assert entry["build"] == _identity(project)["build"] and entry["build"].startswith(_git(project, "rev-parse", "HEAD"))
     # the host directories are outside the build: the gate's own writes under .allforai do not move it
-    assert entry["build_excludes"] == [".allforai", ".claude", ".codex"]
-    assert _check.BUILD_EXCLUDES == (".allforai", ".claude", ".codex")
+    assert entry["build_excludes"] == [".allforai", ".claude", ".codex", ".local"]
+    assert _check.BUILD_EXCLUDES == (".allforai", ".claude", ".codex", ".local")
     assert entry["probed_at"][-6] in "+-" and entry["probed_at"][-3] == ":"      # an offset, never a naive stamp
     assert entry["author"] == {"pipeline": "meta-skill/run", "node_id": NODE, "capability": "product-verify"}
     assert entry["image_digests"] == {"q01-01-home.png": hashlib.sha256(b"\x89PNG-home").hexdigest()}
     stored = json.loads(_entries_file(project).read_text())
     assert stored["schema"] == "evidence-entries/v1" and stored["entries"] == [entry]
     assert stored["run_dir"] == RUN                                      # project-relative, never a machine path
+    assert entries_reason(project / RUN, project, NODE) == ""
+
+    local = project / ".local"
+    local.mkdir()
+    (local / "native-e2e.yaml").write_text("appId: host.exp.Exponent\n")
     assert entries_reason(project / RUN, project, NODE) == ""
 
 
@@ -188,9 +193,9 @@ def test_an_edited_entries_file_is_refused_by_the_first_rule_it_breaks(project):
     stored["entries"][0]["author"]["node_id"] = NODE
     stored["entries"][0]["build_excludes"] = ["."]                # an entry may not choose its own build scope
     _entries_file(project).write_text(json.dumps(stored))
-    assert entries_reason(project / RUN, project, NODE) == "#1: 构建标识排除范围须为 .allforai, .claude, .codex"
+    assert entries_reason(project / RUN, project, NODE) == "#1: 构建标识排除范围须为 .allforai, .claude, .codex, .local"
 
-    stored["entries"][0]["build_excludes"] = [".allforai", ".claude", ".codex"]
+    stored["entries"][0]["build_excludes"] = [".allforai", ".claude", ".codex", ".local"]
     (project / RUN / "evidence" / NODE / "q01/q01-01-home.png").write_bytes(b"\x89PNG-swapped")
     _entries_file(project).write_text(json.dumps(stored))
     assert entries_reason(project / RUN, project, NODE) == "#1: 截图内容摘要不匹配: q01-01-home.png"

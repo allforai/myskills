@@ -110,6 +110,22 @@ def test_unknown_source_impact_and_output_tampering_cannot_prove_completion(tmp_
 
 
 @pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_local_runtime_files_are_outside_product_source_inventory(tmp_path, host):
+    setup(tmp_path, host)
+    _, observation = invoke(tmp_path, 'observe', node_id='deliver-export')
+    result, published = invoke(tmp_path, 'publish', observation=observation['observation'])
+    assert result.returncode == 0 and published['status'] == 'valid'
+
+    local = tmp_path / '.local'
+    local.mkdir()
+    (local / 'visual-functional-ios.yaml').write_text('appId: host.exp.Exponent\n')
+    _, checked = invoke(tmp_path, 'check')
+
+    assert checked['nodes']['deliver-export']['status'] == 'valid'
+    assert '.local/visual-functional-ios.yaml' not in checked.get('uncertain_inputs', [])
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
 def test_baseline_and_additional_reads_invalidate_without_generated_self_loop(tmp_path, host):
     setup(tmp_path, host)
     (tmp_path / 'policy.txt').write_text('region = JP')

@@ -40,7 +40,7 @@ AUTHOR_PIPELINE = "meta-skill/run"
 # keeps out of the source inventory), and an entry records this scope so a later reader recomputes the
 # same value. An entry declaring any other scope is refused — a validator cannot let the entry choose
 # what it is validated against.
-BUILD_EXCLUDES = (".allforai", ".claude", ".codex")
+BUILD_EXCLUDES = (".allforai", ".claude", ".codex", ".local")
 # The literals #55 put in compute_completeness; the ledger gate refuses in the same words.
 FIXTURE_REASON = "响应与 fixture 一致（%s）的 runtime 不能判 done"
 FIXTURE_UNREADABLE_REASON = "served_by.fixtures 指向的 %s 读不到，响应无法与 fixture 比对"

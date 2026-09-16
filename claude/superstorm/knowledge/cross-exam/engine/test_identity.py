@@ -126,6 +126,15 @@ def test_excluded_paths_are_outside_the_snapshot_tracked_or_not(repo):
     assert build_reason(committed['build'], repo, exclude=['docs/run']) == ''
 
 
+def test_project_local_runtime_directory_can_be_excluded_from_build(repo):
+    clean = build_identity(repo, exclude=['.local'])
+    local = repo / '.local'
+    local.mkdir()
+    (local / 'native-e2e.yaml').write_text('appId: host.exp.Exponent\n')
+    assert build_identity(repo, exclude=['.local']) == clean
+    assert build_identity(repo)['build'] != clean['build']
+
+
 def test_repository_variables_a_git_hook_exports_do_not_redirect_the_identity(tmp_path, repo, monkeypatch):
     """A gate run from inside another repository's hook inherits GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE;
     the identity is still the tree at `repo`, never the hook's repository."""

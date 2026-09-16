@@ -632,7 +632,9 @@ def validate_unattended_readiness(project_root: Path) -> dict:
             _add(blockers, "missing_source_inputs", freshness["reason"], node_id=node_id)
         elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
             _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
-        elif freshness.get("readiness_status") != "valid":
+        elif (freshness.get("readiness_status") != "valid"
+              and freshness.get("diff", {}).get("contract") != "unpublished"
+              and freshness.get("diff", {}).get("evidence") != "unpublished"):
             message = freshness.get("reason") or "Reconcile inputs and reverify affected evidence"
             repair = freshness.get("repair") if isinstance(freshness.get("repair"), dict) else None
             if repair:
