@@ -1,23 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run each battery only when the commit can actually affect it. The meta-skill suite and its
-# validators do not reference claude/superstorm or codex/cross-exam-skill (verified), so a commit
-# touching only those paid ~5 minutes for tests of unrelated code — while the cross-exam renderers
-# themselves went untested here. Anything unrecognised runs everything: unknown means run it.
-changed=$(git diff --cached --name-only --diff-filter=ACMR)
-needs_meta=false
-needs_xexam=false
-for f in $changed; do
-  case "$f" in
-    claude/meta-skill/*|codex/meta-skill/*|shared/scripts/*) needs_meta=true ;;
-    # the shared packages are mirrored into meta-skill AND consumed by cross-exam
-    shared/evidence-engine/*|shared/visual-acceptance/*) needs_meta=true; needs_xexam=true ;;
-    claude/superstorm/*|codex/cross-exam-skill/*) needs_xexam=true ;;
-    docs/*|README.md|MIGRATION.md|.claude-plugin/*) ;;                      # no code path
-    *) needs_meta=true; needs_xexam=true ;;                                  # unknown: run everything
-  esac
-done
+# Everything in this hook finishes in seconds. The meta-skill unit suite (~6 minutes) used to run here
+# too, which made every commit — a one-line doc fix included — cost a coffee break, and it bought the
+# path-scoping machinery that decided which battery a commit "could affect". Both are gone: the suite
+# is run on demand (see below), and the fast batteries simply always run, because deciding is slower to
+# read than running them.
+#
+# Before a release or a change to claude/meta-skill, run the full suite yourself:
+#     python3 -m pytest -q claude/meta-skill/tests/unit
 
 # git exports GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE into hook processes, and several suites build a
 # throwaway repo and shell out to git. Clearing them makes those fixtures resolve to themselves.
@@ -27,65 +18,35 @@ done
 # test writes this repository's index, and the commit in progress would then capture whatever the
 # test left there. Comparing the staged tree before and after refuses that commit instead.
 run_pytest() { env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX python3 -m pytest -q "$@"; }
-
 staged_tree() { git write-tree 2>/dev/null || echo "unreadable"; }
 STAGED_BEFORE="$(staged_tree)"
 
-check_index_untouched() {
-  local now; now="$(staged_tree)"
-  if [ "$now" != "$STAGED_BEFORE" ]; then
-    echo "[pre-commit] the staged tree changed while the tests ran ($STAGED_BEFORE -> $now)." >&2
-    echo "[pre-commit] a test shelled out to git without clearing GIT_*, so it wrote this index." >&2
-    echo "[pre-commit] refusing: the commit would capture the test's tree. Isolate that test's git" >&2
-    echo "[pre-commit] calls (pass an env with no GIT_* vars), then run: git reset && re-stage." >&2
-    exit 1
-  fi
-}
+echo "[pre-commit] pytest cross-exam renderers and shared packages"
+run_pytest claude/superstorm/scripts          # the two test_render_report.py collide: one dir per run
+run_pytest codex/cross-exam-skill/scripts
+run_pytest shared/evidence-engine
+run_pytest shared/visual-acceptance
 
-if [ "$needs_xexam" = true ]; then
-  echo "[pre-commit] pytest cross-exam renderers (per directory: the two test_render_report.py collide)"
-  run_pytest claude/superstorm/scripts
-  run_pytest codex/cross-exam-skill/scripts
-  for pkg in shared/evidence-engine shared/visual-acceptance; do
-    [ -d "$pkg" ] && run_pytest "$pkg"
-  done
-  check_index_untouched
-fi
-
-if [ "$needs_meta" != true ]; then
-  echo "[pre-commit] ok (no meta-skill or shared change; its suite and validators do not cover the touched paths)"
-  exit 0
+STAGED_AFTER="$(staged_tree)"
+if [ "$STAGED_AFTER" != "$STAGED_BEFORE" ]; then
+  echo "[pre-commit] the staged tree changed while the tests ran ($STAGED_BEFORE -> $STAGED_AFTER)." >&2
+  echo "[pre-commit] a test shelled out to git without clearing GIT_*, so it wrote this index." >&2
+  echo "[pre-commit] refusing: the commit would capture the test's tree. Isolate that test's git" >&2
+  echo "[pre-commit] calls (pass an env with no GIT_* vars), then run: git reset && re-stage." >&2
+  exit 1
 fi
 
 echo "[pre-commit] py_compile orchestrator scripts"
 python3 -m py_compile claude/meta-skill/scripts/orchestrator/*.py
 
-echo "[pre-commit] pytest meta-skill unit tests"
-run_pytest claude/meta-skill/tests/unit
-check_index_untouched
-
-echo "[pre-commit] validate bundled skills"
+echo "[pre-commit] validate bundled skills, pipelines and meta-skill contracts"
 python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills
-
-echo "[pre-commit] validate game art pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_art_pipeline.py .
-
-echo "[pre-commit] validate game frontend pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_game_frontend_pipeline.py .
-
-echo "[pre-commit] validate game 2D production pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_game_2d_production_pipeline.py .
-
-echo "[pre-commit] validate game creative pipeline wiring"
 python3 claude/meta-skill/scripts/orchestrator/validate_game_creative_pipeline.py .
-
-echo "[pre-commit] validate meta-skill cross-file contracts"
 python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
-
-echo "[pre-commit] validate specialization governance"
 python3 claude/meta-skill/scripts/orchestrator/validate_specialization_contracts.py .
-
-echo "[pre-commit] validate generalization boundaries"
 python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py
 
 echo "[pre-commit] strict node_id invariant"
@@ -96,4 +57,4 @@ if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|r
   exit 1
 fi
 
-echo "[pre-commit] ok"
+echo "[pre-commit] ok — meta-skill 单测未跑，需要时: python3 -m pytest -q claude/meta-skill/tests/unit"
