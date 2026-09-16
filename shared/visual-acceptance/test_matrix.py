@@ -6,9 +6,9 @@ from validation import AXES
 def test_complete_product_without_cap():
     axes = {a: ['a', 'b', 'c'] for a in AXES}
     cases = expand([{'id': 'home', 'axes': axes, 'motion_states': ['b']}])
-    assert len(cases) == 2187
-    assert len({tuple(c[a] for a in AXES) for c in cases}) == 2187
-    assert sum(c['motion'] for c in cases) == 729
+    assert len(cases) == 6561
+    assert len({tuple(c[a] for a in AXES) for c in cases}) == 6561
+    assert sum(c['motion'] for c in cases) == 2187
 
 
 def test_incomplete_axis_refused():
@@ -464,3 +464,35 @@ def test_resizable_desktop_surface_needs_a_resize_state():
     fixed['width_range'] = {'min': 1200, 'max': 1200, 'basis': 'resizable:false', 'fixed_window': True}
     fixed['surfaces'][0]['axes']['device'] = ['1200x800@2']
     assert expand_inventory(fixed)
+
+
+def test_pointer_is_implicit_until_the_census_reads_it():
+    """A run frozen before the pointer axis existed keeps expanding, with one implicit value and the same
+    case ids; the surface only has to carry pointer values once the census reports pointer support."""
+    axes = {a: ['default'] for a in AXES if a != 'pointer'}
+    surfaces = [{'id': 'home', 'axes': axes, 'scrollable': False}]
+    cases = expand([{'id': 'home', 'axes': dict(axes), 'scrollable': False}], platform='ios')
+    assert len(cases) == 1 and 'pointer' not in cases[0]   # implicit: not in the identity, not in the row
+    with_axis = expand([{'id': 'home', 'axes': {**axes, 'pointer': ['default']}, 'scrollable': False}],
+                       platform='ios')
+    assert with_axis[0]['id'] == cases[0]['id']          # the implicit value is not part of the identity
+
+    support = {'pointer': {'supported': ['mouse', 'touch'], 'basis': 'app.css:40 @media (hover: hover)'}}
+    with pytest.raises(ValueError, match='pointer'):
+        expand([dict(s) for s in surfaces], axis_support=support, platform='ios')
+
+    covered = [{'id': 'home', 'axes': {**axes, 'pointer': ['mouse', 'touch']}, 'scrollable': False}]
+    rows = expand(covered, axis_support=support, platform='ios')
+    assert sorted(c['pointer'] for c in rows) == ['mouse', 'touch']
+    assert len({c['id'] for c in rows}) == 2
+
+
+def test_declining_a_pointer_value_keeps_it_out_of_the_matrix():
+    """Same as locales: the user may decline a value the code supports; it stays on the record but leaves
+    the matrix, and what is left still has to be covered."""
+    axes = {a: ['default'] for a in AXES if a != 'pointer'}
+    support = {'pointer': {'supported': ['mouse', 'touch'], 'basis': 'app.css:40',
+                           'declined': [{'value': 'touch', 'confirmation': '这台机器没有触摸屏', 'confirmed_at': '2026-09-16'}]}}
+    rows = expand([{'id': 'home', 'axes': {**axes, 'pointer': ['mouse']}, 'scrollable': False}],
+                  axis_support=support, platform='ios')
+    assert [c['pointer'] for c in rows] == ['mouse']

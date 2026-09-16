@@ -28,7 +28,11 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
 `data-theme` 切换点 / Info.plist `UIUserInterfaceStyle` / `.preferredColorScheme` / Asset Catalog dark appearance /
 `values-night/` / `DayNight` 主题）、dynamic_type（rem·em 与 `font-size` 缩放 / `.dynamicTypeSize` 上下限 / `sp`
 与 `fontScale` 使用）、orientation（CSS orientation 查询 / `UISupportedInterfaceOrientations` /
-`android:screenOrientation`），每轴 `{supported, basis}`；写死单一值的照写单一值并给出处。appearance 另带
+`android:screenOrientation`）、pointer（指点设备：`@media (hover: hover)`·`(pointer: fine|coarse)`·
+`(any-pointer: coarse)` 查询 / touch·pointer 事件监听 / 只在 `:hover` 才出现的控件 / `hasTouch`·`isMobile` 配置 /
+平台本身只有触摸或只有鼠标），每轴 `{supported, basis}`；写死单一值的照写单一值并给出处。pointer 的值用
+`mouse` / `touch` / `stylus`：鼠标与触摸共存的产品两个都列——同一份界面在两种指点设备下长得不一样（滚动条、
+hover 才露出的按钮、点击热区大小），代码里看不出差别，只有分别截图才看得见。appearance 另带
 dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色（Asset Catalog 无 dark 的 image set / color set、
 `values/` 有而 `values-night/` 没有的 color、源码里的字面量颜色），逐个点名——半做的深色模式没有味道，只有点名册。
 从 App/Scene、路由、Tab、弹层及条件注册出发；公共 View 不自动算页面，
@@ -58,7 +62,8 @@ dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色
                       "missing": {"ar": ["billing.invoice.title", "..."]}, "extra": {"en": ["..."]}},
  "axis_support": {"appearance": {"supported": ["light", "dark"], "basis": "tailwind.config.js:7 darkMode"},
                   "dynamic_type": {"supported": ["zoom 100%", "zoom 150%"], "basis": "styles use rem"},
-                  "orientation": {"supported": ["portrait"], "basis": "Info.plist UISupportedInterfaceOrientations"}},
+                  "orientation": {"supported": ["portrait"], "basis": "Info.plist UISupportedInterfaceOrientations"},
+                  "pointer": {"supported": ["mouse", "touch"], "basis": "src/ui/toolbar.css:12 @media (hover: hover)"}},
  "dark_variant_gaps": [{"asset": "logo", "path": "Assets.xcassets/logo.imageset", "why": "no dark appearance"}],
  "mock_layers": [{"name": "msw", "evidence": "package.json:devDependencies; src/mocks/browser.ts:3"}],
  "could_not": ["没枚举到的类别 + 原因（无则空数组）"]}

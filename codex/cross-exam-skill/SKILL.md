@@ -136,7 +136,7 @@ Do not mix ledgers, verdicts, or loops.
    `visual/census.json`，`visual_acceptance.census_ref` / `census_digest` 按摘要绑定它**——校验器从这个文件读原件比对
    inventory，顶层同名键只是副本，与文件不一致或删了键都关不掉检查；宽度与支持值只许放宽不许收窄，见 visual-acceptance.md）：`translation_keys.missing` 或 `dark_variant_gaps` 非空时按
    "孤例还是一类"直接建 pattern（hypothesis "某语言翻译回落" / "深色模式资源半做"，sites = 缺失 key / 无深色
-   变体的资源），不等哪张牌碰巧撞上；语言、深浅色、字号、方向要不要验收，由用户在视觉验收的 environment 类
+   变体的资源），不等哪张牌碰巧撞上；语言、深浅色、字号、方向、指点设备要不要验收，由用户在视觉验收的 environment 类
    逐轴确认，放弃的值记 `declined` 带原话，报告列"未验收"，不进计数（见 visual-acceptance.md）。
 2. **合并 + 摆面**：把 census 面与你自己想到的面合并去重，**标出"census 有、你没想到"的面**（那
    往往正是盲区）。facet 表每面两个槽位必填：`surface_ids`（它包含的 census 面 id）与

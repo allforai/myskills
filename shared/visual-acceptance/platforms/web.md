@@ -47,6 +47,10 @@ Playwright / Puppeteer 的无头浏览器默认带 `--hide-scrollbars`，滚动�
 
 滚动类断言只认 `capture_mode: viewport` 且 `scrollbars: native` 的图，且在声明的滚动位置各一张：普查时把会滚动的页面（目标视口下 `scroll_height > client_height`）在 inventory 标 `scrollable: true`，其 state 轴必须含滚动位置状态，命名以 `scroll-` 开头（`scroll-top`、`scroll-mid`、`scroll-bottom`，或 `scroll-sticky-header` 这类具名状态）；矩阵展开会拒绝标了 scrollable 却没有滚动状态的页面，校验器会拒绝用 full_page 或 hidden 滚动条的图裁滚动状态用例。只有无头全页证据时，滚动状态用例裁 unprovable，`visual_failure_ref` 写"无头全页截图无滚动条/无折叠线"，不从整页图推断。
 
+**pointer 轴。** 支持值从代码读：`@media (hover: hover)` / `(pointer: fine|coarse)` / `(any-pointer: coarse)`、`ontouchstart` 或 pointer/touch 事件监听、只在悬停时显示的控件（`:hover` 改变 `display` / `visibility` / `opacity`）。读回值用 `matchMedia('(hover: hover)').matches` 与 `matchMedia('(pointer: coarse)').matches`，写进 capture 的 `readback.pointer`；Playwright 用 `hasTouch` / `isMobile` 造粗指针上下文，Chrome DevTools MCP 用设备模拟。
+
+这条轴决定两类东西存不存在，而不只是长什么样：**悬停才出现的控件**（改名、删除、工具条）在粗指针上根本不出现，**滚动条**在 macOS 接鼠标时常显并占位、只用触控板时是悬浮的。所以 `scrollbars: hidden` 的图对任何 pointer 值都不是证据；宣称支持鼠标的目标至少要有一张 `scrollbars: native` 的图，宣称支持触摸的目标至少要有一张粗指针读回值的图。
+
 拿到原生滚动条的办法：Playwright `chromium.launch({ headless: false })`，或无头下 `ignoreDefaultArgs: ['--hide-scrollbars']`；Chrome DevTools MCP 连接可见的 Chrome。用哪种写进 capture 的 `capture_tool`，并以页面读回的 `gutter_px` 为准，不以启动参数为准。
 
 只操作本地/开发实例；写请求造成的副作用限于该实例。测试数据优先用已有合成数据；页面含真实敏感数据时停该项并交用户处理。同一浏览器上下文一次只由一个 prober 操作，独立上下文才可并发。构建标识 = commit 加工作树快照摘要（`git diff HEAD` 输出与全部未跟踪文件内容合并后的 SHA-256），有构建产物时再加 dist 目录摘要；同一提交上两次不同的未提交修改必须得到不同的 build，只写 commit 加 dirty 不够。dev server 热更新期间不采集，采集前后各算一次快照摘要，不一致则该批作废。

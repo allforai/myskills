@@ -24,7 +24,14 @@ def _engine(name):
 
 
 engine = _engine('evidence')
-AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orientation')
+# `pointer` is the input the surface is being used with (mouse / trackpad / touch / stylus): it decides
+# whether hover-only affordances exist at all and whether the platform draws scrollbars that take space.
+AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orientation', 'pointer')
+# Axes a surface may leave out: the matrix then carries one implicit value, so runs frozen before the axis
+# existed keep expanding. Leaving `pointer` out stops being allowed the moment the census reads pointer
+# support from the code (hover / pointer media queries, touch handlers): check_axis_support then demands
+# every supported value on every surface, like any other axis.
+OPTIONAL_AXES = {'pointer': 'default'}
 DEVICE_RE = re.compile(r'^(\d+)x(\d+)@(\d+(?:\.\d+)?)$')
 
 
@@ -281,6 +288,8 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
             raise ValueError('scrollable surface without scroll- state: ' + sid)
         for axis in AXES:
             values = axes.get(axis)
+            if values is None and axis in OPTIONAL_AXES:
+                values = axes[axis] = [OPTIONAL_AXES[axis]]
             if not isinstance(values, list) or not values or any(not isinstance(v, str) or not v for v in values):
                 raise ValueError('missing concrete axis: ' + sid + '/' + axis)
             if len(set(values)) != len(values):
@@ -298,9 +307,13 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
         plan, anchors = _abstraction_plan(surface, abstractions, anchor)
         for values in itertools.product(*(axes[a] for a in AXES)):
             row = dict(zip(AXES, values))
-            identity = json.dumps({'surface': sid, **row}, sort_keys=True, ensure_ascii=False)
+            # An optional axis sitting at its implicit value is not part of the identity: a run frozen
+            # before the axis existed keeps the same case ids, and adding real values changes only the
+            # cases that carry them.
+            identity_row = {a: v for a, v in row.items() if OPTIONAL_AXES.get(a) != v}
+            identity = json.dumps({'surface': sid, **identity_row}, sort_keys=True, ensure_ascii=False)
             case_id = 'V-' + hashlib.sha256(identity.encode()).hexdigest()
-            case = {'id': case_id, 'surface': sid, **row,
+            case = {'id': case_id, 'surface': sid, **identity_row,
                     'motion': row['state'] in surface.get('motion_states', []),
                     'groups': sorted(groups)}
             if plan:
@@ -336,6 +349,7 @@ if __name__ == '__main__':
     for axis in AXES:
         counts = {}
         for c in kept:
-            counts[c[axis]] = counts.get(c[axis], 0) + 1
+            value = c.get(axis, OPTIONAL_AXES.get(axis, '?'))
+            counts[value] = counts.get(value, 0) + 1
         print('  %s: %s' % (axis, ', '.join('%s=%d' % kv for kv in sorted(counts.items()))), file=sys.stderr)
     print(json.dumps(rows, ensure_ascii=False, indent=2))

@@ -8,7 +8,7 @@
 
 打包语言（写进 inventory 的 `locales`）从工程读：`res/values-xx/strings.xml` 目录、`resConfigs` / `localeFilters`、`locales_config.xml`（Android 13+ 应用内语言）、`android:supportsRtl`；`translation_keys` 以 `values/strings.xml` 为点名册逐语言 diff（`translatable="false"` 的 key 排除）。其它轴的支持值（普查官 `axis_support`）：appearance 看 `values-night/`、`Theme.*.DayNight`、`AppCompatDelegate.setDefaultNightMode` / Compose `isSystemInDarkTheme()`；`dark_variant_gaps` 列 `values/colors.xml` 有而 `values-night/` 没有的 color、无 `-night` 变体的 drawable、源码字面量颜色。dynamic_type 看 `sp` 与 `fontScale` 用法（用 `dp` 写字号的界面不响应字号，单值带出处）。orientation 看 `android:screenOrientation` 与 `configChanges`。
 
-七个维度对 Android 的取值，全部在 environment 类由用户确认为具体值：
+各维度对 Android 的取值，全部在 environment 类由用户确认为具体值：
 - device：dp 宽高加密度，如 `411x914@2.625`、`800x1280@2`；施加：`adb shell wm size WxH`（px）与 `adb shell wm density D`，读回 `adb shell wm size` / `wm density` 与页面内 `resources.displayMetrics` / `LocalConfiguration.screenWidthDp`。
 - os：Android 版本与 API 级别（`adb shell getprop ro.build.version.release` / `sdk`），厂商皮肤（One UI、MIUI）按用户确认是否分列。
 - appearance：`adb shell cmd uimode night yes|no`，应用内主题开关另算一个值；读回 `Configuration.uiMode & UI_MODE_NIGHT_MASK` 写进 `readback.appearance`。
@@ -16,6 +16,7 @@
 - width：`Resources.configuration.screenWidthDp` 或 `WindowMetricsCalculator` 的宽度换算成 dp，写 `readback.width`，须等于用例设备在该方向下的有效宽度。
 - locale：`adb shell setprop persist.sys.locale` 或系统设置切换，Android 13+ 另可 `adb shell cmd locale set-app-locales <package> --locales ja`；读回 `Configuration.locales[0]` 写进 `readback.locale`，`readback.direction` 取 `Configuration.layoutDirection` / `View.layoutDirection`（`supportsRtl=false` 时 RTL 语言永远读回 ltr，那是一条 gap）。
 - orientation：`adb shell settings put system accelerometer_rotation 0` 加 `user_rotation 0|1`，读回 `Configuration.orientation` 写进 `readback.orientation`。
+- pointer：绝大多数 Android 设备只有触摸，值写 `touch`；支持鼠标（ChromeOS、DeX、外接鼠标）或触控笔（S Pen）时才多一个值。支持值从工程读：`<uses-feature android:name="android.hardware.touchscreen">` 与 `android.hardware.type.pc`、`onHoverEvent` / `setOnHoverListener` / Compose `Modifier.hoverable`·`pointerHoverIcon`、对 `MotionEvent.TOOL_TYPE_STYLUS` 的分支。读回 `PackageManager.hasSystemFeature(FEATURE_TOUCHSCREEN)` 与 `InputDevice` 里当前源的 `SOURCE_MOUSE` / `SOURCE_STYLUS`，写进 `readback.pointer`。
 - state：加载、空、错误、权限拒绝、离线、键盘弹出、进程被杀后恢复（`adb shell am kill` 再回前台），按页面归入。
 
 施加后必须在应用里读回真正生效的值写进 capture，不凭 adb 命令返回码补。截图 `adb exec-out screencap -p > <evidence.png>`；动画用 `adb shell screenrecord` 录屏加带时间戳抓帧。截图能力不代表能操作：点击/输入/手势用既有 UI test（Espresso / Compose test）、`adb shell input` 或可见窗口工具真执行，缺操作工具时逐项无法自证。

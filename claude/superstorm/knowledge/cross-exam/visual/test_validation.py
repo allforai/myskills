@@ -708,7 +708,7 @@ def _layout_reason(sample, rules, width_range='global', surfaces=None, readback_
                 holder['matrix_digest'] = cfg['matrix_digest']
                 if 'case_id' in holder:
                     holder['case_id'] = rows[0]['id']
-                    holder.update({a: rows[0][a] for a in AXES})
+                    holder.update({a: rows[0][a] for a in AXES if a in rows[0]})
                     width = inventory['width_range']['min'] if readback_width == 'auto' else readback_width
                     if width is not None:
                         holder.setdefault('readback', {})['width'] = width
@@ -894,7 +894,7 @@ def test_fixed_size_window_accepts_one_end(sample):
             holder.update({k: cfg[k] for k in ('baseline_digest', 'interaction_digest', 'inventory_digest', 'matrix_digest')})
             if 'case_id' in holder:
                 holder['case_id'] = rows[0]['id']
-                holder.update({a: rows[0][a] for a in AXES})
+                holder.update({a: rows[0][a] for a in AXES if a in rows[0]})
                 holder['readback'] = {'width': 1024}
         write(ref, obj)
     assert visual_reason(entry, ledger, root) is None

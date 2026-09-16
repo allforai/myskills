@@ -145,7 +145,7 @@ Files under `.allforai/visual-verify/` (the run directory):
 
 | File | What it is |
 |---|---|
-| `surface-inventory.json` | the inventory in the shared shape: `platform`, `form_factor`, `width_range`, `layout_thresholds`, `locales` / `axis_support`, optional `devices`, `surfaces[]` each with the seven axes |
+| `surface-inventory.json` | the inventory in the shared shape: `platform`, `form_factor`, `width_range`, `layout_thresholds`, `locales` / `axis_support`, optional `devices`, `surfaces[]` each with the axes (`pointer` optional until the census reads it) |
 | `case-matrix.json` | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/visual/matrix.py surface-inventory.json`, saved verbatim; a row may add only `applicability: not_applicable` with `reason` and `basis` |
 | `visual-baseline.json` | the frozen rules the comparison runs against, by category; layout rules are `{rule, pinned: false}` or `{rule, pinned: true, ends}` |
 | `screenshot-manifest.json` | `{captures: [...]}` in the shared manifest shape — one capture per kept case, image paths relative to `evidence/` |
@@ -177,12 +177,13 @@ state is `refused`, `failed_visual_review` or `passed` exactly as the gate says 
   and max, the empty area the rule allows as a measurable bound. Otherwise an 820px centered column at
   1920 beside a blank half-screen "matches the rule" and the reviewer has no sentence to cite.
 - **Every kept case is captured.** Every case the matrix keeps (not abstracted, not annotated
-  not_applicable with reason and basis) has exactly one capture whose seven axes equal the case's; the
+  not_applicable with reason and basis) has exactly one capture whose axes equal the case's; the
   first case without one is refused with its axes (`用例未拍: …`), so the wide end cannot be left out.
 - **Every capture reads back.** For each axis the code supports, `readback.<axis>` is the value read
   inside the app — Web: `matchMedia('(prefers-color-scheme: dark)')` plus `data-theme` / `class` for
   appearance, `document.documentElement.lang` for locale, the computed root font size and
-  `visualViewport.scale` for dynamic type, `screen.orientation.type` for orientation — and it is one of
+  `visualViewport.scale` for dynamic type, `screen.orientation.type` for orientation,
+  `matchMedia('(hover: hover)')` and `matchMedia('(pointer: coarse)')` for pointer — and it is one of
   the case's values; `readback.width` is the app's own layout width (`window.innerWidth`) and equals the
   case's effective width; an RTL locale reads back `direction: rtl`. A mismatch is refused by name
   (`<axis> 轴读回值 … 与用例 … 不符`, `width 读回值 … 与用例设备宽度 … 不符`, `… 缺应用内读回值`): a Playwright

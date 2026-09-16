@@ -29,7 +29,9 @@ EVIDENCE = "evidence"
 # the shared report shape says high|medium|low; the node's own vocabulary blocker|major|minor is read too
 BLOCKING = {"high", "medium", "blocker", "major"}
 SEVERITIES = BLOCKING | {"low", "minor"}
-AXES = ("state", "device", "os", "appearance", "dynamic_type", "locale", "orientation")
+AXES = ("state", "device", "os", "appearance", "dynamic_type", "locale", "orientation", "pointer")
+# an axis nobody read from the code stays implicit, so old inventories expand to the same case ids (visual/matrix.py)
+OPTIONAL_AXES = {"pointer": "default"}
 
 _VISUAL = {}
 
@@ -62,8 +64,13 @@ def read_json(path, label):
 
 
 def describe(case):
-    """A case as the reviewer would name it: surface, the seven axes, id — so an untested width is visible."""
-    return "%s %s (%s)" % (case.get("surface"), " / ".join(str(case.get(a, "?")) for a in AXES), case.get("id"))
+    """A case as the reviewer would name it: surface, every axis, id — so an untested width is visible."""
+    return "%s %s (%s)" % (case.get("surface"), " / ".join(axis_value(case, a) for a in AXES), case.get("id"))
+
+
+def axis_value(row, axis):
+    """An optional axis a case or capture never carried sits at its implicit value, not at an unknown one."""
+    return str(row.get(axis, OPTIONAL_AXES.get(axis, "?")))
 
 
 # --- the matrix ---
@@ -111,7 +118,7 @@ def kept_cases(rows, cases):
 # --- captures ---
 
 def capture_reason(case, capture, inventory, support, rtl_locales, evidence_dir):
-    """'' when the capture is the case it claims: same seven axes, a build and a time, the Web capture
+    """'' when the capture is the case it claims: the same axis values, a build and a time, the Web capture
     fields, a viewport with native scrollbars for a scroll state, RTL read back for an RTL locale, the
     in-app readback of every axis the code supports and of the width, and images on disk that hash to
     the recorded digests. Setting an axis is not the same as the app rendering it."""
@@ -119,7 +126,7 @@ def capture_reason(case, capture, inventory, support, rtl_locales, evidence_dir)
     cid = case.get("id", "?")
     if not isinstance(capture, dict):
         return "截图记录须是对象: " + cid
-    if any(capture.get(k) != case.get(k) or not capture.get(k) for k in AXES):
+    if any(axis_value(capture, k) != axis_value(case, k) or axis_value(case, k) in ("", "?") for k in AXES):
         return "截图环境与用例不匹配: " + cid
     if not capture.get("build") or not capture.get("captured_at"):
         return "缺构建或截图时间: " + cid

@@ -6,13 +6,13 @@
   "plugins": [
     {
       "name": "meta-skill",
-      "version": "0.18.2",
+      "version": "0.18.3",
       "source": "./claude/meta-skill/",
       "description": "Meta-skill generator: analyzes projects, generates project-specific node-specs and orchestrator configs. /bootstrap + /run workflow. Replaces 6 specialized plugins."
     },
     {
       "name": "superstorm",
-      "version": "0.40.0",
+      "version": "0.41.0",
       "source": "./claude/superstorm/",
       "description": "Large-goal autonomous pipeline: decompose into modules, front-load decisions via brainstorming, then design → closed-loop validate → plan → reverse-review → orchestrate → concurrently execute with anti-fake-completion supervision. Global command /superstorm. Bundles /cross-exam, /product-review and /keep-code-simple as explicit independent reviews."
     },

@@ -65,7 +65,7 @@ def _read(root, ref):
 
 def _capture_for(case, image, digest):
     width = _gate.visual("matrix").effective_width(case["device"], case["orientation"])
-    return {**{a: case[a] for a in AXES}, "case_id": case["id"], "build": "", "captured_at": "2026-09-10T10:30:00+08:00",
+    return {**{a: case[a] for a in AXES if a in case}, "case_id": case["id"], "build": "", "captured_at": "2026-09-10T10:30:00+08:00",
             "readback": {"appearance": case["appearance"], "width": width},
             "capture_mode": "viewport", "headless": False, "scrollbars": "native", "scroll_profile": PROFILE,
             "capture_tool": "playwright chromium headed", "images": [image], "image_digests": {image: digest}}

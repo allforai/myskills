@@ -4,10 +4,10 @@ description: >
   Meta-skill generator for the myskills ecosystem. Analyzes target projects and generates
   project-specific skills (node-specs), state machine configurations, and orchestrator
   commands. Use /bootstrap to analyze a project, then /run to execute any workflow.
-version: "0.18.2"
+version: "0.18.3"
 ---
 
-# Meta-Skill v0.18.2
+# Meta-Skill v0.18.3
 
 > Unified skill generator — replaces 6 specialized plugins with /bootstrap + /run.
 

@@ -30,7 +30,7 @@ _VERIFIED_IMAGES = set()   # content digests already decoded and verified in thi
 
 CATEGORIES = {'direction', 'color', 'typography', 'layout', 'spacing', 'icons',
               'components', 'navigation', 'feedback', 'states', 'motion', 'environment'}
-AXES = ('state', 'device', 'os', 'appearance', 'dynamic_type', 'locale', 'orientation')
+AXES = _matrix.AXES
 CAPTURE_MODES = {'viewport', 'full_page'}
 SCROLLBARS = {'native', 'hidden', 'overlay'}
 SCROLL_PROFILE_KEYS = ('scroll_width', 'client_width', 'scroll_height', 'client_height', 'gutter_px')
@@ -500,7 +500,8 @@ def visual_reason(entry, ledger, run):
             case = cases[cid]
             capture = captures[cid]
             bindings(capture, config)
-            if any(capture.get(k) != case.get(k) or not capture.get(k) for k in AXES):
+            if any(_axis_value(capture, k) != _axis_value(case, k) or _axis_value(case, k) in ('', '?')
+                   for k in AXES):
                 raise ValueError('截图环境与用例不匹配: ' + cid)
             if not capture.get('build') or not capture.get('captured_at'):
                 raise ValueError('缺构建或截图时间')
@@ -608,6 +609,11 @@ def visual_reason(entry, ledger, run):
     return None
 
 
+def _axis_value(row, axis):
+    """An optional axis a case or capture never carried sits at its implicit value, not at an unknown one."""
+    return str(row.get(axis, _matrix.OPTIONAL_AXES.get(axis, '?')))
+
+
 def unmodeled_axes(census_obj):
     """Axes the census read that this protocol has no matrix dimension for, as {axis: [values]}."""
     support = merged_support((census_obj or {}).get('axis_support'), (census_obj or {}).get('locales'))
@@ -680,11 +686,11 @@ def visual_section(ledger, admitted, run=None):
             tag = ' · 已抽象（' + '×'.join(case['abstracted_by']) + '）' + ('，独立性存疑，需重展开' if hit else '')
         if state not in ('abstracted', 'not_applicable'):
             for axis in AXES:
-                bucket = per_axis[axis].setdefault(str(case.get(axis, '?')), {'total': 0, 'judged': 0})
+                bucket = per_axis[axis].setdefault(_axis_value(case, axis), {'total': 0, 'judged': 0})
                 bucket['total'] += 1
                 bucket['judged'] += state in ('done', 'gap', 'drift', 'unprovable')
         out.append(f"- {cid} {case.get('surface')} — {state} · " +
-                   ' / '.join(str(case.get(k, '?')) for k in AXES) + tag)
+                   ' / '.join(_axis_value(case, k) for k in AXES) + tag)
         for entry in matches:
             out.append(f"  证据：{entry.get('evidence_manifest', entry.get('visual_failure_ref'))} · "
                        f"reviewers：{entry.get('review_reports', [])} · "
