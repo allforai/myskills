@@ -53,6 +53,18 @@ class AdapterTests(unittest.TestCase):
         self.assertIn('context:"fresh"', text)
         self.assertIn("不要用 git worktree 隔离实测官", text)
 
+    def test_probers_stay_on_the_native_session_model(self):
+        # Pi keeps the session model and varies only thinking level; external CLI
+        # runners (codex-exec/claude-code/cursor-agent) are never a prober.
+        text = (PACKAGE / "skills/cross-exam/SKILL.md").read_text(encoding="utf-8")
+        for boundary in ("不要用外部 CLI runner", "codex-exec", "claude-code", "cursor-agent",
+                         "runner.available === true", "只用当前会话模型", "继承会话模型",
+                         "provider/id:<level>", "off/minimal/low/medium/high/xhigh/max",
+                         "从不降", "第二审用原生 Pi 子代理",
+                         "不新增外部 receive 方"):
+            self.assertIn(boundary, text)
+        self.assertNotIn("外部 CLI 还须", text)
+
     def test_binds_codex_protocol_and_renderer(self):
         text = (PACKAGE / "skills/cross-exam/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("../../codex/cross-exam-skill/", text)

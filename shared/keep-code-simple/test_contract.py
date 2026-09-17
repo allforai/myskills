@@ -173,9 +173,20 @@ class GuardTests(unittest.TestCase):
 
     def test_pi_dispatch_uses_async_discovery_and_single_workflow(self):
         text = (ROOT / PACKAGES[2][0] / PACKAGES[2][1]).read_text(encoding="utf-8")
-        for boundary in ('action:"list", capabilities:true', "executable", "runner.available === true",
+        for boundary in ('action:"list", capabilities:true', "executable",
                          "一个顶层", "async:true", "runs.all", "有序数组", "不轮询", "同协议重试"):
             self.assertIn(boundary, text)
+
+    def test_pi_adaptation_keeps_the_session_model(self):
+        # Pi stays on the session model and varies only thinking level; external CLI
+        # runners (codex-exec/claude-code/cursor-agent) and cross-model claims are out.
+        text = (ROOT / PACKAGES[2][0] / PACKAGES[2][1]).read_text(encoding="utf-8")
+        for boundary in ("不要选外部 CLI runner", "codex-exec", "claude-code", "cursor-agent",
+                         "runner.available === true", "只用当前会话默认模型",
+                         "provider/id:<level>", "off/minimal/low/medium/high/xhigh/max",
+                         "不写“跨模型复核”", "inherited"):
+            self.assertIn(boundary, text)
+        self.assertNotIn("选快且胜任的档位", text)
 
 
 if __name__ == "__main__":
