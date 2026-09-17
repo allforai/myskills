@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block body %}
+<h1>Invoices</h1>
+<a class="btn" href="{{ url_for('invoice_new') }}">New invoice</a>
+<table><tr><th>#</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr>
+{% for i in invoices %}<tr><td>{{ i.id }}</td><td>{{ i.client.name }}</td><td>{{ i.total }}</td><td>{{ i.status }}</td>
+<td>
+<form method="post" action="{{ url_for('invoice_send', iid=i.id) }}" style="display:inline"><button>Send</button></form>
+<form method="post" action="{{ url_for('invoice_paid', iid=i.id) }}" style="display:inline"><button>Mark paid</button></form>
+<a href="{{ url_for('invoice_pdf', iid=i.id) }}">PDF</a>
+</td></tr>
+{% else %}<tr><td colspan="5">No data</td></tr>{% endfor %}</table>
+{% endblock %}

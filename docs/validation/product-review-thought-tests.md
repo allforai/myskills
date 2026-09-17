@@ -56,3 +56,5 @@ C01 与 P01 的对比就是这次修复的全部意义：同一个场景、同�
 - 没有在真实产品上跑过，报告质量与噪声率未知。
 
 [原始答卷](product-review-thought-tests/responses.md) · [证据](product-review-thought-tests/evidence.json)
+
+后续：发现能力（受试者自己在埋了缺陷的代码库上找问题）见 [product-review-discovery-tests.md](product-review-discovery-tests.md)（2026-09-17）。

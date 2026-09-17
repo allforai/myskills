@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block body %}
+<h1>Clients</h1>
+<form method="post"><input name="name" placeholder="Name"><input name="email" placeholder="Email"><button>Add</button></form>
+<ul>{% for c in clients %}<li>{{ c.name }} — {{ c.email }}</li>{% else %}<li>No data</li>{% endfor %}</ul>
+{% endblock %}

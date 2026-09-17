@@ -73,7 +73,7 @@ Completion: target named; every job in scope written as a triple and read back; 
 
 ## 1. Facts
 
-Completion: evidence limits recorded; prior evidence folded in; 每条工作的前提有来源（`J` 号或本次观察+未验收）、3/4 有证据; competitor notes only for jobs in scope.
+Completion: evidence limits recorded; prior evidence folded in; 每条工作的前提有来源（`J` 号或本次观察+未验收）；每条工作在第 4 问的五个镜头（引导 / 过程反馈 / 下一步 / 状态一致 / 回来理由）上各写一格：`有 <观察>` | `缺 <观察>` | `未查`，`J done` 只免掉第 1、2 问，不免这一行；写成 `缺` 的每一格，要么对应一条 `R`，要么在同一格用一句话说明为何不立项; 3/4 有证据; competitor notes only for jobs in scope.
 
 **Evidence limits, before opening anything.** Record three facts: can the product run here; is a browser or screenshot tool available; is WebSearch available. These become the report's `Evidence limits` line. Without a browser, every `ui_friction` / `interaction_gap` item carries `evidence: code-only` and says so. Never describe an inspection method you did not use.
 
@@ -135,6 +135,7 @@ Write `docs/product-review/<run>/recommendations.md`:
 ## Jobs in scope
 - JOB1 — who: … / circumstance: … / progress: …
   - 前提: J2 (done) | 本次观察（未验收） · <one clause>
+  - 商业级: 引导 <有|缺|未查 · 观察 · 缺时: R号或不立项原因> · 过程反馈 <…> · 下一步 <…> · 状态一致 <…> · 回来理由 <…>
 
 ## Evidence limits
 runs here: yes|no · browser: yes|no · WebSearch: yes|no · consequence: <one clause>

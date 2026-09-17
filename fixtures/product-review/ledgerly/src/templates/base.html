@@ -1,0 +1,7 @@
+<!doctype html><html><head><title>Ledgerly</title><link rel="stylesheet" href="/static/app.css"></head>
+<body>
+<nav>{% for ep, label in nav %}<a href="{{ url_for(ep) }}">{{ label }}</a>{% endfor %}</nav>
+<main>
+{% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
+{% block body %}{% endblock %}
+</main></body></html>

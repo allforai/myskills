@@ -1,0 +1,127 @@
+{
+  "rounds": "D01 基线 → D02 镜头行 → D03 有/缺/未查 措辞",
+  "date": "2026-09-17",
+  "host": "Claude Code Agent 工具，每轮两个并发 fresh-context 子任务；主会话 claude-fable-5-1",
+  "subject_model": {
+    "requested": "sonnet",
+    "resolved": "claude-sonnet-5",
+    "source": "宿主子任务轨迹 assistant metadata，六次一致"
+  },
+  "fixture": {
+    "path": "fixtures/product-review/ledgerly",
+    "build": "build.sh <dir>",
+    "answer_key_sha256": "45032e082da0b355cc81f7b20e0403a5bac6469c7b5adb8012c187b430db9a72",
+    "subject_prompt_sha256": "5ae74bdb6d9375e6f1b1342a3698ceea23d37bb29a116beb70400e594e31497b",
+    "repo_commits": [
+      "dfeb010",
+      "e0ad2de",
+      "a2b6b23"
+    ]
+  },
+  "isolation": "受试者只读 packet + fixture 仓库；每轮结束后 fixture `git status --short` 为空（无源码改动）；报告写到 scratchpad 的 out-*.md",
+  "tested_versions": {
+    "D01": {
+      "claude_skill_sha256": "b579d4fb81b71832de233f23b954898fb1779e7d01347a19cef2ff7f9d3150d5",
+      "repo_ref": "87f02711",
+      "change": "基线：3a7ff89a/d1abe3f3 之后未改"
+    },
+    "D02": {
+      "claude_skill_sha256": "d70dc83e42cefa38104892c0e538687fcfb2b532528727a6c9d980bb91debd5a",
+      "repo_ref": "working tree",
+      "change": "Facts 完成标准加五镜头行（观察|未见）"
+    },
+    "D03": {
+      "claude_skill_sha256": "ae94219f7c8e15325b9cde1d5c078b70a80748ebe12ba8c4131c9a9c76baa7cb",
+      "repo_ref": "working tree",
+      "change": "镜头格改 有|缺|未查；缺 必须对应 R 或写不立项原因"
+    }
+  },
+  "cases": [
+    {
+      "id": "D01a",
+      "round": "D01",
+      "packet_sha256": "54d12347f7d9df0309e738b8e305ee09674eb2f890d8cd75d4922bf455473b16",
+      "report_sha256": "3457967ef38086c0dfa6a41259aa89bb3dede7b3f33d422e4d9f12b8827b50db",
+      "score": {
+        "D1": "miss",
+        "D2": "half(stub pages)",
+        "D3": "hit",
+        "D4": "hit adopt",
+        "D5": "hit",
+        "traps": 0,
+        "extra": "thin invoice email, PDF never attached"
+      }
+    },
+    {
+      "id": "D01b",
+      "round": "D01",
+      "packet_sha256": "5c83f619a16c161107a529a9d0fc80224ba1c482eb117f1adf5e6d1a125217d8",
+      "report_sha256": "707f0ed4bca49c346808a51852be0bc3f7de127e437186692ae8c8804c3ea761",
+      "score": {
+        "D1": "miss",
+        "D2": "half(stub pages)",
+        "D3": "hit",
+        "D4": "hit adopt",
+        "D5": "miss",
+        "traps": 0,
+        "extra": "thin invoice email"
+      }
+    },
+    {
+      "id": "D02a",
+      "round": "D02",
+      "packet_sha256": "5ccc2c1f0cbb8131a55e061c9e2c4538cc1ac6b81345b188c6f0185765f7d58a",
+      "report_sha256": "cea820b2c5bf5098647328258bd0dec8b47e852d4a80edd113aa6319ad372225",
+      "score": {
+        "D1": "hit",
+        "D2": "miss(引导 未见, no item)",
+        "D3": "hit",
+        "D4": "hit defer",
+        "D5": "hit",
+        "traps": 0
+      }
+    },
+    {
+      "id": "D02b",
+      "round": "D02",
+      "packet_sha256": "64db92d7f89a5e57eef5efc3a0607e7f030aca9053155aa515279c79a3031f93",
+      "report_sha256": "9ed85ea376cf355b6844001bbb779bd78eca28ef3442b177a4e4b5956ad92dbd",
+      "score": {
+        "D1": "observed in lens row, not itemized",
+        "D2": "miss(stub candidate deleted)",
+        "D3": "hit",
+        "D4": "hit defer",
+        "D5": "hit",
+        "traps": 0
+      }
+    },
+    {
+      "id": "D03a",
+      "round": "D03",
+      "packet_sha256": "40b218bca8f8208d5d61cfe324d08110380ff373ec0ba1d28b793879488f2916",
+      "report_sha256": "77251e338128b104ee962fe5fab4cb8fca5f09c092ab587936c84aefc8264190",
+      "score": {
+        "D1": "hit",
+        "D2": "hit(引导 缺 → R2)",
+        "D3": "hit",
+        "D4": "hit defer",
+        "D5": "miss(状态一致 written 有)",
+        "traps": 0
+      }
+    },
+    {
+      "id": "D03b",
+      "round": "D03",
+      "packet_sha256": "39199c8893d98001f3f58f45b2bc4512bc1f392827e016dd4a9cee45b8828b35",
+      "report_sha256": "f546c24b71f5dac8981cf84a363dc80c486dfaa952d219dcda8064c27ed224e6",
+      "score": {
+        "D1": "observed, folded into R1 with reason",
+        "D2": "half(引导 缺, declined with reason; stubs R3)",
+        "D3": "hit",
+        "D4": "hit defer",
+        "D5": "hit",
+        "traps": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block body %}
+<h1>Dashboard</h1>
+{% if weather %}<section class="weather"><b>{{ weather.city }}</b> {{ weather.temp }}° {{ weather.icon }}
+<table>{% for d in weather.days %}<tr><td>{{ d.day }}</td><td>{{ d.min }}–{{ d.max }}</td><td>{{ d.rain }}mm</td></tr>{% endfor %}</table></section>{% endif %}
+<section><h2>This month</h2><p class="kpi">Income: {{ "%.2f"|format(income) }}</p></section>
+<section><h2>Invoices this month</h2>
+<table><tr><th>#</th><th>Client</th><th>Total</th><th>Status</th></tr>
+{% for i in invoices %}<tr><td>{{ i.id }}</td><td>{{ i.client.name }}</td><td>{{ i.total }}</td><td>{{ i.status }}</td></tr>
+{% else %}<tr><td colspan="4">No data</td></tr>{% endfor %}</table></section>
+{% endblock %}
