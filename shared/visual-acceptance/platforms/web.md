@@ -39,6 +39,8 @@ Playwright / Puppeteer 的无头浏览器默认带 `--hide-scrollbars`，滚动�
 - **滚动才出现的状态**：sticky / fixed 元素在全页图里只在顶部出现一次；吸顶、回到顶部按钮、滚动加载、scroll-snap、"折叠线以下的内容可达"在无头全页图里没有对应画面。
 - **横向溢出的用户可见形态**：body 横向滚动被整页画布吞掉，图上看不出页面会左右晃。
 
+整页图还有第二笔账：像素数。设备像素比 2 下一张 26400px 高的页是 2880×52800、四十多 MB，没有哪个模型能整张看它，API 会直接拒收。所以缺省拍视口，只在用例要求整页时拍 `full_page`，并把设备像素比设为 1；拍下的图按 visual-acceptance.md「看图预算」做副本再看。
+
 因此每条 Web capture 必记四个字段，缺一条该 capture 不能支撑任何滚动类断言：
 - `capture_mode`：`viewport`（真实视口一屏）或 `full_page`（整页铺开）。
 - `headless`：true / false。

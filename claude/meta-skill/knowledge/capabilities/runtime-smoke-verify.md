@@ -60,6 +60,8 @@ For each module listed in `bootstrap-profile.json.modules[]`:
    - Web: headless Chrome visit `/`, record `console.error`, network 4xx,
      and the `document.title`
 4. **Record evidence** per artifact: screenshot + network log + exit code.
+
+截图给 reviewer one 或你自己看之前有看图预算：锚点是模型的有效分辨率，不是 API 拒收线——超预算的图直接进上下文会整轮作废、token 照扣。开图前先看尺寸，超了跑 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/visual/view_copy.py <原图>…` 取副本（先 overview，要局部再开切片，够用就停）；原图不动、副本不进 `images`。规则全文见 `${CLAUDE_PLUGIN_ROOT}/scripts/visual/visual-acceptance.md`「看图预算」。
    Store under `.allforai/runtime-smoke/<artifact-id>/`.
 5. **Fail loudly** if any step doesn't produce a clean first-API 2xx (or
    expected 4xx for auth-required endpoints) — the failure mode is the

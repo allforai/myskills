@@ -105,6 +105,8 @@ reviewer one visual review must check:
 
 如果截图缺失或 reviewer one 视觉复核失败，`verify-report.json.dynamic_score` 不能按通过计算。必须把问题写入 `issues[]`，并设置对应严重级别。
 
+截图给 reviewer one 或你自己看之前有看图预算：锚点是模型的有效分辨率，不是 API 拒收线——超预算的图直接进上下文会整轮作废、token 照扣。开图前先看尺寸，超了跑 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/visual/view_copy.py <原图>…` 取副本（先 overview，要局部再开切片，够用就停）；原图不动、副本不进 `images`。规则全文见 `${CLAUDE_PLUGIN_ROOT}/scripts/visual/visual-acceptance.md`「看图预算」。
+
 **Real-time delivery verification** (applies when product has messaging, collaborative editing, live notifications, or any feature where one user's action must appear to another user): single-session testing CANNOT verify delivery. The verification node MUST open **two simultaneous sessions** (two browser tabs, two emulator instances, two API clients) — one as sender, one as receiver — and assert the event appears on the receiver side within an acceptable timeout. Single-session tests that only verify the sender side give false confidence.
 
 ### Dynamic Verification (Mobile — Platform-Native)

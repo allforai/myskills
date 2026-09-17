@@ -40,11 +40,36 @@ visual_cases 每行：{id, surface, state, device, os, appearance, dynamic_type,
 
 manifest = {captures: [{case_id, state, device, os, appearance, dynamic_type, locale, orientation, build, captured_at, baseline_digest, interaction_digest, inventory_digest, matrix_digest, images: [原图路径], image_digests: {原图路径: SHA-256}}]}。每条 capture 另记 `readback`：`{<axis>: 应用内读回的值, direction: ltr | rtl, width: 应用内读回的布局宽度}`，inventory 声明了任何 `width_range` 时 `width` 必填且须等于该用例设备值在该方向下的有效宽度（Web 读 `window.innerWidth`，SwiftUI 读窗口/场景宽度，Android 读 `windowSizeClass` 对应的 dp 宽），device 值只是对窗口的声称，开小窗拍"2000 宽"那档靠这一项拒掉；声明了支持值的每个轴都必须有读回值且与用例轴值相符，RTL 语言用例缺 `direction: rtl` 拒渲（各平台怎么读见 platforms/*.md）。Web capture 另必含 capture_mode（viewport | full_page）、headless、scrollbars（native | hidden | overlay）、scroll_profile（platforms/web.md 定义的页面读回值）、capture_tool；state 以 `scroll-` 开头的用例只接受 capture_mode viewport 且 scrollbars native 的 capture，否则拒渲——无头全页截图里没有滚动条也没有折叠线，滚动类断言不能从它推断。每条 capture 的 build 与四个摘要必须等于冻结运行配置。构建含 commit 与 dirty 状态及可识别当前产物的构建标识；截图必须能追到该构建。PNG/JPEG 原图保留，附图的缩放裁剪不覆盖原文件。motion 另含与 images 一一对应的 frame_times_ms（非负、有限、严格递增），至少两张不同像素内容的帧；复制文件、更换编码或重复路径不算新帧；还必含 recording（相对 run/evidence 的录屏路径，非空文件，不能是某张帧）与 recording_digest（SHA-256），缺一拒渲。关键帧检查不证明节奏正确，录屏才是节奏证据。
 
-review report = {platform: claude|codex, session_id, independent: true, build, baseline_digest, interaction_digest, inventory_digest, matrix_digest, inspected_images: [原图路径], image_digests: {原图路径: SHA-256}, reference_images: {基线参考图路径: SHA-256}, status: passed|findings, findings: [{id, severity: high|medium|low, rule, observation, images: [原图路径]}], inspected_recordings: [实际打开过的录屏路径], recording_unreadable: 原因}。本批含 motion 用例时，该批全部录屏必须出现在 inspected_recordings，或写 recording_unreadable 说明该 reviewer 为何读不了视频（此时它只审了帧序列）。所有 reviewer 都没审阅录屏时，含 motion 用例的 entry 不能判 done：有帧序列上的发现可判 gap，否则把 motion 用例拆成单独 entry 记 unprovable（visual_failure_ref 写明无视频读取能力），静态用例照常裁决。reviewer 独立读取并计算摘要，五项绑定必须匹配冻结运行，且覆盖该批全部原图及全部基线参考图。图片键逐字沿用 manifest 的 images 字符串（相对 run/evidence）和基线的 reference_images 键（相对 run），校验器精确比对，主会话不得改写报告。
+review report = {platform: claude|codex, session_id, independent: true, build, baseline_digest, interaction_digest, inventory_digest, matrix_digest, inspected_images: [原图路径], image_digests: {原图路径: SHA-256}, reference_images: {基线参考图路径: SHA-256}, status: passed|findings, findings: [{id, severity: high|medium|low, rule, observation, images: [原图路径]}], inspected_recordings: [实际打开过的录屏路径], recording_unreadable: 原因, viewed_via?: {原图路径: [副本相对路径]}}。本批含 motion 用例时，该批全部录屏必须出现在 inspected_recordings，或写 recording_unreadable 说明该 reviewer 为何读不了视频（此时它只审了帧序列）。所有 reviewer 都没审阅录屏时，含 motion 用例的 entry 不能判 done：有帧序列上的发现可判 gap，否则把 motion 用例拆成单独 entry 记 unprovable（visual_failure_ref 写明无视频读取能力），静态用例照常裁决。reviewer 独立读取并计算摘要，五项绑定必须匹配冻结运行，且覆盖该批全部原图及全部基线参考图。图片键逐字沿用 manifest 的 images 字符串（相对 run/evidence）和基线的 reference_images 键（相对 run），校验器精确比对，主会话不得改写报告。
 degradation_ref 指向 {platform: 失败平台 claude|codex, attempts: [{attempted_at, reason}, {attempted_at, reason}]}；必须保留实际调用记录以供核查，降级后留下的报告不能来自失败平台。dual_degraded 只用于原先冻结为 dual 的 entry。
 reconciliation = {blocking_findings: [session_id:finding_id], disagreements: [双方主张与证据引用]}。主会话另存判断理由，不能修改独立报告内容。
 
 运行环境需要 Pillow（依赖声明见 requirements.txt），用于真实解码 PNG/JPEG；按项目依赖流程安装，缺依赖则记录 unprovable，不能降级为文件头检查。renderer 验证结构/路径/摘要/图片解码/覆盖/报告，并不以像素差或文件存在代替审美判断。所有最终完成度输出只由现有 render_report.py 生成。
+
+## 看图预算：原图是证据，模型看的是够用的副本
+
+模型看图有两条上限，混淆它们就是这条协议要防的事故。一条是 API 的单图拒收线（超过它整轮调用作废、token 照扣，
+重试同一张只会再扣一次）；另一条是模型的有效分辨率——长边超过它的图会被服务端缩回去，多出来的像素只是上传和
+token，模型一个字也没多看见。**预算锚在第二条，不锚在第一条**：把 41MB 缩到 15MB 能上传了，但模型看到的仍是缩成
+长边 1568 的那张，中间的字节全是浪费。预算的具名常量在 VISUAL_ROOT/view_copy.py（`MAX_EDGE` 长边像素、`MAX_BYTES`
+单张字节），要改改那里，不在提示词里另写数字。
+
+合同：
+
+- **原图不动**。摘要、探测窗口、`images` / `image_digests` / `reference_images` 全绑原图；副本只给眼睛用。
+- **开图前先知道尺寸**（`ls -l` 或 Pillow 读 size）。超预算的原图跑 `python3 VISUAL_ROOT/view_copy.py <原图>…`，
+  它把副本写到原图旁的 `view/` 子目录，stdout 给 JSON：`downscaled` 一张、`tiled` 若干片加一张 `overview`。
+- **够用就停**：先开 overview，问题要读小字或局部时才开对应切片；每多开一张都是 token。一张图上问的是"12 个板块
+  都渲染了吗"，总览就够；问的是"页脚版权年份对不对"，才开页脚那一片。
+- **报告里 `inspected_images` 仍列原图**；经副本看的原图另记 `viewed_via: {原图路径: [副本相对路径…]}`（路径相对
+  run/evidence，与 `images` 键同一坐标系）。这是**受协议承认的看法**，不是宣称打开了没打开的文件——校验器核
+  `viewed_via` 的键都在 `inspected_images` 里、副本文件真在 `view/` 下；没有 `viewed_via` 就按"原图直接打开"核对
+  工具记录。`view/` 里的文件不进 manifest `images`，不进 `evidence_files`，不算证据。
+- **一张图撞了拒收线不重试同一文件**：那是尺寸决定的，第二次结果一样。转去做副本。
+- **采集侧从源头省**：缺省拍视口（`capture_mode: viewport`），只在用例要求整页时拍 `full_page`，且把设备像素比
+  设为 1——整页图的每个像素最终都要过一遍预算；工具设不了像素比、或页面高到整页图会超出可解码范围时，改成按视口
+  分段截图（滚一屏拍一张，文件名带段号），一段就是一片，不必事后再切；原图像素数要留在 Pillow 能解码的范围内，解不开的原图校验器拒渲。
+  截图工具把图片内联进工具结果时，先传 `filename` 落盘、再按预算开副本，别让一张整页图直接进上下文。
 
 ## 镜像与消费者
 

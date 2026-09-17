@@ -1295,3 +1295,16 @@ def test_layout_rules_outside_categories_are_refused_not_ignored(sample):
     from validation import pinned_layout_reason
     direct = pinned_layout_reason(baseline, {})
     assert 'categories' in direct and 'layout' in direct
+
+
+def test_viewed_via_accepts_view_copies_and_rejects_ghosts(sample):
+    """看图预算：reviewer 经 view/ 副本看的原图记 viewed_via；键须在 inspected_images 里，副本须真在 view/ 下。"""
+    root, write, _, _, report, entry, ledger = sample
+    (root / 'evidence/q1/view').mkdir(parents=True, exist_ok=True)
+    (root / 'evidence/q1/view/image.overview.jpg').write_bytes(b'x')
+    write('evidence/q1/review.json', {**report, 'viewed_via': {'q1/image.png': ['q1/view/image.overview.jpg']}})
+    assert visual_reason(entry, ledger, root) is None
+    write('evidence/q1/review.json', {**report, 'viewed_via': {'q1/image.png': ['q1/view/missing.jpg']}})
+    assert 'viewed_via' in visual_reason(entry, ledger, root)
+    write('evidence/q1/review.json', {**report, 'viewed_via': {'q1/ghost.png': ['q1/view/image.overview.jpg']}})
+    assert 'inspected_images' in visual_reason(entry, ledger, root)

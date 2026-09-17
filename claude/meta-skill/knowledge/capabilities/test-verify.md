@@ -65,6 +65,8 @@ UI 测试节点必须写入：
 - 如果运行环境无法启动浏览器、模拟器或设备，必须暴露 `BLOCKED_ENV`，不得用静态检查或人工文字说明替代截图验收。
 - 截图验收不是替代测试断言；它是 UI 自动化测试之后的额外质量 gate。
 
+截图给 reviewer one 或你自己看之前有看图预算：锚点是模型的有效分辨率，不是 API 拒收线——超预算的图直接进上下文会整轮作废、token 照扣。开图前先看尺寸，超了跑 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/visual/view_copy.py <原图>…` 取副本（先 overview，要局部再开切片，够用就停）；原图不动、副本不进 `images`。规则全文见 `${CLAUDE_PLUGIN_ROOT}/scripts/visual/visual-acceptance.md`「看图预算」。
+
 ## Verification Layers (from cr-fidelity)
 
 | Layer | Name | What | How |
