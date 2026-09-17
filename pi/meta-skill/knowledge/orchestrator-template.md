@@ -78,9 +78,11 @@ they were asked to produce; they do not record completion or edit the ledger.
 - Skill discovery is not subagent capability. Use only already-loaded tools.
   Do not install extensions or start another harness.
 - If `subagent` exists, first `subagent({action:"list", capabilities:true})`.
-  Use only executable, non-disabled agents. External CLI runners also need
-  `runner.available === true` (preflight, not login proof). Use a runner only
-  when it supports this node's required tools and write contract.
+  Use only executable, non-disabled native Pi agents. Do not use external CLI
+  runners (`codex-exec`, `claude-code`, `cursor-agent`): they start another
+  harness and another model, not this session's, and they are not managed by
+  this host. `runner.available === true` only means the command is on PATH; it
+  is neither a use case nor login/launch proof.
 - Independent pending nodes whose exit artifacts do not overlap may run in
   **one** top-level `subagent` call with `workflowScript`, `async:true`,
   explicit `cwd`, and `runs.all`. Sequence dependent work with `runs.run`.
@@ -89,8 +91,14 @@ they were asked to produce; they do not record completion or edit the ledger.
 - Prefer worktree isolation when the tool provides it and the nodes do not
   share files. Otherwise run in the shared project cwd. Do not let two
   writers share a cwd.
-- Native Pi children may use supported `model` parameters. Do not pass native
-  Pi options to external runners unless that runner documents them.
+- Every child keeps the current session model: do not pass another provider
+  or model family, and do not start an external CLI to change models. Control
+  cost and capability with thinking level only: omit it to inherit the agent
+  default, or pass the session model's own `provider/id:<level>`
+  (`off/minimal/low/medium/high/xhigh/max`) within host/user limits. Record
+  the effective model and level from host metadata or receipts; write unknown
+  when the host does not expose them, and never claim a cross-model check that
+  did not happen.
 - No usable child: execute the node in this session and disclose
   non-independent execution. After a dispatch has started, infrastructure
   failure stops that path; record the exact error and run/cwd/ref/workspace

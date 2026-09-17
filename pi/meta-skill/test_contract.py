@@ -89,6 +89,17 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn("python .allforai/codex/flow.py", text)
         self.assertIn("There is no `.allforai/codex/flow.py`", text)
 
+    def test_pi_dispatch_keeps_the_session_model(self):
+        # Pi children inherit the session model and vary only thinking level;
+        # external CLI runners (another harness, another model) stay out.
+        text = (PACKAGE / "knowledge/orchestrator-template.md").read_text(encoding="utf-8")
+        for boundary in ("Do not use external CLI", "codex-exec", "claude-code", "cursor-agent",
+                         "runner.available === true", "keeps the current session model",
+                         "thinking level only", "provider/id:<level>",
+                         "off/minimal/low/medium/high/xhigh/max", "write unknown"):
+            self.assertIn(boundary, text)
+        self.assertNotIn("may use supported `model` parameters", text)
+
     def test_runtime_symlinks_resolve_into_canonical_tree(self):
         for relative in ("scripts", "mcp-ai-gateway"):
             path = (PACKAGE / relative).resolve()

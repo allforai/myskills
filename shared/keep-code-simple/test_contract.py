@@ -184,6 +184,7 @@ class GuardTests(unittest.TestCase):
         for boundary in ("不要选外部 CLI runner", "codex-exec", "claude-code", "cursor-agent",
                          "runner.available === true", "只用当前会话默认模型",
                          "provider/id:<level>", "off/minimal/low/medium/high/xhigh/max",
+                         "「已授权的不同模型可用时优先互补模型」在 Pi 不适用",
                          "不写“跨模型复核”", "inherited"):
             self.assertIn(boundary, text)
         self.assertNotIn("选快且胜任的档位", text)
