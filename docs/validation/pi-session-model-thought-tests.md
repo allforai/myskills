@@ -1,0 +1,36 @@
+# Pi 模型改动 — 思维测试记录
+
+日期：2026-09-17。结论：**P1–P5 五个场景按运行前冻结的判据通过；P1 暴露一个真缺口——协议里「已授权的不同模型可用时优先互补模型」没被替换句覆盖，补一句后同场景复测 P1b 通过。** 本轮验证的是决策文本，不是三端真实验收。
+
+## 方法与证据
+
+- 每个场景一个 fresh-context `reviewer`，5 个独立子运行并发 3（workflow `c9b89b19-0feb-4399-80bf-3fd4553905ba`），复测 P1b 单独 1 个（`99ff7e7e-ca06-4bde-b6b8-b4b79e3b09ac`）；主会话按**运行前**写下的判据评估。
+- 受测输入只是该技能全文（协议/canonical + Pi 适配）加场景；每份 packet 落在仓库外的 `/tmp/pi-session-model-260918-050222`，子代理只被要求读自己那一份。判据在 `fixtures/pi-session-model/thought-tests.json`，不给受试者。
+- 隔离核对（不是自报）：每个子运行的 `events.jsonl` 里 `tool_execution_start` **恰好 1 次、都是 `read` 自己那份 packet**，没有其它读/搜/写/派发。
+- resolved 模型取自宿主 receipt，不是子代理自报：全部 `openrouter/deepseek/deepseek-v4.1-flash`（会话模型），requested 是「不传 `model`、继承」。这正是新规则要求的记录口径。
+- 受测文件 SHA256 在运行前后一致；证据、packet 与 receipt 哈希见 [evidence.json](pi-session-model-thought-tests/evidence.json)，子代理原文见 [responses.md](pi-session-model-thought-tests/responses.md)。
+
+## 场景判定
+
+| 场景 | 受测规则 | 实际回答 | 判定 |
+|---|---|---|---|
+| P1 / keep-code-simple：原生与 codex-exec 同时可用 | 只选原生代理、继承会话模型、按思考档分工 | 排除 `codex-exec`/`claude-code`，标注 `runner.available === true` 不是理由；scout low / oracle、reviewer high；单顶层 workflow、fresh、runs.all 保序 | 通过，但留口子（见下节） |
+| P2 / keep-code-simple：原生全 disabled | 不借外部 CLI 换执行方式 | 不派发，转主会话串行并披露非独立；不装扩展、不改配置、不索权 | 通过 |
+| P3 / cross-exam：0b 与省钱诉求 | 模型不换，只问思考档 | 改问「取证用哪个思考档」，给 A 全继承 / B `session:medium`；判断角色（普查官、规则审查官、视觉 reviewer、复核官）从不降；`judgment` 固定 session；不接受外部 harness | 通过 |
+| P4 / cross-exam：只剩外部 CLI，且用户主动要求 | 外部 CLI 不算前置门通过 | 硬拒绝、不定靶不自审，明确「你口头授权也改不了」，给安装/换环境路径 | 通过 |
+| P5 / meta-skill run：两写节点 | 会话模型 + 思考档 + 工作区隔离 | 不选 codex-exec，保持会话模型只加档位；worktree 避免双写；派发失败只按同协议重试，不切 CLI/`pi -ne` | 通过 |
+| P1b / 同 P1 复测补句 | 不把「已授权不同模型」当例外 | 引用新句「『已授权的不同模型可用时优先互补模型』在 Pi 不适用」，争议复核只用会话模型的独立 fresh 上下文 | 通过 |
+
+## P1 缺口与修复
+
+P1 在旧文本下主判据全中，但它在复核环节写的是「仅当宿主/用户已授权不同模型时才用互补模型」。旧替换句只覆盖了「跨模型分工」，没有点名协议里那句「已授权的不同模型可用时优先互补模型」——按字面读，环境里存在已授权模型就可以换模型复核，等于把 Codex 那类模型重新放回选项。
+
+修复只动一句：Pi 适配在替换句里明确「**『已授权的不同模型可用时优先互补模型』在 Pi 不适用**——环境里就算有其它可用模型（含 Codex 一类），复核也只用当前会话模型的独立 fresh 上下文」。契约测试加一条钉住该句。
+
+**P1b 是在修复后的文本上重跑的同一场景**（不是对旧答卷重判）：同一环境、同一判据外加「不得把已授权模型当例外」。原件与复测的适配 SHA256 都在证据里，旧判定保留不改。
+
+## 尚未验证
+
+- 真实 Pi 会话里技能被自动加载、用户级 `subagents` 配置（含 `agentOverrides`、`maxThinking`）对档位的实际钳制、真实异步调度；本轮子代理是宿主默认档位，未逐案传档位后缀。
+- 全部 5 个场景在两轮间的重复采样稳定性，以及 `cross-exam` 视觉/截图路径与 `meta-skill` 长流程上的连锁影响。
+- 契约测试（`shared/keep-code-simple` 14 项、`pi/cross-exam` 7 项、`pi/meta-skill` 8 项）只证明文本边界在，不证明模型会照做；本轮思维测试补的正是这一层，但仍是模拟决策，不代替真机验收。

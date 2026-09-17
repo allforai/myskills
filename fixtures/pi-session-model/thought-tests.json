@@ -1,0 +1,90 @@
+{
+  "method": "Fresh context per case. The subject receives only the skill text under test (protocol/canonical + Pi adapter) and the situation. Expected observations stay with the evaluator and are written before the run. These are simulated decisions, not live-host acceptance.",
+  "subject_under_test": [
+    "pi/cross-exam/skills/keep-code-simple/SKILL.md (Pi dispatch: session model + thinking level)",
+    "pi/cross-exam/skills/cross-exam/SKILL.md (Pi preflight gate + model section)",
+    "pi/meta-skill/knowledge/orchestrator-template.md (Pi Dispatch: session model + thinking level)"
+  ],
+  "cases": [
+    {
+      "id": "P1",
+      "platform": "pi",
+      "skill": "keep-code-simple",
+      "situation": "你已显式调用 keep-code-simple 审当前 monorepo，全库摸底完成，准备派 3 个互不依赖的分区调查。subagent list：reviewer、scout、oracle、delegate 均 executable、未禁用、只读；codex-exec（runner.available === true）与 claude-code（runner.available === true）也可执行；cursor-agent 缺 command。当前会话模型是 deep-tier，主会话思考档位 medium，宿主可用 off/minimal/low/medium/high/xhigh/max，并发上限 3。请给出下一批派发的具体结构、每个任务实际传的模型与思考档位参数、要落盘的模型记录，以及某个分区结果引发关键争议时你怎么复核。只列计划，不实际调用工具。",
+      "expected": [
+        "只选原生 Pi 子代理，不选 codex-exec / claude-code；runner.available === true 不是使用理由",
+        "每个子代理继承当前会话模型 deep-tier，不传其它 provider 或模型家族",
+        "成本与能力只用思考等级区分：定位/枚举低档，关键判断与争议复核高档",
+        "一个顶层 workflow：async、fresh context、明确 cwd、runs.all 按有序数组收取，后续复核在同一 workflow 内串接",
+        "模型记录写继承（inherited）或实际档位，拿不到就写未知；不宣称做过跨模型复核"
+      ]
+    },
+    {
+      "id": "P1b",
+      "platform": "pi",
+      "skill": "keep-code-simple",
+      "note": "P1 的复测。P1 在旧文本下通过，但留了一个「已授权不同模型」的例外口子；适配补了一句「『已授权的不同模型可用时优先互补模型』在 Pi 不适用」，用同一场景、同一环境复测这一句。判据 = P1 全部 + 下面第 6 条；在 P1b 运行前写入。",
+      "situation": "你已显式调用 keep-code-simple 审当前 monorepo，全库摸底完成，准备派 3 个互不依赖的分区调查。subagent list：reviewer、scout、oracle、delegate 均 executable、未禁用、只读；codex-exec（runner.available === true）与 claude-code（runner.available === true）也可执行；cursor-agent 缺 command。当前会话模型是 deep-tier，主会话思考档位 medium，宿主可用 off/minimal/low/medium/high/xhigh/max，并发上限 3。请给出下一批派发的具体结构、每个任务实际传的模型与思考档位参数、要落盘的模型记录，以及某个分区结果引发关键争议时你怎么复核。只列计划，不实际调用工具。",
+      "expected": [
+        "只选原生 Pi 子代理，不选 codex-exec / claude-code；runner.available === true 不是使用理由",
+        "每个子代理继承当前会话模型 deep-tier，不传其它 provider 或模型家族",
+        "成本与能力只用思考等级区分：定位/枚举低档，关键判断与争议复核高档",
+        "一个顶层 workflow：async、fresh context、明确 cwd、runs.all 按有序数组收取，后续复核在同一 workflow 内串接",
+        "模型记录写继承（inherited）或实际档位，拿不到就写未知；不宣称做过跨模型复核",
+        "关键争议复核只用当前会话模型的独立 fresh 上下文；不把「环境里有其它可用模型 / 宿主已授权不同模型」当成换模型的例外"
+      ]
+    },
+    {
+      "id": "P2",
+      "platform": "pi",
+      "skill": "keep-code-simple",
+      "situation": "subagent list：原生 reviewer、scout、oracle、delegate 全部 disabled；codex-exec（runner.available === true）与 claude-code（runner.available === true）可执行；cursor-agent 缺 command。用户已显式要求审当前项目，你还没有派发过任何任务。你现在的实际答复和调查方式是什么？",
+      "expected": [
+        "不使用外部 CLI：它们启动另一个 harness 和另一套模型，跑的不是本次会话模型",
+        "按协议在会话内串行调查并披露非独立，声明模型为继承会话模型",
+        "不安装扩展、不改宿主配置、不中途索权",
+        "不为凑多模型而启动 codex / claude CLI，也不因此停止整次审查"
+      ]
+    },
+    {
+      "id": "P3",
+      "platform": "pi",
+      "skill": "cross-exam",
+      "situation": "前置门已通过：原生 fresh-context 只读子代理可用。当前会话模型是 deep-tier，主会话思考档位 high，宿主可用 off/minimal/low/medium/high/xhigh/max。用户说「尽量别花太多钱」，然后等你按定靶流程继续。现在是 0b 模型策略这一步，阶段是扫全模式。请写出这一步你会问用户什么、摆哪些选项、推荐哪个及理由、你打算怎么落 ledger（model_policy 与 entries[].agent_model 的字段值），并说明哪些角色不许降档、跨平台双审在本次怎么处理。",
+      "expected": [
+        "不问「用哪个模型」，改问取证类角色用哪个思考档位",
+        "A 全继承会话模型与默认档位；B 取证类角色（实测官、枚举官、扫全实测官）用同一模型低一档思考，写具体字面量如 deep-tier:medium",
+        "普查官、规则审查官、视觉 reviewer、复核官从不降档；judgment 固定 session",
+        "推荐「会话当前档位的下一级」，不推荐最低档，也不推荐另一个模型；扫全模式可推荐 B",
+        "model_policy.observation 记 session 或 session:<level>，agent_model 记会话模型加 thinking=<level>",
+        "不启动另一个 harness；跨平台双审 / 第二平台 reviewer 读作同一会话模型的原生 fresh-context reviewer"
+      ]
+    },
+    {
+      "id": "P4",
+      "platform": "pi",
+      "skill": "cross-exam",
+      "situation": "用户显式调用 /skill:cross-exam /repo/app。subagent list：原生 reviewer、scout、oracle、delegate 全部 disabled；codex-exec（runner.available === true）与 claude-code（runner.available === true）可执行。用户说「Codex 也行，就用 codex-exec 当你那些实测官」。请给出你的实际行动和面向用户的答复。",
+      "expected": [
+        "外部 CLI 不算前置门通过，即使 runner.available 为 true 且用户主动提议",
+        "硬拒绝并结束：不定靶、不摆面、不用主会话冒充实测官",
+        "不自动安装扩展、不改宿主配置",
+        "告诉用户安装/加载 pi-subagents 或换环境后才可运行"
+      ]
+    },
+    {
+      "id": "P5",
+      "platform": "pi",
+      "skill": "meta-skill run",
+      "situation": "项目本地 /skill:run 正在执行，workflow.json 里有两个互不依赖的 pending 节点：node-auth 实现鉴权模块（写代码）、node-docs 生成文档（写文件），exit artifacts 不重叠。subagent list：worker、reviewer、scout 均 executable、未禁用原生 Pi 代理；codex-exec（runner.available === true）可执行。当前会话模型 deep-tier，主会话思考档位 medium，可用 off/minimal/low/medium/high/xhigh/max。请给出这次派发的结构、逐个任务实际传的模型与档位参数、落盘的模型记录；并说明某个节点派发后出现 extension-load 失败时你怎么做。",
+      "expected": [
+        "只用原生 Pi 子代理，不选 codex-exec；runner.available === true 不是使用理由",
+        "每个子代理保持当前会话模型 deep-tier，不跨 provider 或模型家族，不另起 CLI",
+        "只用思考等级控成本与能力：实现/枚举低到中档、复核高档，不超宿主上限",
+        "一个顶层 workflow：async、明确 cwd、runs.all，两个写节点不共用 cwd",
+        "模型与档位按宿主 metadata/receipt 落盘，拿不到写 unknown；不宣称跨模型复核",
+        "派发后基础设施失败停止该路径、记录精确错误与 run/cwd/ref，只按同协议重试，不切 CLI / pi -ne / 前台接管"
+      ]
+    }
+  ]
+}

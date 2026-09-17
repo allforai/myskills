@@ -1,0 +1,114 @@
+{
+ "workflow": "c9b89b19-0feb-4399-80bf-3fd4553905ba",
+ "receipt": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/pi-subagents-uid-502/async-subagent-runs/c9b89b19-0feb-4399-80bf-3fd4553905ba/workflow-receipt.json",
+ "receipt_sha256": "c83d74d5479a567a55a4eff6a4c41f6f34d5080c138b23898eb4c23c9464ca58",
+ "method": "fresh-context simulated decisions; one reviewer child per case; packet-only input",
+ "packet_dir": "/tmp/pi-session-model-260918-050222",
+ "launch": {
+  "cwd": "/tmp/pi-session-model-260918-050222",
+  "agent": "reviewer",
+  "context": "fresh",
+  "globalConcurrencyLimit": 3,
+  "requested_model": "inherit (no model parameter)",
+  "session_model": "openrouter/deepseek/deepseek-v4.1-flash (thinking high)",
+  "inputs": {
+   "fixtures/pi-session-model/thought-tests.json": "352bebd1cc66fbb5af16ccc18e4814b0f8869ae7377b7c5efc82bee081411b0f",
+   "shared/keep-code-simple/protocol.md": "d6da2b2306e51d86f3683615b724f44fbfa7c35edde5495e8712f98344802b04",
+   "codex/cross-exam-skill/SKILL.md": "7d38f0fef988c7ecc307c503748281edc10a02609903bf6ead7305f3b3d8038e",
+   "pi/meta-skill/knowledge/orchestrator-template.md": "c5fbf3295c7d50e337e9918a21cc349609def3d8c743c0cf2b6abb6bcc15aceb",
+   "pi/cross-exam/skills/cross-exam/SKILL.md": "0ec6d4ea34ffde19d3344bd43eb565bca9129c16123a8fa16ca9f9bb0b96589e",
+   "pi/cross-exam/skills/keep-code-simple/SKILL.md": "d09b9a1c52e06c090feb81aec28e3cac3ee7887a2d5eb73532bcdb0a6879282b"
+  },
+  "frozen_before_run": {
+   "shared/keep-code-simple/protocol.md": "d6da2b2306e51d86f3683615b724f44fbfa7c35edde5495e8712f98344802b04",
+   "pi/cross-exam/skills/keep-code-simple/SKILL.md": "3d7eaa6e91cae7214ed70f2f5ace62f8203382874923c626fb469ac90e2849d8",
+   "codex/cross-exam-skill/SKILL.md": "7d38f0fef988c7ecc307c503748281edc10a02609903bf6ead7305f3b3d8038e",
+   "pi/cross-exam/skills/cross-exam/SKILL.md": "0ec6d4ea34ffde19d3344bd43eb565bca9129c16123a8fa16ca9f9bb0b96589e",
+   "pi/meta-skill/knowledge/orchestrator-template.md": "c5fbf3295c7d50e337e9918a21cc349609def3d8c743c0cf2b6abb6bcc15aceb"
+  },
+  "frozen_unchanged_after_run": true
+ },
+ "cases": [
+  {
+   "id": "P1",
+   "run": "a627a5d9-8384-418a-9f3e-18cc899fea24",
+   "packet": "P1.md",
+   "packet_sha256": "51914ba39a44d8156c2b5ae08cbaccda6802dcd7f7e47b0eefcb4b8f1fe59534",
+   "tools": {
+    "read": 1
+   },
+   "resolved_models": [
+    "openrouter/deepseek/deepseek-v4.1-flash"
+   ]
+  },
+  {
+   "id": "P2",
+   "run": "a8cb7ed7-67de-47f0-94b5-00f9a22453aa",
+   "packet": "P2.md",
+   "packet_sha256": "8ef1bc93fa0811e4fda8a099ef91390e6bb05d563ff1c5cb1019e48c60591ef3",
+   "tools": {
+    "read": 1
+   },
+   "resolved_models": [
+    "openrouter/deepseek/deepseek-v4.1-flash"
+   ]
+  },
+  {
+   "id": "P3",
+   "run": "8fef39dd-e400-459c-8f87-d38902859b68",
+   "packet": "P3.md",
+   "packet_sha256": "4c5a8bbdfc18692de584c6aa2136d1684ff81a9578bdbd8daec83ba23642a7b8",
+   "tools": {
+    "read": 1
+   },
+   "resolved_models": [
+    "openrouter/deepseek/deepseek-v4.1-flash"
+   ]
+  },
+  {
+   "id": "P4",
+   "run": "329f6936-7b90-479b-a18e-46db9834f477",
+   "packet": "P4.md",
+   "packet_sha256": "05b35a44ab370d29dae13cf1e9316356460d098d53adb9e70def23fffeed74f4",
+   "tools": {
+    "read": 1
+   },
+   "resolved_models": [
+    "openrouter/deepseek/deepseek-v4.1-flash"
+   ]
+  },
+  {
+   "id": "P5",
+   "run": "c22054a5-b145-4c55-a171-5639d49472ea",
+   "packet": "P5.md",
+   "packet_sha256": "8e92d9bcf438d0a62a5aaa7cee70c534887670e2cf3feea227cc87fe6f5350f3",
+   "tools": {
+    "read": 1
+   },
+   "resolved_models": [
+    "openrouter/deepseek/deepseek-v4.1-flash"
+   ]
+  }
+ ],
+ "retest": {
+  "id": "P1b",
+  "run": "99ff7e7e-ca06-4bde-b6b8-b4b79e3b09ac",
+  "reason": "P1 passed but left an 'already-authorized different model' escape hatch; the Pi adapter sentence was added afterwards and re-tested on the same scenario",
+  "packet": "P1b.md",
+  "packet_sha256": "8f31ed489f62a6825d246ec4f8152d061234fc8907796aeac15c464330e75b5c",
+  "adapter_sha256_at_retest": "d09b9a1c52e06c090feb81aec28e3cac3ee7887a2d5eb73532bcdb0a6879282b",
+  "tools": {
+   "read": 1
+  },
+  "resolved_models": [
+   "openrouter/deepseek/deepseek-v4.1-flash"
+  ]
+ },
+ "resolved_models_from_receipt": {
+  "P1": "openrouter/deepseek/deepseek-v4.1-flash:high",
+  "P2": "openrouter/deepseek/deepseek-v4.1-flash:high",
+  "P3": "openrouter/deepseek/deepseek-v4.1-flash:high",
+  "P4": "openrouter/deepseek/deepseek-v4.1-flash:high",
+  "P5": "openrouter/deepseek/deepseek-v4.1-flash:high"
+ }
+}
