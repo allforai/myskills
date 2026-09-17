@@ -27,6 +27,7 @@ digest, readback_reason, _readback = _engine.digest, _engine.readback_reason, _e
 BINDING_KEYS = ('build', 'baseline_digest', 'interaction_digest', 'inventory_digest', 'matrix_digest')
 ANNOTATION_KEYS = {'applicability', 'reason', 'basis'}
 _VERIFIED_IMAGES = set()   # content digests already decoded and verified in this process
+MAX_BATCH_IMAGES = 24      # 一次 reviewer 派发最多打开的图：原图加基线参考图；再多就漏看，回矩阵拆 state 或抽象
 
 CATEGORIES = {'direction', 'color', 'typography', 'layout', 'spacing', 'icons',
               'components', 'navigation', 'feedback', 'states', 'motion', 'environment'}
@@ -564,6 +565,9 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('降级缺两次实际失败记录')
         platforms, sessions, blocking = set(), set(), set()
         recordings_reviewed = False
+        if len(images) + len(reference_images) > MAX_BATCH_IMAGES:
+            raise ValueError('批次超过看图上限（%d 张 > %d）：回矩阵拆 state 或抽象，不拆组也不硬派'
+                             % (len(images) + len(reference_images), MAX_BATCH_IMAGES))
         for report in reports:
             bindings(report, config)
             if any(report.get('image_digests', {}).get(r) != h for r, h in image_hashes.items()):

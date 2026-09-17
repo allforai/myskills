@@ -1308,3 +1308,13 @@ def test_viewed_via_accepts_view_copies_and_rejects_ghosts(sample):
     assert 'viewed_via' in visual_reason(entry, ledger, root)
     write('evidence/q1/review.json', {**report, 'viewed_via': {'q1/ghost.png': ['q1/view/image.overview.jpg']}})
     assert 'inspected_images' in visual_reason(entry, ledger, root)
+
+
+def test_batch_over_image_cap_is_refused(sample, monkeypatch):
+    """一次 reviewer 派发的原图加参考图有上限；超了不是 reviewer 的错，是矩阵该拆。"""
+    import validation
+    root, _, _, _, _, entry, ledger = sample
+    monkeypatch.setattr(validation, 'MAX_BATCH_IMAGES', 1)   # fixture: 1 original + 1 reference = 2
+    assert '看图上限' in visual_reason(entry, ledger, root)
+    monkeypatch.setattr(validation, 'MAX_BATCH_IMAGES', 2)
+    assert visual_reason(entry, ledger, root) is None

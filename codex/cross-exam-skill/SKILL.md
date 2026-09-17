@@ -95,9 +95,10 @@ Do not mix ledgers, verdicts, or loops.
    UI 类问题只能裁"无法自证"，起手就告诉用户。**看图有预算**（`$ROOT/knowledge/cross-exam/visual/visual-acceptance.md`
    「看图预算」，常量在同目录 `view_copy.py`）：锚点是模型的有效分辨率，不是 API 的拒收线——超预算的图直接进上下文会
    整轮作废、token 照扣，缩到"能上传"也只是把浪费留下了。你、实测官、reviewer 开任何图之前先看尺寸，超了就取副本，
-   先总览、要局部再开切片，够用就停；原图永远不动，副本不算证据。
+   先总览、要局部再开切片，够用就停；原图永远不动，副本不算证据。一次 reviewer 派发不超过 `MAX_BATCH_IMAGES` 张；截图只进会话模型和冻结的第二平台
+   reviewer，不经网关外发。
 4. **安全确认（必须）**：实测会造真实调用（退款、删除这类）。与用户确认靶子是
-   本地/开发实例后才放开手；生产系统一律拒绝盘问。**同一次确认里问清开发实例的后端是什么**：真实服务、
+   本地/开发实例后才放开手；生产系统一律拒绝盘问。**同一次确认里定截图外发边界**（缺省只进会话模型与冻结的第二平台 reviewer；用户要放开就记 ledger 顶层 `image_export`）。**同一次确认里问清开发实例的后端是什么**：真实服务、
    mock（MSW / json-server / miragejs / 显式 stub 开关）还是混合，连同普查官报的 `mock_layers` 写进 ledger 顶层
    `target_backend`。安全规则把探针推向开发环境，而 mock 正好住在那里——请求返回 200 和真的一模一样；
    经 mock 层取到的 runtime 证据最高裁 unprovable，渲染器会拒收这种 done。
