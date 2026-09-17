@@ -1318,3 +1318,12 @@ def test_batch_over_image_cap_is_refused(sample, monkeypatch):
     assert '看图上限' in visual_reason(entry, ledger, root)
     monkeypatch.setattr(validation, 'MAX_BATCH_IMAGES', 2)
     assert visual_reason(entry, ledger, root) is None
+
+
+def test_copy_paths_in_inspected_images_are_refused(sample):
+    root, write, _, _, report, entry, ledger = sample
+    (root / 'evidence/q1/view').mkdir(parents=True, exist_ok=True)
+    (root / 'evidence/q1/view/image.overview.jpg').write_bytes(b'x')
+    write('evidence/q1/review.json', {**report, 'inspected_images': ['q1/image.png', 'q1/view/image.overview.jpg'],
+                                       'viewed_via': {'q1/image.png': ['q1/view/image.overview.jpg']}})
+    assert '副本混进' in visual_reason(entry, ledger, root)

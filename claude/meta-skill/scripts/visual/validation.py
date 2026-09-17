@@ -582,6 +582,8 @@ def visual_reason(entry, ledger, run):
                 raise ValueError('reviewer 使用过期基线')
             if not images <= set(report.get('inspected_images', [])):
                 raise ValueError('reviewer 未检查全部原图')
+            if any('/view/' in p for p in report.get('inspected_images', [])):
+                raise ValueError('副本混进 inspected_images：只列原图，经副本看的记 viewed_via')
             # 看图预算：经副本看的原图记 viewed_via，键必须是已列入 inspected_images 的原图，副本必须真在 view/ 下
             viewed_via = report.get('viewed_via') or {}
             if not isinstance(viewed_via, dict):
