@@ -72,6 +72,19 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("不要读或执行 `product-review.md`", text)
         self.assertIn("Pi 没有 `AskUserQuestion`", text)
 
+    def test_binds_image_budget_and_export_boundary(self):
+        text = (PACKAGE / "skills/cross-exam/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("看图预算", text)
+        self.assertIn("$ROOT/visual/view_copy.py", text)
+        self.assertIn("$ROOT/visual/validation.py", text)
+        self.assertIn("MAX_BATCH_IMAGES", text)
+        self.assertIn("viewed_via", text)
+        self.assertIn("image_export", text)
+        self.assertIn("不重试同一张", text)
+        self.assertIn("不经任何第三方网关", text)
+        self.assertTrue((CODEX / "visual/view_copy.py").is_file())
+        self.assertTrue((CODEX / "visual/validation.py").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()
