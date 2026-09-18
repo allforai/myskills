@@ -1,0 +1,24 @@
+{
+  "task_goal": "Ship a consumer language-learning app people reach for in spare minutes",
+  "architecture_pattern": "Expo mobile client over a Node service API",
+  "modules": [
+    {
+      "id": "mobile-app",
+      "path": "mobile",
+      "role": "mobile",
+      "stack": "Expo / React Native",
+      "description": "The learner-facing app: every screen, its navigation and its offline UI state"
+    },
+    {
+      "id": "service-api",
+      "path": "server",
+      "role": "backend",
+      "stack": "Node / TypeScript",
+      "description": "Lesson content delivery, review scheduling and progress persistence"
+    }
+  ],
+  "experience_priority": {
+    "mode": "consumer",
+    "reason": "Learners open it voluntarily in spare minutes; nothing obliges them to come back"
+  }
+}
