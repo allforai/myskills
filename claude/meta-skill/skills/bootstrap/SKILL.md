@@ -118,6 +118,7 @@ Then apply `${CLAUDE_PLUGIN_ROOT}/knowledge/suppress-rules.md`.
 ### 1.2 Fill the rest of the profile
 
 Read whatever files the profile still needs. There is no required sample count.
+Classify experience_priority (see 1.6) from task_goal, product_vision and who the product serves.
 
 ### 1.5 Collect Target Information (Interactive)
 
@@ -321,6 +322,7 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   },
   "detected_patterns": ["<REST API>", "<JWT auth>", "<Redis cache>", "..."],
   "architecture_pattern": "<MVC/Clean/Layered/Feature-sliced/...>",
+  "experience_priority": {"mode": "consumer | admin | mixed | none", "reason": "<one sentence: who the product serves and why this mode>"},
   "complexity_estimate": "low | medium | high",
   "is_game_project": false,
   "game_engines_detected": ["<engine name(s) from Step 1.1 detection, empty if none>"],
@@ -340,6 +342,16 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
   }
 }
 ```
+
+**experience_priority** — bootstrap is the sole producer of this field. Every downstream node
+reads `bootstrap-profile.json` `experience_priority.mode` and never reclassifies or rewrites it.
+Criteria: `consumer` = end users choose to use the product and can leave at any time;
+`admin` = internal/operations/back-office tooling used because the job requires it;
+`mixed` = both audiences coexist (for example a consumer app plus a merchant back office);
+`none` = there is no end-user interface. Use `none` only when `architecture_pattern` is
+`cli`, `library-sdk` or `embedded-firmware`, or the project is pure backend/API.
+Judge by who the product serves, not by the tech stack; games are always `consumer`.
+`reason` is mandatory and is one sentence. The `local-change` route may omit the whole field.
 
 > **bootstrap-profile.json vs discovery source-summary.json — no conflict:**
 > bootstrap-profile.json is produced during /bootstrap phase and lives in `.allforai/bootstrap/`.
@@ -363,6 +375,7 @@ Load only what this run needs:
 
 1. Capability files whose names match selected `goals` (and their declared knowledge refs).
    Do not read every file in `knowledge/capabilities/`.
+   Product routes with an interface also load item 9 regardless of goal names.
 2. `${CLAUDE_PLUGIN_ROOT}/knowledge/domains/<domain>.md` when it matches `business_domain`.
    If `business_domain = gaming` but `is_game_project = false`, load `gaming.md` only as
    supplementary methodology — do not inject game-design nodes.
@@ -380,6 +393,15 @@ Load only what this run needs:
 8. Knowledge-gap research only when domain files do not cover a named subsystem or the
    target stack is unfamiliar. Per gap, record what was searched, the conclusion, and a
    confidence; stop a gap when the conclusion stops changing, not at a query count.
+9. Product routes with an interface: when `task_route` is `new-product` or
+   `product-reconstruction` and `experience_priority.mode != none`, always load
+   `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/product-concept.md`,
+   `${CLAUDE_PLUGIN_ROOT}/knowledge/consumer-maturity-patterns.md`,
+   `${CLAUDE_PLUGIN_ROOT}/knowledge/journey-emotion-schema.md`, and
+   `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/app-design.md` (`is_game_project = false`)
+   or `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/game-design.md` (`is_game_project = true`),
+   whether or not a goal name matches them (`create` has no capability file).
+   This loads method, not a fixed node list.
 
 Proceed to planning with confirmed inputs. Missing product decisions return to the interactive Phase A queue before dependent work is offered; they never become run-time interviews.
 
