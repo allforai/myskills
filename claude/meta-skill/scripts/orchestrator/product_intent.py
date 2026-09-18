@@ -144,6 +144,7 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
                             "profile through product_intent.py so this gate can assure content")})
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
             blockers.extend(_product_contract(root, workflow, profile, retained=retained))
+            blockers.extend(_experience_direction_blockers(root, profile, scope["requirement_refs"]))
         if profile["task_route"] != "product-reconstruction":
             for node in workflow.get("nodes", []):
                 if node.get("capability") == "reverse-concept" and node.get("node_id") not in retained:
@@ -774,6 +775,36 @@ def _product_contract(root, workflow, profile, *, retained=()):
         if stages - covered - omitted.keys():
             raise ValueError("Product plan lacks applicable full-process responsibilities")
     return _intent_drift(root, workflow, concept, refs, frozen, label="Product", path=CONCEPT, retained=retained)
+
+
+def _experience_direction_blockers(root, profile, refs):
+    """A product people live with must carry the direction they chose for it.
+
+    The classification is read, never re-derived: `admin`, `none` and a missing or
+    illegal mode produce nothing here, the last because an unknown mode is the bootstrap
+    gate's own `missing_experience_priority` and answering it twice sends the user to
+    repair the wrong thing. The blocker is global like `pending_product_confirmation`:
+    no single node is at fault when the whole scope never said what living with the
+    product feels like.
+
+    Provenance is not re-checked here. `_product_contract` already put every frozen
+    intent through `_intent_drift` and `_confirmed`, so a confirmed direction of any
+    origin — the model's proposal or the user's own words — satisfies this.
+    """
+    priority = profile.get("experience_priority")
+    mode = priority.get("mode") if isinstance(priority, dict) else None
+    if mode not in ("consumer", "mixed"):
+        return []
+    latest = _latest(_read(root, CONCEPT, {}))
+    for ref in refs:
+        item = latest.get(ref["id"])
+        if (isinstance(item, dict) and item.get("topic") == EXPERIENCE_TOPIC
+                and item.get("status") == "confirmed" and item.get("revision") == ref["revision"]):
+            return []
+    return [{"code": "ui_product_without_experience_direction",
+             "message": f"experience_priority.mode is {mode} but the frozen scope holds no confirmed "
+                        "experience-direction intent; return to interactive bootstrap, propose "
+                        "directions and record the user's select or delegate, then refreeze and replan"}]
 
 
 def _local_contract(root, workflow, profile, *, retained=()):

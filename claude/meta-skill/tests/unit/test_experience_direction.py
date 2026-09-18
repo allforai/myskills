@@ -19,6 +19,8 @@ from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 EXPERIENCE_TOPIC = "experience-direction"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
+GATES = ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py")
+DIRECTION_BLOCKER = "ui_product_without_experience_direction"
 # Mirror of the proposal key set the script accepts; the wording of every value stays
 # clear of interface terms so the same fixtures can reach the gates in later units.
 TEXT_FIELDS = ("id", "title", "who", "circumstance", "core_loop_feel", "first_minute", "return_reason", "goal")
@@ -134,9 +136,44 @@ def plan_request(include, node_id="deliver-orders"):
          "exit_artifacts": [".allforai/bootstrap/order-verification.json"], "body": ATTENTION_CONTRACT_BODY}]}
 
 
+def headless_plan_request(include):
+    """`plan_request` for a product nobody looks at, which may leave the experience stage out."""
+    request = plan_request(include)
+    request["not_applicable"] = {"experience": "A headless order service; nobody ever sees a screen"}
+    node = request["nodes"][0]
+    node["responsibilities"] = [r for r in node["responsibilities"] if r != "experience"]
+    return request
+
+
 def freeze_request(include, batch="scope"):
     return {"operation": "freeze", "batch_id": batch, "user_reference": "user scope turn",
             "reason": "Release the chosen direction", "include": list(include), "exclude": {}}
+
+
+def without_direction(root, host, *, headless=False):
+    """A product frozen, planned and published with the direction question left open.
+
+    The profile still classifies the product as `none` throughout, so the whole scope is
+    built while the blocker cannot apply; a later classification is the only thing that
+    turns it on, and nothing about the record itself changes when it does.
+    """
+    topics = drafted(root, host)
+    confirmed = decide(root, [{"operation": "confirm", "id": topic, "reason": "Chosen direction"}
+                              for topic in topics])
+    assert confirmed.returncode == 0, (confirmed.stdout, confirmed.stderr)
+    frozen = invoke(root, dict(freeze_request(topics),
+                               exclude={"gap-" + EXPERIENCE_TOPIC: "No direction has been offered yet"}))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    planned = invoke(root, headless_plan_request(topics) if headless else plan_request(topics))
+    assert planned.returncode == 0, (planned.stdout, planned.stderr)
+    confirm_plan(root, stage="plan-projection", reason="Presented the projected plan")
+    publish_contract(root, "deliver-orders")
+    return topics
+
+
+def verdicts(root):
+    """What each public gate says about the project as it stands."""
+    return {name: gate(root, name) for name in GATES}
 
 
 def rejections():
@@ -552,3 +589,70 @@ def test_delegate_records_auto_decision_and_is_disclosed(tmp_path, host):
     silent = cli(picked, "--delegations")
     assert silent.returncode == 0, (silent.stdout, silent.stderr)
     assert json.loads(silent.stdout)["delegations"] == [], "a direction the user picked is nobody's delegation"
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_ui_product_without_direction_is_blocked_at_every_gate(tmp_path, host):
+    """A product with end users may not be built around a direction nobody ever chose.
+
+    The scope here froze, planned and published while the product was still classified
+    headless, so nothing in the record is malformed. The moment bootstrap says the
+    product has end users, the same record is missing the one intent that says what
+    living with it feels like, and every public gate says so before any work starts.
+    """
+    topics = without_direction(tmp_path, host)
+    for name, result in verdicts(tmp_path).items():
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
+        assert DIRECTION_BLOCKER not in result.stdout, name
+
+    for mode in ("consumer", "mixed"):
+        set_mode(tmp_path, mode)
+        for name, result in verdicts(tmp_path).items():
+            assert result.returncode == 1, (mode, name, result.stdout, result.stderr)
+            assert DIRECTION_BLOCKER in result.stdout, (mode, name, result.stdout)
+
+    set_mode(tmp_path)
+    before = (tmp_path / ".allforai/bootstrap/workflow.json").read_bytes()
+    replanned = invoke(tmp_path, plan_request(topics))
+    assert replanned.returncode == 1, (replanned.stdout, replanned.stderr)
+    assert DIRECTION_BLOCKER in replanned.stdout, replanned.stdout
+    assert (tmp_path / ".allforai/bootstrap/workflow.json").read_bytes() == before, \
+        "a refused plan leaves the graph exactly as it was"
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_direction_gate_stays_silent_when_it_does_not_apply(tmp_path, host):
+    """Only a product people live with owes a chosen direction.
+
+    An internal tool, a headless service, a classification bootstrap has not made yet
+    and a local change are all outside the question, so none of them may be accused of
+    ducking it. A missing mode is M1's own finding; answering it with this code as well
+    would send the user to repair the wrong thing.
+    """
+    without_direction(tmp_path, host)
+    for name, result in verdicts(tmp_path).items():
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
+        assert DIRECTION_BLOCKER not in result.stdout, name
+    for mode in ("none", "admin"):
+        set_mode(tmp_path, mode, reason="Only the shop's own staff ever open it")
+        for name, result in verdicts(tmp_path).items():
+            assert DIRECTION_BLOCKER not in result.stdout, (mode, name, result.stdout)
+
+    path = tmp_path / PROFILE
+    profile = json.loads(path.read_text())
+    profile.pop("experience_priority")
+    path.write_text(json.dumps(profile), encoding="utf-8")
+    for name, result in verdicts(tmp_path).items():
+        assert DIRECTION_BLOCKER not in result.stdout, (name, result.stdout)
+
+    local = tmp_path / "local"
+    project(local, host=host)
+    set_mode(local)
+    for name, result in verdicts(local).items():
+        assert DIRECTION_BLOCKER not in result.stdout, (name, result.stdout)
+
+    headless = tmp_path / "headless"
+    without_direction(headless, host, headless=True)
+    assert json.loads((headless / PROFILE).read_text())["experience_priority"]["mode"] == "none"
+    for name, result in verdicts(headless).items():
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
