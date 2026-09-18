@@ -110,5 +110,34 @@
   "P3": "openrouter/deepseek/deepseek-v4.1-flash:high",
   "P4": "openrouter/deepseek/deepseek-v4.1-flash:high",
   "P5": "openrouter/deepseek/deepseek-v4.1-flash:high"
+ },
+ "blind_reproduction": {
+  "date": "2026-09-17",
+  "subject_text": "installed clone (uncommitted local edits), not repository HEAD",
+  "adapter_path": "/Users/aa/.pi/agent/git/github.com/allforai/myskills/pi/cross-exam/skills/keep-code-simple/SKILL.md",
+  "adapter_sha256": "8f9ea70e5d3e77a59b503a15e94ec793a331fbbcd37d0bffe5da3d658d473724",
+  "protocol_sha256": "d6da2b2306e51d86f3683615b724f44fbfa7c35edde5495e8712f98344802b04",
+  "packet_r1_sha256": "5da148265dfd0035f2af57f8e480a2366aae49c2c2e4edaad455714c057ce3ad",
+  "packet_r2_sha256": "52f3af85ee5848cc85e9b00de1951ad99903af603767df401ad16b5edfa529d8",
+  "workflow": "467486db-0175-4d29-9d50-81c7f61a9df7",
+  "runs": {
+   "R1": {
+    "run": "94ad7a44-88d6-49ab-89b3-4029caad26c0",
+    "verdict": "not_reproduced"
+   },
+   "R2a": {
+    "run": "122ca595-d1d6-4f43-923f-3397139b7a8c",
+    "verdict": "route_switch_reproduced"
+   },
+   "R2b": {
+    "run": "673aa35e-e034-4b91-bc17-d71f0b0d3e67",
+    "verdict": "route_switch_reproduced"
+   }
+  },
+  "local_edit_backup": {
+   "patch": "/tmp/kcs-local-edits/local-edits.patch",
+   "patch_sha256": "22f96b4b65d589700e44a5948d8292292b75a60cb752ceaeff67d75117ce1af2",
+   "keep_code_simple_sha256": "8f9ea70e5d3e77a59b503a15e94ec793a331fbbcd37d0bffe5da3d658d473724"
+  }
  }
 }

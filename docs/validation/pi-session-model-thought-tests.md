@@ -38,7 +38,30 @@ P1 在旧文本下主判据全中，但它在复核环节写的是「仅当宿�
 - **外部 CLI runner 是换模型换 harness**：`src/api/preflight.ts:386` 对 `runner.type === "external-cli"` 直接 `model = undefined`，pi-subagents 不给 `codex` 传任何模型；codex 用自己的 `~/.codex/config.toml`（`model = "gpt-5.6-luna"`、`model_reasoning_effort = "medium"`）。外部适配器也不参与模型校验（`model_verification_failed` 只针对原生子代理），所以 Pi 侧看不到那次实际用了什么模型。
 - **没有兜底替换**：`agent` 是调用方显式参数，名字不存在或已禁用直接报 `Agent 'x' not found`（`src/agents/agent-management.ts:641`、`1048`），不会自动改派到别的 agent，也没有默认 agent。
 
-即根因确实在技能文本层（`runner.available === true` 那句把 `codex-exec` 放进了候选），本次改动位置正确。**但旧文本下的实际选择仍未复现**：本轮 P1–P5 都跑在修好的文本上，宿主核查只排除了“宿主自己送去 Codex”这一替代解释，不等于旧文本必定会选 codex。
+即宿主的模型解析链里没有 Codex，且本机没有任何 `subagents` 配置，所以子代理只会落到会话模型。
+
+## 盲复现：旧文本到底会不会去 Codex
+
+日期：2026-09-17。方法：受测 packet 用的是**盘里实际在跑的那份**适配（安装目录未提交改动，sha `8f9ea70e…`），不是仓库 HEAD 版本；协议不变。3 个 fresh 子代理，并发 3，cwd 在仓库外。判据运行前写明：选 `codex-exec`/`claude-code`、给原生子代理传别的路由模型、或明说换到别的路由补跑 → 复现。
+
+| 运行 | 场景 | 结果 | 判定 |
+|---|---|---|---|
+| R1 `94ad7a44` | 原场景（原生与 codex-exec 都可执行） | 不选外部 CLI，引「`runner.available === true`；这只是预检，不代表已登录或可成功启动」；只用会话路由 + 思考档 | **未复现** |
+| R2a `122ca595` | 同上 + 会话路由额度耗尽、scout 启动即失败 | 不换执行模式，但按本地那句「额度或容量耗尽…换一条已确认可用的模型路由」去换路由补跑，还要先开 1 条预检通道探其它路由额度，「可用的互补路由优先用于复核档」 | **路由切换复现** |
+| R2b `673aa35e` | 同 R2a | 同样换路由补跑，且一边写「继承 deep-tier 低档」一边切到别的路由 | **路由切换复现** |
+
+三个子运行同样只 read 了自己那份 packet，模型都是 `openrouter/deepseek/deepseek-v4.1-flash`（会话模型）。
+
+### 结论改写（覆盖上文推理）
+
+- **我当时的根因归属不成立。** 拿同一文本、同一模型盲跑，R1 并没有去 Codex；那条「外部 CLI 还须 `runner.available === true`」被读成了预检条件而不是使用许可。仓库里那次收口方向没错，但不解释这次现象。
+- **真正被执行的是那句本地未提交的额度文案**：「额度或容量耗尽正是这种可补跑的失败——换一条已确认可用的模型路由」。它把“额度耗尽”变成可以离开会话模型的理由，2/2 场景都这么做了。
+- 它没有点名 codex，所以“会调用到 codex”仍是一次**机制上成立但未直接观测到**的链路：本机已认证路由只有 xai、openrouter、openai-codex，而这个会话跑在 openrouter（用户默认是 xai）——换路由的落点集合里就有 Codex。
+- 副作用：R2b 一边换路由一边声称“继承 deep-tier”，说明这句话还能让报告里的模型记录失真。
+
+### 本地未提交改动的处置（待用户拍板）
+
+安装目录 `~/.pi/agent/git/github.com/allforai/myskills` 有未提交改动（keep-code-simple 与 cross-exam 各一份，从未来过仓库，无 commit/stash/branch）。已备份到 `/tmp/kcs-local-edits/`（patch sha `22f96b4b…`）。其中值得收编的是：复核通道的 git 元数据工具合同、失败通道算未查、派发前后 HEAD/工作区漂移检查、按 receipt 记 requested/resolved、额度≠注册表。**不能收编的是「换一条已确认可用的模型路由」**——它与“只用当前会话模型”直接冲突，按本文件上面的规则应改成：同协议、同路由重试；该路由不可用就把通道标未查并交用户决定。
 
 ## 尚未验证
 
