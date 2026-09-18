@@ -176,6 +176,23 @@ def validate_execution_repair_loop_contract(errors: list[str]) -> None:
             errors.append(f"execution-repair-loop/SKILL.md: missing repair contract term {term}")
 
 
+def validate_experience_routing_contract(errors: list[str]) -> None:
+    bootstrap_text = _bootstrap_text()
+    for term in (
+        "experience_priority",
+        '"mode": "consumer | admin | mixed | none"',
+        "experience_priority.mode != none",
+        "knowledge/capabilities/product-concept.md",
+        "knowledge/consumer-maturity-patterns.md",
+        "knowledge/journey-emotion-schema.md",
+        "knowledge/capabilities/app-design.md",
+        "knowledge/capabilities/game-design.md",
+        "3.5.0b App Design Coverage Check",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing experience routing term {term}")
+
+
 def validate_implement_goal_contract(errors: list[str]) -> None:
     bootstrap_text = _bootstrap_text()
     skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -435,6 +452,7 @@ def main() -> int:
     validate_approval_scripts_copied(errors)
     validate_unattended_run_contract(errors)
     validate_execution_repair_loop_contract(errors)
+    validate_experience_routing_contract(errors)
     validate_implement_goal_contract(errors)
     validate_feedback_contract(errors)
     validate_canvas2d_contract(errors)
