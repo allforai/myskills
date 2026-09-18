@@ -22,6 +22,7 @@ EXPERIENCE_TOPIC = "experience-direction"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
 TEMPLATE = Path(__file__).resolve().parents[2] / "knowledge/orchestrator-template.md"
+PROTOCOL = Path(__file__).resolve().parents[2] / "knowledge/product-intent-confirmation.md"
 GATES =("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py")
 DIRECTION_BLOCKER = "ui_product_without_experience_direction"
 # Mirror of the proposal key set the script accepts; the wording of every value stays
@@ -742,3 +743,53 @@ def test_run_summary_and_completion_text_disclose_delegations(tmp_path):
     assert (closing.index("Run log summary") < closing.index("--delegations")
             < closing.index("Mark concept drift resolved")), \
         "the disclosure runs between the run log summary and the drift mark"
+
+
+def test_protocol_text_names_the_new_topic_and_actions():
+    """The protocol the hosts read tells them the same story the scripts enforce.
+
+    Every seam above is reachable only if the text that instructs the host names it:
+    the topic, the two new actions, where proposals come from and what disqualifies
+    them, and the fact that a recommendation the user never answered is still not a
+    choice. The old sentence that listed the non-actions without the new ones would
+    read as permission to let a displayed default stand in for a pick, so it must be
+    gone, not merely supplemented.
+    """
+    protocol = PROTOCOL.read_text(encoding="utf-8")
+    flat = " ".join(protocol.split())  # the prose wraps; the sentences are what is pinned
+
+    assert "omitted answers and silence are not actions." not in flat, \
+        "the action sentence must be replaced, not left beside the new one"
+    assert "recommendations, displayed defaults, omitted answers and silence are not actions; " \
+           "`select` and `delegate` are actions." in flat
+    assert "`select` and `delegate` are actions" in flat
+
+    assert EXPERIENCE_TOPIC in protocol, "the topic the scripts accept is named in the protocol"
+    topics = flat.split("Topic names:", 1)[1].split(".", 1)[0]
+    assert topics.index("business-loop") < topics.index(EXPERIENCE_TOPIC) < topics.index("tradeoffs"), \
+        "the topic list keeps the order the script's TOPICS ships"
+    assert "gap-" + EXPERIENCE_TOPIC in protocol, "the headless exclusion names the gap question"
+
+    assert "model-proposal" in protocol, "the origin only proposals carry is documented"
+    assert "`propose`" in protocol and "recommended_id" in protocol, \
+        "the operation that produces proposals has its own entry"
+    assert "proposal_id" in protocol and "auto_decided" in protocol, \
+        "the decide catalogue explains what select and delegate write"
+
+    heading = "## Experience direction proposals"
+    assert heading in protocol
+    assert protocol.index("## Discussion responsibility") < protocol.index(heading), \
+        "the proposal section follows the discussion responsibility it qualifies"
+    section = " ".join(protocol.split(heading, 1)[1].split("\n## ", 1)[0].split())
+    assert "consumer-maturity-patterns.md" in section, \
+        "the self-check points at the anti-patterns it is a self-check against"
+    for anti_pattern in ("The Compressed Admin Panel", "The Concept Demo", "Feature Checklist Design"):
+        assert anti_pattern in section, anti_pattern
+    assert "fragmented learning" in section, \
+        "the no-literal-translation rule keeps its worked example"
+    assert "--delegations" in section and "--delegations" in protocol.split("At the interactive run entry", 1)[1], \
+        "delegation disclosure is named both as an obligation and as a CLI entry"
+
+    for line in protocol.splitlines():
+        if "experience_priority" in line:
+            assert "experience_priority.mode" in line, line
