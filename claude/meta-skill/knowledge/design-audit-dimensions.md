@@ -157,7 +157,7 @@ The MG/CT type catalog is retired. Skip this dimension. Do not infer or validate
 
 **Purpose**: When `experience_priority.mode = consumer` or `mixed`, all downstream artifacts must continuously maintain mature consumer product standards rather than regressing into admin-panel-style or concept-demo-style expression.
 
-**Activation condition**: `product-map.json` contains `experience_priority` with mode `consumer` or `mixed`.
+**Activation condition**: `bootstrap-profile.json` `experience_priority.mode` is `consumer` or `mixed`.
 
 **Audit checks** (Phase A, Step 3.8):
 - Does product-map define a main-line closed loop and sustained relationship?
@@ -338,7 +338,7 @@ Missing optional layers -> skip related checks, annotate "layer missing, skipped
 | Step 3 | Horizontal Consistency | Adjacent-layer contradiction detection |
 | Step 3.5 | Information Fidelity | Traceability and viewpoint coverage gates |
 | Step 3.7 | Continuity Audit | Reads interaction-gate.json, checks step count <= 7, context switches <= 2, wait feedback coverage = 1.0, thumb zone compliance >= 0.8 |
-| Step 3.8 | Consumer Maturity | When experience_priority = consumer/mixed |
+| Step 3.8 | Consumer Maturity | When `experience_priority.mode` = consumer/mixed |
 | XV | Cross-Validation | Cross-model review if available |
 
 **Output**: `audit-report.json` (baseline report) + `audit-report.md`

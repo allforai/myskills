@@ -368,7 +368,7 @@ After experience-map generation, `interaction-gate` evaluates each operation lin
 2. Failed lines require user decision: adjust the design or accept the score
 3. In auto-mode, lines scoring < 50 still require human confirmation (severe UX defects)
 
-**Consumer-mode additional checks** (when `experience_priority.mode = consumer | mixed`):
+**Consumer-mode additional checks** (when `experience_priority.mode = consumer | mixed`, read from `bootstrap-profile.json`):
 - **Mainline clarity**: Can the user know the core goal within 2 seconds?
 - **Next-step guidance**: After current action, does the user know what's next?
 - **Retention hooks**: Does the flow include return/continuous-use cues?

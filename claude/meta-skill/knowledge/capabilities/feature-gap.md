@@ -45,7 +45,7 @@ These are TYPES of checks, not a fixed checklist:
 | CRUD completeness | Every entity has all needed operations | Always |
 | Journey completeness | Every flow has a defined end state, both branches at decisions | Has business flows |
 | Screen state coverage | empty/loading/error/success/(offline) states exist | Has UI screens |
-| Consumer maturity | Flows feel complete, not just "feature exists" | experience_priority = consumer/mixed |
+| Consumer maturity | Flows feel complete, not just "feature exists" | `experience_priority.mode` = consumer/mixed |
 | Offline coverage | Core flows work offline | Offline-first products |
 | Error recovery | Every error state has a recovery path | Always |
 | Permission coverage | Every role can only access what they should | Multi-role products |
