@@ -1,5 +1,7 @@
 import json
 import os
+from pathlib import Path
+import subprocess
 import sys
 
 import pytest
@@ -7,7 +9,9 @@ import pytest
 from ..module_isolation import load
 
 _validate_bootstrap = load("validate_bootstrap")
+APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS = _validate_bootstrap.APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS
 GAME_2D_PRODUCTION_REQUIRED_NODES = _validate_bootstrap.GAME_2D_PRODUCTION_REQUIRED_NODES
+RETURN_TO_BOOTSTRAP = _validate_bootstrap.RETURN_TO_BOOTSTRAP
 validate_approval_records = _validate_bootstrap.validate_approval_records
 validate_app_design_flow = _validate_bootstrap.validate_app_design_flow
 validate_canvas2d_game_client_profile_flow = _validate_bootstrap.validate_canvas2d_game_client_profile_flow
@@ -17,6 +21,7 @@ validate_node_spec_contracts = _validate_bootstrap.validate_node_spec_contracts
 validate_node_spec = _validate_bootstrap.validate_node_spec
 validate_node_spec_coverage = _validate_bootstrap.validate_node_spec_coverage
 validate_workflow = _validate_bootstrap.validate_workflow
+validate_experience_design_coverage = _validate_bootstrap.validate_experience_design_coverage
 effect_stage_ownership_findings = _validate_bootstrap.effect_stage_ownership_findings
 repair_loop_declaration_findings = _validate_bootstrap.repair_loop_declaration_findings
 structural_gate_blockers = _validate_bootstrap.structural_gate_blockers
@@ -671,6 +676,215 @@ def test_app_design_flow_passes_with_handoff_and_concept_freeze(tmp_path):
     errors = validate_app_design_flow(str(bdir))
 
     assert errors == []
+
+
+# Experience-design coverage is decided on the graph a run is about to execute, and each
+# host reaches it through its own script path, so every behaviour below is proven on both.
+# `module_isolation.load` caches by realpath and `codex/meta-skill/scripts` resolves into
+# the claude tree, so an in-process load would hand both parameters the same module object
+# and the host parameter would prove nothing. A subprocess per host imports the file that
+# host actually ships, which is the thing a user runs.
+HOSTS = ["claude", "codex"]
+
+_COVERAGE_DRIVER = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import validate_bootstrap
+print(json.dumps(validate_bootstrap.experience_design_coverage_findings(sys.argv[2])))
+"""
+
+
+def _coverage_findings(host, bdir):
+    """Typed findings from `host`'s own copy of the validator."""
+    scripts = Path(__file__).resolve().parents[4] / host / "meta-skill/scripts/orchestrator"
+    result = subprocess.run([sys.executable, "-c", _COVERAGE_DRIVER, str(scripts), str(bdir)],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    findings = json.loads(result.stdout)
+    assert all(RETURN_TO_BOOTSTRAP in f["message"] for f in findings), findings
+    return findings
+
+
+def _codes(findings):
+    return sorted({finding["code"] for finding in findings})
+
+
+EXPERIENCE_DESIGN_ARTIFACTS = [
+    ".allforai/app-design/concept/job-story-spec.json",
+    ".allforai/app-design/spec/user-flow-spec.json",
+    ".allforai/app-design/spec/screen-requirements-spec.json",
+    ".allforai/app-design/spec/permissions-notifications-settings-spec.json",
+]
+GAME_DESIGN_DOC_PATHS = [
+    ".allforai/game-design/game-design-doc.json",
+    ".allforai/game-design/design/game-design-doc.json",
+]
+CONSUMER_PRIORITY = {"mode": "consumer", "reason": "Shoppers use the app voluntarily"}
+
+
+def _design_node(artifacts):
+    return _base_node(node_id="experience-design", capability="app-design",
+                      goal="Design the user flows and the screen requirements",
+                      exit_artifacts=list(artifacts))
+
+
+def _ui_implementation_node(node_id="implement-mobile", **overrides):
+    node = _base_node(node_id=node_id, capability="implement",
+                      goal="Implement the mobile screen stack",
+                      exit_artifacts=[f".allforai/bootstrap/{node_id}-report.json"],
+                      hard_blocked_by=["experience-design"])
+    node.update(overrides)
+    return node
+
+
+def _experience_project(tmp_path, *, route="new-product", priority=CONSUMER_PRIORITY,
+                        nodes=None, not_applicable=None, game=False):
+    """The shape this gate reads: a routed profile with a UI module, and one graph."""
+    bdir = _bootstrap_dir(tmp_path)
+    profile = {"task_goal": "Ship the shopping app", "task_route": route,
+               "modules": [{"id": "app", "path": "mobile", "role": "mobile"}]}
+    if priority is not None:
+        profile["experience_priority"] = priority
+    if game:
+        profile["is_game_project"] = True
+    (bdir / "bootstrap-profile.json").write_text(json.dumps(profile))
+    workflow = {
+        "nodes": nodes if nodes is not None else [
+            _design_node(EXPERIENCE_DESIGN_ARTIFACTS), _ui_implementation_node()],
+        "transition_log": [],
+    }
+    if not_applicable is not None:
+        workflow["not_applicable"] = not_applicable
+    (bdir / "workflow.json").write_text(json.dumps(workflow))
+    return bdir
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_passes_with_design_node_blocking_ui_implementation(tmp_path, host):
+    """The intended shape must stay silent, or the gate is a blanket refusal."""
+    assert _coverage_findings(host, _experience_project(tmp_path)) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("priority", [None, {"mode": "premium", "reason": "Sounds better"},
+                                      {"mode": "consumer", "reason": "  "}],
+                         ids=["absent", "illegal-mode", "empty-reason"])
+def test_experience_coverage_rejects_missing_experience_priority(tmp_path, host, priority):
+    """An unknown mode decides nothing else: the classification is demanded first, alone."""
+    bdir = _experience_project(tmp_path, priority=priority,
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])],
+                               not_applicable={"experience": "Skipped"})
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["missing_experience_priority"], findings
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_rejects_workflow_without_design_node(tmp_path, host):
+    """The ink-scent incident: a product route plans screens and designs none of them."""
+    bdir = _experience_project(tmp_path, nodes=[_ui_implementation_node(hard_blocked_by=[])])
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["missing_experience_design_node"], findings
+    messages = " ".join(finding["message"] for finding in findings)
+    assert ".allforai/app-design/spec/user-flow-spec.json" in messages, messages
+    assert ".allforai/app-design/spec/screen-requirements-spec.json" in messages, messages
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_rejects_ui_implementation_not_blocked_by_design(tmp_path, host):
+    """Reaching the design node through an intermediate node is reaching it."""
+    bdir = _experience_project(tmp_path, nodes=[
+        _design_node(EXPERIENCE_DESIGN_ARTIFACTS),
+        _ui_implementation_node(hard_blocked_by=[]),
+        _base_node(node_id="concept-freeze", capability="concept-contract",
+                   hard_blocked_by=["experience-design"]),
+        _ui_implementation_node("implement-web", goal="Implement the web frontend screens",
+                                hard_blocked_by=["concept-freeze"]),
+    ])
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["implementation_not_blocked_by_experience_design"], findings
+    assert {finding["node_id"] for finding in findings} == {"implement-mobile"}, findings
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_rejects_experience_not_applicable_on_ui_product(tmp_path, host):
+    """Every mode but `none` has end users, so none of them may opt out of designing for them."""
+    bdir = _experience_project(tmp_path,
+                               priority={"mode": "admin", "reason": "Operators run the console"},
+                               not_applicable={"experience": "Internal tool, skipping"})
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["experience_not_applicable_on_ui_product"], findings
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_ignores_local_change(tmp_path, host):
+    """A local change is not a product route; it never had to classify its users."""
+    bdir = _experience_project(tmp_path, route="local-change", priority=None,
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])])
+
+    assert _coverage_findings(host, bdir) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_ignores_mode_none(tmp_path, host):
+    """`none` is an honest answer: no end-user interface, so nothing here applies."""
+    bdir = _experience_project(tmp_path,
+                               priority={"mode": "none", "reason": "Headless ingest service"},
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])],
+                               not_applicable={"experience": "No end-user interface"})
+
+    assert _coverage_findings(host, bdir) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("doc_path", GAME_DESIGN_DOC_PATHS,
+                         ids=["canonical", "design-variant"])
+def test_experience_coverage_game_accepts_either_design_doc_path(tmp_path, host, doc_path):
+    """Both game-design-doc paths are in use in this repo; either one is the design."""
+    gameplay = _ui_implementation_node(goal="Implement the gameplay scene and HUD")
+    present = _experience_project(tmp_path, game=True,
+                                  nodes=[_design_node([doc_path]), gameplay])
+
+    assert _coverage_findings(host, present) == []
+
+    absent = _experience_project(tmp_path / "without", game=True, nodes=[
+        _design_node([".allforai/game-design/story-bible.json"]), gameplay])
+
+    assert _codes(_coverage_findings(host, absent)) == ["missing_experience_design_node"]
+
+
+def test_experience_coverage_is_a_structural_gate_blocker(tmp_path):
+    """`/run` re-decides this gate, so the refused graph cannot execute unattended either."""
+    _experience_project(tmp_path, nodes=[_ui_implementation_node(hard_blocked_by=[])])
+
+    blockers = structural_gate_blockers(tmp_path)
+
+    assert "missing_experience_design_node" in {b["code"] for b in blockers}, blockers
+
+
+def test_app_design_flow_fixtures_raise_no_experience_findings(tmp_path):
+    """The app-design fixtures above write no profile at all; the gate stays out of their way."""
+    for index, finalize_artifacts in enumerate((
+            [".allforai/app-design/app-design-doc.json"],
+            sorted(APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS))):
+        bdir = _bootstrap_dir(tmp_path / f"fixture-{index}")
+        (bdir / "workflow.json").write_text(json.dumps({"nodes": [
+            _base_node(node_id="ia-design", capability="app-design", human_gate=True),
+            _base_node(node_id="user-flow-design", capability="app-design", human_gate=True),
+            _base_node(node_id="interaction-design", capability="app-design", human_gate=True),
+            _base_node(node_id="app-design-finalize", capability="app-design", human_gate=True,
+                       hard_blocked_by=["ia-design"], exit_artifacts=finalize_artifacts),
+            _base_node(node_id="implement-web", hard_blocked_by=["app-design-finalize"]),
+        ], "transition_log": []}))
+
+        assert validate_experience_design_coverage(str(bdir)) == []
 
 
 def _write_mobile_profile(tmp_path, framework, language="Kotlin", test_commands=None):
