@@ -15,7 +15,7 @@ Not cross-exam. Do not follow `SKILL.md` below the package router, do not write 
 
 - **Interactive only.** Invoked unattended or from an autonomous pipeline: refuse and stop.
 - **Advice only.** Do not edit the product's source. The only writes are under `docs/product-review/<date>-<slug>/`.
-- **No `.allforai/`.** Do not read or write that tree. Do not call meta-skill capabilities. `docs/cross-exam/` is readable input.
+- **No `.allforai/`.** Do not read or write that tree. Do not call meta-skill capabilities. `docs/cross-exam/` and `docs/experience-review/` are readable input.
 - **No 37 interaction types. No token/pixel spec audit.** Commercial UI/interaction is in scope; design-system compliance is not.
 - **不做第二遍完成度审计。** 「在不在」「走不走得完」是判断前提，不是本审查的产出：有完成度报告就按它的 `J`/`G` 判定采信，不重走旅程；没有报告就记成未验收前提，并说一次 cross-exam 是判这件事的入口。本审查产出的是「该不该有」「商业级够不够」和同一份工作上的竞品对照。
 - **Do not start grilling.** After the report, tell the user they may `$grill-me` / grilling on that file. Wait.
@@ -79,6 +79,8 @@ Completion: evidence limits recorded; prior evidence folded in; 每条工作的�
 
 **Prior evidence.** If `docs/cross-exam/*/completion-report.md` exists, read the newest one. Its gap list and its 旅程完成度 section are prior evidence: for each gap (`G` id) or journey verdict (`J` id) that blocks a job in scope, list it on the `Prior evidence` line with that job. A journey that cross-exam walked through (`done`) is evidence for 在不在 and 走不走得完 on the matching job; a journey `gap` with its `stuck_kind` is the observation. 产品在那份报告之后动过，也不在这里重走旅程补判：记下报告日期与你看到的差异，把该工作的前提标成过期，并说一次 cross-exam 是重新判它的入口。这里的观察永不覆盖那份报告的判定。 A known gap or blocked journey never becomes an `R` item; items that wait on it write its id in `depends_on` (`G1`, `J1`). Absent → write `Prior evidence: none`.
 
+**Prior evidence — runtime experience review.** If `docs/experience-review/runtime.md` exists, read it (该路径每次评审覆盖写，存在的那份即最新一份). Do not read `design.md` — 那份判的是设计产物，不是运行中的产品。Its per-lens observation lines are already evidence for question 4: 对应工作的 `商业级` 行里，被它覆盖的格直接写 `有|缺 <它的观察>（runtime review <评审日期>）`，不重新检查；它没覆盖的镜头、没覆盖的工作照常自己看。Its must-fix list is the list of items still open: for each one that blocks a job in scope, list it on the `Prior evidence` line by the id it carries in that file; an item that waits on it writes the same id in `depends_on`. 已知的 must-fix 不再占 `R` 号。过期纪律与 cross-exam 报告相同：产品在「被评提交」之后动过，就记下评审日期、被评提交与你看到的差异，把受影响的格标成过期，不在这里重判；说一次重跑该评审属于产品自己的 meta-skill 运行。这里的观察永不覆盖那份结论。That file's own evidence limits fold into this report's `Evidence limits` consequence clause. Absent → that source line is `none`.
+
 Find facts yourself (repo, running UI, WebSearch). Do not ask the user for anything look-up-able.
 
 After you see the product, decide what to open and what to compare. Write down that inspection plan in one short paragraph in the report so the review is auditable — not a hidden rubric.
@@ -104,7 +106,7 @@ Each item:
 - `job` one triple from Jobs in scope, by its label
 - `kind`: `missing_job` | `broken_path` | `ui_friction` | `interaction_gap` | `decoration` | `borrow_positioning` | `borrow_feature`；`missing_job` / `broken_path` 只用于没有 `J` 判定覆盖的工作，被覆盖的留在 Prior evidence，不占 `R` 号
 - `claim`: `进展受阻` | `不够商业级` —— 这条建议主张的是哪一件事；`decoration` 与 `borrow_*` 不填
-- `depends_on` other `R` ids, cross-exam `G` or `J` ids, or empty
+- `depends_on` other `R` ids, cross-exam `G` or `J` ids, experience-review must-fix ids, or empty
 - `recommend`: `adopt` | `defer` for kinds observed in the product; `adopt` | `defer` | `reject` for `borrow_*`。`decoration` 的 `adopt` 含义是**移除**它；只有当本次点名的工作集覆盖了产品的主要用途、且已查明它为何存在时才可 `adopt`，否则 `defer` 并写明它可能服务未点名的工作
 - `tradeoff` one sentence
 - `evidence` paths, URLs, or UI observations — not vibes; `code-only` when no browser
@@ -119,7 +121,7 @@ Competitor ideas that do not map to a job in scope go to Out of scope, never int
 - `claim: 进展受阻` → `evidence` 显示这份工作的进展被卡住或变难；"works without it" means delete
 - `claim: 不够商业级` → `evidence` 指出让陌生人不敢把它当正经产品的**具体那一点**（无引导、核心动作没有过程反馈、做完之后没有去处、同类状态两套说法…）；不要求它妨碍把事做完，但说不出具体是哪一点、只剩「体验不好」就删
 - `reject` appears only on `borrow_positioning` / `borrow_feature`; a product-observed kind you would reject was not friction — delete
-- the item is not a cross-exam gap restated
+- the item is not a cross-exam gap or an experience-review must-fix restated
 - `missing_job` / `broken_path` 不落在已被 `J` 判定覆盖的工作上
 - `decoration` 的 evidence 显示它不推进**任何**一份 in-scope 工作，`tradeoff` 写出它在占用的注意力或维护成本；两者缺一就删
 - `decoration` 推荐 `adopt` 时，报告里有它为何存在的出处；只查到「找不到原因」就降为 `defer`
@@ -142,6 +144,7 @@ runs here: yes|no · browser: yes|no · WebSearch: yes|no · consequence: <one c
 
 ## Prior evidence
 docs/cross-exam/<run>/completion-report.md — G1 blocks JOB1; J2 (gap, no_feedback) blocks JOB1; G2, G3 no job in scope | none
+docs/experience-review/runtime.md (<review date>, <reviewed commit>) — <must-fix id> (next_step) blocks JOB1; lens cells adopted: JOB1 引导, 过程反馈 | none
 
 ## Inspection plan
 <one short paragraph: what you chose to open on THIS product and why>
