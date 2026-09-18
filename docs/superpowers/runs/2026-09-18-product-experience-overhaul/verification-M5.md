@@ -11,6 +11,7 @@ run: `2026-09-18-product-experience-overhaul` · 分支 `product-experience-over
 先前两轮（`4d9e666f`、`d2e94dbf`）结论相同，数字与本轮逐一一致。`4d9e666f → 08c31984` 之间落地的三个提交里，
 只有 `08c31984` 碰到被测文件（`claude/meta-skill/tests/prompts/domain-codex.md` 一行夹具文本），其余两个只动本文件与 run 台账；
 该夹具本轮已随 meta-skill 全量一并跑过。
+本文件自身的留档提交只动本文件，不动被测源码，故"被测 HEAD"始终记运行时的那个 commit。
 原始输出: `docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.log`（`08c31984` 本轮输出，
 每段末尾带 `RESULT <label> rc=0 dur=…`，结尾 `OVERALL_RC=0`）
 
