@@ -9,6 +9,9 @@
   ],
   "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_topic_is_listed_before_tradeoffs_and_missing_direction_is_a_gap claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_intent_review_corrections.py",
   "depends_on": [],
+  "requires": [
+   "api:validateExperienceDesignCoverage"
+  ],
   "reality_gate": false
  },
  {
@@ -119,7 +122,7 @@
   ],
   "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_run_summary_and_completion_text_disclose_delegations claude/meta-skill/tests/unit/test_run_logging.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
   "depends_on": [
-   "T-M2-06"
+   "T-M2-07"
   ],
   "reality_gate": false
  },
@@ -132,7 +135,7 @@
   ],
   "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_protocol_text_names_the_new_topic_and_actions && ! grep -n \"experience_priority\" claude/meta-skill/knowledge/product-intent-confirmation.md | grep -v \"experience_priority.mode\" | grep -q . && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
   "depends_on": [
-   "T-M2-01"
+   "T-M2-08"
   ],
   "reality_gate": false
  },
@@ -145,8 +148,6 @@
   ],
   "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_pre_existing_concept_and_journal_read_without_drift && python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py && python3 -m pytest -q claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_product_intent_resume.py claude/meta-skill/tests/unit/test_freeze_idempotence.py claude/meta-skill/tests/unit/test_product_question_identity.py claude/meta-skill/tests/unit/test_product_retained_scope.py claude/meta-skill/tests/unit/test_intent_review_corrections.py claude/meta-skill/tests/unit/test_legacy_profile_authority.py claude/meta-skill/tests/unit/test_legacy_projection_authority.py claude/meta-skill/tests/unit/test_local_reopen_scope.py claude/meta-skill/tests/unit/test_acceptance_allocation.py claude/meta-skill/tests/unit/test_run_logging.py claude/meta-skill/tests/unit/test_evidence_freshness.py::test_selected_intent_payload_drift_in_real_producer_baseline_is_stale && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
   "depends_on": [
-   "T-M2-07",
-   "T-M2-08",
    "T-M2-09"
   ],
   "reality_gate": false

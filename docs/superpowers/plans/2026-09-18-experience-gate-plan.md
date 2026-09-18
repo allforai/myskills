@@ -27,6 +27,15 @@ disagreement instead of improvising.
 - M1 invariant that M3 must keep true: every line under `claude/meta-skill/knowledge` (outside files whose name contains
   `bootstrap`) that mentions `experience_priority` contains the literal `experience_priority.mode` on the same line.
 - No git mutation by executors; the orchestrator commits.
+- **Cross-module ordering is explicit.** The scheduler is dependency-ready, not module-ordered: interface edges
+  (`requires` → `implements`) only reach the *early* upstream tasks (T-M1-01/02/04, T-M2-04, T-M4-01/03). They do not
+  reach the upstream tasks M3 really stands on — T-M1-03 (the same-line `experience_priority.mode` invariant that three
+  M3 acceptances grep), T-M1-05 (Human Gate removal in `app-design.md`), T-M2-01…10 (live edits to `product_intent.py`
+  and the suites M3's regression commands run), T-M4-04/05/08 (skill JSON blocks and `validate_meta_contracts.py`
+  being edited while M3 runs those validators). Therefore T-M3-02, T-M3-04, T-M3-05 and T-M3-08 carry `depends_on`
+  entries for the upstream sink tasks **T-M1-07, T-M2-10, T-M4-07, T-M4-08** (each sink transitively covers its whole
+  module). This realises the overview's order M1 → (M2 ∥ M4) → M3 in the DAG. T-M3-01 stays free (tmp_path tests only).
+  These foreign ids are stable; if an upstream plan renumbers its sink, update these four entries.
 
 ## Interface ownership
 
@@ -65,7 +74,8 @@ T04 ─────┼───────────┘        ├─► T10
 T05 ──► T06 ──────────────────┘
 ```
 
-No task is reality-gated: every acceptance is a deterministic test, validator run or literal check.
+T02, T04, T05 and T08 additionally wait for the upstream sinks T-M1-07, T-M2-10, T-M4-07, T-M4-08 (see Module-wide
+rules). No task is reality-gated: every acceptance is a deterministic test, validator run or literal check.
 
 ---
 
@@ -94,7 +104,11 @@ def validate_app_experience_pipeline(repo_root: str) -> list[str]
 
 **Test intent (write first).** `test_validate_app_experience_pipeline.py` mirrors
 `test_validate_game_creative_pipeline.py` with a `_minimal_repo(tmp_path)` fixture that lists every required term
-line by line. Three cases: the minimal graph yields `[]` (proves the term lists are satisfiable and nothing beyond
+line by line. Three cases, with these exact names (the acceptance counts the `test_validate_app_experience_pipeline_`
+prefix; the game file it mirrors has only the first two, the third is new here) —
+`test_validate_app_experience_pipeline_accepts_minimal_graph`,
+`test_validate_app_experience_pipeline_rejects_unlisted_child`,
+`test_validate_app_experience_pipeline_rejects_missing_term`: the minimal graph yields `[]` (proves the term lists are satisfiable and nothing beyond
 them is demanded); an extra child `SKILL.md` absent from PACK yields `missing canonical child path` (proves the
 child-listing rule); deleting `audience_leak` from the critique fixture yields `missing required term audience_leak`
 (proves the lens vocabulary is actually pinned). The tests run on `tmp_path`, so they pass before the real skill exists.
@@ -170,7 +184,8 @@ All five fail today because the file does not exist.
 python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_quality_critique_skill.py claude/meta-skill/tests/unit/test_validate_skills.py && python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills
 ```
 
-**Depends on:** T-M3-01.
+**Depends on:** T-M3-01; upstream sinks T-M1-07, T-M2-10, T-M4-07, T-M4-08 (its acceptance runs `validate_skills.py`
+over skill files M4 edits, and the Input Contract quotes landed M1/M2/M4 vocabulary).
 
 ---
 
@@ -235,7 +250,8 @@ fails. `must_fix_before_art_gen` / `must_fix_before_frontend` stay out. `reconci
 [ "$(python3 -m pytest claude/meta-skill/tests/unit/test_check_artifacts.py --co -q | grep -c 'must_fix')" -ge 4 ] && python3 -m pytest -q claude/meta-skill/tests/unit/test_check_artifacts.py claude/meta-skill/tests/unit/test_check_artifacts_measurement.py
 ```
 
-**Depends on:** none.
+**Depends on:** upstream sinks T-M1-07, T-M2-10, T-M4-07, T-M4-08 (T-M4-07 edits
+`test_check_artifacts_measurement.py`, which this acceptance runs).
 
 ---
 
@@ -296,32 +312,52 @@ fixture trips this gate, the fixture text contains UI wording — fix the fixtur
 python3 -m py_compile claude/meta-skill/scripts/orchestrator/validate_bootstrap.py && python3 -c 'import sys; sys.path.insert(0,"claude/meta-skill/scripts/orchestrator"); import validate_bootstrap as v; assert {"validate_experience_gate_flow","experience_gate_flow_findings"} <= set(v.__all__); assert callable(v._ui_implementation_nodes)' && [ "$(python3 -m pytest claude/meta-skill/tests/unit/test_validate_bootstrap.py --co -q | grep -c 'experience_gate')" -ge 14 ] && python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_bootstrap.py claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_bootstrap_scope.py claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_acceptance_allocation.py
 ```
 
-**Depends on:** none (cross-module ordering via `requires`).
+**Depends on:** upstream sinks T-M1-07, T-M2-10, T-M4-07, T-M4-08 (the regression suites in this acceptance execute
+`product_intent.py` and `test_product_intent_session.py`, both under edit until T-M2-10), plus `requires`.
 
 ---
 
-## T-M3-06 — Readiness gate accepts the Must #9 repair-loop shape
+## T-M3-06 — Readiness gate accepts the Must #9 repair-loop shape, and the new gate bites at the `/run` boundary
 
 **Requirements:** R-M3-07 (loop declaration), R-M3-11. Design U7 fourth bullet. `validate_unattended_readiness.py` is **not** edited.
-**Requires:** `data:experiencePriority`, `data:experienceDesignArtifacts` (the fixture must contain M1's experience
-design node covering user-flow and screen-requirements, with the UI implementation node transitively blocked by it —
-otherwise M1's `missing_experience_design_node` fires and the test proves nothing about loops).
+**Requires:** `data:experiencePriority`, `data:experienceDesignArtifacts`.
 
-**Behaviour / test intent.** One new test, `test_unattended_readiness_accepts_experience_gate_repair_loops`, reusing
-`_write` and `_repair_loop`: a minimal product-route, `mode: consumer` UI graph with the design loop (QA = design
-critique, closure = the node waiting for it) and the runtime loop (QA = runtime critique, repair = implementation
-repair node, closure = closure node). Assert `status == "ready"` and no blocker code containing `repair_loop` or
-`experience_gate`. Then, in the same test, drop the runtime loop from the spec and assert the report now carries
-`experience_gate_without_repair_loop` — without this second half the test would pass on a fixture that never reached
-M3's gate. Together they prove the loop shape Must #9 prescribes is both accepted by the existing readiness gate and
-actually judged by the new structural gate at the `/run` boundary.
+**Why two tests, not one.** `validate_unattended_readiness` also calls `product_intent.validate_scope`. As soon as the
+profile carries `task_route: new-product`, `status == "ready"` needs the whole product contract (`task_goal`,
+`task_scope`, frozen intents, `requirement_refs`, confirmed plan, and after M2 a confirmed `experience-direction`
+intent). A "minimal" product-route fixture in this file can never be `ready`; the full product-route pass is M5's
+`test_designed_and_gated_workflow_passes_every_public_gate`. Every existing fixture in this file is profile-less for
+that reason. So the two claims are proved separately:
+
+**Behaviour / test intent.** Two new tests reusing `_write`, `_minimal_project` and `_repair_loop`:
+
+1. `test_unattended_readiness_accepts_experience_gate_repair_loops` — **profile-less** graph (no
+   `bootstrap-profile.json`, like `_project_with_repair_loop`) with the Must #9 shape: experience design node → design
+   critique (`exit_artifacts` ending `experience-quality-critique-design.json`) → design repair → a node waiting for
+   both (the design loop's closure, directly `hard_blocked_by` QA and repair) → UI implementation → runtime critique
+   (`…-runtime.json`) → implementation repair → closure node directly `hard_blocked_by` runtime critique and repair.
+   Two declared loops. Use neutral capabilities (`qa`, `implement`) and ids outside `APP_DESIGN_REQUIRED_NODES` so
+   `validate_app_design_flow` has nothing to say; the experience design node's `exit_artifacts` already cover M1's
+   user-flow and screen-requirements paths so the same graph serves test 2. Assert `report["blockers"] == []`. Proves the loop shape Must #9 prescribes is accepted by the
+   existing readiness gate and by `repair_loop_declaration_findings` (closure directly blocked by QA and repair,
+   bounded budget).
+2. `test_unattended_readiness_reports_experience_gate_at_run_boundary` — the same graph plus a profile
+   `{task_route: "new-product", experience_priority: {mode: "consumer", reason: …}}` and node-specs whose wording makes
+   M1's `_ui_implementation_nodes` recognise the UI implementation node (reuse the wording of M1's fixture in
+   `test_validate_bootstrap.py`). Do **not** assert `status`: scope blockers such as `invalid_scope` are expected and
+   are not this test's subject. Assert on the set of blocker codes only: with both loops declared it contains no code
+   starting `experience_gate`, no `missing_experience_gate`, no `implementation_not_blocked_by_design_critique`, no
+   `closure_not_blocked_by_experience_gate` and no `missing_experience_design_node`; after dropping the runtime loop
+   from the spec it contains `experience_gate_without_repair_loop`; after removing the runtime critique node it
+   contains `missing_experience_gate`. Without this second test the first would pass on a fixture that never reached
+   M3's gate; with it, the registration in `structural_gate_blockers` is proved from the real `/run` entry.
 
 **Write set:** `claude/meta-skill/tests/unit/test_validate_unattended_readiness.py`.
 
 **Acceptance:**
 
 ```bash
-python3 -m pytest -q "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py::test_unattended_readiness_accepts_experience_gate_repair_loops" && python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_unattended_readiness.py
+python3 -m pytest -q "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py::test_unattended_readiness_accepts_experience_gate_repair_loops" "claude/meta-skill/tests/unit/test_validate_unattended_readiness.py::test_unattended_readiness_reports_experience_gate_at_run_boundary" && python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_unattended_readiness.py
 ```
 
 **Depends on:** T-M3-05.
@@ -389,7 +425,8 @@ its bootstrap corpus).
 grep -qF 'experience_priority.mode = none' claude/meta-skill/knowledge/suppress-rules.md && grep -qF 'Must #9' claude/meta-skill/knowledge/suppress-rules.md && grep -qF 'creative-quality-critique' claude/meta-skill/knowledge/capabilities/concept-acceptance.md && grep -qF 'experience-quality-critique' claude/meta-skill/knowledge/capabilities/concept-acceptance.md && grep -qF 'hard_blocked_by' claude/meta-skill/knowledge/capabilities/concept-acceptance.md && ! grep -rn 'experience_priority' claude/meta-skill/knowledge | grep -v 'experience_priority.mode' | grep -v bootstrap | grep -q . && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 ```
 
-**Depends on:** none.
+**Depends on:** upstream sinks T-M1-07, T-M2-10, T-M4-07, T-M4-08 (T-M1-03 establishes the same-line invariant this
+acceptance greps; without the edge this task is ready as soon as T-M1-02 is, i.e. possibly while T-M1-03 is mid-edit).
 
 ---
 
@@ -462,5 +499,7 @@ bash -n .githooks/pre-commit && [ "$(grep -c 'validate_app_experience_pipeline.p
   and it is distinct from M6's `test_experience_lens_parity.py`.
 - T-M3-05 `requires` `api:validateExperienceDesignCoverage` although the M3 manifest's `consumes` omits it; see
   "Interface ownership".
+- T-M3-02/04/05/08 carry foreign `depends_on` ids (T-M1-07, T-M2-10, T-M4-07, T-M4-08). `build_task_dag.py` resolves
+  `depends_on` over the combined task list, so they are valid only when all six task files are fed to it together.
 - Known consequence outside M3's write set: `codex/meta-skill/knowledge/flow-template.py` keeps its own
   `PRODUCTION_GAP_FIELDS` and does not learn the two `must_fix_*` fields here (M5 parity).

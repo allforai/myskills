@@ -1,2 +1,15 @@
-{"run_id":"2026-09-18-product-experience-overhaul","source_commit":"e20857ab","branch":"product-experience-overhaul",
- "stages":{"0":"done","1.1":"done (6/6 ok, wf_ccd12e50-60a)","1.2-deterministic":"ok; warnings: data:experienceProposals and data:regressionFixtures exposed but never consumed (expected: host-consumed / terminal)"}}
+{
+ "run_id": "2026-09-18-product-experience-overhaul",
+ "source_commit": "e20857ab",
+ "branch": "product-experience-overhaul",
+ "stages": {
+  "0": "done",
+  "1.1": "done (6/6 ok, wf_ccd12e50-60a)",
+  "1.2-deterministic": "ok; warnings: data:experienceProposals and data:regressionFixtures exposed but never consumed (expected: host-consumed / terminal)",
+  "1.2-critic": "ok (11 cross-module gaps self-fixed, registry untouched)",
+  "1.3": "ok (6 plans, 56 tasks, validate_plan_tasks 6/6)",
+  "1.4": "ok (2 reverse critics; cross-module ordering defects fixed; residual risks in reverse-review.json)",
+  "1.5": "ok (build_task_dag ok:true; 2 same-file ordering warnings, isolated)",
+  "1.6": "launching"
+ }
+}

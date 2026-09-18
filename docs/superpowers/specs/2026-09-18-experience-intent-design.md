@@ -558,6 +558,13 @@ python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py      #
   （M3 落地后还须补两阶段评审节点与回路）；任何情况下都不放宽断言、不改 M1/M3 的检查。M1 对 `project()` 夹具的
   `experience_priority` 补齐（R-M1-09，值为 `none`）不与本模块冲突：本模块的用例一律经 `set_mode` 显式写入；
   用例 10 所说"`mode` 缺失下 `plan` 成功"在 M1 落地后实际是 `mode == none`，两者对 U5a 等价（均不触发）。
+- **A10b 执行次序（逆向评审补充）。** 本模块的全部验收命令都经共享夹具 `project()` 跑产品路线的三个门，而 M1 的 T-M1-01
+  正是往这三个门里注册新检查、并靠自己那一行 `project()` 夹具让共享夹具重新变绿；主树无 worktree 隔离，T-M1-01 半完成时
+  本模块任何门用例都会得到 `missing_experience_priority`。`touched_paths` 只串行化写入方，管不了"读别人正在写的文件"。
+  因此任务链头 T-M2-01 标注 `requires: ["api:validateExperienceDesignCoverage"]`，使整条链成为 T-M1-01 的后继。这只是 DAG 次序边，
+  与总览的执行次序 M1 → (M2 ∥ M4) 一致；本模块的代码仍然只读 `data:experiencePriority`，不调用 M1 的函数。
+  逆向评审在临时副本里同时套上 M1 原型（注册检查 + 夹具一行）与 U1/U7（插入话题、镜像、两处修正），跑完整 `tests/unit`：
+  1196 passed，失败仅为 4 个既有失败（另有一例依赖外层 git 仓库、在无 `.git` 的副本里必然失败，与本改动无关）。
 - **A11 不改 `skills/bootstrap/SKILL.md`。** 它是共享热点文件且 bootstrap 步骤文本归 M1；本模块的协议入口是
   `product-intent-confirmation.md`，SKILL.md 已经把产品路线指向该协议。
 

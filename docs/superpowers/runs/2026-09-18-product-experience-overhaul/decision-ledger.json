@@ -1,4 +1,79 @@
 {
   "run_id": "2026-09-18-product-experience-overhaul",
-  "records": []
+  "records": [
+    {
+      "phase": "1.6",
+      "branch_id": "run",
+      "task_id": null,
+      "question": "共享主树（无 worktree）下并发执行器的提交会争抢 git 索引，且 pre-commit 钩子会扫到别的执行器写了一半的文件。怎么调度？",
+      "options_considered": [
+        "A 并发上限 3 + 文件锁串行化提交 + 只暂存自己的 touched_paths + 钩子因他人文件失败则等待重试",
+        "B 并发 4、不加锁",
+        "C 全串行（并发 1）",
+        "D 提交时 --no-verify 绕过钩子"
+      ],
+      "chosen": "A",
+      "reason": "DAG 有 22 层、接近串行，上限 3 几乎不损失速度；锁消除 index.lock 竞争；D 绕过用户设的安全网且信封未授权；C 无谓地慢；B 会因钩子互扰反复失败",
+      "assumptions": [
+        "钩子约 20-30 秒",
+        "执行器遵守提交协议"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "machine_load",
+        "value": {
+          "max_concurrency": 4,
+          "note": "18 cores / 128 GB; pytest files spawn subprocess-heavy tests; full meta-skill suite (~6 min) runs only at integration points, one at a time"
+        }
+      },
+      "fallback": "若钩子互扰仍频繁，降为并发 1 续跑",
+      "affected_artifacts": [
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs"
+      ],
+      "decision_id": "D-0001",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": null,
+      "result_ref": null,
+      "skipped_dependents": []
+    },
+    {
+      "phase": "1.4",
+      "branch_id": "plans",
+      "task_id": null,
+      "question": "逆向评审为表达模块完成次序，在 M3/M5 任务的 depends_on 里写了别的模块的任务 id，违背了规划提示词里 depends_on 仅限模块内的规则。接受还是改回接口标签？",
+      "options_considered": [
+        "A 接受跨模块 depends_on",
+        "B 扩充冻结的注册表，新增汇点接口",
+        "C 回退，仅靠 requires/implements"
+      ],
+      "chosen": "A",
+      "reason": "该规则的目的是防止并行规划时猜错外部 id；此处所有 id 已存在且 build_task_dag.py 在合并任务集上解析通过（ok, 无缺失依赖）。B 要改冻结的注册表；C 会让 M5 的全量验证与版本升级在上游未完成时就绪",
+      "assumptions": [
+        "任务 id 在执行期保持稳定"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "scope",
+        "value": [
+          "repo:/Users/aa/workspace/myskills",
+          "branch:product-experience-overhaul"
+        ]
+      },
+      "fallback": null,
+      "affected_artifacts": [
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M3.json",
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/orchestration.json"
+      ],
+      "decision_id": "D-0002",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": "action-taken",
+      "result_ref": "docs/superpowers/runs/2026-09-18-product-experience-overhaul/orchestration.json (build_task_dag ok:true, errors:[])",
+      "skipped_dependents": []
+    }
+  ]
 }

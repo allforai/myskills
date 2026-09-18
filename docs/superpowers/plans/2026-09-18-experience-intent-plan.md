@@ -37,13 +37,15 @@ states what must be true per task, how it is proven, and what may be written.
 ## Task graph
 
 ```
-T-M2-01 ─▶ T-M2-02 ─▶ T-M2-03 ─▶ T-M2-04 ─▶ T-M2-05 ─▶ T-M2-06 ─▶ T-M2-07 ─┐
-   │                                                        └──▶ T-M2-08 ──┤
-   └──▶ T-M2-09 ───────────────────────────────────────────────────────────┴▶ T-M2-10
+(T-M1-01) ─▶ T-M2-01 ─▶ T-M2-02 ─▶ T-M2-03 ─▶ T-M2-04 ─▶ T-M2-05 ─▶ T-M2-06 ─▶ T-M2-07 ─▶ T-M2-08 ─▶ T-M2-09 ─▶ T-M2-10
 ```
 
-`product_intent.py` and `test_experience_direction.py` are shared by most tasks, so the chain is serial by
-path collision as well as by dependency. No task is reality-gated: every acceptance is a subprocess/unit test,
+Every task writes `test_experience_direction.py`, so no two of them can ever run concurrently. The chain is
+therefore declared fully linear through `depends_on` (T-M2-08 after T-M2-07, T-M2-09 after T-M2-08) instead of
+leaving three same-file writers unordered for the DAG builder to serialize "by declaration order" with an
+ambiguity warning; no parallelism is lost. T-M2-08 needs only T-M2-06's `delegations()` and T-M2-09 needs only
+T-M2-01's topic — the extra edges are ordering, not data dependencies. The leading edge to T-M1-01 comes from the
+`requires` tag on T-M2-01 (see that task). No task is reality-gated: every acceptance is a subprocess/unit test,
 a validator run or a literal check.
 
 Test-case split relative to the design's 14 cases: design case 8 and case 9 each mix `select`, `delegate` and
@@ -55,6 +57,14 @@ file ends with 16 test functions.
 ## T-M2-01 Topic `experience-direction`, test mirror and the two broken session tests
 
 Requirements: R-M2-01, R-M2-09, R-M2-10 (design U1, U7).
+Requires `api:validateExperienceDesignCoverage` (ordering edge to T-M1-01). Every M2 acceptance command runs
+product-route gate tests through the shared `project()` fixture and imports `test_bootstrap_scope.py` /
+`test_validate_bootstrap.py`. T-M1-01 registers a new structural check into those gates and only turns the shared
+fixture green again with its own `project()` line; the tree is shared (no worktree isolation), so an M2 task running
+while T-M1-01 is half-done sees `missing_experience_priority` on every gate, and T-M1-01's regression set would in
+turn read a half-edited `product_intent.py` / `test_product_intent_session.py`. `touched_paths` serializes writers
+only. Tagging the head of the chain makes all ten M2 tasks DAG descendants of T-M1-01; it also means cases 6 and 11
+(gates exit 0 under `consumer` / `none`) are proven against the real M1 check, not against its absence (design A10).
 
 Behaviour: `TOPICS` in `product_intent.py` contains `"experience-direction"` immediately before `"tradeoffs"`,
 and `EXPERIENCE_TOPIC = "experience-direction"` exists for later units. A draft lacking that topic yields the
@@ -392,3 +402,4 @@ Write set: `test_experience_direction.py`, `product_intent.py` (fixes only).
 | `api:productIntentDelegate` | T-M2-05 |
 | `data:delegationDisclosure` | T-M2-06 |
 | consumes `data:experiencePriority` | T-M2-04, T-M2-07 |
+| ordering edge on `api:validateExperienceDesignCoverage` (M1 gate + shared fixture line must land first) | T-M2-01 |

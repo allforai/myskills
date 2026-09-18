@@ -63,6 +63,10 @@ and placement are as design U7 steps 1–9. Key properties:
 - `mode == "none"` → `[]`; `admin` is subject only to the `not_applicable.experience` check;
 - UI implementation nodes are identified solely via `_ui_implementation_nodes`, built on the existing
   `_matching_nodes` plus profile module roles — no new heuristic, no bare `"ui"`/`"expo"` terms;
+- `_matching_nodes` iterates `workflow["nodes"]` raw and would raise on a non-list or a non-dict entry, so
+  `_ui_implementation_nodes` hands it the addressable subset
+  (`{"nodes": list(_addressable_nodes(workflow.get("nodes")).values())}`), never the raw workflow — this is
+  what makes "never raises" true when the function is called directly rather than behind the shape gate;
 - artifact match accepts a monorepo prefix (`endswith("/" + path)`); a node that itself produces the artifact
   is not required to depend on itself; a transitive `hard_blocked_by` path to any one producer per required
   artifact group suffices; each message ends with `RETURN_TO_BOOTSTRAP`.
@@ -112,8 +116,15 @@ echo "$CO" | grep -q 'test_experience_coverage_is_a_structural_gate_blocker' && 
 echo "$CO" | grep -q 'test_app_design_flow_fixtures_raise_no_experience_findings' && \
 test "$(echo "$CO" | grep -c 'test_experience_coverage_')" -ge 19 && \
 python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_bootstrap.py && \
-python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_bootstrap_scope.py claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_acceptance_allocation.py claude/meta-skill/tests/unit/test_legacy_projection_authority.py claude/meta-skill/tests/unit/test_legacy_profile_authority.py claude/meta-skill/tests/unit/test_intent_review_corrections.py claude/meta-skill/tests/unit/test_product_intent_resume.py claude/meta-skill/tests/unit/test_product_retained_scope.py claude/meta-skill/tests/unit/test_planning_audit_contracts.py
+python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_bootstrap_scope.py claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_acceptance_allocation.py claude/meta-skill/tests/unit/test_legacy_projection_authority.py claude/meta-skill/tests/unit/test_legacy_profile_authority.py claude/meta-skill/tests/unit/test_intent_review_corrections.py claude/meta-skill/tests/unit/test_product_intent_resume.py claude/meta-skill/tests/unit/test_product_retained_scope.py claude/meta-skill/tests/unit/test_planning_audit_contracts.py claude/meta-skill/tests/unit/test_freeze_idempotence.py claude/meta-skill/tests/unit/test_product_question_identity.py
 ```
+
+The regression set is every unit file that a reverse-critic prototype showed to be sensitive to the new gate: with
+the check registered and the `project()` line absent, the full unit directory had 46 new failures spread over
+`test_acceptance_allocation`, `test_freeze_idempotence`, `test_intent_review_corrections`,
+`test_product_intent_resume`, `test_product_intent_session`, `test_product_question_identity` and
+`test_product_retained_scope`; with the line present only the 4 known failures remain. `test_freeze_idempotence`
+and `test_product_question_identity` were missing from the design's list and are added here.
 
 (19 = 8 host-parametrized tests × 2 hosts, with the 3-shape and 2-path tests contributing more, plus 1
 un-parametrized `test_experience_coverage_is_a_structural_gate_blocker`; the floor is deliberately conservative.)
@@ -443,6 +454,13 @@ Depends on: T-M1-02, T-M1-03, T-M1-04, T-M1-05, T-M1-06.
 Consumes: none. Reality-gated tasks: none.
 
 ## Notes for the orchestrator
+
+- Cross-module ordering: the tree is shared (no worktree isolation), and while T-M1-01 is in flight the gate is
+  registered but the `project()` fixture line may not be yet, which turns every product-route gate test red. M2's
+  acceptance commands run exactly those tests, and T-M1-01's regression set reads `product_intent.py` /
+  `test_product_intent_session.py`, which M2 rewrites. `touched_paths` only serializes writers, so the ordering is
+  carried by an interface edge instead: T-M2-01 (head of the whole M2 chain) is tagged
+  `requires: ["api:validateExperienceDesignCoverage"]`, which makes every M2 task a DAG descendant of T-M1-01.
 
 - T-M1-01 keeps test and implementation in one task on purpose: a "red tests only" task has no acceptance
   command that exits 0, and both files are cross-module hot files that should be visited once. The executor

@@ -6,7 +6,16 @@
    "codex/meta-skill/skills/bootstrap.md"
   ],
   "acceptance_cmd": "grep -q '^### 0b\\. Experience Priority, Direction and Quality Gate' codex/meta-skill/skills/bootstrap.md && for s in experience_priority experience-direction propose delegate product-intent-confirmation.md consumer-maturity-patterns.md journey-emotion-schema.md capabilities/product-concept.md; do grep -q -- \"$s\" codex/meta-skill/skills/bootstrap.md || exit 1; done && ! grep -q 'CLAUDE_PLUGIN_ROOT' codex/meta-skill/skills/bootstrap.md && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py",
-  "depends_on": [],
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ],
   "requires": [
    "api:productIntentPropose",
    "api:productIntentSelect",
@@ -22,7 +31,16 @@
    "pi/meta-skill/test_contract.py"
   ],
   "acceptance_cmd": "python3 -m pytest -q \"pi/meta-skill/test_contract.py::EntryTests::test_bootstrap_carries_experience_direction\" \"pi/meta-skill/test_contract.py::TemplateTests::test_completion_discloses_delegations\" && python3 -m pytest -q pi/meta-skill/test_contract.py && grep -q '^### 7\\. 体验方向与体验质量门' pi/meta-skill/skills/bootstrap/SKILL.md && [ \"$(grep -c -- '--delegations' pi/meta-skill/knowledge/orchestrator-template.md)\" -ge 2 ] && ! grep -q '\\.claude/commands/run\\.md\\|\\.codex/commands/run\\.md' pi/meta-skill/knowledge/orchestrator-template.md",
-  "depends_on": [],
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ],
   "requires": [
    "api:productIntentPropose",
    "api:productIntentSelect",
@@ -38,7 +56,16 @@
    "codex/meta-skill/test_flow.py"
   ],
   "acceptance_cmd": "python3 -m pytest -q \"codex/meta-skill/test_flow.py::test_completion_discloses_delegations\" \"codex/meta-skill/test_flow.py::test_delegation_disclosure_failure_never_blocks_completion\" && python3 -m pytest -q codex/meta-skill/test_flow.py && grep -q '^def delegation_disclosure(project_root: Path)' codex/meta-skill/knowledge/flow-template.py",
-  "depends_on": [],
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ],
   "requires": [
    "data:delegationDisclosure"
   ]
@@ -50,7 +77,16 @@
    "codex/meta-skill/knowledge/orchestrator-template.md"
   ],
   "acceptance_cmd": "[ \"$(grep -c -- '--delegations' codex/meta-skill/knowledge/orchestrator-template.md)\" -ge 2 ] && grep -q 'product_intent.py . --delegations' codex/meta-skill/knowledge/orchestrator-template.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\\|\\.claude/commands/run\\.md' codex/meta-skill/knowledge/orchestrator-template.md && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py",
-  "depends_on": [],
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ],
   "requires": [
    "data:delegationDisclosure"
   ]
@@ -81,7 +117,16 @@
    "claude/meta-skill/tests/unit/test_consumer_product_regression.py"
   ],
   "acceptance_cmd": "python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_regression.py | grep -q 'test_ink_scent_shaped_workflow_is_refused_at_every_public_gate\\[codex\\]' && python3 -m pytest -q claude/meta-skill/tests/unit/test_consumer_product_regression.py && python3 -c 'import json; p=json.load(open(\"claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/plan.json\")); s=json.dumps(p); assert \".allforai/app-design/\" not in s and \"experience-quality-critique\" not in s'",
-  "depends_on": [],
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ],
   "requires": [
    "api:validateExperienceDesignCoverage",
    "api:validateExperienceGateFlow"
@@ -123,7 +168,16 @@
    "claude/meta-skill/tests/expected/new-product-consumer-app-codex-expected.json"
   ],
   "acceptance_cmd": "python3 -c 'import json; P=\"claude/meta-skill/tests/expected/new-product-consumer-app\"; docs=[json.load(open(P+s)) for s in (\"-expected.json\",\"-codex-expected.json\")]; need={\".allforai/app-design/spec/user-flow-spec.json\",\".allforai/app-design/spec/screen-requirements-spec.json\",\".allforai/app-design/qa/experience-quality-critique-design.json\",\".allforai/app-design/qa/experience-quality-critique-runtime.json\"}; assert all(need<=set(d[\"some_node_exit_artifacts_include\"]) and d[\"profile\"][\"task_route\"]==\"new-product\" and d[\"profile\"][\"experience_priority.mode\"]==\"consumer\" and \"assert by node_id\" in d[\"forbidden\"] and set(d[\"experience_direction\"][\"user_action_in\"])=={\"select\",\"delegate\"} for d in docs)' && grep -rq --exclude-dir=tests 'experience-quality-critique-design.json' claude/meta-skill && grep -rq --exclude-dir=tests 'experience-quality-critique-runtime.json' claude/meta-skill && grep -q 'claude/meta-skill/skills/bootstrap/SKILL.md' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'codex/meta-skill/skills/bootstrap.md' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -qi 'ink-scent' claude/meta-skill/tests/prompts/new-product-consumer-app.md claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\\|AskUserQuestion' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md",
-  "depends_on": [],
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ],
   "requires": [
    "data:experienceCritiqueReport"
   ]
@@ -154,7 +208,7 @@
    "docs/validation/product-experience-thought-tests/evidence.json",
    "docs/validation/product-experience-thought-tests/responses.md"
   ],
-  "acceptance_cmd": "python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,\"rb\").read()).hexdigest(); D=\"docs/validation/product-experience-thought-tests/\"; e=json.load(open(D+\"evidence.json\")); c={x[\"id\"]:x for x in e[\"cases\"]}; assert set(c)>={\"E%d\"%i for i in range(1,10)}, sorted(c); assert all(x[\"verdict\"] in (\"pass\",\"fail\") and len(x[\"observed_tool_calls\"])==1 and x[\"observed_tool_calls\"][0][\"name\"]==\"Read\" and x[\"platform_simulated\"] and x[\"prompt_sha256\"] for x in c.values()); f=e[\"launch\"][\"fixtures\"]; assert all(f[p]==h(p) for p in (\"fixtures/product-experience/thought-tests.json\",\"fixtures/product-experience/subject-prompt.md\")); assert e[\"responses_sha256\"]==h(D+\"responses.md\"); assert isinstance(e[\"found_defect\"],bool) and e[\"limits\"]' && grep -q '^## 尚未验证' docs/validation/product-experience-thought-tests.md && grep -q '^## 场景判定' docs/validation/product-experience-thought-tests.md && grep -q '^## 测出的缺陷与修复' docs/validation/product-experience-thought-tests.md",
+  "acceptance_cmd": "python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,\"rb\").read()).hexdigest(); D=\"docs/validation/product-experience-thought-tests/\"; e=json.load(open(D+\"evidence.json\")); c={x[\"id\"]:x for x in e[\"cases\"]}; assert set(c)>={\"E%d\"%i for i in range(1,10)}, sorted(c); assert all(x[\"verdict\"] in (\"pass\",\"fail\") and len(x[\"observed_tool_calls\"])==1 and x[\"observed_tool_calls\"][0][\"name\"]==\"Read\" and x[\"platform_simulated\"] and x[\"prompt_sha256\"] for x in c.values()); f=e[\"launch\"][\"fixtures\"]; assert all(f[p]==h(p) for p in (\"fixtures/product-experience/thought-tests.json\",\"fixtures/product-experience/subject-prompt.md\")); assert e[\"responses_sha256\"]==h(D+\"responses.md\"); assert isinstance(e[\"found_defect\"],bool) and e[\"limits\"]; R=open(D+\"responses.md\",encoding=\"utf-8\").read(); assert all((\"\\n## E%d\"%i) in R for i in range(1,10)), \"responses.md needs one ## E<n> section per case\"; assert all(x[\"under_test\"] and x[\"notes\"] and x[\"resolved_model\"] for x in c.values())' && grep -q '^## 尚未验证' docs/validation/product-experience-thought-tests.md && grep -q '^## 场景判定' docs/validation/product-experience-thought-tests.md && grep -q '^## 测出的缺陷与修复' docs/validation/product-experience-thought-tests.md",
   "depends_on": [
    "T-M5-09"
   ]
@@ -186,7 +240,7 @@
    "shared/scripts/orchestrator/test_experience_lens_parity.py",
    "claude/superstorm/scripts/test_superstorm_contract.py"
   ],
-  "acceptance_cmd": "python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,\"rb\").read()).hexdigest(); D=\"docs/validation/product-experience-thought-tests/\"; e=json.load(open(D+\"evidence.json\")); final={}; [final.__setitem__(c[\"id\"].rstrip(\"b\"), c[\"verdict\"]) for r in [e]+e.get(\"retests\",[]) for c in r[\"cases\"]]; ids={\"E%d\"%i for i in range(1,10)}; assert set(final)>=ids and all(final[i]==\"pass\" for i in ids), final; failed=any(c[\"verdict\"]!=\"pass\" for c in e[\"cases\"]); assert e[\"failure_loop\"][\"status\"]==(\"closed\" if failed else \"not-needed\"); assert e[\"launch\"][\"fixtures\"][\"fixtures/product-experience/thought-tests.json\"]==h(\"fixtures/product-experience/thought-tests.json\"); assert e[\"responses_sha256\"]==h(D+\"responses.md\")' && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py && python3 -m pytest -q pi/meta-skill/test_contract.py && python3 -m pytest -q claude/superstorm/scripts/test_superstorm_contract.py && python3 claude/superstorm/scripts/check_skill_refs.py",
+  "acceptance_cmd": "python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,\"rb\").read()).hexdigest(); D=\"docs/validation/product-experience-thought-tests/\"; e=json.load(open(D+\"evidence.json\")); final={}; [final.__setitem__(c[\"id\"].rstrip(\"b\"), c[\"verdict\"]) for r in [e]+e.get(\"retests\",[]) for c in r[\"cases\"]]; ids={\"E%d\"%i for i in range(1,10)}; assert set(final)>=ids and all(final[i]==\"pass\" for i in ids), final; failed=any(c[\"verdict\"]!=\"pass\" for c in e[\"cases\"]); assert e[\"failure_loop\"][\"status\"]==(\"closed\" if failed else \"not-needed\"); assert e[\"launch\"][\"fixtures\"][\"fixtures/product-experience/thought-tests.json\"]==h(\"fixtures/product-experience/thought-tests.json\"); assert e[\"responses_sha256\"]==h(D+\"responses.md\"); R=open(D+\"responses.md\",encoding=\"utf-8\").read(); fl=e[\"failure_loop\"]; bad=[c[\"id\"] for c in e[\"cases\"] if c[\"verdict\"]!=\"pass\"]; assert all((\"\\n## %sb\"%i) in R for i in bad), \"each failed case needs a ## E<n>b retest section\"; assert (not failed) or (fl[\"fixed_files\"] and fl[\"pinned\"]), \"a closed loop names the fixed files and the pinned literal\"' && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py && python3 -m pytest -q pi/meta-skill/test_contract.py && python3 -m pytest -q claude/superstorm/scripts/test_superstorm_contract.py && python3 claude/superstorm/scripts/check_skill_refs.py && [ \"$(diff claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md | grep -c '^[<>]')\" = \"12\" ] && python3 -m pytest -q shared/scripts/orchestrator/test_experience_lens_parity.py shared/scripts/orchestrator/test_codex_contract_checks.py && python3 claude/meta-skill/scripts/orchestrator/validate_app_experience_pipeline.py . && ! grep -rn \"experience_priority\" claude/meta-skill/knowledge | grep -v \"experience_priority.mode\" | grep -v bootstrap | grep -q .",
   "depends_on": [
    "T-M5-10",
    "T-M5-05",
@@ -201,7 +255,16 @@
    "README.md"
   ],
   "acceptance_cmd": "grep -q 'experience_priority' CLAUDE.md && grep -q 'missing_experience_priority' CLAUDE.md && grep -q 'docs/experience-review/' CLAUDE.md && grep -q '体验质量门' CLAUDE.md && grep -q '体验方向' README.md && grep -q '体验质量门' README.md",
-  "depends_on": []
+  "depends_on": [
+   "T-M1-07",
+   "T-M2-10",
+   "T-M3-10",
+   "T-M4-07",
+   "T-M4-08",
+   "T-M6-03",
+   "T-M6-04",
+   "T-M6-05"
+  ]
  },
  {
   "id": "T-M5-13",

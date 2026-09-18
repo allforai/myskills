@@ -488,12 +488,21 @@ def validate_experience_gate_flow(bdir: str) -> list:   # return _rendered(exper
   `test_must_fix_before_implementation_in_gates_is_not_complete`、`test_must_fix_before_release_in_gates_is_not_complete`、
   `test_top_level_must_fix_is_not_complete`、`test_empty_must_fix_gates_are_complete`
   （`gates` 三项皆 `[]` 且 `recommended_iterations` 非空时仍通过——建议不阻断）。断言 `status_error["field"]`。
-- **`tests/unit/test_validate_unattended_readiness.py`（edit，追加一例）：**
-  `test_unattended_readiness_accepts_experience_gate_repair_loops`——最小 UI 产品图带 design/runtime 两条回路，
-  `status == "ready"` 且无 `*repair_loop*` 阻断；证明 Must #9 描述的回路形状被既有就绪门接受。复用 `_repair_loop`、`_write`。
-  该夹具的 profile 若写成产品路线 + `mode: consumer`（推荐，这样才真正经过 `structural_gate_blockers` 里的 M1、M3 两项），
-  图里必须同时含 M1 要求的体验设计节点（`exit_artifacts` 覆盖 user-flow 与 screen-requirements，界面实现节点传递依赖它），
-  否则会被 M1 的 `missing_experience_design_node` 拦下而不是证明回路形状。
+- **`tests/unit/test_validate_unattended_readiness.py`（edit，追加两例）：** 就绪门还会调用
+  `product_intent.validate_scope`；profile 一旦带 `task_route: new-product`，`status == "ready"` 就要求整套产品契约
+  （`task_goal`、`task_scope`、冻结意图、`requirement_refs`、已确认的计划，M2 之后还要已确认的体验方向意图），
+  本文件里的"最小夹具"不可能满足（该文件现有夹具全部不带 profile 正是这个原因；产品路线全绿由 M5 的
+  `test_designed_and_gated_workflow_passes_every_public_gate` 证明）。因此两件事分开证：
+  1. `test_unattended_readiness_accepts_experience_gate_repair_loops`——**不带 profile** 的 Must #9 形状图
+     （体验设计节点 → design 评审 → 设计修复 → 等待二者的节点 → 界面实现 → runtime 评审 → 实现修复 → 收尾），
+     两条回路，断言 `report["blockers"] == []`；证明 Must #9 描述的回路形状被既有就绪门与
+     `repair_loop_declaration_findings` 接受。节点取中性 capability，避开 `validate_app_design_flow`。复用 `_repair_loop`、`_write`。
+  2. `test_unattended_readiness_reports_experience_gate_at_run_boundary`——同一张图加上
+     `{task_route: "new-product", experience_priority: {mode: "consumer"}}` 的 profile（图里含 M1 要求的体验设计节点，
+     界面实现节点的措辞沿用 M1 夹具以便被 `_ui_implementation_nodes` 认出）。**不断言 `status`**（`invalid_scope` 等
+     scope 阻断是预期的、与本例无关），只看阻断码集合：两条回路齐全时不含本门四个码与 `missing_experience_design_node`；
+     去掉 runtime 回路后含 `experience_gate_without_repair_loop`；去掉 runtime 评审节点后含 `missing_experience_gate`。
+     这证明本门确实经 `structural_gate_blockers` 在 `/run` 边界生效。
   `validate_unattended_readiness.py` 本身**不改**。
 
 ### 验收命令（在规格"验收"一节基础上补全；均在 `/Users/aa/workspace/myskills` 根目录执行）
@@ -563,7 +572,7 @@ python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py \
 | `claude/meta-skill/tests/unit/test_validate_bootstrap.py` | edit（追加分节） | R-M3-11, R-M3-08 |
 | `claude/meta-skill/tests/unit/test_validate_app_experience_pipeline.py` | create | R-M3-11, R-M3-09 |
 | `claude/meta-skill/tests/unit/test_check_artifacts.py` | edit（追加 4 例） | R-M3-11, R-M3-07 |
-| `claude/meta-skill/tests/unit/test_validate_unattended_readiness.py` | edit（追加 1 例） | R-M3-11, R-M3-07 |
+| `claude/meta-skill/tests/unit/test_validate_unattended_readiness.py` | edit（追加 2 例） | R-M3-11, R-M3-07 |
 
 不触碰：`skills/game-creative/**`、`knowledge/capabilities/game-design.md`、`validate_game_creative_pipeline.py`、
 `validate_unattended_readiness.py`、`reconcile_bootstrap_workflow.py`、`skills/bootstrap/SKILL.md`、codex/pi 的任何手工孪生

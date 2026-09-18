@@ -350,6 +350,9 @@ M1 由三层构成，层间只靠两个数据契约耦合：
     `_matching_nodes(workflow, specs_dir, _ui_implementation_terms(profile))`（`:766`，
     节点条目 + node-spec 正文的词项匹配，既有办法）再按 `_is_implementation_node` 过滤。
     刻意不用裸词 `"ui"`、`"expo"`（会命中 build/require/export）。
+    `_matching_nodes` 直接遍历 `workflow["nodes"]`，遇到非列表或非 dict 条目会抛异常；因此传给它的是可寻址子集
+    `{"nodes": list(_addressable_nodes(workflow.get("nodes")).values())}`，而不是原始 workflow（逆向评审补充：
+    这样"永不抛异常"在函数被直接调用、未经 shape 门时也成立）。
     M3 的 `experience_gate_flow_findings` 直接调用这个函数（闭环评审补充：M3 设计要求"与 M1 同源识别"，
     因此这里必须落成具名函数而不是内联在校验函数里，M3 无需再做抽取）。
   - `experience_design_coverage_findings(bdir) -> list[dict]`，判定顺序：
@@ -481,8 +484,14 @@ M1 由三层构成，层间只靠两个数据契约耦合：
     claude/meta-skill/tests/unit/test_intent_review_corrections.py \
     claude/meta-skill/tests/unit/test_product_intent_resume.py \
     claude/meta-skill/tests/unit/test_product_retained_scope.py \
-    claude/meta-skill/tests/unit/test_planning_audit_contracts.py
+    claude/meta-skill/tests/unit/test_planning_audit_contracts.py \
+    claude/meta-skill/tests/unit/test_freeze_idempotence.py \
+    claude/meta-skill/tests/unit/test_product_question_identity.py
   ```
+  （逆向评审补充：在临时副本里注册新检查、不加夹具那一行，跑完整 `tests/unit` 目录得到 46 个新增失败，分布在
+  `test_acceptance_allocation`、`test_freeze_idempotence`、`test_intent_review_corrections`、`test_product_intent_resume`、
+  `test_product_intent_session`、`test_product_question_identity`、`test_product_retained_scope`；加上那一行后只剩 4 个既有失败。
+  原回归清单漏了 `test_freeze_idempotence` 与 `test_product_question_identity`，已补。）
 - 基线（2026-09-18 本分支实测）：`validate_meta_contracts.py` 与 `validate_skills.py` 均 exit 0；
   验收第 4 条 grep 当前输出 8 行（U2 要清零的那 8 行）。4 个已知既有失败不碰。
 - TDD 次序：U9 先写红（四个拒绝用例 + 夹具一行）→ U7 转绿 → U1/U3/U6 文本 → U8 钉子 → U2/U4/U5 文本 → 四条验收 + 回归。

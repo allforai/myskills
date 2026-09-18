@@ -9,6 +9,13 @@
 
 1. M5 在 M1、M2、M3、M4、M6 之后执行。凡引用它们产物的地方，**以落地后的文件为准**：先读 canonical 原句，术语逐字沿用；
    不得凭本计划或设计文档里的转述去猜字段名、阻断码、产物路径。
+   **这条次序写进了 DAG，不靠约定。** 调度器按依赖就绪派发，不按模块排队；`requires` → `implements` 的派生边只够得着上游的
+   *早期*任务（T-M1-01/02/04、T-M2-04/05/06、T-M3-02/05、T-M4-01），够不着 M5 真正依赖的那些——T-M2-07
+   （`ui_product_without_experience_direction`，R-M5-01 点名的码）、T-M2-08（claude 模板的披露句，T-M5-02/04 的蓝本）、
+   T-M3-07/08（Must #9 与抑制规则，T-M5-01/02 的第四条与 E5/E6 的受测文本）、T-M4-02（E4 的受测文本）、M6 全部（E7/E8 的受测文本，
+   M6 不暴露任何接口）。因此 M5 的七个根任务（T-M5-01、02、03、04、06、08、12）的 `depends_on` 都带上上游各模块的**汇点任务**：
+   `T-M1-07`、`T-M2-10`、`T-M3-10`、`T-M4-07`、`T-M4-08`、`T-M6-03`、`T-M6-04`、`T-M6-05`（每个汇点传递覆盖其模块全部任务）；
+   其余 M5 任务经模块内依赖继承。这些外部 id 是稳定的；上游计划若改了汇点编号，同步改这七处。
 2. M5 **不得为让自己的测试通过而修改** `validate_bootstrap.py`、`product_intent.py`、`check_decision_inputs.py`、
    `validate_unattended_readiness.py`、`bootstrap-planning.md`、`test_validate_bootstrap.py`、`test_bootstrap_scope.py`。
    上游未注册校验、码名不符 = 上游缺陷，任务以 blocked 上报并附三门完整码集。
@@ -33,6 +40,8 @@ T-12 文档
 T-13 版本（在 T-11 之后）
 T-14 全量验证（在以上全部之后）─► T-15 release 提交正文草稿
 T-16 真实宿主验收（reality gate，不被任何任务依赖）
+
+七个根任务（01、02、03、04、06、08、12）← 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05
 ```
 
 ---
@@ -57,6 +66,7 @@ assume-and-declare 不能产生 `select`/`delegate`，沉默与推荐不是动�
 grep -q '^### 0b\. Experience Priority, Direction and Quality Gate' codex/meta-skill/skills/bootstrap.md && for s in experience_priority experience-direction propose delegate product-intent-confirmation.md consumer-maturity-patterns.md journey-emotion-schema.md capabilities/product-concept.md; do grep -q -- "$s" codex/meta-skill/skills/bootstrap.md || exit 1; done && ! grep -q 'CLAUDE_PLUGIN_ROOT' codex/meta-skill/skills/bootstrap.md && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py
 ```
 **Write set.** `codex/meta-skill/skills/bootstrap.md`
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ## T-M5-02 Pi 适配器、Pi 模板与 Pi 契约钉住（U4b + U4c-Pi + U4e，R-M5-04）
 
@@ -81,6 +91,7 @@ grep -q '^### 0b\. Experience Priority, Direction and Quality Gate' codex/meta-s
 python3 -m pytest -q "pi/meta-skill/test_contract.py::EntryTests::test_bootstrap_carries_experience_direction" "pi/meta-skill/test_contract.py::TemplateTests::test_completion_discloses_delegations" && python3 -m pytest -q pi/meta-skill/test_contract.py && grep -q '^### 7\. 体验方向与体验质量门' pi/meta-skill/skills/bootstrap/SKILL.md && [ "$(grep -c -- '--delegations' pi/meta-skill/knowledge/orchestrator-template.md)" -ge 2 ] && ! grep -q '\.claude/commands/run\.md\|\.codex/commands/run\.md' pi/meta-skill/knowledge/orchestrator-template.md
 ```
 **Write set.** `pi/meta-skill/skills/bootstrap/SKILL.md`、`pi/meta-skill/knowledge/orchestrator-template.md`、`pi/meta-skill/test_contract.py`
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ## T-M5-03 Codex flow 驱动在完成 payload 披露受托决定（U4c-flow，R-M5-04）
 
@@ -106,6 +117,7 @@ python3 -m pytest -q "codex/meta-skill/test_flow.py::test_completion_discloses_d
 （若第二例参数化，node id 带 `[…]` 后缀会使精确 node id 选不中——那就不要参数化，把三种失败形态写在同一个测试函数里。）
 
 **Write set.** `codex/meta-skill/knowledge/flow-template.py`、`codex/meta-skill/test_flow.py`
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ## T-M5-04 Codex orchestrator 模板的完成输出打印委托清单（U4c-codex，R-M5-04）
 
@@ -120,6 +132,7 @@ python3 -m pytest -q "codex/meta-skill/test_flow.py::test_completion_discloses_d
 [ "$(grep -c -- '--delegations' codex/meta-skill/knowledge/orchestrator-template.md)" -ge 2 ] && grep -q 'product_intent.py . --delegations' codex/meta-skill/knowledge/orchestrator-template.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\|\.claude/commands/run\.md' codex/meta-skill/knowledge/orchestrator-template.md && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py
 ```
 **Write set.** `codex/meta-skill/knowledge/orchestrator-template.md`
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ## T-M5-05 parity 脚本披露新协议并钉住 Codex 侧新文本（U4d，R-M5-04）
 
@@ -189,6 +202,7 @@ python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_reg
 **Write set.** `claude/meta-skill/tests/fixtures/consumer-learning-app/README.md`、
 `…/bad-workflow/profile.json`、`…/bad-workflow/dialogue.json`、`…/bad-workflow/plan.json`、`…/bad-workflow/readiness-spec.json`、
 `claude/meta-skill/tests/unit/test_consumer_product_regression.py`
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ## T-M5-07 good-workflow 夹具 + "已选方向不豁免" 与 "三门皆过" 用例（U1 后半，R-M5-01）— implements `data:regressionFixtures`
 
@@ -246,6 +260,7 @@ python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_reg
 python3 -c 'import json; P="claude/meta-skill/tests/expected/new-product-consumer-app"; docs=[json.load(open(P+s)) for s in ("-expected.json","-codex-expected.json")]; need={".allforai/app-design/spec/user-flow-spec.json",".allforai/app-design/spec/screen-requirements-spec.json",".allforai/app-design/qa/experience-quality-critique-design.json",".allforai/app-design/qa/experience-quality-critique-runtime.json"}; assert all(need<=set(d["some_node_exit_artifacts_include"]) and d["profile"]["task_route"]=="new-product" and d["profile"]["experience_priority.mode"]=="consumer" and "assert by node_id" in d["forbidden"] and set(d["experience_direction"]["user_action_in"])=={"select","delegate"} for d in docs)' && grep -rq --exclude-dir=tests 'experience-quality-critique-design.json' claude/meta-skill && grep -rq --exclude-dir=tests 'experience-quality-critique-runtime.json' claude/meta-skill && grep -q 'claude/meta-skill/skills/bootstrap/SKILL.md' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'codex/meta-skill/skills/bootstrap.md' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -qi 'ink-scent' claude/meta-skill/tests/prompts/new-product-consumer-app.md claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\|AskUserQuestion' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md
 ```
 **Write set.** 上述四个文件。
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ---
 
@@ -283,16 +298,18 @@ python3 -c 'import json,os; d=json.load(open("fixtures/product-experience/though
   `round`、`date`、`host`、`tested_version{commit, <受测文件>: sha256}`、`launch{method, isolation, fixtures{path: sha256}}`、
   `cases[]{id, platform_simulated, under_test, prompt_sha256, requested_model, resolved_model, model_source, observed_tool_calls[], duration_ms, verdict, notes}`、
   `responses`、`found_defect`、`limits[]`、`responses_sha256`。
-- `docs/validation/product-experience-thought-tests/responses.md`：各 case 受测回答原文。
+- `docs/validation/product-experience-thought-tests/responses.md`：各 case 受测回答原文，每个 case 一节，标题以 `## E<n>` 开头
+  （沿用 `product-review-thought-tests/responses.md` 的 `## P01（…）` 体例；验收按此标题核对九节齐全）。
 - `docs/validation/product-experience-thought-tests.md`：`## 方法与证据`、`## 场景判定`（表）、`## 测出的缺陷与修复`、`## 尚未验证`
   （必含：真实宿主对话质量——指向本计划 T-M5-16；真实 codex/pi CLI 未调用；`/run` 内评审的真实截图输入未覆盖）。
 
 **检查意图。** 九个 case 各有 `pass|fail` 判定；每个 case 的观察到的工具调用恰为一次 `Read`；`launch.fixtures` 里记录的 sha256 与判据文件当前内容一致
-（证明判据在运行后未被改动）；`responses_sha256` 与 `responses.md` 一致；记录含 `## 尚未验证`。
+（证明判据在运行后未被改动）；`responses_sha256` 与 `responses.md` 一致；`responses.md` 里九个 `## E<n>` 小节齐全、每个 case 的
+`under_test` / `notes` / `resolved_model` 非空（只有文件存在或只有判定而无答卷原文都过不了）；记录含 `## 尚未验证`。
 
 **Acceptance.**
 ```bash
-python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,"rb").read()).hexdigest(); D="docs/validation/product-experience-thought-tests/"; e=json.load(open(D+"evidence.json")); c={x["id"]:x for x in e["cases"]}; assert set(c)>={"E%d"%i for i in range(1,10)}, sorted(c); assert all(x["verdict"] in ("pass","fail") and len(x["observed_tool_calls"])==1 and x["observed_tool_calls"][0]["name"]=="Read" and x["platform_simulated"] and x["prompt_sha256"] for x in c.values()); f=e["launch"]["fixtures"]; assert all(f[p]==h(p) for p in ("fixtures/product-experience/thought-tests.json","fixtures/product-experience/subject-prompt.md")); assert e["responses_sha256"]==h(D+"responses.md"); assert isinstance(e["found_defect"],bool) and e["limits"]' && grep -q '^## 尚未验证' docs/validation/product-experience-thought-tests.md && grep -q '^## 场景判定' docs/validation/product-experience-thought-tests.md && grep -q '^## 测出的缺陷与修复' docs/validation/product-experience-thought-tests.md
+python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,"rb").read()).hexdigest(); D="docs/validation/product-experience-thought-tests/"; e=json.load(open(D+"evidence.json")); c={x["id"]:x for x in e["cases"]}; assert set(c)>={"E%d"%i for i in range(1,10)}, sorted(c); assert all(x["verdict"] in ("pass","fail") and len(x["observed_tool_calls"])==1 and x["observed_tool_calls"][0]["name"]=="Read" and x["platform_simulated"] and x["prompt_sha256"] for x in c.values()); f=e["launch"]["fixtures"]; assert all(f[p]==h(p) for p in ("fixtures/product-experience/thought-tests.json","fixtures/product-experience/subject-prompt.md")); assert e["responses_sha256"]==h(D+"responses.md"); assert isinstance(e["found_defect"],bool) and e["limits"]; R=open(D+"responses.md",encoding="utf-8").read(); assert all(("\n## E%d"%i) in R for i in range(1,10)), "responses.md needs one ## E<n> section per case"; assert all(x["under_test"] and x["notes"] and x["resolved_model"] for x in c.values())' && grep -q '^## 尚未验证' docs/validation/product-experience-thought-tests.md && grep -q '^## 场景判定' docs/validation/product-experience-thought-tests.md && grep -q '^## 测出的缺陷与修复' docs/validation/product-experience-thought-tests.md
 ```
 **Write set.** `docs/validation/product-experience-thought-tests.md`、`docs/validation/product-experience-thought-tests/evidence.json`、
 `docs/validation/product-experience-thought-tests/responses.md`
@@ -307,15 +324,18 @@ Codex 适配器 → T-M5-05 的 parity 检查块；Pi → `pi/meta-skill/test_co
 (3) 以 `E<n>b` 在修后的文本上按 T-M5-10 同样的隔离方式重测。
 记录约定：`evidence.json` 顶层保持第一轮原样，新增 `retests[]`（每项与顶层同形的一轮，case id 为 `E<n>b`）与
 `failure_loop {status, fixed_files[], pinned[]}`；`status` 为 `not-needed`（第一轮无 fail）或 `closed`（所有 fail 的 case 重测 pass）。
-`responses.md` 追加重测原文并更新 `responses_sha256`；`…thought-tests.md` 的 `## 测出的缺陷与修复` 写明每个缺陷、改动文件、钉住的字面量。
+`responses.md` 追加重测原文（每个重测一节，标题以 `## E<n>b` 开头）并更新 `responses_sha256`；`…thought-tests.md` 的 `## 测出的缺陷与修复` 写明每个缺陷、改动文件、钉住的字面量。
 **不得修改判据文件**。重测仍 fail 且需改公共接口/需求才能修 → 以 blocked 上报，不自行扩范围；不为过关而把判定改成 pass。
 
 **检查意图。** 每个 E 的最终判定（取最后一轮）为 pass；`failure_loop.status` 与第一轮事实一致（有 fail 必须是 `closed`，无 fail 必须是 `not-needed`——
-该字段只由本任务写入，故命令在本任务完成前不可能通过）；判据 sha 仍与第一轮记录一致；所有可能被触碰的契约检查仍绿。
+该字段只由本任务写入，故命令在本任务完成前不可能通过）；第一轮每个 fail 的 case 在 `responses.md` 里有对应的 `## E<n>b` 重测小节，
+且 `closed` 时 `fixed_files[]`、`pinned[]` 非空；判据 sha 仍与第一轮记录一致；所有可能被触碰的契约检查仍绿——包括 product-review 孪生的
+差异行数仍为 12、M6 的镜头一致性测试、Codex 契约破坏性用例、`validate_app_experience_pipeline.py .` 与 M1 的同行不变量
+（本任务的写集覆盖这些文件，修文本时不得把它们弄红）。
 
 **Acceptance.**
 ```bash
-python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,"rb").read()).hexdigest(); D="docs/validation/product-experience-thought-tests/"; e=json.load(open(D+"evidence.json")); final={}; [final.__setitem__(c["id"].rstrip("b"), c["verdict"]) for r in [e]+e.get("retests",[]) for c in r["cases"]]; ids={"E%d"%i for i in range(1,10)}; assert set(final)>=ids and all(final[i]=="pass" for i in ids), final; failed=any(c["verdict"]!="pass" for c in e["cases"]); assert e["failure_loop"]["status"]==("closed" if failed else "not-needed"); assert e["launch"]["fixtures"]["fixtures/product-experience/thought-tests.json"]==h("fixtures/product-experience/thought-tests.json"); assert e["responses_sha256"]==h(D+"responses.md")' && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py && python3 -m pytest -q pi/meta-skill/test_contract.py && python3 -m pytest -q claude/superstorm/scripts/test_superstorm_contract.py && python3 claude/superstorm/scripts/check_skill_refs.py
+python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,"rb").read()).hexdigest(); D="docs/validation/product-experience-thought-tests/"; e=json.load(open(D+"evidence.json")); final={}; [final.__setitem__(c["id"].rstrip("b"), c["verdict"]) for r in [e]+e.get("retests",[]) for c in r["cases"]]; ids={"E%d"%i for i in range(1,10)}; assert set(final)>=ids and all(final[i]=="pass" for i in ids), final; failed=any(c["verdict"]!="pass" for c in e["cases"]); assert e["failure_loop"]["status"]==("closed" if failed else "not-needed"); assert e["launch"]["fixtures"]["fixtures/product-experience/thought-tests.json"]==h("fixtures/product-experience/thought-tests.json"); assert e["responses_sha256"]==h(D+"responses.md"); R=open(D+"responses.md",encoding="utf-8").read(); fl=e["failure_loop"]; bad=[c["id"] for c in e["cases"] if c["verdict"]!="pass"]; assert all(("\n## %sb"%i) in R for i in bad), "each failed case needs a ## E<n>b retest section"; assert (not failed) or (fl["fixed_files"] and fl["pinned"]), "a closed loop names the fixed files and the pinned literal"' && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py && python3 -m pytest -q pi/meta-skill/test_contract.py && python3 -m pytest -q claude/superstorm/scripts/test_superstorm_contract.py && python3 claude/superstorm/scripts/check_skill_refs.py && [ "$(diff claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md | grep -c '^[<>]')" = "12" ] && python3 -m pytest -q shared/scripts/orchestrator/test_experience_lens_parity.py shared/scripts/orchestrator/test_codex_contract_checks.py && python3 claude/meta-skill/scripts/orchestrator/validate_app_experience_pipeline.py . && ! grep -rn "experience_priority" claude/meta-skill/knowledge | grep -v "experience_priority.mode" | grep -v bootstrap | grep -q .
 ```
 **Write set.**（记录文件必写；其余仅在对应 case 失败时才动，且只动出错的那一处）
 记录：`docs/validation/product-experience-thought-tests.md`、`docs/validation/product-experience-thought-tests/evidence.json`、
@@ -348,6 +368,7 @@ python3 -c 'import json,hashlib; h=lambda p: hashlib.sha256(open(p,"rb").read())
 grep -q 'experience_priority' CLAUDE.md && grep -q 'missing_experience_priority' CLAUDE.md && grep -q 'docs/experience-review/' CLAUDE.md && grep -q '体验质量门' CLAUDE.md && grep -q '体验方向' README.md && grep -q '体验质量门' README.md
 ```
 **Write set.** `CLAUDE.md`、`README.md`
+**depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
 
 ## T-M5-13 版本：meta-skill 0.20.0 / superstorm 0.43.0（U6 前半，R-M5-06）
 
