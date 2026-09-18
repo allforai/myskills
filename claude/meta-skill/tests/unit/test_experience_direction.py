@@ -10,11 +10,13 @@ import json
 
 import pytest
 
-from .test_bootstrap_scope import project
+from .test_bootstrap_scope import confirm_plan, gate, project, publish_contract
 from .test_product_intent_session import CONCEPT, JOURNAL, TOPICS, decide, draft, invoke
+from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
 EXPERIENCE_TOPIC = "experience-direction"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
+PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
 # Mirror of the proposal key set the script accepts; the wording of every value stays
 # clear of interface terms so the same fixtures can reach the gates in later units.
 TEXT_FIELDS = ("id", "title", "who", "circumstance", "core_loop_feel", "first_minute", "return_reason", "goal")
@@ -83,6 +85,50 @@ def direction(output):
     entries = [topic for topic in output["topics"] if topic["topic"] == EXPERIENCE_TOPIC]
     assert len(entries) == 1, output["topics"]
     return entries[0]
+
+
+def set_mode(root, mode="consumer",
+             reason="Shopkeepers settle their own orders; the product is theirs to live with"):
+    """Record the experience priority bootstrap classified, in the profile's own shape."""
+    path = root / PROFILE
+    profile = json.loads(path.read_text())
+    profile["experience_priority"] = {"mode": mode, "reason": reason}
+    path.write_text(json.dumps(profile), encoding="utf-8")
+
+
+def chosen_item(identity="calm-pass", batch="user-1", index=0, reason="Chosen direction", **extra):
+    """The experience-direction intent a `select` of that proposal must produce, field for field."""
+    offered = proposal(identity)
+    fragment = batch + "/decisions/" + str(index)
+    item = {"id": EXPERIENCE_TOPIC + "-" + identity, "topic": EXPERIENCE_TOPIC, "goal": offered["goal"],
+            "scope": offered["scope"], "business_rules": offered["business_rules"],
+            "acceptance": offered["acceptance"], "revision": 1, "origin": "model-proposal",
+            "evidence": [], "status": "confirmed", "proposal_id": identity,
+            "who": offered["who"], "circumstance": offered["circumstance"],
+            "confirmation": {"source": "user", "reference": JOURNAL + "#" + fragment,
+                             "decision_id": fragment, "reason": reason,
+                             "user_reference": "user turn " + batch}}
+    item.update(extra)
+    return item
+
+
+def plan_request(include, node_id="deliver-orders"):
+    """One node that carries the whole frozen scope through every applicable stage.
+
+    A product whose `experience_priority.mode` is `consumer` may not declare the
+    experience stage inapplicable, so the node owns it like any other stage.
+    """
+    return {"operation": "plan", "nodes": [
+        {"node_id": node_id, "capability": "implement", "goal": "Deliver the settled-day order service",
+         "intent_ids": list(include), "source_inputs": ["orders.py"],
+         "responsibilities": ["product", "experience", "technical", "implementation",
+                              "documentation", "verification"],
+         "exit_artifacts": [".allforai/bootstrap/order-verification.json"], "body": ATTENTION_CONTRACT_BODY}]}
+
+
+def freeze_request(include, batch="scope"):
+    return {"operation": "freeze", "batch_id": batch, "user_reference": "user scope turn",
+            "reason": "Release the chosen direction", "include": list(include), "exclude": {}}
 
 
 def rejections():
@@ -253,3 +299,109 @@ def test_proposal_cannot_be_confirmed_or_frozen(tmp_path, host):
     blocked = invoke(tmp_path, freeze)
     assert blocked.returncode == 1, (blocked.stdout, blocked.stderr)
     assert not blocked.stderr and not (tmp_path / BASELINE).exists()
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_selected_direction_freezes_and_passes_all_public_gates(tmp_path, host):
+    """A picked direction is the user's own confirmed intent, and it survives every gate.
+
+    The item is the proposal's product meaning verbatim, journal-backed like any other
+    decision, so the frozen scope carries it and its acceptance reaches the node.
+    """
+    topics = drafted(tmp_path, host)
+    set_mode(tmp_path)
+    assert propose(tmp_path).returncode == 0
+    reason = "The tired last half hour is the one that decides whether the day closes"
+    actions = [{"operation": "select", "proposal_id": "calm-pass", "reason": reason},
+               {"operation": "answer", "id": "gap-" + EXPERIENCE_TOPIC,
+                "answer": "The calm pass direction", "reason": "The direction is now chosen"}]
+    actions += [{"operation": "confirm", "id": topic, "reason": "Chosen direction"} for topic in topics]
+    decided = decide(tmp_path, actions)
+    assert decided.returncode == 0, (decided.stdout, decided.stderr)
+
+    expected = chosen_item(reason=reason)
+    identity = expected["id"]
+    concept = json.loads((tmp_path / CONCEPT).read_text())
+    assert [i for i in concept["requirements"] if i["id"] == identity] == [expected]
+    batch = json.loads((tmp_path / JOURNAL).read_text())["batches"][-1]
+    assert batch["decisions"][0] == {"question": identity, "chosen": expected["goal"], "rationale": reason,
+                                     "operation": "select", "supersedes": None, "intent": expected}
+
+    include = topics + [identity]
+    frozen = invoke(tmp_path, freeze_request(include))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    baseline = json.loads((tmp_path / BASELINE).read_text())["intent_baseline"]
+    assert expected in baseline["intents"]
+    planned = invoke(tmp_path, plan_request(include))
+    assert planned.returncode == 0, (planned.stdout, planned.stderr)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
+    publish_contract(tmp_path, "deliver-orders")
+    node = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())["nodes"][0]
+    assert expected["goal"] in node["product_goals"]
+    assert expected["acceptance"][0] in node["acceptance"], "the direction's acceptance is node acceptance"
+    for name in ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py"):
+        checked = gate(tmp_path, name)
+        assert checked.returncode == 0, (name, checked.stdout, checked.stderr)
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_select_then_adjust_in_one_batch_keeps_revision_lineage(tmp_path, host):
+    """Wording the chosen direction in the user's own words is the existing revision chain."""
+    topics = drafted(tmp_path, host)
+    set_mode(tmp_path)
+    assert propose(tmp_path).returncode == 0
+    sharper = "Settle the day's orders in one unhurried pass that never reopens tomorrow"
+    actions = [{"operation": "select", "proposal_id": "calm-pass", "reason": "This is the pass I want"},
+               {"operation": "adjust", "id": EXPERIENCE_TOPIC + "-calm-pass",
+                "changes": {"goal": sharper}, "reason": "Said in the shopkeeper's own words"},
+               {"operation": "answer", "id": "gap-" + EXPERIENCE_TOPIC,
+                "answer": "The calm pass direction, reworded", "reason": "The direction is now chosen"}]
+    actions += [{"operation": "confirm", "id": topic, "reason": "Chosen direction"} for topic in topics]
+    decided = decide(tmp_path, actions)
+    assert decided.returncode == 0, (decided.stdout, decided.stderr)
+
+    identity = EXPERIENCE_TOPIC + "-calm-pass"
+    lineage = [i for i in json.loads((tmp_path / CONCEPT).read_text())["requirements"] if i["id"] == identity]
+    assert [(i["revision"], i["status"]) for i in lineage] == [(1, "superseded"), (2, "confirmed")]
+    first, second = lineage
+    assert first == dict(chosen_item(reason="This is the pass I want"), status="superseded")
+    assert second == dict(chosen_item(reason="Said in the shopkeeper's own words", index=1),
+                          goal=sharper, revision=2, supersedes={"id": identity, "revision": 1})
+    assert second["origin"] == "model-proposal" and second["proposal_id"] == "calm-pass"
+
+    frozen = invoke(tmp_path, freeze_request(topics + [identity]))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    baseline = json.loads((tmp_path / BASELINE).read_text())["intent_baseline"]
+    assert [r for r in baseline["requirement_refs"] if r["id"] == identity] == [
+        {"path": CONCEPT, "id": identity, "revision": 2}]
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_select_needs_a_current_round_proposal_and_a_free_direction_slot(tmp_path, host):
+    """Nothing can be chosen off the table, from an old table, or on top of a standing choice."""
+    drafted(tmp_path, host)
+    set_mode(tmp_path)
+
+    def refused(action, message, batch):
+        before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+        result = decide(tmp_path, [action], batch=batch)
+        assert result.returncode == 1, (message, result.stdout, result.stderr)
+        assert not result.stderr, message
+        assert json.loads(result.stdout)["error"] == message, message
+        assert all(p.read_bytes() == content for p, content in before.items()), message
+
+    refused({"operation": "select", "proposal_id": "calm-pass", "reason": "Before anything was offered"},
+            "No current experience proposals; propose before select or delegate", "too-early")
+    assert propose(tmp_path).returncode == 0
+    assert propose(tmp_path, ids=("steady-ledger", "wide-sweep"), recommended="steady-ledger",
+                   rationale="The steady ledger asks less of a tired shopkeeper").returncode == 0
+    refused({"operation": "select", "proposal_id": "calm-pass", "reason": "The earlier round read better"},
+            "Select one proposal of the current round", "old-round")
+    refused({"operation": "select", "proposal_id": "never-offered", "reason": "Something else entirely"},
+            "Select one proposal of the current round", "unoffered")
+
+    taken = decide(tmp_path, [{"operation": "select", "proposal_id": "steady-ledger",
+                               "reason": "The steady ledger it is"}], batch="chosen")
+    assert taken.returncode == 0, (taken.stdout, taken.stderr)
+    refused({"operation": "select", "proposal_id": "wide-sweep", "reason": "Second thoughts"},
+            "An experience direction is already selected; remove it before choosing another", "second")

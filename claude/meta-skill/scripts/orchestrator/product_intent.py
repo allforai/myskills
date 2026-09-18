@@ -1028,6 +1028,51 @@ def _propose(root, profile, concept_path, concept, request):
     return _discussion(root, concept)
 
 
+def _direction_intent(concept, concept_path, action, op):
+    """Turn one offered direction into the experience-direction intent, without its stamp.
+
+    The user picks a direction; the product meaning that becomes intent is the
+    proposal's own words, so nothing is reworded on the way in — a different wording
+    is an explicit `adjust` on the new item, recorded as its own decision. Only the
+    round on the table can be picked, and only one proposal-derived direction stands
+    at a time: a change of mind removes the standing one first, so the concept never
+    holds two confirmed directions and the reader never has to guess which one won.
+    The caller attaches the batch confirmation, which is what makes it a decision.
+    """
+    import copy
+    if concept_path != CONCEPT:
+        raise ValueError("Experience directions belong to a product session")
+    current = _current_proposals(concept)
+    if not current:
+        raise ValueError("No current experience proposals; propose before select or delegate")
+    if op == "select":
+        offered = [p for p in current if p["id"] == action.get("proposal_id")]
+        if len(offered) != 1:
+            raise ValueError("Select one proposal of the current round")
+        proposal = offered[0]
+    else:
+        if "proposal_id" in action:
+            raise ValueError("Delegate takes the recommended proposal; use select to name one")
+        proposal = next(p for p in current if p.get("recommended") is True)
+    latest = _latest(concept)
+    if any(i.get("status") == "confirmed" and "proposal_id" in i for i in latest.values()):
+        raise ValueError("An experience direction is already selected; remove it before choosing another")
+    identity = EXPERIENCE_TOPIC + "-" + proposal["id"]
+    if identity in latest:
+        raise ValueError("Added intent needs an unused stable identity")
+    item = {"id": identity, "topic": EXPERIENCE_TOPIC,
+            **{key: copy.deepcopy(proposal[key])
+               for key in ("goal", "scope", "business_rules", "acceptance")}}
+    _item(item)
+    # `who` and `circumstance` travel with the intent: later review reads the journey
+    # from the confirmed direction itself, never from the proposals it came out of.
+    item.update(revision=1, origin=PROPOSAL_ORIGIN, evidence=[], status="confirmed",
+                proposal_id=proposal["id"], who=proposal["who"], circumstance=proposal["circumstance"])
+    if op == "delegate":
+        item.update(auto_decided=True)
+    return item
+
+
 def _external_change(root, request):
     """Record the user's decision about source changed outside the delivery flow.
 
@@ -1325,6 +1370,12 @@ def session(root, request):
                     raise ValueError("Added intent needs an unused stable identity")
                 item.update(revision=1, origin="user-request", evidence=[], status="confirmed", confirmation=confirmation)
                 concept.setdefault("requirements", []).append(item)
+            elif op in ("select", "delegate"):
+                item = _direction_intent(concept, concept_path, action, op)
+                if op == "delegate":
+                    confirmation["delegated"] = True
+                item["confirmation"] = confirmation
+                concept.setdefault("requirements", []).append(item)
             elif op in ("confirm", "adjust", "remove", "restore") or (op == "reopen" and action["id"] in _latest(concept)):
                 item = _latest(concept)[action["id"]]
                 previous = item.get("confirmation", {}).get("reference")
@@ -1396,7 +1447,8 @@ def session(root, request):
                     item.pop("answer", None)
                     item.update(status="pending", confirmation=confirmation)
             else:
-                raise ValueError("Only explicit confirm/add/adjust/remove/answer/reopen/restore operations are supported")
+                raise ValueError("Only explicit confirm/add/adjust/remove/answer/reopen/restore/select/delegate "
+                                 "operations are supported")
             batch["decisions"].append({"question": action.get("id", item["id"]),
                                        "chosen": item.get("goal", item.get("answer", "Reopen decision")),
                                        "rationale": action["reason"], "operation": op,
