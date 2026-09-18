@@ -1,0 +1,54 @@
+{
+  "run_id": "2026-09-18-product-experience-overhaul",
+  "scope": [
+    "repo:/Users/aa/workspace/myskills",
+    "branch:product-experience-overhaul"
+  ],
+  "write_roots": [
+    "/Users/aa/workspace/myskills"
+  ],
+  "forbidden_roots": [
+    "/Users/aa/workspace/ink-scent",
+    "/Users/aa/.claude/plugins"
+  ],
+  "destructive_limits": [
+    "no git reset --hard",
+    "no force push",
+    "no history rewrite",
+    "no deletion of existing tests or fixtures",
+    "no edits to the 4 known-failing baseline tests"
+  ],
+  "git": {
+    "branch": "product-experience-overhaul",
+    "commit": true,
+    "push": false,
+    "merge_to_main": false,
+    "worktree_isolation": false
+  },
+  "external_systems": [],
+  "network": [
+    "none required; WebSearch not needed"
+  ],
+  "secrets": [],
+  "spending": [
+    "model usage for this run only; no paid external CLI calls (codex/pi CLIs are not invoked)"
+  ],
+  "model_substitutions": {
+    "executor": "opus",
+    "all_other_roles": "session",
+    "fallback": "session model is always authorized"
+  },
+  "acceptance_authority": [
+    "supervisor rerun of task acceptance_cmd",
+    "baseline comparison: full meta-skill suite must show exactly the 4 known pre-existing failures"
+  ],
+  "machine_load": {
+    "max_concurrency": 4,
+    "note": "18 cores / 128 GB; pytest files spawn subprocess-heavy tests; full meta-skill suite (~6 min) runs only at integration points, one at a time"
+  },
+  "baseline": {
+    "source_commit": "6a59fe44",
+    "meta_skill_unit": "1198 passed, 4 failed",
+    "superstorm_scripts": "255 passed"
+  }
+}
