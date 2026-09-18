@@ -74,6 +74,10 @@ claude/meta-skill/
 
 User workflow: `/bootstrap` analyzes the target project → generates `.allforai/bootstrap/` (state-machine.json + node-specs) → `/run <goal>` executes the generated workflow.
 
+On a product route that ships a user interface, `/bootstrap` does more before it plans: it writes `experience_priority` into the profile, proposes 2–3 experience directions (体验方向) with one recommended and records the one the user selects — or, only when the user explicitly delegates the choice, the one it picks on their behalf — then plans experience-design nodes and a two-stage experience quality gate (体验质量门: design and runtime) that blocks the run from finishing. `/run` discloses every delegated decision when it completes.
+
+Upgrade impact: a product-route project bootstrapped before this has no `experience_priority`, so its first `/run` after the upgrade stops with `missing_experience_priority` — rerun the interactive `/bootstrap` to fill it in. `local-change` routes and legacy profiles without `task_route` are unaffected.
+
 ## Shared Data Contract: `.allforai/`
 
 All plugins read/write to a project-local `.allforai/` directory. This is the inter-plugin data bus. **product-design must run first**; downstream plugins depend on its output.
@@ -223,7 +227,7 @@ Every entry below is user-invoked only. Do **not** set `disable-model-invocation
 
 | Situation | Entry | Why this one |
 |---|---|---|
-| A project that must go from product design through implementation to verification (product concept, experience map, art, game design, verify nodes) | `/bootstrap` → `/run` (Pi: `/skill:bootstrap` → `/skill:run`) | The only pipeline with the product-design capabilities and the `.allforai/` data bus |
+| A project that must go from product design through implementation to verification (product concept, experience map, art, game design, verify nodes) | `/bootstrap` → `/run` (Pi: `/skill:bootstrap` → `/skill:run`) | The only pipeline with the product-design capabilities and the `.allforai/` data bus; the run itself carries the experience quality gate (体验质量门), and `/product-review` trusts the `docs/experience-review/` record it leaves instead of re-judging it |
 | One large engineering goal to finish autonomously, decisions front-loaded, no product-design phase | `/superstorm` | superpowers brainstorming/plans as the design front end; artifacts under `docs/superpowers/` |
 | Same goal shape, but design must follow Matt Pocock's official skills (grilling → to-spec → to-tickets → tdd → code-review) | `/grillstorm` | Official skills own design; Grillstorm owns routing, DAG, worktree execution, resume, handoff; artifacts under `docs/grillstorm/` |
 | A finished delivery that may be fake-complete; independent evidence wanted | `/cross-exam` (Pi: `/skill:cross-exam`) | Fresh-context probers gather evidence, deterministic report, records only, refuses to run unattended; user-declared journeys walked end-to-end and judged against an oracle |
