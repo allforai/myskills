@@ -1,0 +1,51 @@
+release: superstorm 0.43.0, meta-skill 0.20.0 (体验方向与体验质量门)
+
+有界面的产品路线上，`/bootstrap` 先把 `experience_priority` 写进 profile，提案 2–3 条体验方向
+并由用户选定（只有用户明说委托时才代选并披露），再规划体验设计节点与 design / runtime 两阶段
+体验质量门；该门阻断 `/run` 收尾，`/run` 完成时打印全部受托决定，`/product-review` 采信
+`docs/experience-review/runtime.md` 而不重评。实现节点遇到没人规定的用户可见决定时报
+`unspecified_user_visible_decision`，不自造界面。
+
+版本：meta-skill `0.19.2 → 0.20.0`（`0.20.0-codex.1` / `0.20.0-pi.1`），
+superstorm `0.42.2 → 0.43.0`。`pi/cross-exam` 不在本次改造范围内，其
+`0.22.3-pi.1 → 0.22.4-pi.1` 是另一笔额度/路由修复（`a963d82a`）带的补丁号，与本次发布无关。
+
+## 验证
+
+全量验证在被测 HEAD `a963d82a` 上逐条串行跑完，记录见
+`docs/superpowers/runs/2026-09-18-product-experience-overhaul/verification-M5.md`（`status: pass`），
+原始输出见同目录 `logs/T-M5-14.log`。各套件数字原样取自该记录：
+
+- `claude/meta-skill/tests/unit`：1297 passed / 4 failed（基线 1198 passed / 4 failed，+99 passed，失败数不变）
+- `claude/superstorm/scripts`：255 passed（基线 255 passed，±0）
+- `codex/cross-exam-skill/scripts`：172 passed
+- `shared/evidence-engine`：46 passed
+- `shared/visual-acceptance`：211 passed
+- `shared/scripts/orchestrator`：144 passed
+- `shared/keep-code-simple`：14 passed（+40 subtests）
+- `pi/cross-exam`：7 passed
+- `pi/meta-skill/test_contract.py codex/meta-skill/test_flow.py codex/meta-skill/test_install.py`：202 passed（+21 subtests）
+- `test_consumer_product_regression.py`：6 passed；`test_package_manifests.py`：11 passed
+- `check_codex_meta_skill_parity.py` exit 0；`check_skill_refs.py`：`OK: all 33 referenced files present`
+- `validate_meta_contracts.py` exit 0；`knowledge/` 里 `experience_priority` 裸引用的 grep 为空
+
+4 个既有失败同 `6a59fe44`，未触碰：`test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence`
+与 `test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion`，各在 claude
+与 codex 两参数下。失败集合与基线四个逐一相同（差集为空），无收集错误，无基线变化。
+
+## 思维测试
+
+9 个场景按预先冻结的判据跑完，首轮 7 通过 / 2 未通过（E2、E5）；两处都是文本没写到位，各补一句
+并各钉一处契约后重测 E2b、E5b 均通过，`failure_loop.status` 记为 `closed`。记录与判据见
+`docs/validation/product-experience-thought-tests.md` 与 `fixtures/product-experience/thought-tests.json`。
+这些是单轮模拟决策，覆盖边界逐条列在该文件的 `## 尚未验证` 一节（真实宿主多轮对话质量、真实
+codex / pi CLI 加载、`/run` 内评审吃到真实截图后的判定质量等），真实宿主验收另走 reality gate。
+
+## 升级影响
+
+已经 bootstrap 过的**产品路线**项目升级后，下一次 `/run` 会被 `missing_experience_priority` 拦下：
+旧 profile 里没有 `experience_priority`，需回到交互式 `/bootstrap` 补上。界面产品随后还会被要求补
+体验方向、体验设计节点与 design / runtime 两阶段体验质量门。`local-change` 路线与没有 `task_route`
+的遗留 profile 不受影响。
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
