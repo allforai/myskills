@@ -2,7 +2,11 @@
 
 > Covers the design phase for non-game app products. Parallel to `game-design.md`
 > but tailored for SaaS, consumer apps, tools, and e-commerce products.
-> Each node in this capability has `human_gate: true` and requires `discipline_owner` approval.
+> Direction choices in this capability are Phase A decisions: a node whose
+> direction is a human decision carries `decision_mode: "brainstorm"` and
+> receives its answer as `decision_inputs` (see `bootstrap-audits.md` Phase A).
+> No node carries `human_gate: true`; nothing here waits for approval at run
+> time.
 
 ## Canonical Node Registry
 
@@ -179,7 +183,7 @@ owns surfaces, screens, flows, UI handoff, and final program handoff.
 
 ### app-design-finalize — Aggregation
 
-Goal: Merge all approved design JSONs into `app-design-doc.json`, then generate
+Goal: Merge all selected design JSONs into `app-design-doc.json`, then generate
 downstream UI and program implementation handoffs and run closure QA.
 
 Blocked by ALL other app-design nodes selected for this workflow (same pattern as `game-design-finalize`).
@@ -222,14 +226,21 @@ implementation nodes are planned. Do not collapse these into a generic
 `program-development-node-handoff.json` must preserve the same `surface_id` and
 module boundaries so bootstrap can create concrete implementation and QA nodes.
 
-## Human Gate Protocol
+## Decision Inputs
 
-Identical to `game-design.md` human gate protocol:
-- Approval tracked in `.allforai/app-design/approval-records.json`
-- Same `gate_status` lifecycle: `pending → in-review → approved | revision-requested`
-- `discipline_owner` approves; `discipline_reviewers` are advisory only
+Direction choices — navigation model, main line, tone of voice, monetization —
+are collected during interactive `/bootstrap` Phase A, written to
+`.allforai/app-design/decision-<id>.json`, and wired to the `decision_inputs` of
+the nodes that consume them.
 
-Bootstrap initialises one `pending` record per selected app-design node at bootstrap time.
+- During `/run`, app-design nodes only read their `decision_inputs`. They ask no
+  questions and wait for no approval.
+- No `.allforai/app-design/approval-records.json` is written and no
+  `approval_record_path` is set. A legacy copy of that file left over in an
+  existing project is still read by the concept-drift detection in
+  `skills/bootstrap/SKILL.md` — a legacy read, unchanged here.
+- The `Discipline Owner` column of the Canonical Node Registry stays: it names
+  the role that owns each node's Phase A decision.
 
 ## Downstream Consumers
 
