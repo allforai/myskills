@@ -13,8 +13,11 @@ try:
     # one directory, and the unit suite only has that directory on sys.path while the
     # module is being loaded, so a deferred import would find nothing to disclose.
     from product_intent import delegations as _delegations
-except ImportError:  # a trace copied without the intent CLI still summarizes the run
+    _delegations_unavailable = None
+except ImportError as exc:  # a trace copied without the intent CLI still summarizes the run
     _delegations = None
+    _delegations_unavailable = ("product_intent could not be imported, so delegated decisions "
+                                f"were not looked up: {exc}")
 
 
 RUN_LOG_PATH = Path(".allforai/bootstrap/run-log.jsonl")
@@ -52,7 +55,7 @@ def _delegated(project_root: Path) -> tuple[list, str | None]:
     reports nothing delegated would be worse than one that admits it cannot look.
     """
     if _delegations is None:
-        return [], None
+        return [], _delegations_unavailable
     try:
         return list(_delegations(project_root)["delegations"]), None
     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
@@ -146,7 +149,9 @@ def write_reports(project_root: Path, summary: dict) -> tuple[Path, Path]:
             f"- `{item.get('id')}` proposal=`{item.get('proposal_title')}` "
             f"user_turn=`{item.get('user_reference')}` reason=`{item.get('reason')}`"
         )
-    if not summary.get("delegations"):
+    # `none` is a finding. A list that could not be read found nothing out, so it says
+    # why instead and never words its own failure as "nothing was delegated".
+    if not summary.get("delegations") and not summary.get("delegations_error"):
         lines.append("- none")
     if summary.get("delegations_error"):
         lines.append(f"- unreadable: {summary['delegations_error']}")

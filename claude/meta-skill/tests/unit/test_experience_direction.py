@@ -303,6 +303,39 @@ def test_propose_stores_rounds_without_journal_and_resume_presents_current_round
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("damage", ["missing", "text", "boolean", "zero"])
+def test_stored_proposal_without_a_round_is_blocked_not_a_traceback(tmp_path, host, damage):
+    """A proposal store somebody edited by hand is refused in words, like any other bad record.
+
+    Every reader of the store orders proposals by `round`, so a stored proposal that kept
+    its identity but lost its round may not surface as a bare key name or a traceback:
+    the CLI says what is wrong with the record, exits 1 and leaves the record alone.
+    """
+    drafted(tmp_path, host)
+    assert propose(tmp_path).returncode == 0
+    path = tmp_path / CONCEPT
+    concept = json.loads(path.read_text())
+    if damage == "missing":
+        concept["experience_proposals"][1].pop("round")
+    else:
+        concept["experience_proposals"][1]["round"] = {"text": "1", "boolean": True, "zero": 0}[damage]
+    path.write_text(json.dumps(concept), encoding="utf-8")
+    before = path.read_bytes()
+
+    requests = [{"operation": "resume"},
+                propose_request([proposal("slow-close"), proposal("early-start")], "slow-close")]
+    attempts = [invoke(tmp_path, request) for request in requests]
+    attempts.append(decide(tmp_path, [{"operation": "select", "proposal_id": "calm-pass",
+                                       "reason": "Chosen direction"}], batch="picked"))
+    for attempt in attempts:
+        assert attempt.returncode == 1, (attempt.stdout, attempt.stderr)
+        assert not attempt.stderr, attempt.stderr
+        assert json.loads(attempt.stdout) == {
+            "status": "blocked", "error": "Stored experience proposal quick-burst needs a positive whole round"}
+    assert path.read_bytes() == before, "a refused record is left exactly as it was found"
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
 @pytest.mark.parametrize("collision", ["intent", "question", "earlier-round"])
 def test_proposal_identity_is_unique_across_proposals_intents_and_questions(tmp_path, host, collision):
     """A proposal identity is separate from every intent and question identity, in every round."""
@@ -596,6 +629,27 @@ def test_delegate_records_auto_decision_and_is_disclosed(tmp_path, host):
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
+def test_delegations_on_a_corrupt_concept_is_blocked(tmp_path, host):
+    """A record that cannot be read is never disclosed as nothing delegated.
+
+    `--delegations` answers an empty list only for a concept that is absent or holds no
+    handed-over direction. A concept file that is cut off answers neither question, so
+    the read-only entry reports `blocked` and exits 1 like every other operation does.
+    """
+    drafted(tmp_path, host)
+    path = tmp_path / CONCEPT
+    path.write_text("{broken", encoding="utf-8")
+    before = path.read_bytes()
+    disclosed = cli(tmp_path, "--delegations")
+    assert disclosed.returncode == 1, (disclosed.stdout, disclosed.stderr)
+    assert not disclosed.stderr, disclosed.stderr
+    answer = json.loads(disclosed.stdout)
+    assert set(answer) == {"status", "error"} and answer["status"] == "blocked" and answer["error"], answer
+    assert "delegations" not in answer, "an unreadable record offers no list, not even an empty one"
+    assert path.read_bytes() == before, "disclosure never repairs or rewrites what it could not read"
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
 def test_ui_product_without_direction_is_blocked_at_every_gate(tmp_path, host):
     """A product with end users may not be built around a direction nobody ever chose.
 
@@ -721,6 +775,97 @@ def test_pre_existing_concept_and_journal_read_without_drift(tmp_path, host):
             assert "delegated" not in (recorded.get("confirmation") or {}), decision
 
 
+@pytest.mark.parametrize("host", ["claude", "codex"])
+@pytest.mark.parametrize("operation", ["select", "delegate"])
+def test_confirmed_direction_clears_the_direction_blocker(tmp_path, host, operation):
+    """Once the user picked a direction, or handed the pick over, the gate has nothing to say.
+
+    The same product, classified `consumer` from the start, is carried to a published
+    contract with its direction confirmed either way. Neither `validate_scope` nor any
+    public gate may then name the direction blocker; taking the direction back out of
+    the frozen refs is what brings it back, so the silence is earned by the direction.
+    """
+    topics = drafted(tmp_path, host)
+    set_mode(tmp_path)
+    assert propose(tmp_path).returncode == 0
+    action = {"operation": operation, "reason": "The tired last half hour decides whether the day closes"}
+    if operation == "select":
+        action["proposal_id"] = "calm-pass"
+    actions = [action, {"operation": "answer", "id": "gap-" + EXPERIENCE_TOPIC,
+                        "answer": "The calm pass direction", "reason": "The direction is now chosen"}]
+    actions += [{"operation": "confirm", "id": topic, "reason": "Chosen direction"} for topic in topics]
+    decided = decide(tmp_path, actions)
+    assert decided.returncode == 0, (decided.stdout, decided.stderr)
+    identity = EXPERIENCE_TOPIC + "-calm-pass"
+    stood = [i for i in json.loads((tmp_path / CONCEPT).read_text())["requirements"] if i["id"] == identity][0]
+    assert stood["status"] == "confirmed" and stood.get("auto_decided", False) is (operation == "delegate")
+
+    include = topics + [identity]
+    frozen = invoke(tmp_path, freeze_request(include))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    planned = invoke(tmp_path, plan_request(include))
+    assert planned.returncode == 0, (planned.stdout, planned.stderr)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
+    publish_contract(tmp_path, "deliver-orders")
+
+    assert json.loads((tmp_path / PROFILE).read_text())["experience_priority"]["mode"] == "consumer"
+    workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
+    blockers = script(tmp_path).validate_scope(tmp_path, workflow)
+    assert blockers == [], blockers
+    for name, result in verdicts(tmp_path).items():
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
+        assert DIRECTION_BLOCKER not in result.stdout, (name, result.stdout)
+
+
+def tree(root):
+    """Every file the project holds, byte for byte; interpreter caches are not the record."""
+    return {str(path.relative_to(root)): path.read_bytes() for path in sorted(root.rglob("*"))
+            if path.is_file() and "__pycache__" not in path.parts}
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_pre_existing_consumer_concept_is_blocked_for_direction_without_drift(tmp_path, host):
+    """A product with end users that predates this module owes a direction, and nothing else.
+
+    The record is what the earlier script left: no proposal store, no gap question for the
+    new topic, no experience-direction intent, a published contract that passed every gate.
+    Classified `consumer`, it is blocked for exactly the one thing it never had. Its old
+    journal and intents are still the user's confirmed word, so none of them may read as
+    drift, and a gate that only looks may not rewrite a single byte of the project.
+    """
+    topics = drafted(tmp_path, host)
+    path = tmp_path / CONCEPT
+    concept = json.loads(path.read_text())
+    concept["intent_questions"] = [question for question in concept["intent_questions"]
+                                   if question["id"] != "gap-" + EXPERIENCE_TOPIC]
+    path.write_text(json.dumps(concept), encoding="utf-8")
+    confirmed = decide(tmp_path, [{"operation": "confirm", "id": topic, "reason": "Chosen direction"}
+                                  for topic in topics])
+    assert confirmed.returncode == 0, (confirmed.stdout, confirmed.stderr)
+    frozen = invoke(tmp_path, freeze_request(topics))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    planned = invoke(tmp_path, plan_request(topics))
+    assert planned.returncode == 0, (planned.stdout, planned.stderr)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
+    publish_contract(tmp_path, "deliver-orders")
+    for name, result in verdicts(tmp_path).items():
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
+
+    set_mode(tmp_path)
+    stored = json.loads(path.read_text())
+    assert "experience_proposals" not in stored
+    assert all(item.get("topic") != EXPERIENCE_TOPIC for item in stored["requirements"])
+    workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
+    before = tree(tmp_path)
+    blockers = script(tmp_path).validate_scope(tmp_path, workflow)
+    assert [blocker["code"] for blocker in blockers] == [DIRECTION_BLOCKER], blockers
+    for name, result in verdicts(tmp_path).items():
+        assert result.returncode == 1, (name, result.stdout, result.stderr)
+        assert DIRECTION_BLOCKER in result.stdout, (name, result.stdout)
+        assert "stale_requirement" not in result.stdout, (name, result.stdout)
+    assert tree(tmp_path) == before, "a gate that blocks an old record still leaves it byte for byte"
+
+
 DELEGATION_REASON = "The tired half hour is read better here than the shopkeeper can read it tonight"
 
 
@@ -790,8 +935,8 @@ def test_run_summary_and_completion_text_disclose_delegations(tmp_path):
         "a record that cannot be read may not be reported as nothing delegated"
     torn_lines = report_section(summarize_run_log.write_reports(torn, broken)[1].read_text(encoding="utf-8"),
                                 "Delegated Decisions")
-    assert torn_lines[0] == "- none"
-    assert torn_lines[1] == "- unreadable: " + broken["delegations_error"]
+    assert torn_lines == ["- unreadable: " + broken["delegations_error"]], \
+        "a list that could not be read is never also worded as none"
 
     parts = TEMPLATE.read_text(encoding="utf-8").split("## Post-Completion", 1)
     assert len(parts) == 2, "the template still closes with one Post-Completion section"
@@ -802,6 +947,34 @@ def test_run_summary_and_completion_text_disclose_delegations(tmp_path):
     assert (closing.index("Run log summary") < closing.index("--delegations")
             < closing.index("Mark concept drift resolved")), \
         "the disclosure runs between the run log summary and the drift mark"
+
+
+def test_run_summary_admits_it_could_not_look_up_delegations(tmp_path):
+    """A summary that cannot reach the intent CLI says so; it never reports nothing delegated.
+
+    A trace copied without `product_intent.py` still summarizes the run, but "no delegated
+    decisions" is a finding and "could not look" is not one. The record here does hold a
+    handed-over direction, so a report that answered `none` would be plainly false.
+    """
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    source = Path(__file__).resolve().parents[2] / "scripts/orchestrator/summarize_run_log.py"
+    (scripts / source.name).write_bytes(source.read_bytes())
+    root = tmp_path / "handed-over"
+    (root / CONCEPT).parent.mkdir(parents=True)
+    (root / CONCEPT).write_text(json.dumps(delegated_concept()), encoding="utf-8")
+
+    ran = subprocess.run([sys.executable, "-I", str(scripts / source.name), str(root), "--write-report"],
+                         text=True, capture_output=True, cwd=tmp_path)
+    assert ran.returncode == 0, (ran.stdout, ran.stderr)
+    summary = json.loads(ran.stdout)
+    assert summary["delegations"] == []
+    error = summary["delegations_error"]
+    assert "product_intent" in error and "not looked up" in error, error
+    assert json.loads((root / ".allforai/bootstrap/run-summary.json").read_text()) == summary
+    lines = report_section((root / ".allforai/bootstrap/run-summary.md").read_text(encoding="utf-8"),
+                           "Delegated Decisions")
+    assert lines == ["- unreadable: " + error], "could not look is never worded as nothing delegated"
 
 
 def test_protocol_text_names_the_new_topic_and_actions():

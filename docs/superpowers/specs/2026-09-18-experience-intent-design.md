@@ -332,11 +332,12 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
     （必须顶层导入：单测经 `tests/module_isolation.load` 加载，`sys.path` 只在加载期间含脚本目录；
     生成项目里两脚本同目录）。
   - `summarize()` 返回值新增键 `"delegations"`：`_delegations(project_root)["delegations"]`；函数不可用或抛
-    `(OSError, ValueError, TypeError, KeyError, AttributeError, IndexError)` 时为 `[]`，并在后一种情况另写
-    `"delegations_error": str(exc)`——披露读不出来必须可见，但不得让收尾汇总失败。
+    `(OSError, ValueError, TypeError, KeyError, AttributeError, IndexError)` 时为 `[]`，**两种情况都**另写
+    `"delegations_error"`（不可导入时写明"没查成"及原因）——披露读不出来必须可见，但不得让收尾汇总失败。
+    （2026-09-18 跟进修订：原设计在函数不可用时不写 error，报告因此把"没查成"说成了"无委托"。）
   - `write_reports()` 在 "Recent Failures" 之后追加 `## Delegated Decisions` 段：每条
-    ``- `<id>` proposal=`<proposal_title>` user_turn=`<user_reference>` reason=`<reason>` ``；空则 `- none`；
-    有 `delegations_error` 则多一行 `- unreadable: <error>`。
+    ``- `<id>` proposal=`<proposal_title>` user_turn=`<user_reference>` reason=`<reason>` ``；查成了且为空才写 `- none`；
+    有 `delegations_error` 时该段只有一行 `- unreadable: <error>`，绝不同时写 `- none`。
   - `schema_version` 保持 `"1.0"`（只增键）。
 - `knowledge/orchestrator-template.md` 的 `## Post-Completion`（`:373` 起），在第 0 步之后插入第 0b 步：
   运行 `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations`；完成文本**必须**在

@@ -894,6 +894,11 @@ def _validate_question_ids(concept):
         identity = proposal.get("id") if isinstance(proposal, dict) else None
         if not _text(identity) or identity in intent_ids or identity in proposal_ids:
             raise ValueError(separate)
+        # Every reader orders the store by `round`; a hand-edited proposal that lost it
+        # is a malformed record to refuse in words, not a KeyError further down.
+        opened = proposal.get("round")
+        if not isinstance(opened, int) or isinstance(opened, bool) or opened < 1:
+            raise ValueError(f"Stored experience proposal {identity} needs a positive whole round")
         proposal_ids.add(identity)
     question_ids = set()
     for question in concept.get("intent_questions", []):
