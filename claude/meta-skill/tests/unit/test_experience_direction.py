@@ -405,3 +405,81 @@ def test_select_needs_a_current_round_proposal_and_a_free_direction_slot(tmp_pat
     assert taken.returncode == 0, (taken.stdout, taken.stderr)
     refused({"operation": "select", "proposal_id": "wide-sweep", "reason": "Second thoughts"},
             "An experience direction is already selected; remove it before choosing another", "second")
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_delegate_records_the_recommended_proposal_as_an_auto_decision(tmp_path, host):
+    """"You decide" takes the recommendation and says on the record that it did.
+
+    The direction is still the user's own confirmed intent, so it is the proposal's
+    product meaning verbatim and it freezes like any other. What separates it from a
+    pick is written down, not inferred: `auto_decided` on the item and `delegated` on
+    the batch stamp, so a later reader can tell whose judgement chose this direction.
+    """
+    topics = drafted(tmp_path, host)
+    set_mode(tmp_path)
+    assert propose(tmp_path).returncode == 0
+    reason = "The tired half hour is read better here than the shopkeeper can read it tonight"
+    actions = [{"operation": "delegate", "reason": reason},
+               {"operation": "answer", "id": "gap-" + EXPERIENCE_TOPIC,
+                "answer": "The pick was handed back to the model", "reason": "The direction is now chosen"}]
+    actions += [{"operation": "confirm", "id": topic, "reason": "Chosen direction"} for topic in topics]
+    decided = decide(tmp_path, actions, batch="handed-over")
+    assert decided.returncode == 0, (decided.stdout, decided.stderr)
+
+    expected = chosen_item(batch="handed-over", reason=reason, auto_decided=True)
+    expected["confirmation"]["delegated"] = True
+    identity = expected["id"]
+    assert identity == EXPERIENCE_TOPIC + "-calm-pass", "the recommended proposal, not the other one"
+    concept = json.loads((tmp_path / CONCEPT).read_text())
+    assert [i for i in concept["requirements"] if i.get("proposal_id")] == [expected]
+    stood = [i for i in concept["requirements"] if i["id"] == identity][0]
+    offered = [p for p in concept["experience_proposals"] if p["id"] == "calm-pass"][0]
+    for field in ("goal", "scope", "business_rules", "acceptance", "who", "circumstance"):
+        assert stood[field] == offered[field], field
+    assert stood["auto_decided"] is True
+    assert stood["confirmation"]["delegated"] is True
+    assert stood["confirmation"]["user_reference"] == "user turn handed-over"
+
+    batch = json.loads((tmp_path / JOURNAL).read_text())["batches"][-1]
+    assert batch["user_reference"] == "user turn handed-over"
+    assert batch["decisions"][0] == {"question": identity, "chosen": expected["goal"], "rationale": reason,
+                                     "operation": "delegate", "supersedes": None, "intent": expected}
+
+    frozen = invoke(tmp_path, freeze_request(topics + [identity]))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    baseline = json.loads((tmp_path / BASELINE).read_text())["intent_baseline"]
+    assert expected in baseline["intents"]
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_delegate_and_select_need_a_current_proposal_round(tmp_path, host):
+    """No round on the table is nothing to hand back, and a delegation names nothing.
+
+    Handing the pick back is trust in the recommendation that was actually offered;
+    without an offer there is no decision to make, and a `proposal_id` riding along
+    with `delegate` would be a pick wearing a delegation's clothes.
+    """
+    drafted(tmp_path, host)
+    set_mode(tmp_path)
+
+    def refused(action, message, batch):
+        before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+        result = decide(tmp_path, [action], batch=batch)
+        assert result.returncode == 1, (message, result.stdout, result.stderr)
+        assert not result.stderr, message
+        assert json.loads(result.stdout)["error"] == message, message
+        assert all(p.read_bytes() == content for p, content in before.items()), message
+        assert not (tmp_path / JOURNAL).exists(), message
+
+    empty = "No current experience proposals; propose before select or delegate"
+    refused({"operation": "delegate", "reason": "You decide, nothing has been offered yet"},
+            empty, "delegate-too-early")
+    refused({"operation": "select", "proposal_id": "calm-pass", "reason": "Picking off an empty table"},
+            empty, "select-too-early")
+
+    assert propose(tmp_path).returncode == 0
+    refused({"operation": "delegate", "proposal_id": "quick-burst", "reason": "You decide, but take this one"},
+            "Delegate takes the recommended proposal; use select to name one", "named")
+    refused({"operation": "delegate", "proposal_id": "calm-pass", "reason": "You decide, and it is the one you like"},
+            "Delegate takes the recommended proposal; use select to name one", "named-recommended")
