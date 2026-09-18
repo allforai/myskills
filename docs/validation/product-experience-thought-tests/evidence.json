@@ -1,0 +1,203 @@
+{
+  "round": "E1–E9 —— 产品体验改造（U3）的首轮思维测试",
+  "date": "2026-09-18",
+  "host": "Claude Code headless（claude -p，--allowedTools Read --strict-mcp-config --output-format stream-json），九个独立 fresh-context 子会话，四路并发",
+  "tested_version": {
+    "commit": "dfeadc8c",
+    "note": "受测文本为本分支 product-experience-overhaul 在该提交上的状态；本轮只判定与记录，未修改任何 skill 文本。",
+    "claude/meta-skill/knowledge/bootstrap-planning.md": "9e4d58457e760c5dde4f27093076ec01ed938ccb344c4e0c47b79fea6acd8e1d",
+    "claude/meta-skill/knowledge/capabilities/concept-acceptance.md": "830fc74fd1f6790d0b87f549afaaf2cd2ce4982242af7a2c0a0615adad97faa6",
+    "claude/meta-skill/knowledge/defensive-patterns.md": "0471014f4cccb2c762de560b7566c266856ef9ad8628fa28527fbf0d772e382c",
+    "claude/meta-skill/knowledge/node-spec-template.md": "2c0ee1620eddfad343d99eb9c9e36e7f5fa5b77532a5802fde761e6bb30fbf81",
+    "claude/meta-skill/knowledge/product-intent-confirmation.md": "cdfcc8e438732b7fc99dd4d858be559288522d5c0ffe27e9cc62b96befdcf627",
+    "claude/meta-skill/knowledge/suppress-rules.md": "72de2bd654e5cec9e97cdba9406df0cf1505e9a639975e9d89386839d6c2d383",
+    "claude/meta-skill/skills/bootstrap/SKILL.md": "30802a5096d8b19fffd95b7157bbe15e0c09dcf263caa721c35e4fb05affc800",
+    "claude/superstorm/skills/cross-exam/SKILL.md": "faada9f35d8a02643cb6b0b1680c5edbc9f34f6ce3aa287ce9ed7a29ff035ce0",
+    "codex/cross-exam-skill/product-review.md": "1273ab517f21d6ad06019f6107a674824a8566b9679c054a0e862b7885f5d28e",
+    "codex/meta-skill/skills/bootstrap.md": "8c85f90cd040f7a7a5c28e088984d88f876c02b950910e242489976212d1c625",
+    "pi/meta-skill/skills/bootstrap/SKILL.md": "0bb0c8e010e950505968799475b6bc87bc595140c66cb47afd46d7c656e96c6f"
+  },
+  "launch": {
+    "method": "场景模拟；受试者不操作真实项目，动作写成伪调用；expected 不进 packet",
+    "isolation": "subject-prompt.md 的受试者指令 + 该 case skill 列表各文件全文 + 该 case 的 situation 拼成单个 packet 文件，放在仓库外的会话 scratchpad；子会话只被允许 Read，隔离由宿主 stream-json 轨迹的 tool_use 事件核对",
+    "fixtures": {
+      "fixtures/product-experience/thought-tests.json": "a0699f77034e91b34fc612058cb1030e8826a4a0ceb611041b226bd7dc26996f",
+      "fixtures/product-experience/subject-prompt.md": "511dd0d60ba9d7dcb35a72bd4894b3844f14261b47e1c85277f9ccba6d8f0df4"
+    }
+  },
+  "cases": [
+    {
+      "id": "E1",
+      "platform_simulated": "claude",
+      "under_test": "experience-direction 首轮必须先 propose；提案先答谁/情境/核心循环感受/回来的理由；对标成熟产品；推荐不等于确认",
+      "prompt_sha256": "5e54ad20e6bd649fc7cc92fdd046a818a675c1ea572e70566d8ada649baab21b",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E1.md"
+        }
+      ],
+      "duration_ms": 25237,
+      "verdict": "pass",
+      "notes": "六个观察点全中。三条方向各自回答「为什么会回来」并点名墨墨背单词 / LingQ / 多邻国及其实际做法，A 的 acceptance 写成可观察判据（点开到答第一题 ≤3 秒、被打断可续、单手完成）；显式按 consumer-maturity-patterns §B 自查并拒绝把「碎片化」直译成时长切分器。本轮只有 propose，没有 select / delegate。"
+    },
+    {
+      "id": "E2",
+      "platform_simulated": "codex",
+      "under_test": "Codex 上 delegate 的两种情形：有当前提案轮时按推荐记 delegate 并标 auto_decided；无提案轮时 delegate 被拒；assume-and-declare 产生不了 select/delegate",
+      "prompt_sha256": "162ad18e32de778116b8b58d62a45ce0ce3d93cd8ff08a1e0e5c212cf2fe8086",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E2.md"
+        }
+      ],
+      "duration_ms": 29329,
+      "verdict": "fail",
+      "notes": "情形甲六项中五项命中：decide + delegate 无 proposal_id 取 D2、user_reference 指向「你定吧……」那一轮、experience-direction-D2 带 origin: model-proposal / auto_decided / confirmation.delegated、同批次 answer 掉 gap-experience-direction。情形乙未命中：判据要求「先 propose 并等用户回复，本轮不产生确认」，实答是同一轮里先 propose 再立刻 decide + delegate，用开场那句「体验方向你定，别问我」当 user_reference，于是产生了用户没见过提案就成立的确认。它引的原句正是「Without a current proposal round both are refused」——canonical 只禁「没有轮次」，没禁「同一轮自建轮次再委托」。披露那一句只说「运行结束时会列出来」，未点名 product_intent.py . --delegations。"
+    },
+    {
+      "id": "E3",
+      "platform_simulated": "claude",
+      "under_test": "推荐、展示的默认值、沉默与「继续吧」都不是动作；话题保持 pending；不能靠 exclude 绕过未答的选择",
+      "prompt_sha256": "1c20481ee4f3ae7e4eb608b31a3c91036a4af0567688af8cfac8c74b90f35e73",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E3.md"
+        }
+      ],
+      "duration_ms": 17072,
+      "verdict": "pass",
+      "notes": "五个观察点全中。不记任何动作、话题保持 pending、拒绝 freeze，并给出两条判据之外仍正确的理由：include 只能写已确认 intent ID；mode = mixed 时 plan 的 not_applicable.experience 会以 experience_not_applicable_on_ui_product 被拒。答复把三条方向重新摆出并请用户明说是否委托。"
+    },
+    {
+      "id": "E4",
+      "platform_simulated": "claude",
+      "under_test": "Pattern I：用户可见决定无人规定时发 contract_gaps.kind = unspecified_user_visible_decision，其余覆盖部分照常实现，/run 内不提问",
+      "prompt_sha256": "da71fc2c17eb903844e65e9ab86fb1f4e663ebf730bea84c7910edb56affcf21",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E4.md"
+        }
+      ],
+      "duration_ms": 16624,
+      "verdict": "pass",
+      "notes": "五个观察点全中。contract_gaps 条目 kind 写对，needed_decision 点名 user-flow-spec.json 这条空边并给 suggested_owner_artifact，blocking_intent_ids 填 [] 且说明原因；其余 11 条照常实现并留 Effect Verification 证据；明确不造输入框、不编默认目的地、不改上游 spec、/run 内不提问。"
+    },
+    {
+      "id": "E5",
+      "platform_simulated": "codex",
+      "under_test": "mode = none 的全链路：按谁在用判断而非技术栈；不加载体验知识、不排体验质量门；freeze 把 gap-experience-direction 放进 exclude；plan 用 not_applicable.experience",
+      "prompt_sha256": "0391c82b71ba7d7300f0c2c76c975bb8165b894084934b1c5f02e24169f8ee2a",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E5.md"
+        }
+      ],
+      "duration_ms": 20103,
+      "verdict": "fail",
+      "notes": "六项中四项命中：experience_priority 写成 {mode: none, reason: <一句话>}、按谁在用而非 React/Vite 判断、不加载那组体验知识、不排 design/runtime 两道门并按 suppress-rules 在摘要写明豁免。未命中两项：freeze 时没有把 gap-experience-direction 放进 exclude（答成「这一步待定，要先读到那份协议」，还说可能在交互阶段直接问用户，正是判据说的「悬空的待答问题」），也没有提 plan 的 not_applicable.experience。原因可核对：这两条只写在 product-intent-confirmation.md（freeze 的 exclude 语义、not_applicable.experience 的合法条件），而本 case 的 skill 列表是 bootstrap/SKILL.md + bootstrap-planning.md + suppress-rules.md，这三份文本里既没有 gap-experience-direction 也没有 not_applicable —— 受试者是按手里的文本诚实地停住，不是编造。"
+    },
+    {
+      "id": "E6",
+      "platform_simulated": "claude",
+      "under_test": "Must #8 的两道创意质量门落点、concept-acceptance.hard_blocked_by 指向实现后那次、required_repair_loops 各声明一条、must-fix 非空即未完成",
+      "prompt_sha256": "130150369379ad176006ca969944108d4c48a8ba93ba56c152952aa8f5313b51",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E6.md"
+        }
+      ],
+      "duration_ms": 17539,
+      "verdict": "pass",
+      "notes": "六个观察点全中。两个评审节点分别落在 game-design-finalize 之后与最后一个美术/UI/音频/前端 QA 之后，concept-acceptance.hard_blocked_by 指向 runtime 那一次，两条修复回路各自声明 qa_node_ids / repair_node_id / closure_node_ids / max_attempts 并按所属 pack 路由，预算耗尽走 Run Policy、运行中不提问，节点 id 不含 cross-exam / product-review。判据之外还自报了推断边界：Must #8 明文只写 concept-acceptance 被阻塞，pipeline-closure-verify 的阻塞与实现节点等待设计评审是它按同一条法则推的。"
+    },
+    {
+      "id": "E7",
+      "platform_simulated": "codex",
+      "under_test": "product-review 采信 docs/experience-review/runtime.md 的镜头观察；不读 design.md；未关闭 must-fix 进 Prior evidence 不占 R 号；未覆盖的镜头自己看",
+      "prompt_sha256": "d339a34c80bfe69be586e0afef1ff3f2afd009dee286b2dd94f0c09c5b876028",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E7.md"
+        }
+      ],
+      "duration_ms": 19871,
+      "verdict": "pass",
+      "notes": "六个观察点全中。runtime.md 被评提交与 HEAD 一致故直接采信、不标过期、不重跑；明确不读 design.md、不碰 .allforai/ 与 product-concept.json；EX2 只进 Prior evidence 不占 R 号；未覆盖的错误态/空态两套样式与离线无提示成为 R1/R2，各带 kind / claim / recommend / evidence / tradeoff；runtime.md 的证据局限并入 Evidence limits。"
+    },
+    {
+      "id": "E8",
+      "platform_simulated": "claude",
+      "under_test": "cross-exam §1b：体验方向条目作候选来源；auto_decided 的候选标注「（此方向由模型受托选定）」；user select 的不标注；只采集不进盘问",
+      "prompt_sha256": "a2c694ec2a912bd8e185f237d7483970a68dd3d0247627b4b0532578a1c1f295",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E8.md"
+        }
+      ],
+      "duration_ms": 15026,
+      "verdict": "pass",
+      "notes": "五个观察点全中。候选来源含两条已确认体验方向，who / circumstance 直接当三元组前两元、progress 从 acceptance 起草；D3 句末标注「（此方向由模型受托选定）」而 D1 不标注；没有删掉 D3，也没有把它说成用户自选；只采集与呈现候选、未选的写进 journey_candidates[]，不进盘问循环。"
+    },
+    {
+      "id": "E9",
+      "platform_simulated": "pi",
+      "under_test": "Pi 适配：纯文本提案、无结构化控件；「你定」这一轮才记 delegate；沉默/中断不是委托；动作走复制进 .allforai 的 product_intent.py",
+      "prompt_sha256": "3f98de2fda4fc9ead63b90f926fb240f2ac4e194f7f41cc87832729c5f71b884",
+      "requested_model": "opus",
+      "resolved_model": "claude-opus-5",
+      "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+      "observed_tool_calls": [
+        {
+          "name": "Read",
+          "path": "<scratchpad>/pe-packet-E9.md"
+        }
+      ],
+      "duration_ms": 21613,
+      "verdict": "pass",
+      "notes": "六个观察点全中。发给用户的是纯文本三条方向加推荐与理由，全程没有出现 AskUserQuestion 或任何结构化控件；propose 调用不带 user_reference；「你定」那一轮才记 delegate（无 proposal_id）并在同批次 answer 掉 gap-experience-direction、标 auto_decided；沉默或中断一律保持 pending 并在 resume 时原样重摆当前轮；披露点名 product_intent.py . --delegations。"
+    }
+  ],
+  "responses": "responses.md",
+  "found_defect": true,
+  "limits": [
+    "每个场景各一次运行、同一模型（claude-opus-5），不是重复采样或跨模型复核。",
+    "模拟决策，不是原生宿主验收：E2/E5/E7 的 codex 适配与 E9 的 pi 适配都只作为输入文本，没有启动 codex 或 pi CLI。",
+    "受试者没有真实项目可操作，所有工具调用、product_intent.py 调用与产物写入都只是回答里的伪调用。",
+    "E5 的首次运行因 packet（85 KB）超出宿主默认的单次文件读取输出预算而被迫第二次 Read，按隔离规则作废，不计入 cases[]；重跑时把 CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS 提高到 120000，其余八个 case 的 packet 都在默认预算内，harness 差异只影响 E5。",
+    "E2 与 E5 判 fail，本任务只判定与记录、不改 skill 文本；修复与重测属于 T-M5-11。",
+    "/run 内评审的真实截图输入、以及真实宿主里的多轮对话质量都未覆盖。"
+  ],
+  "responses_sha256": "7635e5a7c9babbf9cedabf13afbe4f7bee576e2b1c43ceda9cd1bd8c862c323a"
+}
