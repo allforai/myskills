@@ -1,0 +1,454 @@
+{
+ "T-M1-01": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "acceptance_cmd rerun from /Users/aa/workspace/myskills (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-01.supervisor.log): COLLECT_OK count=23 test_experience_coverage_* ids (>=19; all four grep'd ids present incl. [codex]/[claude] params, test_experience_coverage_is_a_structural_gate_blocker, test_app_design_flow_fixtures_raise_no_experience_findings); test_validate_bootstrap.py '94 passed in 1.84s'; 12-file regression set '454 passed in 152.33s'; EXIT=0. Not vacuous: real tests ran, new test ids did not exist before commit 61a3699e.\n\nDiff: commit 61a3699e (Task: T-M1-01) touches exactly the 3 touched_paths (validate_bootstrap.py +197, test_validate_bootstrap.py +214, test_bootstrap_scope.py +1 = the exact experience_priority mode=none line in project()). `git status --porcelain` on the 3 paths prints nothing (clean, committed).\n\nWiring traced in claude/meta-skill/scripts/orchestrator/validate_bootstrap.py: constants L180-196 (PRODUCT_ROUTES, EXPERIENCE_PRIORITY_MODES, APP_EXPERIENCE_DESIGN_ARTIFACTS = exactly 4 app paths, GAME_EXPERIENCE_DESIGN_DOC_PATHS both paths, no bare 'ui'/'expo' terms); _ui_implementation_nodes L2101 hands _matching_nodes the a"
+ },
+ "T-M1-02": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul printed only \"EXIT=0\". All 11 greps passed. validate_skills.py and validate_meta_contracts.py were also run separately and each exited 0 (vs=0, vmc=0) with no output. The log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-02.supervisor.log.\n\n**Not vacuous.** Against HEAD~1:claude/meta-skill/skills/bootstrap/SKILL.md, 9 of the 11 literals had 0 occurrences and now have 1. The `game-design.md` path went from 1 to 2 occurrences. The literal 'Capabilities are REFERENCE material, not a node menu.' stays at 1, which is the intended \"unchanged\" pin. The full command would therefore have failed before the task.\n\n**Diff scope.** Commit ee84ad71 (\"Task: T-M1-02\") touches only claude/meta-skill/skills/bootstrap/SKILL.md, with 22 insertions and 0 deletions. Items 1–8 are untouched and not renumbered.\n\n**Diff content against the contract:**\n- Step 1.2 gains the sentence 'Classify experience_priority (see 1.6) from task_goal, product_vision and who the product serves.'\n- The `experience_priority` JSON line sits directly after \"architecture_pattern\", verbatim.\n- The `**ex"
+ },
+ "T-M1-03": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0; the log holds \"EXIT=0\". validate_meta_contracts.py, rerun on its own, also exited 0 and printed nothing. The log is at /Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-03.supervisor.log.\n\n**Not vacuous.** The invariant grep run against the parent tree (3de55cb4~1) prints 8 offending lines, exactly the baseline the plan predicts:\n- feature-gap.md:48\n- generate-artifacts.md:28\n- product-analysis.md:70, 140 and 161\n- translate.md:53\n- design-audit-dimensions.md:160 and 341\n\nSo the acceptance command would have failed before this task; it now prints nothing.\n\n**Diff.** Commit 3de55cb4 touches exactly the 7 touched_paths and nothing else (7 files, 11 insertions, 10 deletions). Its changes match the task contract's description of the design's U2 table (the design spec itself was not opened):\n- The `experience_priority` row is removed from the source-summary field table in product-analysis.md. It is replaced by \"Experience classification is not a source-summary field: read `experience_priority.mode` from `bootstrap-profile.json`; nev"
+ },
+ "T-M1-05": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills (branch product-experience-overhaul); log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-05.supervisor.log. Output tail: \"... [100%] / 3 passed, 91 deselected in 0.07s / EXIT=0\" (all grep pins, validate_meta_contracts.py, collection guard for test_app_design_flow_passes, and the -k test_app_design_flow run passed).\nNot vacuous: 3 tests ran; the grep pins would have failed before the task (parent db6d1ad3^ has 0 occurrences of '## Decision Inputs' and contained '## Human Gate Protocol', 'requires `discipline_owner` approval', 'Merge all approved design JSONs').\nDiff: commit db6d1ad3 (Task: T-M1-05) touches exactly 2 files = touched_paths (app-design.md +/- 31 lines, domain-codex.md 1 line). Content matches contract: line-5 note replaced with decision_mode:\"brainstorm\"/decision_inputs/\"No node carries `human_gate: true`\" sentence; '## Human Gate Protocol' replaced in place by '## Decision Inputs' (decision-<id>.json, /run read-only, no approval-records.json written, no approval_record_path, legacy SKILL.md read left alone, Discipline Owner column retained); finalize goal now 'Merge all selected design J"
+ },
+ "T-M1-06": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun of full acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: EXIT=0 (all 11 greps + ordering test passed; validate_meta_contracts.py rc=0, silent). Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-06.supervisor.log. Not vacuous: against the parent tree (b0e59aa3^) the pinned literals '#### 3.5.0b App Design Coverage Check', 'experience_priority.mode != none', 'App Design Coverage Check** (§3.5.0b)', 'First entry & onboarding', 'Settings audience' all count 0, so the command would have failed before the task. Commit b0e59aa3 (\"Task: T-M1-06\") touches exactly 1 file, claude/meta-skill/knowledge/bootstrap-audits.md (21 insertions, 1 deletion). Diff content matches contract: Trigger sentence now three-way (game -> §3.5.0; non-game and experience_priority.mode != none -> §3.5.0b; otherwise Step 3.4); new heading '#### 3.5.0b App Design Coverage Check (interface products without product-concept.json)' placed after §3.5.0 closing paragraph and before '#### 3.5.1'; lead paragraph (coverage judged against experience design artifact nodes/node-specs, not a feature list); 3-column table System Concern/Trigger Condition/Check "
+ },
+ "T-M4-03": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd, rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul, exited 0 (EXIT=0). It printed nothing, and the log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-03.supervisor.log is empty. Both validators are silent on success. Run on their own, validate_skills.py returned 0 and validate_generalization_boundaries.py returned 0. validate_skills.py does bite: pointed at /nonexistent-dir it printed 'skill root does not exist' and returned 1.\n\nThe grep checks are not vacuous. At the parent commit 7fe2a6f4^, all 14 settings literals were absent from the settings SKILL.md. In the topology SKILL.md, 8 of 9 literals were absent (service_endpoints, endpoint_id, consumer_surface_refs, provisioning, build-time, remote-config, deploy-env, requirement_ref). Only 'audience' was already there. The command would therefore have failed before this task.\n\nThe task commit is 7fe2a6f4, 'docs(meta-skill): 设置项与服务端点规格携带 audience/provisioning'. git show --stat lists exactly the two touched SKILL.md files and nothing else: topology +15/-0, settings +25/-2. `git status --porcelain` on both touched paths printed nothing, so the tree is committed a"
+ },
+ "T-M4-07": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills (branch product-experience-overhaul) exited 0: the targeted node gave \"2 passed in 0.33s\" and the two files gave \"86 passed in 8.08s\". Output is teed to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-07.supervisor.log.\n\n- **Not vacuous:** the explicit node id exists with 2 parametrized cases (ids plain and with-allow-flag). `--collect-only` on the measurement file reports \"52 tests collected\", which matches the plan's baseline 50 + 2.\n- **Diff:** commit 0a71a4da touches only claude/meta-skill/tests/unit/test_check_artifacts_measurement.py (35 insertions, 0 deletions, appended at end of file). Existing tests and imports are unchanged, and check_artifacts.py is not modified, as the contract requires.\n- **Test content matches the contract:**\n  - It uses the file's own helpers (project, write, measure, artifact, REPORT) and writes a status:\"completed\" report.\n  - The `contract_gaps` entry carries the five keys (kind=unspecified_user_visible_decision, where, needed_decision, blocking_intent_ids, suggested_owner_artifact) plus the parametrized flags.\n  - It asserts `all_exist is False` and `status_error.fi"
+ },
+ "T-M4-04": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul. Exit code 0; the log contains only \"EXIT=0\" because both validators are silent on success. Run individually, validate_skills.py exited 0 and validate_generalization_boundaries.py exited 0. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-04.supervisor.log.\n\nNot vacuous: in the parent tree (52859020^) all 7 grep tokens (settings_items, service_endpoints, setting_id, audience, provisioning, requirement_ref, end-user) have count 0 in the SKILL.md, so the acceptance command would have failed before this task.\n\nDiff: commit 52859020 (\"feat(meta-skill): program handoff carries settings_items[] and service_endpoints[] verbatim\", Task: T-M4-04) touches exactly 1 file, the touched path, with 19 insertions and 1 deletion.\n\nContract behaviours present in the diff:\n- Output Contract: top-level settings_items[] carries setting_id, audience, provisioning, surface and requirement_ref verbatim from settings_groups[].items[].\n- Output Contract: service_endpoints[] is carried verbatim from the app surface topology.\n- Output Contract: implementation entries name setting_id or endpo"
+ },
+ "T-M4-05": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills: EXIT=0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-05.supervisor.log). Validators are silent on success; rerun separately: validate_skills.py exit 0, validate_generalization_boundaries.py exit 0. Non-vacuous: grep counts now vs parent commit (30e935e1^): 'Settings audience closure' 1/0, missing_audience 2/0, non_end_user_item_in_screen_spec 2/0, item_id 1/0, requirement_ref 1/0, screen-requirements-spec.json 1/0, missing_contracts 2/1, needs_revision 2/1 -> acceptance would have failed before the task. Commit 30e935e1 touches exactly 1 file (the touched path, +16 lines). Diff content matches contract: Input Contract sentence added (\"permissions/settings spec is required reading whenever settings items exist\"), Automatic Validation gains \"Settings audience closure\" paragraph with both checks (settings spec + handoff settings_items[]/service_endpoints[]; screen-requirements-spec.json or UI handoff end-user surfaces; requirement_ref exception), records `{code, item_id, artifact, detail}` written to existing missing_contracts and state set to needs_revision (no new state), Repair routing sends both"
+ },
+ "T-M3-01": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-01.supervisor.log): py_compile ok; --co collected exactly 3 tests with the contract's names (accepts_minimal_graph, rejects_unlisted_child, rejects_missing_term); pytest output \"..... 5 passed in 0.09s\", EXIT=0 (3 new + 2 game mirror tests). Not vacuous: both files were created by this task (commit 1e1a37e4, 2 files changed, 238 insertions, nothing else touched); tests call the real function on tmp_path and assert [] / 'missing canonical child path' / 'missing required term audience_leak'. git status --porcelain for both touched paths prints nothing (committed, clean). Code review vs contract/design U4: signature validate_app_experience_pipeline(repo_root:str)->list[str]; required-file early return; canonical-ref regex prefixed app-design/ with exact error text 'app-design/PACK.md: missing canonical child path skills/<ref>'; REQUIRED_PARENT_TERMS (8) and REQUIRED_CRITIQUE_TERMS (4 output paths, docs/experience-review/, 8 lenses, 4 judgment types, must_fix_before_implementation/release, recommended_iterations, experience_gaps, review_language, zh-CN, re"
+ },
+ "T-M6-05": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M6-05.supervisor.log. The grep and cmp stages passed silently, then: \"255 passed in 6.60s\" (claude/superstorm/scripts), \"172 passed in 6.74s\" (codex/cross-exam-skill/scripts), \"OK: all 33 referenced files present\" (check_skill_refs.py), \"7 passed in 0.01s\" (pi/cross-exam/test_contract.py), EXIT=0.\n\nNot vacuous: the parent revision 2387508f^ of claude/superstorm/knowledge/cross-exam/lenses.md has 0 occurrences of '这一项是给谁填的', so the grep would have failed before this task. 434 tests actually ran.\n\nDiff: commit 2387508f touches exactly 2 files (claude/superstorm/knowledge/cross-exam/lenses.md and codex/cross-exam-skill/lenses.md), 1 insertion and 1 deletion each, with identical blob hashes 17156397 -> 28e19a75. The only change is on the '| 细节质量 | 状态空间穷举 |' row. Its 泄漏点示例 cell now ends with the plan's clause verbatim: '；最终用户界面里出现部署方/开发者才该碰的配置（服务地址、访问凭证、模型、环境）——规格给设置项标了受众就对受众查，没标就把\"这一项是给谁填的\"做成问题牌 |'. No new row was added (the 细节质量 row count is 1) and the other rows are untouched.\n\nTwin dual-write confirmed: cmp passed, and"
+ },
+ "T-M1-04": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0. The log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-04.supervisor.log. I added a print to the python step, which showed: py-ok ('.allforai/app-design/concept/job-story-spec.json', '.allforai/app-design/spec/user-flow-spec.json', '.allforai/app-design/spec/screen-requirements-spec.json', '.allforai/app-design/spec/permissions-notifications-settings-spec.json', '.allforai/game-design/game-design-doc.json', '.allforai/game-design/design/game-design-doc.json'), then EXIT=0. validate_meta_contracts.py, run on its own, also exited 0.\n\n- **Not vacuous:** against the parent tree 3bf2a438^, all four bootstrap-planning.md literals and 'not_applicable.experience' in product-intent-confirmation.md had grep count 0. The command would have failed before this task.\n- **Diff scope:** commit 3bf2a438 (\"Task: T-M1-04\") touches exactly 2 files: bootstrap-planning.md +5 and product-intent-confirmation.md +1. Both are in touched_paths and nothing else changed.\n- **Diff content:**\n  - One list item is appended under ## Free planning. The existing items are untouched"
+ },
+ "T-M2-01": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun of acceptance_cmd from /Users/aa/workspace/myskills (branch product-experience-overhaul): \"54 passed in 16.41s\", EXIT=0. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-01.supervisor.log. Not vacuous: 54 tests collected; target test runs for both hosts [claude, codex] (2 passed) and drives the copied CLI via subprocess, asserting module.TOPICS == mirror, EXPERIENCE_TOPIC constant, topic directly before tradeoffs in presented output, and a question of kind 'gap' with id gap-experience-direction.\nCommit 2189e6a5 (HEAD) 'feat(meta-skill): 产品意图话题包含 experience-direction ... T-M2-01' touches exactly 3 files, all in touched_paths: product_intent.py (+4/-1: TOPICS gains \"experience-direction\" before \"tradeoffs\"; EXPERIENCE_TOPIC = \"experience-direction\"), test_experience_direction.py (new, 52 lines), test_product_intent_session.py (mirror at line 13 updated; kept = [t for t in TOPICS if t not in (\"business-loop\",\"tradeoffs\")] used for confirm list and include; resume expectation now [\"scenarios\",\"core-problem\",\"experience-direction\",\"tradeoffs\"]) - matches the plan literally. Wiring: the gap is produced by the existing loop at product_intent.py:1352-1354 ("
+ },
+ "T-M1-07": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran the full acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul. Exit code 0. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M1-07.supervisor.log.\n\nRerun results:\n- validate_meta_contracts.py on the real corpus exits 0 (also run standalone: \"vmc exit=0\", no output).\n- The python assertions pass. I added a print to the python block to show the nine hits. With the real corpus the new function returns []. With _bootstrap_text stubbed to '' it returns exactly 9 errors:\n  - bootstrap.md: missing experience routing term experience_priority\n  - bootstrap.md: missing experience routing term \"mode\": \"consumer | admin | mixed | none\"\n  - bootstrap.md: missing experience routing term experience_priority.mode != none\n  - bootstrap.md: missing experience routing term knowledge/capabilities/product-concept.md\n  - bootstrap.md: missing experience routing term knowledge/consumer-maturity-patterns.md\n  - bootstrap.md: missing experience routing term knowledge/journey-emotion-schema.md\n  - bootstrap.md: missing experience routing term knowledge/capabilities/app-design.md\n  - bootstrap.md: missing experience routing term knowledge/capabi"
+ },
+ "T-M4-01": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: log /Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-01.supervisor.log contains only \"EXIT=0\" (no \"missing:\" line, python assert passed, validators silent). Validators rerun separately: validate_generalization_boundaries.py exit 0, validate_meta_contracts.py exit 0. Not vacuous: the parent revision (2a8d854c~1) of the file has 0 matches for 'Pattern I' / 'pattern-j' / 'unspecified_user_visible_decision', so the grep chain failed before the task. Commit 2a8d854c touches exactly one file: claude/meta-skill/knowledge/defensive-patterns.md, 79 insertions, 0 deletions (pure append after Pattern H, hunk starts at line 244 after the Pattern H key principle, so A-H are unchanged). `git status --porcelain -- claude/meta-skill/knowledge/defensive-patterns.md` prints nothing (committed, clean). Diff content matches contract: '---' separator, <a id=\"pattern-i\"></a> + Pattern I with four-part layout, five-step protocol (no implement/no placeholder; five-key contract_gaps entry kind/where/needed_decision/blocking_intent_ids/suggested_owner_artifact; fin"
+ },
+ "T-M4-02": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0 and printed no \"missing:\" line. The output is tee'd to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-02.supervisor.log, which contains only \"EXIT=0\". Run on their own, validate_meta_contracts.py exited 0 and validate_generalization_boundaries.py exited 0; both print nothing on success.\n\n**Not vacuous.** Against the parent commit (56e323e2^), all seven new literals are absent from node-spec-template.md: '## User-visible decisions', 'defensive-patterns.md#pattern-i', 'defensive-patterns.md#pattern-j', 'contract_gaps', 'unspecified_user_visible_decision', 'Not applicable — no end-user surface' and 'Source artifact path'. The grep loop would therefore have failed before this task. The position assert passes: the section sits after '\\n## Guidance' and before '\\n## Exit Artifacts', and appears exactly once.\n\n**Diff.** Commit 56e323e2 changes exactly one file, claude/meta-skill/knowledge/node-spec-template.md, with 47 insertions and 3 deletions. It carries the four U3 edits:\n1. The line-3 sentence now ends with \"A node that implements or changes an end-user-vi"
+ },
+ "T-M4-06": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: EXIT=0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-06.supervisor.log). Both validators rerun separately: validate_meta_contracts.py exit 0, validate_generalization_boundaries.py exit 0. Non-vacuous: against the pre-commit blob (9e91d157^) the literals '### Audience Leak Check', audience_leak, 'defensive-patterns.md#pattern-j', observed_audience, 'Audience isolation' each count 0, so the greps would have failed before this task. Commit 9e91d157 'docs(meta-skill): product-verify 增加 Audience Leak Check 与受众隔离规则' touches exactly 1 file (claude/meta-skill/knowledge/capabilities/product-verify.md, +44/-0). Diff matches the contract: new section placed between '### Multi-Client Feature Parity Verification' and '## Rules (Must Preserve)'; dynamic walk incl. hidden/long-press/developer menus; compare with settings spec audience; classification spec-silent/absent -> contract_gaps, spec non-end-user but shown -> code_gaps; shared shape {kind: audience_leak, where, item, observed_audience, spec_ref, evidence(screenshot path)}; requirement_ref exception with existence ch"
+ },
+ "T-M4-08": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0 (log line \"EXIT=0\") on the first attempt, so no retries were needed. The log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M4-08.supervisor.log. Every stage of the chain passed silently:\n- The grep count of `validate_spec_gap_discipline_contract(errors` was at least 2.\n- All 10 source-pin greps matched.\n- The python probe's three assertions held: exactly 7 `: missing` errors on an empty root, `[]` on a copy of the tree, and the altered heading reported as `missing spec-gap discipline term ... Pattern J: Audience Isolation`.\n- validate_meta_contracts.py, validate_skills.py and validate_generalization_boundaries.py all returned 0.\n\nThe check is not vacuous. `git show 4344056b~1:<file> | grep -c validate_spec_gap_discipline_contract` returns 0, so the grep gate and the probe (AttributeError on the missing function) would both have failed before this task. The probe also exercises real red and green behaviour.\n\nDiff: HEAD 4344056b \"feat(meta-skill): validate_meta_contracts 钉住 spec-gap 纪律七文件字面量表 ... T-M4-08\" touches exactly one file, claude/meta-skill/scr"
+ },
+ "T-M2-02": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul: \"........................ [100%] 24 passed in 7.98s\", EXIT=0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-02.supervisor.log). Not vacuous: 24 tests collected (3 new test functions parametrized over claude/codex and 3 collision kinds + test_product_question_identity.py); the three new tests could not pass before the task since operation \"propose\" did not exist. Commit 92096f70 (\"Task: T-M2-02\") touches exactly the two touched_paths (product_intent.py +79, test_experience_direction.py +150/-1). `git status --porcelain` for both touched paths prints nothing. Wiring traced in product_intent.py: `if operation == \"propose\": return _propose(...)` registered in session(); _propose enforces product-session check, 2-3 proposals, _proposal() exact key set (set(value) != _PROPOSAL_KEYS rejects origin/status/round/recommended/confirmation), distinct ids, exactly one recommended, non-empty rationale, then stamps origin=\"model-proposal\", round=max+1, recommended bool, rationale on recommended only, extends experience_proposals (append-only), calls _validate_question_ids BEFORE _write, re"
+ },
+ "T-M2-03": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun of acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: \"18 passed in 7.87s\", EXIT=0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-03.supervisor.log). Not vacuous: 18 tests collected (case 3 x2 hosts + test_product_intent_resume.py). Commit 2fdc9763 \"feat(meta-skill): resume 在体验方向话题下呈现当前轮提案 ... T-M2-03\" touches exactly 2 files: claude/meta-skill/scripts/orchestrator/product_intent.py (+24/-4) and claude/meta-skill/tests/unit/test_experience_direction.py (+55). Diff: _discussion now calls _current_proposals(concept) (defined at line 498), lists the experience-direction topic when a current round exists and no confirmed direction does, adds proposals/recommended_id/rationale to that entry, and adds experience_proposals (all rounds) to the returned object only when non-empty; base dict key order unchanged so no-proposal output is identical (test_product_intent_resume.py passes; test also asserts plain resume has no experience_proposals/proposals keys). _discussion is the return of resume/propose/decide paths (lines 1028,1169,1171,1303,1408) so it is wired. Test asserts round 1 stored w/o journal, round 2 with roun"
+ },
+ "T-M2-04": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul printed \"...... [100%] 6 passed in 2.16s\" with EXIT=0. The log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-04.supervisor.log.\n\n- **Not vacuous:** collect-only shows 6 real test ids, the 3 named tests each run for [claude] and [codex]. codex/meta-skill/scripts and codex/meta-skill/tests are symlinks to the claude copies. The whole test file passes 20 of 20.\n- **Commit scope:** db09569c (\"Task: T-M2-04\") touches only product_intent.py (+54) and test_experience_direction.py (+154).\n- **Clean tree:** `git status --porcelain` on both touched paths prints nothing.\n\nEvery contract behaviour is wired into the running code, not merely defined:\n\n- **Dispatch:** `_direction_intent(concept, concept_path, action, op)` is called from session()'s decide loop through `elif op in (\"select\",\"delegate\")`. The batch confirmation is attached and the item is appended to concept.requirements.\n- **Guards:** all four contract error strings are raised. They cover product session only, no current round, id not in the current round, and a direction already selected. There is also a"
+ },
+ "T-M2-05": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul: \"....  [100%]\\n4 passed in 1.05s\", EXIT=0 (2 tests x host param claude|codex; not vacuous). Log: /Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-05.supervisor.log. Whole file also green: 24 passed in 8.73s.\nDiff: commit 5474497d touches only claude/meta-skill/tests/unit/test_experience_direction.py (+78). Implementation landed earlier in db09569c (T-M2-04) inside touched path product_intent.py and is wired, not just defined: _direction_intent (line ~1047) raises \"No current experience proposals; propose before select or delegate\", rejects proposal_id on delegate with \"Delegate takes the recommended proposal; use select to name one\", takes the proposal with recommended is True, and sets item.update(auto_decided=True) at 1071-1072; the decide loop branch at 1373-1378 sets confirmation[\"delegated\"] = True on the per-action stamp before attaching it; 'delegate' is in the allowed-operations error list at 1450; journal operation comes from the existing decision writer. The tests drive the copied CLI through subprocess and assert exact item equality, auto_deci"
+ },
+ "T-M6-03": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M6-03.supervisor.log. Output: \"255 passed in 6.57s\" (claude/superstorm/scripts), \"172 passed in 6.67s\" (codex/cross-exam-skill/scripts), \"OK: all 33 referenced files present\", \"7 passed in 0.01s\" (pi/cross-exam/test_contract.py); EXIT=0. All six grep pins and the twin-line equality check passed in both twins.\nNot vacuous: at eed1adaf^ the count of lines matching experience-direction|job-story-spec|受托选定 was 0 in both twins, so the grep gate would have failed before this task; test counts non-zero and match the design's baseline (255/172/7/33).\nDiff: commit eed1adaf \"docs(cross-exam): §1b 第 1 步候选来源增加体验方向意图与 job story\" (tagged T-M6-03) touches exactly 2 files, +7 lines each, 0 deletions: claude/superstorm/skills/cross-exam/SKILL.md and codex/cross-exam-skill/SKILL.md. Inserted paragraph is byte-identical across twins and matches the design U3 quoted text verbatim (both source paths, topic/status predicates, latest revision per id, who/circumstance direct else goal/scope, progress from acceptance, job-story field mapping "
+ },
+ "T-M2-06": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul, log tee'd to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-06.supervisor.log:\n`python3 -m pytest -q ...::test_delegate_records_auto_decision_and_is_disclosed` -> \"2 passed in 1.06s\", EXIT=0. The -v rerun shows [claude] PASSED and [codex] PASSED, so 2 items were collected and the check is not vacuous.\n\nDiff: commit 52097a22 (T-M2-06) touches exactly two files, product_intent.py (+34) and test_experience_direction.py (+69), both inside touched_paths. `git status --porcelain` on both paths prints nothing, so the committed tree is clean.\n\nWiring, traced in the diff:\n- Public `delegations(root)` returns {\"status\":\"delegations\",\"delegations\":[...]} with entries {id, revision, proposal_id, proposal_title, user_reference, reason}.\n- It lists only latest intents with `auto_decided is True` and status confirmed.\n- `user_reference` and `reason` come from the revision whose `confirmation.delegated is True`, falling back to the item itself.\n- `proposal_title` comes from the matching entry in `experience_proposals`, else None.\n- `session()` dispatches `operation == \"delegations\"` at the top, r"
+ },
+ "T-M2-07": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul: \"....  [100%]\\n4 passed in 4.56s\", EXIT=0 (2 tests x hosts claude/codex; not vacuous). Log: /Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-07.supervisor.log. Whole test_experience_direction.py: 30 passed.\nCommit d239911f (T-M2-07) touches exactly 2 files: product_intent.py (+31), test_experience_direction.py (+104). git status --porcelain for both touched paths prints nothing.\nWiring traced: product_intent.py:147 `blockers.extend(_experience_direction_blockers(root, profile, scope[\"requirement_refs\"]))` sits in validate_scope's product-route branch directly after `_product_contract`; def at :780 returns [] unless mode in (consumer, mixed), returns [] when a ref resolves to latest intent with topic==EXPERIENCE_TOPIC, status==\"confirmed\", matching revision; otherwise one global blocker (no node_id) with code ui_product_without_experience_direction at :804. Gate files not edited, as contract requires.\nTests are behavioural (subprocess gates): under consumer and mixed each of validate_bootstrap.py, check_decision_inputs.py, validate_unattend"
+ },
+ "T-M2-08": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Acceptance rerun from /Users/aa/workspace/myskills (branch product-experience-overhaul): \".... [100%] 4 passed in 0.11s\"; validate_meta_contracts.py printed nothing and exited 0 (re-ran standalone: VEXIT=0); pipeline EXIT=0. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-08.supervisor.log. Not vacuous: 4 tests collected (1 target + 3 run_logging); target test asserts exact summary[\"delegations\"] entry, exact `## Delegated Decisions` line, `- none` case, torn-record `delegations_error` + `- unreadable:` line, and template literals ordered between \"Run log summary\" and \"Mark concept drift resolved\"; it would fail pre-task (no `_delegations` attr, no key, no section). Full test_experience_direction.py: 31 passed. Commit a1b85ea0 (T-M2-08) touches exactly the 3 touched_paths (8/41/88 lines), nothing else. Diff matches contract: module-level try/except ImportError import of product_intent.delegations; summarize() adds `delegations` and conditional `delegations_error` on the exact exception tuple; schema_version stays \"1.0\"; write_reports appends section after Recent Failures; template step 0b sits under \"**Run regardless of success or early stop:**\" between "
+ },
+ "T-M2-09": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul: pytest \"1 passed in 0.05s\" for test_protocol_text_names_the_new_topic_and_actions; grep clause passed (no experience_priority line lacking .mode); validate_meta_contracts.py exit 0 (rerun separately, V=0). Combined EXIT=0. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-09.supervisor.log.\nNot vacuous: 1 test collected and run; it was added by this commit and asserts the old sentence \"omitted answers and silence are not actions.\" is absent plus new literals, so it would have failed pre-task.\nDiff: commit 2f349cc2 touches exactly 2 files (product-intent-confirmation.md +87/-7 region, test_experience_direction.py +51), both in touched_paths. All 8 contract items traced in the diff: prose \"experience direction and tradeoffs\"; replaced action sentence; model-proposal origin restriction with draft origins unchanged; topic list with experience-direction between business-loop and tradeoffs + experience stage/not_applicable distinction + gap-experience-direction freeze exclusion; propose entry after resume (fields, 2-3, exactly one recommended_id, rationale, append-only rounds, no jour"
+ },
+ "T-M2-10": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "T-M2-10 is done: the acceptance command reran with exit 0 and the new test exercises the behaviour the contract names. It was run from /Users/aa/workspace/myskills on branch product-experience-overhaul, logged to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M2-10.supervisor.log. Output:\n\n```\n2 passed in 1.08s      (test_pre_existing_concept_and_journal_read_without_drift, claude and codex)\n34 passed in 15.37s    (full test_experience_direction.py; collect-only confirms 34 collected)\n177 passed in 75.11s   (ten product-intent regression files, run-logging, the one selected evidence_freshness node)\nvalidate_meta_contracts.py ran without printing anything\nEXIT=0\n```\n\nThe run is not vacuous: real tests were collected, and the target test did not exist before HEAD.\n\n**Diff:** HEAD 937e31a7 changes one file, claude/meta-skill/tests/unit/test_experience_direction.py (+59 lines), which is inside touched_paths. product_intent.py is unchanged, which matches the contract's \"fixes only\". `git status --porcelain` on both touched paths prints nothing.\n\n**Contract assertions present in the new test:**\n- `gap-experience-direction` is deleted from the drafted concept, then co"
+ },
+ "T-M3-02": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul: \".............  [100%] / 13 passed in 0.16s\", and validate_skills.py printed nothing and exited 0, so the chained exit was 0. Log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-02.supervisor.log.\n\nNot vacuous: 5 of the 13 tests are in test_experience_quality_critique_skill.py, and the other 8 are test_validate_skills. They read the real SKILL.md and PACK.md, and `CRITIQUE.read_text` fails when the file is absent, so none of them could pass before this task. The 5 tests cover:\n- the pipeline validator against the real repo with `bootstrap corpus:` errors filtered out\n- the 8 lens identifiers as backticked code, first occurrences in registry order\n- JSON fences that parse, with exactly the three gate keys, the four `observation` keys, `experience_gaps == []`, and an invocation block with the right `skill`, `output_root` and `.allforai/` paths\n- the review-doc root and the four headings in order\n- no verdict entry named in any skill, node_id or capability value\n\nDiff: HEAD 6de81c5a (message tagged T-M3-02) touches exactly the 3 touched_paths: SKILL.md +377, PACK.md +39/-1, test"
+ },
+ "T-M3-04": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Acceptance rerun from /Users/aa/workspace/myskills (branch product-experience-overhaul): \"91 passed in 8.87s\", EXIT=0; log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-04.supervisor.log. Collection shows 5 must_fix tests: test_must_fix_before_implementation_in_gates_is_not_complete, test_must_fix_before_release_in_gates_is_not_complete, test_top_level_must_fix_is_not_complete[must_fix_before_implementation|must_fix_before_release], test_empty_must_fix_gates_are_complete. Not vacuous: parent commit's test file has 0 'must_fix' occurrences, so the grep gate would have failed before the task. Commit cb0a93cf touches exactly the 2 touched_paths (10 + 44 insertions). Diff: MUST_FIX_GATE_FIELDS tuple defined, splatted into PRODUCTION_GAP_FIELDS, both names added to the hard-fail set in _production_gap_error, nested read from data['gates'][field] only for these two fields when top-level is empty and gates is a dict. Wired: _production_gap_error is called at check_artifacts.py:344 inside the check path exercised by tests via check_node_artifacts (all_exist False, status_error.field == field name). Independent probe: with production_acceptance_policy.allow_place"
+ },
+ "T-M3-05": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0: \"377 passed in 78.24s (0:01:18)\" then \"EXIT=0\". The trimmed output is in docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-05.supervisor.log.\n\n**Not vacuous.**\n- `--co -q | grep -c experience_gate` returns 18, against a required 14.\n- The collected tests cover all fourteen U7 cases:\n  - app passes and game passes;\n  - app without a critique node, plus the variant naming the missing stage;\n  - game without a creative critique;\n  - implementation not blocked by the design critique;\n  - closure not blocked for the app, and for a game by its post-implementation critique;\n  - critique outside a repair loop, plus the variant with no readiness spec;\n  - not triggered for mode none, for local-change, or without `experience_priority`;\n  - a reader node is not a gate;\n  - `test_structural_gate_blockers_include_experience_gate`;\n  - malformed inputs return empty, for unparseable, nodes-not-a-list and root-not-an-object.\n- The count was 0 before commit 076c7e0d, which added all of these tests.\n\n**Diff.**\n- Commit 076c7e0d (T-M3-05) touches exactly two files: `validate"
+ },
+ "T-M3-08": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun of acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: EXIT=0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-08.supervisor.log). validate_meta_contracts.py run standalone also exits 0 (silent on success; suppress-rules.md is in its corpus at line 20 of the validator).\nNon-vacuous: in parent cc430059~1 the literals counted 0/0 in suppress-rules.md ('experience_priority.mode = none', 'Must #9') and 0/0 for both skill names in concept-acceptance.md (hard_blocked_by was 1) -> the acceptance chain would have FAILED before the task.\nCommit cc430059 (Task: T-M3-08) touches exactly 2 files: concept-acceptance.md (+9), suppress-rules.md (+1) -- both in touched_paths, nothing else. suppress-rules.md:20 is the exact contract row `| `experience_priority.mode = none` | experience quality gate (Must #9) nodes | no end-user UI to judge; the summary states the exemption |`, no admin row. concept-acceptance.md paragraph 'Blocked by the quality critique.' sits at the end of ## Prerequisite (section line 19, next heading line 50) and covers every contract clause: hard_blocked_by, creative-quality-critique (Must #8) for games, run"
+ },
+ "T-M3-06": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-06.supervisor.log): first pytest call \"2 passed in 0.05s\"; full file \"93 passed in 1.02s\"; EXIT=0. Not vacuous: both named tests collected and ran.\nDiff: commit 3aa58423 touches exactly 1 file (claude/meta-skill/tests/unit/test_validate_unattended_readiness.py, +133/-0); validate_unattended_readiness.py not edited, as the contract requires. `git status --porcelain` for the touched path prints nothing (committed, clean).\nContract match: test 1 builds a profile-less Must #9 graph (design -> design critique [...-design.json] -> design repair -> node hard_blocked_by both -> implement -> runtime critique [...-runtime.json] -> runtime repair -> closure hard_blocked_by both), two declared loops via _repair_loop, asserts report[\"blockers\"] == []. Test 2 adds profile {task_route:new-product, experience_priority:{mode:consumer}}, does not assert status, asserts code set free of experience_gate*/missing_experience_gate/missing_experience_design_node/implementation_not_blocked_by_design_critique/closure_not_blocked_by_experience_gate, then a"
+ },
+ "T-M3-03": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-03.supervisor.log). Run separately, validate_skills.py exited 0, validate_meta_contracts.py exited 0 and validate_app_experience_pipeline.py exited 0.\n\nThe check is not vacuous. `git show 7e9f9a10^:claude/meta-skill/knowledge/capabilities/app-design.md | grep -cE 'experience-critique|experience-design-repair|40-qa/experience-quality-critique'` returns 0, so the id greps failed before this task.\n\nThe task's commit is 7e9f9a10. Its --stat shows 1 file changed, 16 insertions, 0 deletions, and that file is claude/meta-skill/knowledge/capabilities/app-design.md. The M1-owned Decision Inputs section is untouched.\n\nThe diff matches the contract and design U2:\n- Both registry rows sit before `app-design-finalize`. `experience-critique-design` is owned by `independent-reviewer`, outputs `app-design/qa/experience-quality-critique-design.{html,json}`, and is blocked by all selected spec nodes. `experience-design-repair` is owned by `lead-ux` and blocked by `experience-critique-design`.\n- The note after \"Required "
+ },
+ "T-M3-07": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul exited 0 (\"EXIT=0\"). Output is teed to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-07.supervisor.log.\n\n- **Validators:** run separately, validate_app_experience_pipeline.py exited 0 and validate_meta_contracts.py exited 0. Both print nothing on success.\n- **Not vacuous:** the parent tree's version of the file (`git show 35a57944^:...bootstrap-planning.md`) has 0 matches for '9. **Experience quality gate'. The literal greps would have failed before this task.\n- **Diff scope:** commit 35a57944 (\"docs(meta-skill): 规划法 Must #9 落地体验质量门\", Task: T-M3-07) touches only claude/meta-skill/knowledge/bootstrap-planning.md, with 1 insertion and 0 deletions. Must 8's line is unchanged.\n- **Content against the contract checklist, all present in the new item 9:**\n  - Scope is non-game routes with `experience_priority.mode` consumer/mixed.\n  - stage \"design\" runs before any UI implementation node; stage \"runtime\" runs after the last UI/product-verify/visual QA.\n  - exit_artifacts carry the design and runtime .json files, each with its same-name .html, plus docs/experience-revie"
+ },
+ "T-M3-09": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul. Output is in docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-09.supervisor.log and ends with EXIT=0.\n\n**Positive side:** the full validator `python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py` exits 0 on the real tree. I reran it separately and got main=0 with no stderr.\n\n**Negative side:** with `_bootstrap_text` replaced by an empty string, the new function reports exactly 8 errors, all of the form `bootstrap.md: missing experience quality gate term <literal>`. The eight literals are:\n- `Experience quality gate (products with UI)`\n- `skills/app-design/40-qa/experience-quality-critique/SKILL.md`\n- `experience-quality-critique-design.json`\n- `experience-quality-critique-runtime.json`\n- `must_fix_before_implementation`\n- `must_fix_before_release`\n- `docs/experience-review/`\n- `experience_priority.mode = none`\n\nThe concept-acceptance.md and PACK.md pins did not fire in that run, so both files exist and contain the pinned terms. The check is not vacuous: the pins bite when the corpus is empty and are satisfied on the real tree.\n\n**Diff:** commit 51"
+ },
+ "T-M6-01": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul (log teed to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M6-01.supervisor.log):\n\"......  [100%]\n6 passed in 0.07s\nOK: all 33 referenced files present\nEXIT=0\"\nReaching check_skill_refs means the twin-diff count == 12 clause also passed.\n\nNot vacuous: 6 tests were collected (3 for naming every lens across the gate and both twins, 2 for the pairings, 1 for the identical mapping line). Red state confirmed: in the parent tree 7ba7b73e^ neither twin contains `onboarding` (grep -c = 0), so the tests would have failed before this task.\n\nDiff: commit 7ba7b73e (\"Task: T-M6-01\") touches exactly the 3 touched_paths (46 insertions: +2 in each twin, +42 in the new test) and nothing else.\n\nWiring:\n- The mapping paragraph sits after the Lenses table and before \"## 0. Intake\" in both twins, as byte-identical lines.\n- All five `<zh> = `<ident>`` pairs are on one line.\n- It names `mainline`, `direction_fidelity` and `audience_leak` as outside the five.\n- The sentence \"nothing here requires those files to be installed\" still occurs once in each twin.\n- The test matches the contract: ROOT = parents[3];"
+ },
+ "T-M3-10": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran full acceptance_cmd from /Users/aa/workspace/myskills (branch product-experience-overhaul); log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M3-10.supervisor.log. Output: all validators silent/exit 0, pytest \"522 passed in 95.48s (0:01:35)\", EXIT=0. Diff: commit fc2bb9a6 \"feat(meta-skill): pre-commit 执行 app 体验管线校验\" (Task: T-M3-10) touches only .githooks/pre-commit, 1 insertion: `+python3 claude/meta-skill/scripts/orchestrator/validate_app_experience_pipeline.py .` directly after the validate_game_creative_pipeline.py line (line 47 -> new line 48), game line unchanged and single. Wiring: hook has `set -euo pipefail`, the new line is unconditional top-level in the validator block, so a validator failure aborts the commit; `git config core.hooksPath` = /Users/aa/workspace/myskills/.githooks so the hook is live. Non-vacuous: on a scratch copy of skills+knowledge the validator exits 0, and after replacing `audience_leak` in the critique SKILL.md it prints \"experience-quality-critique: missing required term audience_leak\" and exits 1. grep count for the app line was 0 before this commit (line added by it), so the literal check would not have passed pre-tas"
+ },
+ "T-M6-02": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: grep loop passed for both twins, twin diff count = 12, \"6 passed in 0.07s\" (test_experience_lens_parity.py), \"OK: all 33 referenced files present\", EXIT=0. Log: /Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M6-02.supervisor.log.\nNot vacuous: at d5d3691a~1 only 2 of the positive literals existed (the pre-existing ban sentence and 'Prior evidence: none', which the contract requires to survive) and the forbidden 'not a cross-exam gap restated' was present in both files, so the command would have failed before this task.\nDiff: commit d5d3691a (T-M6-02) touches exactly claude/superstorm/skills/product-review/SKILL.md and codex/cross-exam-skill/product-review.md (12 insertions, 6 deletions; 9 lines each); added/removed lines are byte-identical between the twins. All four contract places verified in the diff: (1) invariant tail now '`docs/cross-exam/` and `docs/experience-review/` are readable input.' with ban sentences unchanged; (2) new paragraph 'Prior evidence — runtime experience review.' placed right after the untouched Prior evidence parag"
+ },
+ "T-M6-04": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd, rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul, exited 0 with output \"6 passed in 0.06s\" and \"OK: all 33 referenced files present\". The log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M6-04.supervisor.log.\n\nNot vacuous: at HEAD~1 both twins had 0 lines containing '受众泄漏', so the grep chain would have failed before this task. 6 parity tests ran.\n\nDiff: commit 92a3e523 touches only claude/superstorm/skills/product-review/SKILL.md and codex/cross-exam-skill/product-review.md, 2 insertions and 1 deletion each, and the hunks are identical in both twins.\n- The new row '| 4 商业级够不够 · 受众泄漏 | ... `end-user` / `operator` / `developer` ... 归 `不够商业级`。例外：...自托管类产品 | meta-skill defensive-patterns Pattern J |' sits directly after the '4 商业级够不够' row and before the Nielsen naming row.\n- The self-check 'claim: 不够商业级' example list gains '最终用户设置页里要填服务地址或访问凭证'.\n- The five-lens mapping line from T-M6-01 is still there right after the table, and the parity test passes.\n- Twin divergence is 12 lines both before and after.\n- The lineage target exists: claude/meta-skill/knowledge/defensive-patterns.md:301 '## Pattern J: Audience "
+ },
+ "T-M5-01": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills (branch product-experience-overhaul), teed to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-01.supervisor.log:\n{\"passed\": true, \"errors\": [], \"warnings\": []}\nEXIT=0\nNot vacuous: pre-task revision (8bf5afc4^) of codex/meta-skill/skills/bootstrap.md has 0 matches for '^### 0b\\.' (plan also states experience-direction occurred 0 times), so the grep chain would have failed before. Commit 8bf5afc4 touches exactly 1 file: codex/meta-skill/skills/bootstrap.md, +56/-0, inserted directly before '### 1. Plugin Root Resolution'. Content covers all four contract items: (1) experience_priority {mode, reason} per canonical Step 1.6, Codex sole producer; (2) product route and mode != none loads <canonical-root>/knowledge/capabilities/product-concept.md, consumer-maturity-patterns.md, journey-emotion-schema.md, app-design.md or game-design.md; (3) experience-direction: propose 2-3 with one recommended as plain text, select for user pick, delegate only on explicit user turn, assume-and-declare/silence/recommendation are not actions, source <canonical-root>/knowledge/product-intent-confirmation.md, disclosure via product_intent.py . --"
+ },
+ "T-M5-02": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul; log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-02.supervisor.log.\n\nOutput: \"2 passed, 14 subtests passed in 0.01s\" (the two named node ids), then \"10 passed, 21 subtests passed in 0.01s\" (full pi/meta-skill/test_contract.py), then EXIT=0. All three trailing greps passed.\n\n- Not vacuous: in e7d67c00^ both test names are absent from test_contract.py (count 0) and the template had 0 occurrences of `--delegations`. The acceptance command could not have passed before this task.\n- Diff: commit e7d67c00 touches exactly the three touched_paths (83 insertions, 4 deletions) and nothing else.\n- Committed tree: `git status --porcelain` on the three paths prints nothing.\n- Wiring, template: the `--delegations` disclosure sits in the first bullet of `## Termination`, before the user steps, under the heading `Decisions you delegated to the model`. It lists id, proposal title, user turn and reason, prints `No delegated decisions.` when the list is empty, and is worded as informing, never blocking. The same command is step 2 of `## Post-Completion`, with later steps renumbered 3-6.\n- The wo"
+ },
+ "T-M5-03": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul; log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-03.supervisor.log. The two targeted tests: '2 passed in 0.40s'. Full codex/meta-skill/test_flow.py: '185 passed in 44.66s'. The grep passed, EXIT=0.\n\nCommit 623e9297 touches only codex/meta-skill/knowledge/flow-template.py (+18/-1) and codex/meta-skill/test_flow.py (+74). `git status --porcelain` on both paths prints nothing.\n\nWiring: `def delegation_disclosure(project_root: Path)` is at flow-template.py:1515. It calls run_script(project_root, 'product_intent.py', ['.', '--delegations']), returns 'unavailable' on None, a nonzero returncode or a ValueError from json.loads, and otherwise returns the parsed JSON unchanged. It is called at flow-template.py:2305 inside main()'s success payload: {\"passed\": True, \"done\": True, \"iterations\": ..., \"delegations\": delegation_disclosure(project_root)}. Timeouts cannot raise out of it, because run_bounded returns CompletedProcess(124).\n\nThe tests are not vacuous. They drive the real main() routing to completion, stub only the --delegations call, and parse the last stdout JSON document. They"
+ },
+ "T-M5-04": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun of acceptance_cmd from /Users/aa/workspace/myskills (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-04.supervisor.log): parity script printed {\"passed\": true, \"errors\": [], \"warnings\": []}; EXIT=0. grep -n '--delegations' -> lines 447 (inside first bullet of '## Termination', line 440) and 498 (step 2 of '## Post-Completion', line 495); both carry the full literal `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations`, and both state the empty case prints `No delegated decisions.`. No CLAUDE_PLUGIN_ROOT / .claude/commands/run.md in file. Non-vacuous: parent revision (c1468da9^) has 0 occurrences of --delegations, so the grep would have failed before the task. Commit c1468da9 'docs(meta-skill): Codex orchestrator 模板在完成输出打印受托决定清单' touches exactly 1 file (codex/meta-skill/knowledge/orchestrator-template.md, +14/-4), English consistent with file language. Wiring: codex/meta-skill/scripts/orchestrator/product_intent.py actually implements --delegations (also claude twin), so the referenced command exists. git status --porcelain for the touched path prints nothing (committed, clean)."
+ },
+ "T-M5-06": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul; output tee'd to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-06.supervisor.log: \".. [100%] / 2 passed in 0.73s / EXIT=0\". Collection lists test_ink_scent_shaped_workflow_is_refused_at_every_public_gate[claude] and [codex] (2 collected, both ran, not vacuous; the test file did not exist before commit 734e56d9).\nCommit 734e56d9 touches exactly the 6 touched_paths (615 insertions, nothing else). `git status --porcelain` for the touched paths and for all of claude/ prints nothing (committed tree clean).\nIndependent replay of build()+codes() outside pytest, both hosts: 13 nodes; validate_bootstrap.py -> {ui_product_without_experience_direction}; check_decision_inputs.py -> {ui_product_without_experience_direction}; validate_unattended_readiness.py -> {missing_experience_design_node, missing_experience_gate, missing_source_inputs, ui_product_without_experience_direction}. codes() asserts returncode==1 whenever a gate reports codes, and the test asserts all three sets non-empty, union and readiness-alone superset of REFUSED, DIRECTION in check_decision_inputs, 13 nodes, "
+ },
+ "T-M5-08": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: no assertion or grep output, EXIT=0 (log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-08.supervisor.log).\n\nCommit c44a556c \"test(meta-skill): 消费级 new-product 模型运行夹具与路径式答案键\" adds exactly the 4 touched paths (289 insertions, 4 files) and nothing else. `git status --porcelain` on the 4 paths prints nothing, so the tree is committed and clean.\n\nNot vacuous: the expected JSON did not exist in c44a556c^ (\"exists on disk, but not in 'c44a556c^'\"), so the python assert and the prompt greps would have failed before this task.\n\nContent against the contract:\n- Both keys have the U2 shape: profile{task_route:new-product, \"experience_priority.mode\":consumer}, loaded_knowledge_includes[4], experience_direction{proposed_count:[2,3], recommended:1, user_action_in:[select,delegate], must_not:self-confirmed}, the 4 artifact paths, ordering[2], repair_loops_cover[2], and forbidden including \"assert by node_id\".\n- Neither key contains a node name; ordering and repair loops are phrased as predicates (\"design-stage critique producer\").\n- The codex key differs only in host/entry (cod"
+ },
+ "T-M5-05": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Acceptance rerun from /Users/aa/workspace/myskills (logged to docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-05.supervisor.log): \"15 passed in 2.61s\"; parity script printed {\"passed\": true, \"errors\": [], \"warnings\": []}; EXIT=0. Verbose run: test_bundle_contract_regressions_are_rejected[experience_direction-experience direction] PASSED and [delegation_disclosure-delegation disclosure] PASSED (15 passed, up from 13 parametrized before). Commit a38dac49 touches exactly the two touched_paths (10 + 26/-9 lines). Diff: disclosed_protocols gains \"product-intent-confirmation.md\" (consumed by the existing check_exists loop in main()); new check block in main() appends an error containing \"experience direction\" when any of experience_priority / experience-direction / delegate is missing from bootstrap_text, and an error containing \"delegation disclosure\" when \"--delegations\" is absent from run_template_text + flow_template_text. Test damage logic extended to a list of mutations per damage, keeping the \"fixture mutation did not apply\" guard per file; delegation_disclosure mutates both knowledge/orchestrator-template.md and knowledge/flow-template.py; test asserts code"
+ },
+ "T-M5-09": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: EXIT=0 (python asserts silent, both greps and test -s passed; log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-09.supervisor.log).\nNot vacuous: both touched files were newly created by commit dfeadc8c (\"test(product-experience): 冻结 E1-E9 思维测试判据与受测提示词\"; 2 files, +166 lines, nothing else), so the command could not pass before it. `git status --porcelain` on both touched paths prints nothing (committed, clean).\nContent check: thought-tests.json (19487 bytes) has method (wording carried over from fixtures/pi-session-model/thought-tests.json), subject_under_test (11 files), 9 cases E1-E9 with platforms claude/codex/claude/claude/codex/claude/codex/claude/pi matching design U3 table (spec lines 307-315); each case's skill[] matches the table's files and all paths exist; optional `sections` used instead of path suffixes; situation and expected[] (5-6 items each) non-empty and substantive. E4 expects contract_gaps kind \"unspecified_user_visible_decision\"; E2/E9 exercise `delegate` (incl. rejected delegate without a current proposal round, user_reference to the real utt"
+ },
+ "T-M5-12": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd in /Users/aa/workspace/myskills on branch product-experience-overhaul: acceptance_exit=0. Output is in docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-12.supervisor.log.\n\nNot vacuous: in the parent tree 82339ab2^, all six literals occur 0 times (experience_priority, missing_experience_priority, docs/experience-review/ and 体验质量门 in CLAUDE.md; 体验方向 and 体验质量门 in README.md). The grep would have failed before this task, as the plan's 检查意图 requires.\n\nDiff: commit 82339ab2 \"docs: CLAUDE.md 与 README.md 写明体验方向、体验质量门与升级影响\" touches only CLAUDE.md (+5/-1) and README.md (+1/-1), so nothing outside touched_paths was edited.\n\nContent matches the contract:\n- CLAUDE.md has two new paragraphs right after the \"User workflow\" sentence. The first says that on a product route with a UI, /bootstrap writes experience_priority, proposes 2–3 体验方向 (user-selected, or chosen for them only on explicit delegation), and plans experience-design nodes plus the two-stage 体验质量门 (design and runtime); /run discloses delegated decisions on completion.\n- The second is the upgrade-impact paragraph: an older product-route project gets missing_experience_priority on its first /run"
+ },
+ "T-M5-10": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "The acceptance_cmd rerun from /Users/aa/workspace/myskills on branch product-experience-overhaul printed EXIT=0. The Python assertions passed silently and all three greps passed. The log is at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-10.supervisor.log.\n\n**Not vacuous.** The three touched files did not exist before commit 762965c1, which adds them as 3 files with 644 insertions. The command recomputes the sha256 of both fixtures and of responses.md, so it could not have passed before this task.\n\n**Diff scope.** `git show --stat HEAD` for 762965c1 lists exactly three files:\n- docs/validation/product-experience-thought-tests.md (+54)\n- docs/validation/product-experience-thought-tests/evidence.json (+203)\n- docs/validation/product-experience-thought-tests/responses.md (+387)\n\nNo skill text was touched, which matches the contract's \"only judge and record\". The fixtures were last changed in dfeadc8c (T-M5-09) and are clean.\n\n**Committed tree.** `git status --porcelain` on the touched paths prints nothing.\n\n**Cross-check against the executor's raw artifacts.** I found them in the session scratchpad at pxt/: run.sh, pe-packet-E1..E9.md, raw-E1..E9.jsonl and vo"
+ },
+ "T-M5-07": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: \"...... [100%] 6 passed in 2.29s\", EXIT=0. Log: /Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-07.supervisor.log.\n\nNot vacuous: 6 tests collected, 3 cases x [claude|codex], including test_chosen_direction_does_not_excuse_a_graph_without_design_or_gate and test_designed_and_gated_workflow_passes_every_public_gate. Both run the copied CLI gates (validate_bootstrap.py, check_decision_inputs.py, validate_unattended_readiness.py) in a tmp project.\n\nCommit 1ff485ed (T-M5-07) touches exactly the 6 touched_paths: 768 insertions, 1 deletion. `git status --porcelain` on the touched paths prints nothing.\n\nContract trace:\n- Dialogue: draft -> propose (3 proposals, recommended_id=steady-drip, comparable={product,approach}) -> decide (6 confirms + select steady-drip + answer gap-experience-direction) -> freeze, whose include carries experience-direction-steady-drip.\n- Plan: design-learner-journeys writes the four app-design artifacts. review-experience-design writes critique-design .json/.html and docs/experience-review/design.md. Both implement nodes"
+ },
+ "T-M5-11": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran the full acceptance_cmd from /Users/aa/workspace/myskills (branch product-experience-overhaul, HEAD 66f650ff). Exit code 0. Log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-11.supervisor.log.\n\nOutput:\n- The python evidence assertion passed (STEP1_OK).\n- validate_meta_contracts.py exited 0.\n- check_codex_meta_skill_parity.py printed {\"passed\": true, \"errors\": []}.\n- pi/meta-skill/test_contract.py: \"10 passed, 21 subtests passed\".\n- test_superstorm_contract.py: \"6 passed\".\n- check_skill_refs.py: \"OK: all 33 referenced files present\".\n- The product-review twin diff line count is 12 (DIFF12_OK).\n- test_experience_lens_parity.py + test_codex_contract_checks.py: \"22 passed in 2.86s\".\n- validate_app_experience_pipeline.py . exited 0.\n- The final negated grep found nothing, as required.\n\nNot vacuous:\n- Round one in evidence.json has E2 and E5 as fail. The command therefore requires failure_loop.status == \"closed\", \"## E2b\" and \"## E5b\" sections in responses.md, and non-empty fixed_files and pinned. Only this commit wrote those fields.\n- The thought-tests.json sha still equals launch.fixtures. `git diff HEAD~1 HEAD --name-only -- fixtures` is empty, so the c"
+ },
+ "T-M5-13": {
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills (branch product-experience-overhaul), log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-13.supervisor.log: test_package_manifests.py '11 passed'; check_codex_meta_skill_parity.py '{\"passed\": true, \"errors\": [], \"warnings\": []}'; pi/meta-skill/test_contract.py '10 passed, 21 subtests passed'; all greps + negative grep passed; EXIT=0.\nNot vacuous: parent d28f7b4c~1 had 'version: \"0.19.1\"' / '# Meta-Skill v0.19.1' in claude/meta-skill/SKILL.md, so the grep pins would have failed before the task.\nDiff: commit d28f7b4c touches exactly the 9 contract files, 12 insertions / 12 deletions, every hunk is a version literal only (0.19.2->0.20.0, 0.42.2->0.43.0, 0.19.1->0.20.0, 0.19.1-codex.2->0.20.0-codex.1, 0.19.2-pi.1->0.20.0-pi.1); bootstrap SKILL.md changed only the version line (1 -/1 +). In-place replacement (no JSON reserialization); all 6 JSON files still parse. pi/cross-exam/package.json correctly untouched: `git diff --stat ad5796c4.. -- pi/cross-exam` is empty, per contract. `git grep '0\\.19\\.[12]\\|0\\.42\\.2'` outside docs/CHANGELOG returns nothing (no residual old versions anywhere in tracked tree). Committed-tree c"
+ },
+ "T-M5-14": {
+  "status": "failed",
+  "attempts": 2,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "extended": [
+   "docs/superpowers/plans/2026-09-18-regression-parity-plan.md — preferred fix and the only one needed: replace the sixth segment of T-M5-14's acceptance_cmd (and the matching R-M5-05 line in docs/superpowers/specs/2026-09-18-regression-parity-design.md) with three separate invocations: `python3 -m pytest -q shared/scripts/orchestrator && python3 -m pytest -q shared/keep-code-simple && python3 -m pytest -q pi/cross-exam`. No source file changes are required; the orchestrator can amend the dispatched acceptance_cmd without any repo edit, and the committed record already satisfies the two greps, so a rerun would pass immediately.",
+   "docs/superpowers/specs/2026-09-18-regression-parity-design.md — same one-line correction to R-M5-05's sixth command, if the spec is to stay in sync with the plan.",
+   "pi/cross-exam/test_contract.py — only if a code-side fix is preferred instead: rename to a unique basename (e.g. test_pi_cross_exam_contract.py) so the three directories become co-collectible. More invasive: docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M6.json and the two M6 acceptance commands in all-tasks.json / stage-1.6-execute.mjs invoke that path by name, and M6 tasks are running concurrently. Not recommended."
+  ],
+  "last_evidence_excerpt": "escalate: The dispatched acceptance_cmd cannot exit 0 without an edit outside my touched_paths. Its sixth segment (`python3 -m pytest -q shared/scripts/orchestrator shared/keep-code-simple pi/cross-exam`) is a deterministic pytest basename collision that exits 2 at collection. The stale string lives in three orchestrator dispatch sources I am not permitted to touch: docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json:295, .../all-tasks.json:916, .../stage-1.6-execute.mjs:1062. The one code-side alternative inside my touched_paths (renaming pi/cross-exam/test_contract.py) would break two M6 acceptance commands that invoke that exact path (all-tasks.json:586,616 and stage-1.6-execute.mjs:678,713, M6 running concurrently) and contradicts the repo convention at .githooks/pre-commit:25 of splitting invocations rather than renaming colliding basenames. Per discipline rule 2 I did not work around it with an out-of-set edit. All substantive task work is complete and committed; the only outstanding action is the one-line command amendment. | GREEN (corrected sixth segment, run at HEAD d2e94dbf, cwd /Users/aa/workspace/myskills, log at /Users/aa/workspace/myskills/docs",
+  "proposed_touched_paths": [
+   "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
+   "docs/superpowers/runs/2026-09-18-product-experience-overhaul/all-tasks.json",
+   "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs"
+  ]
+ },
+ "T-M5-15": {
+  "status": "skipped",
+  "blocked_by": "T-M5-14",
+  "attempts": 0
+ },
+ "T-M5-16": {
+  "status": "skipped",
+  "blocked_by": "T-M5-14",
+  "attempts": 0
+ }
+}

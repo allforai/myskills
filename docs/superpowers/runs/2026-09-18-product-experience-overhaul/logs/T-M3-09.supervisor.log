@@ -1,0 +1,10 @@
+negative errors: 8
+ - bootstrap.md: missing experience quality gate term Experience quality gate (products with UI)
+ - bootstrap.md: missing experience quality gate term skills/app-design/40-qa/experience-quality-critique/SKILL.md
+ - bootstrap.md: missing experience quality gate term experience-quality-critique-design.json
+ - bootstrap.md: missing experience quality gate term experience-quality-critique-runtime.json
+ - bootstrap.md: missing experience quality gate term must_fix_before_implementation
+ - bootstrap.md: missing experience quality gate term must_fix_before_release
+ - bootstrap.md: missing experience quality gate term docs/experience-review/
+ - bootstrap.md: missing experience quality gate term experience_priority.mode = none
+EXIT=0

@@ -1,0 +1,79 @@
+=== VERBATIM dispatched acceptance_cmd, HEAD d2e94dbf ===
+servation=observed['observation'])
+        assert result.returncode == 0, published
+        scripts = tmp_path / '.allforai/bootstrap/scripts'
+        ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
+                               text=True, capture_output=True)
+        assert ready.returncode == 0, ready.stdout
+        done = subprocess.run([sys.executable, str(scripts / 'check_artifacts.py'), str(tmp_path / WORKFLOW),
+                               '--node', 'deliver-export', '--json'], text=True, capture_output=True)
+        assert json.loads(done.stdout)['all_exist'] is False
+        (tmp_path / 'orders.py').write_text('changed = True\n')
+        ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
+                               text=True, capture_output=True)
+>       assert ready.returncode == 1 and 'stale_evidence' in ready.stdout
+E       assert (0 == 1)
+E        +  where 0 = CompletedProcess(args=['/opt/homebrew/opt/python@3.14/bin/python3.14', '/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28...s": [],\n  "fallback_findings": [],\n  "long_task_findings": [],\n  "recommended_pre_run_actions": []\n}\n', stderr='').returncode
+
+claude/meta-skill/tests/unit/test_evidence_freshness.py:209: AssertionError
+=========================== short test summary info ============================
+FAILED claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[claude]
+FAILED claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[codex]
+FAILED claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[claude]
+FAILED claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[codex]
+4 failed, 1297 passed in 360.64s (0:06:00)
+
+unexpected: []
+........................................................................ [ 28%]
+........................................................................ [ 56%]
+........................................................................ [ 84%]
+.......................................                                  [100%]
+255 passed in 6.53s
+........................................................................ [ 41%]
+........................................................................ [ 83%]
+............................                                             [100%]
+172 passed in 6.62s
+..............................................                           [100%]
+46 passed in 2.01s
+........................................................................ [ 34%]
+........................................................................ [ 68%]
+...................................................................      [100%]
+211 passed in 3.18s
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting pi/cross-exam/test_contract.py ________________
+import file mismatch:
+imported module 'test_contract' has this __file__ attribute:
+  /Users/aa/workspace/myskills/shared/keep-code-simple/test_contract.py
+which is not the same as the test file we want to collect:
+  /Users/aa/workspace/myskills/pi/cross-exam/test_contract.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+=========================== short test summary info ============================
+ERROR pi/cross-exam/test_contract.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.15s
+VERBATIM_EXIT=2
+=== REMAINDER with sixth segment split (plan's committed form) ===
+........................................................................ [ 50%]
+........................................................................ [100%]
+144 passed in 10.73s
+..............                   [100%]
+14 passed, 40 subtests passed in 0.19s
+.......                                                                  [100%]
+7 passed in 0.01s
+................................................... [ 25%]
+........................................................................ [ 60%]
+........................................................................ [ 96%]
+.......                                                                  [100%]
+202 passed, 21 subtests passed in 43.78s
+{
+  "passed": true,
+  "errors": [],
+  "warnings": []
+}
+OK: all 33 referenced files present
+......                                                                   [100%]
+6 passed in 2.32s
+...........                                                              [100%]
+11 passed in 0.01s
+REST_EXIT=0

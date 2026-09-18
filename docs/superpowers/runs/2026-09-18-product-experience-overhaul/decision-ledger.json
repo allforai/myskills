@@ -34,8 +34,8 @@
       ],
       "decision_id": "D-0001",
       "run_id": "2026-09-18-product-experience-overhaul",
-      "outcome": null,
-      "result_ref": null,
+      "outcome": "action-taken",
+      "result_ref": "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs launched as wf_b7745b3b-7e3 (CAP=3, /tmp/pxo-commit.lock)",
       "skipped_dependents": []
     },
     {
@@ -73,6 +73,43 @@
       "run_id": "2026-09-18-product-experience-overhaul",
       "outcome": "action-taken",
       "result_ref": "docs/superpowers/runs/2026-09-18-product-experience-overhaul/orchestration.json (build_task_dag ok:true, errors:[])",
+      "skipped_dependents": []
+    },
+    {
+      "phase": "1.6",
+      "branch_id": "T-M5-14",
+      "task_id": "T-M5-14",
+      "question": "T-M5-14 的 acceptance_cmd 第六段把 shared/scripts/orchestrator、shared/keep-code-simple、pi/cross-exam 放进同一次 pytest，因 test_contract.py 同名在收集阶段 exit 2。执行器如实上报、未越界改命令。怎么处理？",
+      "options_considered": [
+        "A 订正命令：该段拆成三次 pytest 调用，重派 T-M5-14 及被跳过的 T-M5-15、T-M5-16",
+        "B 改名 pi/cross-exam/test_contract.py",
+        "C 保持失败，带进报告"
+      ],
+      "chosen": "A",
+      "reason": "计划缺陷（源头是规格 R-M5-05 的命令组），不是代码缺陷；已由编排者复现：合跑 1 error in collection，分跑 144/14/7 全过。仓库惯例（.githooks/pre-commit:25）就是拆调用而不是改名；B 会破坏 M6 两条已确认的验收命令。订正不削弱检查：三个目录仍全部运行。",
+      "assumptions": [
+        "执行器已提交的 verification-M5.md 记录的是订正后的整串结果"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "acceptance_authority",
+        "value": [
+          "supervisor rerun of task acceptance_cmd",
+          "baseline comparison: full meta-skill suite must show exactly the 4 known pre-existing failures"
+        ]
+      },
+      "fallback": "若重派后仍失败，按业务重试处理",
+      "affected_artifacts": [
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/all-tasks.json",
+        "docs/superpowers/plans/2026-09-18-regression-parity-plan.md"
+      ],
+      "decision_id": "D-0003",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": null,
+      "result_ref": null,
       "skipped_dependents": []
     }
   ]

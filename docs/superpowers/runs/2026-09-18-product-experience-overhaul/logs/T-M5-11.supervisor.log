@@ -1,0 +1,15 @@
+STEP1_OK
+{
+  "passed": true,
+  "errors": [],
+  "warnings": []
+}
+..........                                          [100%]
+10 passed, 21 subtests passed in 0.01s
+......                                                                   [100%]
+6 passed in 0.01s
+OK: all 33 referenced files present
+DIFF12_OK
+......................                                                   [100%]
+22 passed in 2.86s
+EXIT=0

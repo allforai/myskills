@@ -1,0 +1,644 @@
+[
+ {
+  "task_id": "T-M1-02",
+  "scope": "repo",
+  "finding": "Seven knowledge files are staged but uncommitted, and decision-ledger.json is modified. The seven files match T-M1-03's write set, so this looks like another task mid-flight. None of them is in T-M1-02's touched_paths.",
+  "evidence": "git status --short: M  claude/meta-skill/knowledge/capabilities/{feature-gap,generate-artifacts,product-analysis,translate}.md; M  claude/meta-skill/knowledge/{consumer-maturity-patterns,design-audit-dimensions,experience-map-schema}.md; ' M' docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json"
+ },
+ {
+  "task_id": "T-M1-02",
+  "scope": "task:T-M1-02",
+  "finding": "Both validators print nothing on success. The pinned literals are therefore not yet enforced by validate_meta_contracts.py; per the plan, that pinning is T-M1-07's job. For now only the grep checks in acceptance_cmd protect these literals.",
+  "evidence": "The plan, line 158, says: 'The literals checked below are the ones T-M1-07 pins'. The validate_meta_contracts.py rerun exited 0 with no output."
+ },
+ {
+  "task_id": "T-M1-03",
+  "scope": "task:T-M1-03",
+  "finding": "validate_meta_contracts.py prints nothing on success, so it gives no positive evidence that any T-M1-03 literal is pinned. The plan defers pinning to T-M1-07 (contract pins), so the absence of validator pins is by design for this task.",
+  "evidence": "A standalone validator run printed no output and returned rc=0."
+ },
+ {
+  "task_id": "T-M1-03",
+  "scope": "repo",
+  "finding": "The acceptance invariant `grep -v bootstrap` filters whole lines. Any line that merely mentions 'bootstrap' anywhere would escape the check. No current line exploits this, but the guard is weak.",
+  "evidence": "grep -rn experience_priority claude/meta-skill/knowledge lists 13 lines, and all of them genuinely use `.mode`."
+ },
+ {
+  "task_id": "T-M1-06",
+  "scope": "task:T-M1-07",
+  "finding": "No validator pin for the §3.5.0b literals exists yet; validate_meta_contracts.py passes silently and nothing outside bootstrap-audits.md references '3.5.0b'. The pinning is T-M1-07's contract, not this task's, but until it lands the heading is unguarded against regression.",
+  "evidence": "grep -rn '3.5.0b' claude codex (excluding knowledge/bootstrap-audits.md) returned no hits; plan line 382+ assigns the pin to T-M1-07."
+ },
+ {
+  "task_id": "T-M1-05",
+  "scope": "repo",
+  "finding": "Files outside this task are dirty in the working tree (another task mid-edit, presumably T-M1-01): validate_bootstrap.py, tests/unit/test_validate_bootstrap.py, tests/unit/test_bootstrap_scope.py, decision-ledger.json. The acceptance pytest ran against the dirty test file; it passed and the selected tests also exist in HEAD.",
+  "evidence": "git status --short:  M claude/meta-skill/scripts/orchestrator/validate_bootstrap.py;  M claude/meta-skill/tests/unit/test_bootstrap_scope.py;  M claude/meta-skill/tests/unit/test_validate_bootstrap.py;  M docs/.../decision-ledger.json"
+ },
+ {
+  "task_id": "T-M1-05",
+  "scope": "task:T-M1-05",
+  "finding": "domain-codex.md line 17 (contract summary table) still says app-design.md must have 'approval-records path `app-design/`', which is now stale relative to the rewritten line 37 and the removed Human Gate Protocol section. The plan only mandated changing line 37, so not a defect of this task, but a reviewer following the table could still demand the removed path.",
+  "evidence": "claude/meta-skill/tests/prompts/domain-codex.md:17: | app-design.md | canonical registry | 6 nodes present, required vs optional split, approval-records path `app-design/` | A + B1 |"
+ },
+ {
+  "task_id": "T-M4-03",
+  "scope": "repo",
+  "finding": "Both touched SKILL.md files now cite `knowledge/defensive-patterns.md` Pattern J (Audience Isolation), but that file has no Pattern J yet. The citation dangles until T-M4-01 lands. The plan puts Pattern J under T-M4-01, so this is not a T-M4-03 defect.",
+  "evidence": "grep -n 'Pattern J\\|pattern-j' claude/meta-skill/knowledge/defensive-patterns.md printed nothing."
+ },
+ {
+  "task_id": "T-M4-03",
+  "scope": "task:T-M4-03",
+  "finding": "The settings SKILL.md diff shows 2 deleted lines, against the plan's 'append-only' ground rule. Both are text appended to the end of an existing sentence or line; the original wording survives verbatim. The FAILED_VALIDATION extension is explicitly mandated by the task contract. This is not a violation in substance.",
+  "evidence": "numstat 25/2. Changed lines: 'guessing.' became 'guessing. An audience that cannot be decided...'. '...opt-out paths are missing.' became '...are missing,\\nor when any settings item lacks an audience.'"
+ },
+ {
+  "task_id": "T-M4-03",
+  "scope": "task:T-M4-03",
+  "finding": "The validators print nothing on success, so the supervisor log file is empty. The exit code is the only success signal.",
+  "evidence": "T-M4-03.supervisor.log is 0 bytes. validate_skills.py rc=0 and validate_generalization_boundaries.py rc=0 when run directly."
+ },
+ {
+  "task_id": "T-M4-07",
+  "scope": "task:T-M4-07",
+  "finding": "The with-allow-flag parameter adds little discrimination beyond the plain one. Under the mutation (contract_gaps removed from the hard-fail set) the plain case also loses its status_error, because the soft path only flags FORBIDDEN_PRODUCTION_GAP_TERMS and this gap text contains none. The allow-flag case would only diverge from plain if contract_gaps were demoted to the soft path and the gap text matched a forbidden term. The test still meets the contract as written.",
+  "evidence": "Mutation probe: both [plain] and [with-allow-flag] failed with KeyError 'status_error'. check_artifacts.py lines 428-443 only return an error when matched terms exist."
+ },
+ {
+  "task_id": "T-M4-07",
+  "scope": "repo",
+  "finding": "Unrelated dirty files are present in the tree (other concurrent tasks). None of them is in this task's touched_paths.",
+  "evidence": "git status --short: M claude/meta-skill/scripts/orchestrator/validate_bootstrap.py, M claude/meta-skill/tests/unit/test_bootstrap_scope.py, M claude/meta-skill/tests/unit/test_validate_bootstrap.py, M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json"
+ },
+ {
+  "task_id": "T-M4-07",
+  "scope": "task:T-M4-07",
+  "finding": "The commit's Co-Authored-By trailer names 'Claude Opus 5'. This is informational only.",
+  "evidence": "git show 0a71a4da"
+ },
+ {
+  "task_id": "T-M4-04",
+  "scope": "repo",
+  "finding": "Files outside this task are dirty in the working tree, presumably from other concurrent tasks. They did not affect this rerun.",
+  "evidence": "git status --short: M claude/meta-skill/scripts/orchestrator/validate_bootstrap.py; M claude/meta-skill/tests/unit/test_bootstrap_scope.py; M claude/meta-skill/tests/unit/test_validate_bootstrap.py; M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/"
+ },
+ {
+  "task_id": "T-M4-04",
+  "scope": "task:T-M4-04",
+  "finding": "The plan's write set names only the claude/ copy. No codex/pi twin of this SKILL.md was edited, and the contract requires none. The task's only mechanical check is a grep pin, as the contract specifies; no validator yet enforces the settings_items/service_endpoints literals until the T-M4-08 pin function.",
+  "evidence": "Plan line 225 gives the write set as the single claude/ path; plan line 77 shows T-M4-08 depends on T-M4-04."
+ },
+ {
+  "task_id": "T-M4-05",
+  "scope": "task:T-M4-05",
+  "finding": "missing_audience wording for the settings spec covers only 'settings item'; service endpoints are covered only via the handoff's service_endpoints[]. The plan says 'any settings item or service endpoint in the settings spec or the handoff'. Minor wording narrowing, not pinned by acceptance.",
+  "evidence": "SKILL.md: 'any settings item in the permissions/settings spec, or any settings item or service endpoint carried by the program handoff in settings_items[] or service_endpoints[], lacks audience'"
+ },
+ {
+  "task_id": "T-M3-01",
+  "scope": "task:T-M3-01",
+  "finding": "Missing PARENT term error reads 'app-design/PACK.md: missing app pack term <term>' rather than 'missing required term <term>'. The plan bullet says a missing term yields an error containing 'missing required term <term>' without distinguishing the two lists; the implementation mirrors the game validator ('missing creative pack term'), and only the critique-term wording is tested. Minor wording ambiguity, no test or downstream consumer (T-M3-02 filters only on 'bootstrap corpus:') depends on it.",
+  "evidence": "validate_app_experience_pipeline.py line ~107: errors.append(f\"app-design/PACK.md: missing app pack term {term}\"); game file line 103 uses 'missing creative pack term'."
+ },
+ {
+  "task_id": "T-M3-01",
+  "scope": "task:T-M3-01",
+  "finding": "No unit test covers the 'bootstrap corpus:' prefix error or the missing-required-file early return; the contract only required three cases, so not a defect, but the prefix that T-M3-02 relies on is unpinned by tests here.",
+  "evidence": "test file contains only the three contract-named tests."
+ },
+ {
+  "task_id": "T-M3-01",
+  "scope": "repo",
+  "finding": "Running the new validator on the real repo currently exits 1 because skills/app-design/40-qa/experience-quality-critique/SKILL.md does not exist yet (T-M3-02 pending); do not add it to pre-commit before that lands.",
+  "evidence": "python3 claude/meta-skill/scripts/orchestrator/validate_app_experience_pipeline.py . -> '...experience-quality-critique/SKILL.md: required app-design pipeline file missing', exit 1"
+ },
+ {
+  "task_id": "T-M1-01",
+  "scope": "task:T-M1-01",
+  "finding": "Host parametrization over claude/codex exercises the same file: codex/meta-skill/scripts is a symlink to ../../claude/meta-skill/scripts, so the [codex] cases prove path reachability, not an independent copy. Consistent with the plan (single write set under claude/), but the codex params add no independent coverage.",
+  "evidence": "lrwxr-xr-x codex/meta-skill/scripts -> ../../claude/meta-skill/scripts"
+ },
+ {
+  "task_id": "T-M1-01",
+  "scope": "repo",
+  "finding": "Unrelated dirty file in the run directory while verifying (not a touched path).",
+  "evidence": "git status --short:  M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json ; ?? .../logs/"
+ },
+ {
+  "task_id": "T-M1-04",
+  "scope": "repo",
+  "finding": "Files outside this task are dirty in the working tree, most likely from other tasks running concurrently. None of them affected this rerun.",
+  "evidence": "git status --short: M claude/meta-skill/scripts/orchestrator/product_intent.py; M claude/meta-skill/tests/unit/test_product_intent_session.py; M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? claude/meta-skill/tests/unit/test_experience_direction.py"
+ },
+ {
+  "task_id": "T-M1-07",
+  "scope": "repo",
+  "finding": "Files outside this task's touched_paths are dirty in the working tree, probably from concurrent tasks. They did not affect this rerun.",
+  "evidence": "git status --short: M claude/meta-skill/scripts/orchestrator/product_intent.py; M claude/meta-skill/tests/unit/test_product_intent_session.py; M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? claude/meta-skill/tests/unit/test_experience_direction.py"
+ },
+ {
+  "task_id": "T-M4-01",
+  "scope": "repo",
+  "finding": "A twin file codex/meta-skill/knowledge/defensive-patterns.md exists and was not updated by this commit. The T-M4-01 write set in the plan is only the claude file, so this is not a defect of this task, but the codex twin lacks Pattern I/J unless another task covers it.",
+  "evidence": "ls codex/meta-skill/knowledge/defensive-patterns.md succeeds; git show --stat 2a8d854c lists only claude/meta-skill/knowledge/defensive-patterns.md"
+ },
+ {
+  "task_id": "T-M4-01",
+  "scope": "task:T-M4-01",
+  "finding": "Commit trailer reads 'Co-Authored-By: Claude Opus 5' and author 'dev <dev@example.com>'; cosmetic only.",
+  "evidence": "git show 2a8d854c header"
+ },
+ {
+  "task_id": "T-M4-06",
+  "scope": "task:T-M4-06",
+  "finding": "The new section cites `skills/app-design/40-qa/experience-quality-critique/SKILL.md`, which does not exist in the tree at verification time (no experience-quality-critique directory found anywhere). The plan says M3 owns that file and M4 edits no M3 file, so this is a forward reference that dangles until M3 lands; no validator pins it.",
+  "evidence": "ls claude/meta-skill/skills/app-design/40-qa/experience-quality-critique/SKILL.md -> No such file or directory; find -type d -name experience-quality-critique -> no results"
+ },
+ {
+  "task_id": "T-M4-06",
+  "scope": "repo",
+  "finding": "Acceptance is grep/position only plus two generic validators; neither validator pins any of the new product-verify literals, so a later edit could remove the section without any gate failing.",
+  "evidence": "grep 'product-verify|Audience Leak' validate_meta_contracts.py -> only line 201, an unrelated node-list literal"
+ },
+ {
+  "task_id": "T-M4-06",
+  "scope": "repo",
+  "finding": "Other tasks' files are dirty in the working tree (not this task's paths).",
+  "evidence": "git status --short: M claude/meta-skill/scripts/orchestrator/product_intent.py, M claude/meta-skill/tests/unit/test_product_intent_session.py, M docs/.../decision-ledger.json, ?? claude/meta-skill/tests/unit/test_experience_direction.py"
+ },
+ {
+  "task_id": "T-M4-02",
+  "scope": "repo",
+  "finding": "Files outside this task's write set are dirty or untracked in the working tree, presumably from other tasks running concurrently. They do not affect this verdict.",
+  "evidence": "git status --short: ' M claude/meta-skill/scripts/orchestrator/product_intent.py', ' M claude/meta-skill/tests/unit/test_product_intent_session.py', ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json', '?? claude/meta-skill/tests/unit/test_experience_direction.py', '?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/'"
+ },
+ {
+  "task_id": "T-M4-02",
+  "scope": "task:T-M4-02",
+  "finding": "The acceptance command is grep-based and does not check that the anchors cited in the template resolve in defensive-patterns.md. I checked this by hand and both resolve.",
+  "evidence": "defensive-patterns.md line 250 '<a id=\"pattern-i\"></a>' and line 299 '<a id=\"pattern-j\"></a>'"
+ },
+ {
+  "task_id": "T-M2-01",
+  "scope": "repo",
+  "finding": "Working tree has an unrelated modified file and an untracked logs directory, both outside this task's touched_paths (run bookkeeping).",
+  "evidence": " M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json\n?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/"
+ },
+ {
+  "task_id": "T-M2-01",
+  "scope": "task:T-M2-01",
+  "finding": "test_experience_direction.py defines its own EXPERIENCE_TOPIC literal and a new_product_draft() helper beyond case 1; helper is used by case 1 and harmless, in line with later tasks extending the same file.",
+  "evidence": "claude/meta-skill/tests/unit/test_experience_direction.py lines 16, 29-35"
+ },
+ {
+  "task_id": "T-M4-08",
+  "scope": "repo",
+  "finding": "codex/meta-skill/scripts/orchestrator/validate_meta_contracts.py exists as a regular file (not a symlink) and was not given the new pin function. The plan explicitly says there are no codex/pi twin writes for this module, so this is not a T-M4-08 defect. It does mean the codex copy of the validator lacks the spec-gap discipline pin.",
+  "evidence": "ls -la shows a regular file of 22785 bytes. Plan line 19-20 reads: 'No codex/pi twin writes ... the other touched files have no twins.'"
+ },
+ {
+  "task_id": "T-M4-08",
+  "scope": "repo",
+  "finding": "The working tree has an uncommitted modification outside this task, presumably from the workflow runner.",
+  "evidence": "git status --short shows ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json' and '?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/'."
+ },
+ {
+  "task_id": "T-M2-02",
+  "scope": "task:T-M2-02",
+  "finding": "_current_proposals is defined but has no caller yet; by plan it is consumed by T-M2-03 (_discussion enrichment), so this is expected, not a defect.",
+  "evidence": "grep of product_intent.py at 92096f70: only the definition; plan T-M2-02 contract lists it as a helper, T-M2-03 uses it."
+ },
+ {
+  "task_id": "T-M2-02",
+  "scope": "task:T-M2-02",
+  "finding": "_propose and _current_proposals index p[\"round\"] directly; a hand-corrupted stored proposal with a valid id but no round would raise KeyError (traceback) rather than a blocked ValueError. _validate_question_ids only checks ids on load. Minor robustness gap, outside the contract's stated validation.",
+  "evidence": "product_intent.py: `opened = max((p[\"round\"] for p in concept.get(\"experience_proposals\", [])), default=0) + 1`"
+ },
+ {
+  "task_id": "T-M2-02",
+  "scope": "repo",
+  "finding": "Unrelated dirty path in tree: docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json modified (orchestrator run state); logs/ untracked.",
+  "evidence": "git status --short"
+ },
+ {
+  "task_id": "T-M2-03",
+  "scope": "repo",
+  "finding": "Unrelated dirty/untracked run artifacts in tree (not touched paths).",
+  "evidence": " M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? .../logs/"
+ },
+ {
+  "task_id": "T-M2-04",
+  "scope": "task:T-M2-05",
+  "finding": "The T-M2-04 commit already implements the delegate branch that belongs to T-M2-05: the recommended-proposal pick, the proposal_id rejection message, auto_decided=True and confirmation['delegated']=True. T-M2-05 may therefore have little script change left to make. Its tests must still fail first for reasons other than missing code, or that task risks looking vacuous.",
+  "evidence": "In the db09569c diff, _direction_intent has an else-branch for op=='delegate', and session() has `elif op in (\"select\", \"delegate\")` with `confirmation[\"delegated\"] = True`."
+ },
+ {
+  "task_id": "T-M2-04",
+  "scope": "repo",
+  "finding": "Outside the touched paths the working tree is dirty only in the run's own bookkeeping, so nothing interfered with the rerun.",
+  "evidence": "`git status --short` shows ` M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json` and `?? .../logs/`."
+ },
+ {
+  "task_id": "T-M6-03",
+  "scope": "task:T-M6-03",
+  "finding": "The commit's Co-Authored-By trailer reads 'Claude Opus 5', not a harness-prescribed attribution; cosmetic only.",
+  "evidence": "git show eed1adaf: 'Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>'"
+ },
+ {
+  "task_id": "T-M6-03",
+  "scope": "task:T-M6-03",
+  "finding": "The change is prose-only in skill docs; no test in the suites reads the new literals, so the only regression guard for this text is the acceptance grep itself (consistent with the plan's test intent, but nothing in-repo pins it going forward).",
+  "evidence": "Suite counts unchanged from design baseline (255/172/7); commit adds no test files."
+ },
+ {
+  "task_id": "T-M2-05",
+  "scope": "task:T-M2-05",
+  "finding": "The task commit is tests-only; the delegate implementation was already delivered by T-M2-04 (db09569c), so both acceptance tests would have passed before this task's production-code contribution (there is none). The tests themselves are new and substantive, so this is not vacuous, but the executor's 'mutation verified' claim in the commit message could not be re-checked under the read-only constraint.",
+  "evidence": "git show --stat 5474497d: 1 file changed, 78 insertions (test file only); git log for product_intent.py shows last change db09569c."
+ },
+ {
+  "task_id": "T-M2-05",
+  "scope": "repo",
+  "finding": "Unrelated dirty paths in the run directory (not touched paths).",
+  "evidence": " M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? .../logs/"
+ },
+ {
+  "task_id": "T-M2-06",
+  "scope": "repo",
+  "finding": "The codex/meta-skill path sits beyond a symbolic link, so the codex twin of product_intent.py is the same file as the claude one. No separate dual-write is needed for this task.",
+  "evidence": "git check-ignore: \"fatal: pathspec 'codex/meta-skill/scripts/orchestrator/product_intent.py' is beyond a symbolic link\"; diff -q between the claude and codex copies is silent."
+ },
+ {
+  "task_id": "T-M2-06",
+  "scope": "repo",
+  "finding": "The working tree has one unrelated dirty file outside this task's touched paths: the run's decision ledger. The untracked logs/ directory now holds the supervisor log I wrote there.",
+  "evidence": "git status --short: ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json', '?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/'"
+ },
+ {
+  "task_id": "T-M2-06",
+  "scope": "task:T-M2-06",
+  "finding": "The corrupt-concept path (blocked + exit 1) promised by the contract is not asserted by the acceptance test. I verified it manually and it works.",
+  "evidence": "Manual CLI run on '{broken' concept: {\"status\": \"blocked\", ...} exit=1"
+ },
+ {
+  "task_id": "T-M2-07",
+  "scope": "repo",
+  "finding": "Unrelated dirty file in tree (run bookkeeping), not in touched_paths and not part of the task commit.",
+  "evidence": " M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json"
+ },
+ {
+  "task_id": "T-M2-07",
+  "scope": "task:T-M2-07",
+  "finding": "Cases 10/11 do not themselves assert the positive path (confirmed direction under consumer -> no blocker); that is only covered indirectly by other tests in the file (select/delegate cases, all 30 pass).",
+  "evidence": "test bodies in commit d239911f contain no assertion with a confirmed experience-direction intent under consumer/mixed"
+ },
+ {
+  "task_id": "T-M2-08",
+  "scope": "task:T-M2-08",
+  "finding": "Commit includes an incidental whitespace regression in the test file: `GATES =(` (space removed after `=`). Harmless, inside touched_paths.",
+  "evidence": "git show a1b85ea0 -- claude/meta-skill/tests/unit/test_experience_direction.py: `-GATES = (...)` / `+GATES =(...)`"
+ },
+ {
+  "task_id": "T-M2-08",
+  "scope": "task:T-M2-08",
+  "finding": "When product_intent is not importable, summarize() returns delegations [] with no delegations_error, so the report says `- none` rather than admitting it could not look. This matches the contract wording (`[]` when unavailable) but is a silent-nothing path.",
+  "evidence": "summarize_run_log.py _delegated(): `if _delegations is None: return [], None`"
+ },
+ {
+  "task_id": "T-M2-09",
+  "scope": "repo",
+  "finding": "Working tree has an uncommitted modification to the run's decision-ledger.json and untracked logs/ directory (outside this task's touched_paths; likely orchestration bookkeeping).",
+  "evidence": " M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json\n?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/"
+ },
+ {
+  "task_id": "T-M2-09",
+  "scope": "task:T-M2-09",
+  "finding": "Contract item 5 mentions a 'field table' for propose; the implementation lists the fields in prose rather than a table. Content is complete, form differs; not pinned by the test.",
+  "evidence": "propose entry in product-intent-confirmation.md lines ~122-136 enumerates id,title,who,circumstance,core_loop_feel,first_minute,return_reason,goal,anti_goals,tradeoffs,scope,business_rules,acceptance,comparable inline."
+ },
+ {
+  "task_id": "T-M2-10",
+  "scope": "task:T-M2-10",
+  "finding": "The backward-compatibility test runs against the shared project() fixture, whose experience_priority.mode is \"none\". For that mode _experience_direction_blockers produces nothing, so 'all three gates exit 0' does not exercise a pre-module consumer-mode concept, which would correctly be blocked by missing_confirmed_experience_direction. This meets the contract as written (case 12 names no priority mode), but the no-drift proof covers read-only behaviour only for the none-priority path.",
+  "evidence": "claude/meta-skill/tests/unit/test_bootstrap_scope.py:70 sets experience_priority {\"mode\": \"none\"}; product_intent.py:780 _experience_direction_blockers docstring says admin, none and a missing or illegal mode produce nothing."
+ },
+ {
+  "task_id": "T-M2-10",
+  "scope": "task:T-M2-10",
+  "finding": "The plan says test_experience_direction.py ends with 16 test functions, and grep '^def test_' counts 16. Pytest collects 34 items rather than 32, so one test has an extra parametrization. This is harmless.",
+  "evidence": "grep -c '^def test_' prints 16; pytest --collect-only reports 34 tests collected."
+ },
+ {
+  "task_id": "T-M2-10",
+  "scope": "repo",
+  "finding": "decision-ledger.json in the run directory is modified and uncommitted. It is outside this task's touched_paths and looks like orchestrator state.",
+  "evidence": "git status --short prints ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json'."
+ },
+ {
+  "task_id": "T-M3-04",
+  "scope": "repo",
+  "finding": "Unrelated dirty/untracked paths from concurrently running tasks exist in the tree (not this task's files).",
+  "evidence": "git status --short: M claude/meta-skill/skills/app-design/PACK.md; M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? claude/meta-skill/skills/app-design/40-qa/experience-quality-critique/; ?? claude/meta-skill/tests/unit/test_experience_quality_critique_skill.py"
+ },
+ {
+  "task_id": "T-M3-04",
+  "scope": "task:T-M3-04",
+  "finding": "The hard-fail set in _production_gap_error repeats the two field names as literals rather than referencing MUST_FIX_GATE_FIELDS; harmless but a drift point if the tuple is extended.",
+  "evidence": "check_artifacts.py hard-fail set lists \"must_fix_before_implementation\", \"must_fix_before_release\" literally while PRODUCTION_GAP_FIELDS uses *MUST_FIX_GATE_FIELDS"
+ },
+ {
+  "task_id": "T-M3-05",
+  "scope": "task:T-M3-05",
+  "finding": "The `main()` registration of `validate_experience_gate_flow` is wired in code, but I did not find a dedicated CLI-level test for it. Only the `structural_gate_blockers` registration has a named test, which matches what the contract requires.",
+  "evidence": "`validate_bootstrap.py:2516` calls the gate in `main()`. Among the collected `experience_gate` tests, `test_structural_gate_blockers_include_experience_gate` is the only one aimed at a registration."
+ },
+ {
+  "task_id": "T-M3-05",
+  "scope": "repo",
+  "finding": "Other tasks have uncommitted work in the tree, all outside this task's touched paths.",
+  "evidence": "`git status --short` shows ` M claude/meta-skill/skills/app-design/PACK.md`, ` M docs/.../decision-ledger.json`, `?? claude/meta-skill/skills/app-design/40-qa/experience-quality-critique/` and `?? claude/meta-skill/tests/unit/test_experience_quality_critique_skill.py`."
+ },
+ {
+  "task_id": "T-M3-08",
+  "scope": "repo",
+  "finding": "Working tree has other tasks' in-flight changes (staged experience-quality-critique SKILL.md, PACK.md, a new unit test; modified decision-ledger.json); HEAD advanced to 6de81c5a during verification. None overlap T-M3-08's paths.",
+  "evidence": "git status --short: A claude/meta-skill/skills/app-design/40-qa/experience-quality-critique/SKILL.md; M claude/meta-skill/skills/app-design/PACK.md; A claude/meta-skill/tests/unit/test_experience_quality_critique_skill.py; M docs/.../decision-ledger.json"
+ },
+ {
+  "task_id": "T-M3-08",
+  "scope": "task:T-M3-08",
+  "finding": "The pin of 'creative-quality-critique'/'experience-quality-critique' in concept-acceptance.md by the validator is not yet present; that is T-M3-09's contract, not this task's. No codex twin of suppress-rules.md exists at codex/meta-skill/knowledge/ (plan says canonical tree only), so no dual-write was owed.",
+  "evidence": "plan lines 433-445; ls codex/meta-skill/knowledge/suppress-rules.md -> No such file"
+ },
+ {
+  "task_id": "T-M3-02",
+  "scope": "repo",
+  "finding": "validate_app_experience_pipeline.py run against the real repo currently exits 1 with a single `bootstrap corpus:` error. This is expected until T-M3-03 wires the capability and planning corpus, and T-M3-02's test filters it out by design.",
+  "evidence": "bootstrap corpus: experience-quality-critique is not wired; bootstrap-planning.md or app-design.md must reference skills/app-design/40-qa/experience-quality-critique/SKILL.md"
+ },
+ {
+  "task_id": "T-M3-02",
+  "scope": "task:T-M3-02",
+  "finding": "The test for contract item (d) checks only the four `##` headings and the `docs/experience-review/` root. It does not pin the H1 `# 体验评审 — <stage>`. The H1 is present in SKILL.md, inside the text fence at about line 301, so this is a test-strength gap and not a defect.",
+  "evidence": "REVIEW_DOC_HEADINGS = (\"## 结论\", \"## Must-fix\", \"## 各镜头观察\", \"## 证据限制\")"
+ },
+ {
+  "task_id": "T-M3-07",
+  "scope": "repo",
+  "finding": "The run's decision-ledger.json is modified and uncommitted, and the logs/ directory is untracked. Both are outside this task's touched_paths and look like orchestration bookkeeping.",
+  "evidence": "git status --short: ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json', '?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/'"
+ },
+ {
+  "task_id": "T-M3-03",
+  "scope": "task:T-M3-03",
+  "finding": "Both validators in the acceptance command print nothing on success, so the log holds only EXIT=0. The pass is confirmed by exit codes alone.",
+  "evidence": "T-M3-03.supervisor.log contains only 'EXIT=0'. Separate runs gave vs=0, vmc=0 and vaep=0."
+ },
+ {
+  "task_id": "T-M3-06",
+  "scope": "repo",
+  "finding": "Working tree has an uncommitted modification outside this task: docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json (plus the untracked logs/ dir). Not in T-M3-06's touched_paths and not part of commit 3aa58423.",
+  "evidence": "git status --short:  M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json ; ?? .../logs/"
+ },
+ {
+  "task_id": "T-M3-06",
+  "scope": "task:T-M3-06",
+  "finding": "Test 2 reuses the same tmp_path for three successive fixtures; the third leaves a stale node-spec file for the removed experience-runtime-critique node. Harmless here (the gate reads workflow.json nodes) but the mutations are not isolated in separate directories.",
+  "evidence": "_experience_gate_project(tmp_path, ...) called three times in test_unattended_readiness_reports_experience_gate_at_run_boundary"
+ },
+ {
+  "task_id": "T-M3-06",
+  "scope": "task:T-M3-06",
+  "finding": "Commit's Co-Authored-By trailer names 'Claude Opus 5', which may differ from the attribution line the session configuration prescribes.",
+  "evidence": "git show 3aa58423: Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+ },
+ {
+  "task_id": "T-M3-09",
+  "scope": "repo",
+  "finding": "Files unrelated to T-M3-09 are dirty or untracked in the tree, presumably from concurrent tasks.",
+  "evidence": "git status --short shows: M claude/superstorm/skills/product-review/SKILL.md; M codex/cross-exam-skill/product-review.md; M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? shared/scripts/orchestrator/test_experience_lens_parity.py"
+ },
+ {
+  "task_id": "T-M3-09",
+  "scope": "task:T-M3-09",
+  "finding": "The negative acceptance check exercises only the 8 bootstrap literals. The concept-acceptance.md and PACK.md pins are proven only on the positive side, and the missing-file branch was not exercised. The plan's acceptance does not require either, and code reading confirms both are implemented.",
+  "evidence": "The function body loops over `pins` and appends `{rel}: missing` when a file is absent; the negative run produced exactly 8 errors, all prefixed bootstrap.md."
+ },
+ {
+  "task_id": "T-M6-01",
+  "scope": "repo",
+  "finding": "Two files outside this task are dirty in the working tree: .githooks/pre-commit and the run's decision-ledger.json are modified, and the run's logs/ directory is untracked. None of them is in T-M6-01's touched_paths or its commit.",
+  "evidence": "git status --short: ' M .githooks/pre-commit', ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json', '?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/'"
+ },
+ {
+  "task_id": "T-M6-02",
+  "scope": "task:T-M6-02",
+  "finding": "Acceptance is literal-pinning only (no executable behaviour), as the contract itself admits; behavioural proof is deferred to M5 thought tests. The new paragraph says must-fix items are listed 'by the id it carries in that file' — this depends on docs/experience-review/runtime.md actually carrying stable must-fix ids, which this task does not verify.",
+  "evidence": "Plan T-M6-02 'Test intent: No executable behaviour exists'; diff of d5d3691a §1 paragraph."
+ },
+ {
+  "task_id": "T-M6-04",
+  "scope": "repo",
+  "finding": "The run's decision-ledger.json is modified and uncommitted in the working tree. It is outside this task's touched_paths and is probably orchestrator bookkeeping.",
+  "evidence": "git status --short: ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json'"
+ },
+ {
+  "task_id": "T-M5-01",
+  "scope": "repo",
+  "finding": "Other paths dirty in working tree at verification time (other tasks mid-edit, not T-M5-01): codex/meta-skill/knowledge/flow-template.py, codex/meta-skill/test_flow.py, decision-ledger.json. Parity script still passed with them dirty.",
+  "evidence": "git status --short:  M codex/meta-skill/knowledge/flow-template.py /  M codex/meta-skill/test_flow.py /  M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json"
+ },
+ {
+  "task_id": "T-M5-01",
+  "scope": "task:T-M5-01",
+  "finding": "Adapter says 'canonical Step 1.6'; the canonical heading is '### 1.6 Output bootstrap-profile.json' in claude/meta-skill/skills/bootstrap/SKILL.md (no literal 'Step 1.6' string anywhere in claude/meta-skill). Wording matches the plan contract; cosmetic only.",
+  "evidence": "grep -rn 'Step 1\\.6' claude/meta-skill -> no matches; SKILL.md:270 '### 1.6 Output bootstrap-profile.json'"
+ },
+ {
+  "task_id": "T-M5-02",
+  "scope": "task:T-M5-02",
+  "finding": "Pi bootstrap section 7 cites 'canonical Step 1.6' for writing experience_priority. In the canonical claude bootstrap SKILL.md, 1.6 is '### 1.6 Output bootstrap-profile.json', and the classification instruction is at line 121 ('see 1.6'). The reference resolves, but only loosely. This does not affect the verdict.",
+  "evidence": "grep of claude/meta-skill/skills/bootstrap/SKILL.md: line 121 'Classify experience_priority (see 1.6)', line 270 '### 1.6 Output bootstrap-profile.json'"
+ },
+ {
+  "task_id": "T-M5-02",
+  "scope": "task:T-M5-02",
+  "finding": "The new test pins the required anchors but does not pin the 'no reply is not delegation' sentence or the app-design/game-design capability paths. The contract's test intent did not require them, and the text is present in the adapter, only unpinned.",
+  "evidence": "anchor tuple in test_bootstrap_carries_experience_direction"
+ },
+ {
+  "task_id": "T-M5-02",
+  "scope": "repo",
+  "finding": "The working tree has dirty files outside this task, consistent with a concurrent T-M5-03 edit: codex/meta-skill/knowledge/flow-template.py, codex/meta-skill/test_flow.py and the run's decision-ledger.json.",
+  "evidence": "git status --short: ' M codex/meta-skill/knowledge/flow-template.py', ' M codex/meta-skill/test_flow.py', ' M docs/.../decision-ledger.json'"
+ },
+ {
+  "task_id": "T-M5-02",
+  "scope": "repo",
+  "finding": "Commit e7d67c00 carries the trailer 'Co-Authored-By: Claude Opus 5' and the author is dev@example.com.",
+  "evidence": "git show e7d67c00 header"
+ },
+ {
+  "task_id": "T-M5-03",
+  "scope": "task:T-M5-03",
+  "finding": "delegation_disclosure catches only ValueError. A result whose stdout is None would raise TypeError from json.loads. That cannot happen through run_bounded, which always returns text stdout, so it is theoretical only.",
+  "evidence": "flow-template.py:1515-1523; run_bounded returns CompletedProcess(command, rc, out, err) with communicate() text."
+ },
+ {
+  "task_id": "T-M5-04",
+  "scope": "repo",
+  "finding": "Unrelated dirty file in tree: docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json modified (run bookkeeping, not this task).",
+  "evidence": "git status --short: ' M docs/superpowers/runs/.../decision-ledger.json', '?? .../logs/'"
+ },
+ {
+  "task_id": "T-M5-05",
+  "scope": "task:T-M5-05",
+  "finding": "The damage cases cover experience-direction and --delegations only; the experience_priority and delegate literals in the new check block have no dedicated damage case (contract did not require one). 'delegate' is a weak pin since the word already occurs in bootstrap.md for other reasons.",
+  "evidence": "mutations dict in test_codex_contract_checks.py adds only experience_direction and delegation_disclosure entries; check loop iterates (\"experience_priority\", \"experience-direction\", \"delegate\")."
+ },
+ {
+  "task_id": "T-M5-08",
+  "scope": "task:T-M5-08",
+  "finding": "The four fixture files have no reader in the repo, as the contract itself states. Their correctness as a model-run answer key is only checked structurally here; no model run consumes them in this task.",
+  "evidence": "A search for 'new-product-consumer-app' outside docs/ finds only the fixture files themselves. The plan says: 四个静态文件（仓库里无读取方）."
+ },
+ {
+  "task_id": "T-M5-12",
+  "scope": "repo",
+  "finding": "Paths outside this task are dirty or untracked in the working tree; this is likely other concurrent tasks.",
+  "evidence": "M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? claude/meta-skill/tests/fixtures/consumer-learning-app/; ?? claude/meta-skill/tests/unit/test_consumer_product_regression.py; ?? fixtures/product-experience/"
+ },
+ {
+  "task_id": "T-M5-12",
+  "scope": "repo",
+  "finding": "HEAD~1 c44a556c's message says it adds the consumer new-product fixture, yet a consumer-learning-app fixture directory and test_consumer_product_regression.py are untracked. They may be uncommitted pieces of another task; I did not verify this.",
+  "evidence": "git status --short shows ?? claude/meta-skill/tests/fixtures/consumer-learning-app/ and ?? claude/meta-skill/tests/unit/test_consumer_product_regression.py"
+ },
+ {
+  "task_id": "T-M5-09",
+  "scope": "repo",
+  "finding": "Unrelated dirty/untracked paths in the working tree (other concurrent tasks), none in this task's touched_paths.",
+  "evidence": " M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json; ?? claude/meta-skill/tests/fixtures/consumer-learning-app/; ?? claude/meta-skill/tests/unit/test_consumer_product_regression.py"
+ },
+ {
+  "task_id": "T-M5-09",
+  "scope": "task:T-M5-10",
+  "finding": "For T-M5-10's sha256 comparison, the frozen criteria hashes at verification time are recorded here; any later change to these files would break the freeze.",
+  "evidence": "thought-tests.json a0699f77...996f; subject-prompt.md 511dd0d6...0df4 (commit dfeadc8c)"
+ },
+ {
+  "task_id": "T-M5-06",
+  "scope": "task:T-M5-06",
+  "finding": "The readiness gate also reports missing_source_inputs for the bad fixture, a code unrelated to the incident. The test only asserts a superset so it passes, but the bad fixture is refused by readiness for one extra reason beyond the three intended; T-M5-07's good workflow must not inherit whatever causes it (it must reach status ready).",
+  "evidence": "validate_unattended_readiness.py -> ['missing_experience_design_node', 'missing_experience_gate', 'missing_source_inputs', 'ui_product_without_experience_direction'] on both hosts"
+ },
+ {
+  "task_id": "T-M5-06",
+  "scope": "task:T-M5-06",
+  "finding": "returncode==1 for the three gates is asserted indirectly (codes() asserts rc == 1 iff codes found, and the test asserts each set non-empty) rather than as a literal per-gate returncode assertion; equivalent in effect.",
+  "evidence": "test_consumer_product_regression.py lines 104 and 118"
+ },
+ {
+  "task_id": "T-M5-06",
+  "scope": "repo",
+  "finding": "Working tree has an unrelated dirty file outside this task: docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json (modified) and untracked logs/ dir (run bookkeeping).",
+  "evidence": "git status --short"
+ },
+ {
+  "task_id": "T-M5-10",
+  "scope": "task:T-M5-11",
+  "finding": "The first round recorded two genuine failures, so T-M5-11 must close the loop with E2b and E5b. E2: on Codex, the subject built its own proposal round and then delegated in the same turn; the canonical text forbids only \"no round\". E5: with mode = none, the freeze step did not put gap-experience-direction into exclude, and the plan-step not_applicable.experience closing step is not written in the bootstrap-side text.",
+  "evidence": "evidence.json cases E2 and E5 have verdict=fail, with notes and found_defect=true."
+ },
+ {
+  "task_id": "T-M5-10",
+  "scope": "task:T-M5-10",
+  "finding": "The raw stream-json traces and packets that prove isolation exist only in a session scratchpad outside the repo: /private/tmp/claude-502/-Users-aa-workspace-ink-scent/3f958959-d533-4f80-8a70-ea565e9d002a/scratchpad/pxt. They are not committed, so later auditors cannot re-verify observed_tool_calls once that directory is cleaned up. The contract does not require committing them.",
+  "evidence": "ls of scratchpad/pxt shows raw-E1..E9.jsonl, pe-packet-E*.md and void-E5-run1.jsonl; evidence.json records the paths as '<scratchpad>/pe-packet-E<n>.md'."
+ },
+ {
+  "task_id": "T-M5-10",
+  "scope": "repo",
+  "finding": "Non-touched paths are dirty in the working tree, presumably from concurrently running tasks. None of them is caused by this task.",
+  "evidence": "git status --short: M claude/meta-skill/tests/unit/test_consumer_product_regression.py; M docs/superpowers/runs/.../decision-ledger.json; ?? claude/meta-skill/tests/fixtures/consumer-learning-app/good-workflow/"
+ },
+ {
+  "task_id": "T-M5-07",
+  "scope": "task:T-M5-07",
+  "finding": "Test 2 appends the direction intent to every bad-plan node and sets source_inputs=[] on each. The plan says only the implementation nodes. The test docstring gives the reason: the stage law holds per frozen intent, and a shape rule would short-circuit otherwise. This is a reasonable deviation, not a defect.",
+  "evidence": "test_consumer_product_regression.py lines 152-157"
+ },
+ {
+  "task_id": "T-M5-07",
+  "scope": "task:T-M5-07",
+  "finding": "The empty-stderr check in test 3 covers only the second (rerun) pass of the gates. The first pass through codes() does not check stderr.",
+  "evidence": "test_consumer_product_regression.py lines 187-200"
+ },
+ {
+  "task_id": "T-M5-07",
+  "scope": "repo",
+  "finding": "Files outside this task are dirty in the working tree (other concurrent tasks). They did not affect the rerun.",
+  "evidence": "git status --short: M claude/meta-skill/knowledge/bootstrap-planning.md, M claude/meta-skill/knowledge/product-intent-confirmation.md, M claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py, M codex/meta-skill/skills/bootstrap.md, M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json, M shared/scripts/orchestrator/check_codex_meta_skill_parity.py, M shared/scripts/orchestrator/test_codex_contract_checks.py"
+ },
+ {
+  "task_id": "T-M5-11",
+  "scope": "task:T-M5-11",
+  "finding": "The retest isolation claims cannot be checked from the repo. These are: a single Read per subject, resolved model claude-opus-5, and one voided E2b run. The stream-json traces and packets live in a session scratchpad outside the repo. The recorded prompt_sha256 values have no in-repo counterpart.",
+  "evidence": "evidence.json retests[0].cases[].observed_tool_calls has path \"<scratchpad>/pe-packet-E2b.md\". No trace files are under docs/validation/product-experience-thought-tests/."
+ },
+ {
+  "task_id": "T-M5-11",
+  "scope": "task:T-M5-11",
+  "finding": "retests[0].tested_version.commit records 762965c1 plus uncommitted working-tree fixes. The retest therefore ran on pre-commit text. I did not compare the recorded per-file sha256 values to HEAD.",
+  "evidence": "evidence.json retests[0].tested_version.note"
+ },
+ {
+  "task_id": "T-M5-11",
+  "scope": "task:T-M5-11",
+  "finding": "The E2 sentence was not dual-written to the Pi adapter. pi/meta-skill/skills/bootstrap/SKILL.md already says to propose, then wait for the user's reply, and defers to canonical product-intent-confirmation.md. E9 passed in round one, so this fits the contract's \"only touch the failing spot\" rule. Pi has no explicit wording or pin for a round opened in the same turn.",
+  "evidence": "grep for \"current round\" in pi/meta-skill/skills/bootstrap/SKILL.md is empty. Lines 119-130 carry the propose / wait / delegate rule."
+ },
+ {
+  "task_id": "T-M5-11",
+  "scope": "task:T-M5-11",
+  "finding": "Only E2 and E5 were retested. E1, E3, E8 and E9 read the same modified texts and were not re-run. The record states this limitation itself.",
+  "evidence": "evidence.json retests[0].limits, and the \"尚未验证\" section of product-experience-thought-tests.md"
+ },
+ {
+  "task_id": "T-M5-11",
+  "scope": "task:T-M5-11",
+  "finding": "The contract says to add one pinning line per defect. The E2 literal is pinned in two validators plus a destructive test, and the E5 literal in two validators. E5 has no destructive pytest case on the Codex side. My manual mutation confirms the parity check does go red.",
+  "evidence": "The test_codex_contract_checks.py diff adds only the self_opened_round case."
+ },
+ {
+  "task_id": "T-M5-11",
+  "scope": "repo",
+  "finding": "docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json is modified and logs/ is untracked in the working tree. Both are run bookkeeping and outside this task's touched_paths.",
+  "evidence": "git status --short"
+ },
+ {
+  "task_id": "T-M5-13",
+  "scope": "repo",
+  "finding": "Working tree has an uncommitted modification outside this task: docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json (M), plus untracked logs/ dir (supervisor logs).",
+  "evidence": "git status --short:  M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json ; ?? .../logs/"
+ },
+ {
+  "task_id": "T-M5-14",
+  "scope": "task:T-M5-14",
+  "finding": "Dispatched acceptance_cmd is out of sync with the committed plan contract: the plan's T-M5-14 Acceptance already has the sixth segment split into three invocations, the dispatched string still has the joint form that can never exit 0.",
+  "evidence": "git show d2e94dbf -- plan: only change is seg6 split; verbatim rerun seg6 -> 'Interrupted: 1 error during collection', exit 2; split form -> 144 / 14 / 7 passed, exit 0."
+ },
+ {
+  "task_id": "T-M5-14",
+  "scope": "repo",
+  "finding": "verification-M5.md header says tested HEAD is 4d9e666f while current HEAD is d2e94dbf; harmless since d2e94dbf is docs-only, and my rerun at d2e94dbf reproduces identical counts.",
+  "evidence": "git show --name-only d2e94dbf lists only the plan, spec and verification-M5.md."
+ },
+ {
+  "task_id": "T-M5-14",
+  "scope": "repo",
+  "finding": "Unrelated dirty/untracked paths in the tree during verification (not touched paths).",
+  "evidence": "git status --short: ' M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json', '?? docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/' (logs/ contains the supervisor log I was instructed to write)."
+ }
+]
