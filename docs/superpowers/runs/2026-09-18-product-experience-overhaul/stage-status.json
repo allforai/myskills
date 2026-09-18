@@ -1,0 +1,2 @@
+{"run_id":"2026-09-18-product-experience-overhaul","source_commit":"e20857ab","branch":"product-experience-overhaul",
+ "stages":{"0":"done","1.1":"done (6/6 ok, wf_ccd12e50-60a)","1.2-deterministic":"ok; warnings: data:experienceProposals and data:regressionFixtures exposed but never consumed (expected: host-consumed / terminal)"}}
