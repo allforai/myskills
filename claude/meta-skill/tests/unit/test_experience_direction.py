@@ -662,6 +662,65 @@ def test_direction_gate_stays_silent_when_it_does_not_apply(tmp_path, host):
         assert result.returncode == 0, (name, result.stdout, result.stderr)
 
 
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_pre_existing_concept_and_journal_read_without_drift(tmp_path, host):
+    """A session recorded before this module existed still reads back exactly as it was.
+
+    The concept here carries neither the new topic's gap question nor a single proposal,
+    which is what a record written by the earlier script looks like. Nothing may back-fill
+    it: the whole session runs to a published contract through every gate, and the two
+    read-only entries — `resume` and `--delegations` — have to come back empty-handed and
+    leave the record byte for byte where they found it.
+    """
+    topics = drafted(tmp_path, host)
+    path = tmp_path / CONCEPT
+    concept = json.loads(path.read_text())
+    concept["intent_questions"] = [question for question in concept["intent_questions"]
+                                   if question["id"] != "gap-" + EXPERIENCE_TOPIC]
+    path.write_text(json.dumps(concept), encoding="utf-8")
+    assert "experience_proposals" not in concept
+
+    confirmed = decide(tmp_path, [{"operation": "confirm", "id": topic, "reason": "Chosen direction"}
+                                  for topic in topics])
+    assert confirmed.returncode == 0, (confirmed.stdout, confirmed.stderr)
+    frozen = invoke(tmp_path, freeze_request(topics))
+    assert frozen.returncode == 0, (frozen.stdout, frozen.stderr)
+    planned = invoke(tmp_path, plan_request(topics))
+    assert planned.returncode == 0, (planned.stdout, planned.stderr)
+    confirm_plan(tmp_path, stage="plan-projection", reason="Presented the projected plan")
+    publish_contract(tmp_path, "deliver-orders")
+    for name, result in verdicts(tmp_path).items():
+        assert result.returncode == 0, (name, result.stdout, result.stderr)
+
+    before = {name: (tmp_path / name).read_bytes() for name in (CONCEPT, JOURNAL)}
+    resumed = invoke(tmp_path, {"operation": "resume"})
+    assert resumed.returncode == 0, (resumed.stdout, resumed.stderr)
+    presented = json.loads(resumed.stdout)
+    assert "experience_proposals" not in presented, "an old record grows no proposal store by being read"
+    assert all("proposals" not in entry for entry in presented["topics"])
+    assert all(entry["topic"] != EXPERIENCE_TOPIC for entry in presented["topics"]), \
+        "a topic nobody ever opened is not put back on the table"
+
+    disclosed = cli(tmp_path, "--delegations")
+    assert disclosed.returncode == 0, (disclosed.stdout, disclosed.stderr)
+    assert not disclosed.stderr
+    assert json.loads(disclosed.stdout) == {"status": "delegations", "delegations": []}, \
+        "a run that predates delegation has nothing to disclose"
+    assert all((tmp_path / name).read_bytes() == content for name, content in before.items()), \
+        "reading an old record never rewrites it"
+
+    stored = json.loads((tmp_path / CONCEPT).read_text())
+    assert [item["id"] for item in stored["requirements"]] == topics
+    for item in stored["requirements"]:
+        assert "proposal_id" not in item and "auto_decided" not in item, item["id"]
+        assert item["origin"] == "user-request"
+    for batch in json.loads((tmp_path / JOURNAL).read_text())["batches"]:
+        for decision in batch["decisions"]:
+            recorded = decision.get("intent") or {}
+            assert "proposal_id" not in recorded and "auto_decided" not in recorded, decision
+            assert "delegated" not in (recorded.get("confirmation") or {}), decision
+
+
 DELEGATION_REASON = "The tired half hour is read better here than the shopkeeper can read it tonight"
 
 
