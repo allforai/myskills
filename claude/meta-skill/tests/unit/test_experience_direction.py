@@ -7,6 +7,8 @@ same seams.
 """
 import importlib.util
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -31,6 +33,12 @@ def script(root):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def cli(root, *args):
+    """The copied CLI driven by plain arguments, the way a read-only entry is reached."""
+    return subprocess.run([sys.executable, str(root / ".allforai/bootstrap/scripts/product_intent.py"),
+                           str(root), *args], text=True, capture_output=True, cwd=root)
 
 
 def new_product_draft():
@@ -483,3 +491,64 @@ def test_delegate_and_select_need_a_current_proposal_round(tmp_path, host):
             "Delegate takes the recommended proposal; use select to name one", "named")
     refused({"operation": "delegate", "proposal_id": "calm-pass", "reason": "You decide, and it is the one you like"},
             "Delegate takes the recommended proposal; use select to name one", "named-recommended")
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_delegate_records_auto_decision_and_is_disclosed(tmp_path, host):
+    """A handed-over pick is read back out loud, from the turn that handed it over.
+
+    Disclosure is what `auto_decided` is written down for: `--delegations` reads the
+    concept and nothing else, so a run can say at any point whose judgement chose the
+    direction without moving a byte of the record. It follows the revision chain back
+    to the delegation, because the user's own later rewording is their turn and must
+    never be reported as the turn that handed the pick away.
+    """
+    topics = drafted(tmp_path, host)
+    set_mode(tmp_path)
+    assert propose(tmp_path).returncode == 0
+    reason = "The tired half hour is read better here than the shopkeeper can read it tonight"
+    actions = [{"operation": "delegate", "reason": reason},
+               {"operation": "answer", "id": "gap-" + EXPERIENCE_TOPIC,
+                "answer": "The pick was handed back to the model", "reason": "The direction is now chosen"}]
+    actions += [{"operation": "confirm", "id": topic, "reason": "Chosen direction"} for topic in topics]
+    decided = decide(tmp_path, actions, batch="handed-over")
+    assert decided.returncode == 0, (decided.stdout, decided.stderr)
+    identity = EXPERIENCE_TOPIC + "-calm-pass"
+    stood = [i for i in json.loads((tmp_path / CONCEPT).read_text())["requirements"] if i["id"] == identity][0]
+    assert stood["auto_decided"] is True and stood["confirmation"]["delegated"] is True
+
+    handed = {"id": identity, "revision": 1, "proposal_id": "calm-pass",
+              "proposal_title": proposal("calm-pass")["title"],
+              "user_reference": "user turn handed-over", "reason": reason}
+    before = {path: (tmp_path / path).read_bytes() for path in (CONCEPT, JOURNAL)}
+    disclosed = cli(tmp_path, "--delegations")
+    assert disclosed.returncode == 0, (disclosed.stdout, disclosed.stderr)
+    assert not disclosed.stderr
+    assert json.loads(disclosed.stdout) == {"status": "delegations", "delegations": [handed]}
+    assert all((tmp_path / path).read_bytes() == content for path, content in before.items()), \
+        "disclosure reads the record and never writes to it"
+
+    sharper = "Settle the day's orders in one unhurried pass that never reopens tomorrow"
+    reworded = decide(tmp_path, [{"operation": "adjust", "id": identity, "changes": {"goal": sharper},
+                                  "reason": "Said in the shopkeeper's own words"}], batch="reworded")
+    assert reworded.returncode == 0, (reworded.stdout, reworded.stderr)
+    again = cli(tmp_path, "--delegations")
+    assert again.returncode == 0, (again.stdout, again.stderr)
+    assert json.loads(again.stdout)["delegations"] == [dict(handed, revision=2)], \
+        "a rewording of a delegated direction is the user's turn, not the delegation's"
+
+    picked = tmp_path / "picked"
+    project(picked, host=host)
+    absent = cli(picked, "--delegations")
+    assert absent.returncode == 0, (absent.stdout, absent.stderr)
+    assert json.loads(absent.stdout) == {"status": "delegations", "delegations": []}, \
+        "a session with no concept yet has nothing to disclose"
+    (picked / "orders.py").unlink()
+    assert invoke(picked, new_product_draft()).returncode == 0
+    assert propose(picked).returncode == 0
+    chosen = decide(picked, [{"operation": "select", "proposal_id": "calm-pass",
+                              "reason": "The shopkeeper read both directions and picked one"}], batch="own-pick")
+    assert chosen.returncode == 0, (chosen.stdout, chosen.stderr)
+    silent = cli(picked, "--delegations")
+    assert silent.returncode == 0, (silent.stdout, silent.stderr)
+    assert json.loads(silent.stdout)["delegations"] == [], "a direction the user picked is nobody's delegation"

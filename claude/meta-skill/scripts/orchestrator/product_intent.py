@@ -1073,6 +1073,37 @@ def _direction_intent(concept, concept_path, action, op):
     return item
 
 
+def delegations(root):
+    """Every standing direction the user handed back to the model, for disclosure.
+
+    A delegated direction is the user's own confirmed intent like any other, so the
+    only way a later reader can tell whose judgement chose it is that the record says
+    so out loud and something reads that back. This reads and writes nothing, so it
+    can be run at any point of a run, including after it stopped early.
+
+    The turn and the reason come from the revision that carried the delegation, not
+    from whatever revision stands now: rewording a delegated direction afterwards is
+    the user's own turn, and reporting it as the delegation would move the handover
+    to a turn that never happened.
+    """
+    concept = _read(Path(root), CONCEPT, {})
+    titles = {p["id"]: p.get("title") for p in concept.get("experience_proposals", [])}
+    disclosed = []
+    for item in _latest(concept).values():
+        if item.get("auto_decided") is not True or item.get("status") != "confirmed":
+            continue
+        handed = next((revision for revision in concept.get("requirements", [])
+                       if revision["id"] == item["id"]
+                       and revision.get("confirmation", {}).get("delegated") is True), item)
+        confirmation = handed.get("confirmation", {})
+        disclosed.append({"id": item["id"], "revision": item["revision"],
+                          "proposal_id": item.get("proposal_id"),
+                          "proposal_title": titles.get(item.get("proposal_id")),
+                          "user_reference": confirmation.get("user_reference"),
+                          "reason": confirmation.get("reason")})
+    return {"status": "delegations", "delegations": disclosed}
+
+
 def _external_change(root, request):
     """Record the user's decision about source changed outside the delivery flow.
 
@@ -1175,6 +1206,8 @@ def session(root, request):
     """Apply explicit interactive bootstrap input; never called by unattended run."""
     if request.get("operation") in ("run-policy", "run-event"):
         return run_policy(root, request)
+    if request.get("operation") == "delegations":
+        return delegations(root)
     if request.get("operation") == "external-change":
         return _external_change(root, request)
     profile = _read(root, PROFILE, {})
@@ -1515,6 +1548,7 @@ if __name__ == "__main__":
     import sys
     try:
         request = ({"operation": "run-policy"} if sys.argv[2:] == ["--run-policy"] else
+                   {"operation": "delegations"} if sys.argv[2:] == ["--delegations"] else
                    {"operation": "run-event", "event": sys.argv[3]} if len(sys.argv) == 4 and sys.argv[2] == "--policy-event"
                    else json.load(sys.stdin))
         result = session(Path(sys.argv[1]).resolve(), request)
