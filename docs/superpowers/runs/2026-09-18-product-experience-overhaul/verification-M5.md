@@ -5,7 +5,9 @@ status: pass
 run: `2026-09-18-product-experience-overhaul` · 分支 `product-experience-overhaul` · 被测 HEAD `4d9e666f`
 基线: `6a59fe44`（`test(pi): 补宿主侧核查——模型解析链与外部 CLI 的实际模型归属`）——1198 passed / 4 failed（meta-skill 全量），superstorm 255 passed
 执行: 2026-09-18，逐条串行，一次只跑一个。解释器 `python3` = CPython 3.14.7（`/opt/homebrew/opt/python@3.14`），pytest 9.0.3。
-原始输出: `docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.log`（每段带 `RESULT <label> rc=… dur=…`）
+复跑: 同日在 `d2e94dbf` 上把订正后的十五段整串又走了一遍，全段 exit 0，`unexpected: []`，各套件通过数与下表逐一相同。
+`d2e94dbf` 相对 `4d9e666f` 只动了本文件与计划/规格三份文档，未碰任何被测源码，故"被测 HEAD"仍记 `4d9e666f`。
+原始输出: `docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.log`（该文件为复跑输出，每段末尾带 `RESULT <label> rc=0`，结尾 `OVERALL_RC=0`）
 
 ## 逐条结果
 
