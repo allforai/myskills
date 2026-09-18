@@ -444,6 +444,97 @@ def validate_public_entrypoint_surface(errors: list[str]) -> None:
         )
 
 
+def validate_spec_gap_discipline_contract(errors: list[str]) -> None:
+    # One table pins the whole spec-gap discipline: the two defensive patterns, the node-spec
+    # slot that carries the decisions, and every downstream landing spot in app-design and
+    # product-verify. Half-landing the contract (patterns written, downstream untouched) fails.
+    # Paths resolve from ROOT at call time so the table can be probed against another tree.
+    pins = (
+        (
+            "knowledge/defensive-patterns.md",
+            (
+                '<a id="pattern-i"></a>',
+                "## Pattern I: Specification Gap Escalation",
+                '<a id="pattern-j"></a>',
+                "## Pattern J: Audience Isolation",
+                "unspecified_user_visible_decision",
+                "needed_decision",
+                "blocking_intent_ids",
+                "suggested_owner_artifact",
+                "`end-user`",
+                "`operator`",
+                "`developer`",
+                "requirement_ref",
+            ),
+        ),
+        (
+            "knowledge/node-spec-template.md",
+            (
+                "## User-visible decisions",
+                "defensive-patterns.md#pattern-i",
+                "defensive-patterns.md#pattern-j",
+                "contract_gaps",
+                "unspecified_user_visible_decision",
+            ),
+        ),
+        (
+            "skills/app-design/20-spec/permissions-notifications-settings-spec/SKILL.md",
+            (
+                "audience",
+                "end-user",
+                "operator",
+                "developer",
+                "provisioning",
+                "build-time",
+                "remote-config",
+                "deploy-env",
+                "requirement_ref",
+            ),
+        ),
+        (
+            "skills/app-design/20-spec/app-surface-topology-spec/SKILL.md",
+            (
+                "service_endpoints",
+                "provisioning",
+                "deploy-env",
+            ),
+        ),
+        (
+            "skills/app-design/30-generate/program-handoff-generation/SKILL.md",
+            (
+                "settings_items",
+                "audience",
+                "provisioning",
+            ),
+        ),
+        (
+            "skills/app-design/40-qa/app-design-closure-qa/SKILL.md",
+            (
+                "missing_audience",
+                "non_end_user_item_in_screen_spec",
+                "missing_contracts",
+            ),
+        ),
+        (
+            "knowledge/capabilities/product-verify.md",
+            (
+                "### Audience Leak Check",
+                "audience_leak",
+                "defensive-patterns.md#pattern-j",
+            ),
+        ),
+    )
+    for rel, terms in pins:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for term in terms:
+            if term not in text:
+                errors.append(f"{rel}: missing spec-gap discipline term {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -460,6 +551,7 @@ def main() -> int:
     validate_bootstrap_node_expansion_contract(errors)
     validate_rebootstrap_reconciliation_contract(errors)
     validate_public_entrypoint_surface(errors)
+    validate_spec_gap_discipline_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
