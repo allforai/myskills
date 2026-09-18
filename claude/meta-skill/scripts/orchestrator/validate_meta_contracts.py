@@ -535,6 +535,47 @@ def validate_spec_gap_discipline_contract(errors: list[str]) -> None:
                 errors.append(f"{rel}: missing spec-gap discipline term {term}")
 
 
+def validate_experience_gate_contract(errors: list[str]) -> None:
+    # Must #9 spans three files: the bootstrap corpus plans the gate, concept-acceptance names both
+    # critiques it waits on, and the app-design PACK carries the sub-skill. A half-landed gate (the
+    # planning prose written, the acceptance prerequisite or the PACK entry missing) fails here.
+    bootstrap_text = _bootstrap_text()
+    for term in (
+        "Experience quality gate (products with UI)",
+        "skills/app-design/40-qa/experience-quality-critique/SKILL.md",
+        "experience-quality-critique-design.json",
+        "experience-quality-critique-runtime.json",
+        "must_fix_before_implementation",
+        "must_fix_before_release",
+        "docs/experience-review/",
+        "experience_priority.mode = none",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing experience quality gate term {term}")
+    pins = (
+        (
+            "knowledge/capabilities/concept-acceptance.md",
+            (
+                "creative-quality-critique",
+                "experience-quality-critique",
+            ),
+        ),
+        (
+            "skills/app-design/PACK.md",
+            ("experience-quality-critique",),
+        ),
+    )
+    for rel, terms in pins:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for term in terms:
+            if term not in text:
+                errors.append(f"{rel}: missing experience quality gate term {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -552,6 +593,7 @@ def main() -> int:
     validate_rebootstrap_reconciliation_contract(errors)
     validate_public_entrypoint_surface(errors)
     validate_spec_gap_discipline_contract(errors)
+    validate_experience_gate_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
