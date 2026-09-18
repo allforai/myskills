@@ -200,6 +200,9 @@ UI_IMPLEMENTATION_CAPABILITIES = ("implement", "translate", "ui-forge")
 UI_IMPLEMENTATION_TERMS = ("screen", "frontend", "front-end", "user interface", "界面", "页面",
                            "react native", "react-native", "flutter", "swiftui", "jetpack compose")
 GAME_UI_IMPLEMENTATION_TERMS = ("scene", "hud", "gameplay", "canvas", "sprite")
+# Where an identifier changes word: "SettingsScreen" names a screen, and lowercasing the
+# text first would weld it into one word no boundary could find.
+_CAMEL_CASE_SEAM = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 
 
 GAME_2D_PRODUCTION_REQUIRED_NODES = [
@@ -2077,17 +2080,60 @@ def _ui_implementation_terms(profile: dict) -> tuple:
     The generic terms hold everywhere; a game adds its own words for a screen, and the
     profile's own frontend and mobile module paths name the directories this project
     puts one in — the same evidence `_profile_has_mobile_ui_module` reads.
+
+    Returned as (words, fragments): a word has to stand as a word, a fragment counts
+    wherever it appears. `_mentions_ui_surface` is the one reader of the distinction.
     """
-    terms = list(UI_IMPLEMENTATION_TERMS)
+    vocabulary = list(UI_IMPLEMENTATION_TERMS)
     if profile.get("is_game_project") is True:
-        terms.extend(GAME_UI_IMPLEMENTATION_TERMS)
+        vocabulary.extend(GAME_UI_IMPLEMENTATION_TERMS)
+    # Word boundaries are an ASCII idea: CJK text is not spaced, so "界面" inside a
+    # sentence is the term itself and stays a fragment.
+    words = tuple(term for term in vocabulary if term.isascii())
+    fragments = [term for term in vocabulary if not term.isascii()]
     modules = profile.get("modules")
     for module in modules if isinstance(modules, list) else []:
         if isinstance(module, dict) and module.get("role") in UI_MODULE_ROLES:
             path = module.get("path")
             if _text(path):
-                terms.append(f"{path.strip().lower()}/")
-    return tuple(terms)
+                fragments.append(f"{path.strip().lower()}/")
+    return words, tuple(fragments)
+
+
+def _ui_word_pattern(words: tuple):
+    """One pattern for the ASCII vocabulary, each term held to a word of its own.
+
+    Only the END of the term is held to a boundary. "screenshot" carries the term on into
+    a different word, and a headless node that attaches screenshots builds no interface.
+    A compound that ENDS in the term still names a surface ("homescreen", "touchscreen",
+    "lockscreen", "fullscreen"), so the start is left open: this recogniser may demand a
+    design it did not strictly need, but it must never miss a node that builds a surface.
+    The boundary is a letter rather than the regex word boundary: "home_screen" and
+    "screen2" are still the word, and so are the plural ("screens", "canvases") and an
+    identifier once `_CAMEL_CASE_SEAM` has split it. A space inside a term is any run of
+    whitespace, because a spec body wraps its lines.
+    """
+    alternatives = "|".join(r"\s+".join(re.escape(part) for part in term.split())
+                            for term in words)
+    return re.compile(rf"(?:{alternatives})(?:e?s)?(?![a-z])")
+
+
+def _mentions_ui_surface(node: dict, specs_dir: str, words: tuple, fragments: tuple) -> bool:
+    """True when the node's own record or its spec body names a user-facing surface."""
+    try:
+        text = json.dumps(node, ensure_ascii=False)
+    except TypeError:
+        text = str(node)
+    text += "\n" + _read_text_if_exists(os.path.join(specs_dir, f"{_node_id(node)}.md"))
+    lowered = text.lower()
+    if _contains_any(lowered, fragments):
+        return True
+    if not words:
+        return False
+    # Both readings, because either alone misses one: "SettingsScreen" is only a screen
+    # once split, and "SwiftUI" is only the term while whole.
+    pattern = _ui_word_pattern(words)
+    return bool(pattern.search(lowered) or pattern.search(_CAMEL_CASE_SEAM.sub(" ", text).lower()))
 
 
 def _is_implementation_node(node: dict) -> bool:
@@ -2105,13 +2151,15 @@ def _ui_implementation_nodes(workflow: dict, specs_dir: str, profile: dict) -> l
     experience gate — asks here, so both refuse the same graphs and neither grows a
     second heuristic that can drift from this one.
 
-    `_matching_nodes` iterates `workflow["nodes"]` raw and raises on a list that is not
-    one or an entry that is not a dict, so it is handed the addressable subset rather
-    than the workflow: this rule is called directly, not only behind the shape gate.
+    It reads the addressable subset rather than `workflow["nodes"]` raw, because this rule
+    is called directly and not only behind the shape gate. It does not go through
+    `_matching_nodes`: that helper matches substrings, which is right for its other
+    callers and wrong here, where "screenshot" must not pass for "screen".
     """
-    addressable = {"nodes": list(_addressable_nodes(workflow.get("nodes")).values())}
-    matched = _matching_nodes(addressable, specs_dir, _ui_implementation_terms(profile))
-    return [node for node in matched if _is_implementation_node(node)]
+    words, fragments = _ui_implementation_terms(profile)
+    return [node for node in _addressable_nodes(workflow.get("nodes")).values()
+            if _is_implementation_node(node)
+            and _mentions_ui_surface(node, specs_dir, words, fragments)]
 
 
 def experience_design_coverage_findings(bdir: str) -> list:
@@ -2339,6 +2387,9 @@ def experience_gate_flow_findings(bdir: str) -> list:
                     node_id=impl_id)
         closing = staged["runtime"]
 
+    # A graph with no closure node passes this check with nothing to hold, and that is not a
+    # way round the review: a non-empty must-fix list already fails the critique node's own
+    # report in check_artifacts (`MUST_FIX_GATE_FIELDS`), so the run stops there either way.
     for node_id in sorted(nodes):
         if nodes[node_id].get("capability") not in EXPERIENCE_GATE_CLOSURE_CAPABILITIES:
             continue

@@ -873,6 +873,130 @@ def test_experience_coverage_is_a_structural_gate_blocker(tmp_path):
     assert "missing_experience_design_node" in {b["code"] for b in blockers}, blockers
 
 
+def _ui_node_ids(tmp_path, nodes, *, specs=None, game=False):
+    """Which of `nodes` the one shared heuristic recognises as building a user-facing surface."""
+    bdir = _experience_project(tmp_path, nodes=nodes, game=game)
+    for node_id, body in (specs or {}).items():
+        _write(bdir / "node-specs", f"{node_id}.md", body)
+    profile = json.loads((bdir / "bootstrap-profile.json").read_text())
+    workflow = json.loads((bdir / "workflow.json").read_text())
+    found = _validate_bootstrap._ui_implementation_nodes(
+        workflow, str(bdir / "node-specs"), profile)
+    return sorted(node["node_id"] for node in found)
+
+
+@pytest.mark.parametrize("mention", ["screenshot QA", "Screenshots of the report",
+                                     "attach the ScreenshotManifest"],
+                         ids=["screenshot", "screenshots", "camel-case-screenshot"])
+def test_ui_detection_does_not_read_screen_inside_a_longer_word(tmp_path, mention):
+    """A headless node that checks pictures builds no interface: "screenshot" is not "screen"."""
+    headless = _base_node(node_id="verify-api-headless", capability="verify",
+                          responsibilities=["implementation", "verification"],
+                          goal="Build the headless API smoke harness",
+                          exit_artifacts=[".allforai/bootstrap/verify-api-headless-report.json"])
+
+    assert _ui_node_ids(tmp_path, [headless], specs={
+        "verify-api-headless": f"Run the API smoke suite, then {mention}.\n"}) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_ignores_headless_node_that_only_mentions_screenshots(tmp_path, host):
+    """The same word through the gate: no interface is planned, so no design is demanded."""
+    headless = _base_node(node_id="implement-api", capability="implement",
+                          goal="Implement the orders API and attach screenshot QA evidence",
+                          exit_artifacts=[".allforai/bootstrap/implement-api-report.json"])
+
+    assert _coverage_findings(host, _experience_project(tmp_path, nodes=[headless])) == []
+
+
+@pytest.mark.parametrize("goal", [
+    "implement the settings screen", "Implement the Settings Screen.", "Build both screens",
+    "Build src/screens/SettingsScreen.tsx", "Build the home_screen widget",
+    "Build the web frontend", "Build the front-end shell", "Build the user interface",
+    "Build the React Native shell", "Build the react-native shell", "Build the SwiftUI views",
+    "Build the homescreen", "Build the touchscreen kiosk flow", "Build the lockscreen",
+    "Build the fullscreen player", "实现设置界面", "实现设置页面"])
+def test_ui_detection_keeps_every_genuine_surface(tmp_path, goal):
+    """The safe direction: whole words, plurals, identifiers and CJK terms all still count."""
+    node = _base_node(node_id="implement-client", capability="implement", goal=goal,
+                      exit_artifacts=[".allforai/bootstrap/implement-client-report.json"])
+
+    assert _ui_node_ids(tmp_path, [node]) == ["implement-client"]
+
+
+def test_ui_detection_reads_the_node_spec_body(tmp_path):
+    """The spec body names the surface as often as the goal does."""
+    node = _base_node(node_id="implement-client", capability="implement", goal="Build the client",
+                      exit_artifacts=[".allforai/bootstrap/implement-client-report.json"])
+
+    assert _ui_node_ids(tmp_path, [node], specs={
+        "implement-client": "Implement the settings screen.\n"}) == ["implement-client"]
+
+
+def test_ui_detection_keeps_game_terms_and_profile_module_paths(tmp_path):
+    """A game's own words for a screen, and the project's own UI directory, still count."""
+    hud = _base_node(node_id="implement-hud", capability="implement", goal="Build the HUDs",
+                     exit_artifacts=[".allforai/bootstrap/implement-hud-report.json"])
+    path = _base_node(node_id="implement-app", capability="implement",
+                      goal="Write mobile/App.tsx",
+                      exit_artifacts=[".allforai/bootstrap/implement-app-report.json"])
+
+    assert _ui_node_ids(tmp_path, [hud, path], game=True) == ["implement-app", "implement-hud"]
+
+
+# `main()` runs the cross-node rules only behind a clean scope contract, and both experience
+# gates fire only on a product route, whose scope contract wants a frozen baseline, a journal
+# and a confirmed plan. The driver answers the scope question and nothing else, so what is
+# left is `main()` itself: its argv, its registrations, its printed report, its exit status.
+# The unstubbed path is test_consumer_product_regression.py, which replays a whole session.
+_MAIN_DRIVER = """
+import sys
+sys.path.insert(0, sys.argv[1])
+import validate_bootstrap
+validate_bootstrap.validate_scope = lambda *args, **kwargs: []
+sys.argv = ["validate_bootstrap.py", sys.argv[2]]
+validate_bootstrap.main()
+"""
+
+
+def _main_report(host, bdir):
+    """Exit status and printed report of `host`'s validator run as a process."""
+    scripts = Path(__file__).resolve().parents[4] / host / "meta-skill/scripts/orchestrator"
+    result = subprocess.run([sys.executable, "-c", _MAIN_DRIVER, str(scripts), str(bdir)],
+                            capture_output=True, text=True)
+    assert not result.stderr, result.stderr
+    return result.returncode, json.loads(result.stdout)
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("code", ["missing_experience_design_node", "missing_experience_gate"])
+def test_main_registers_both_experience_gates(tmp_path, host, code):
+    """The functions deciding is not the script deciding: `main()` must call each one."""
+    bdir = _experience_project(tmp_path, nodes=[_ui_implementation_node(hard_blocked_by=[])])
+    _write(bdir / "node-specs", "implement-mobile.md", "Implement the mobile screen stack\n")
+
+    returncode, report = _main_report(host, bdir)
+
+    assert returncode == 1, report
+    assert report["passed"] is False, report
+    assert [error for error in report["errors"] if error.startswith(f"{code}: ")], report
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_main_reports_no_experience_code_without_end_users(tmp_path, host):
+    """The control: the same graph on a product nobody looks at reaches the same rules, silent."""
+    bdir = _experience_project(tmp_path, priority={"mode": "none", "reason": "A batch job"},
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])])
+    _write(bdir / "node-specs", "implement-mobile.md", "Implement the mobile screen stack\n")
+
+    _, report = _main_report(host, bdir)
+
+    reported = {error.split(":")[0] for error in report["errors"]}
+    # `unconfirmed_plan` is a cross-node rule too: seeing it proves `main()` got that far.
+    assert "unconfirmed_plan" in reported, report
+    assert reported.isdisjoint({"missing_experience_design_node", "missing_experience_gate"}), report
+
+
 def test_app_design_flow_fixtures_raise_no_experience_findings(tmp_path):
     """The app-design fixtures above write no profile at all; the gate stays out of their way."""
     for index, finalize_artifacts in enumerate((

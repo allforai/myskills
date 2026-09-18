@@ -94,12 +94,17 @@ def codes(root):
 
     One run per gate, and each run's exit status is held to what it reported: a gate that
     names a blocker exits 1 and a gate that names none exits 0, so a non-empty set below
-    is a refusal and an empty one is a pass. The three shapes differ because the gates are
-    three separate entries, not one renamed: the bootstrap validator prints rendered
-    `code: message` errors as JSON, the decision-wiring gate prints an indented list, and
-    the readiness entry writes a typed report.
+    is a refusal and an empty one is a pass. The statuses are returned beside the codes so
+    each case states the exit it expects of each gate instead of inferring it. The three
+    shapes differ because the gates are three separate entries, not one renamed: the
+    bootstrap validator prints rendered `code: message` errors as JSON, the decision-wiring
+    gate prints an indented list, and the readiness entry writes a typed report.
+
+    A verdict is output, not a fault: all three gates print a refusal on stdout exactly as
+    they print a pass, so stderr stays empty on every run here, refused or not. Anything
+    on it is a traceback or a warning, and either one is a defect in the gate.
     """
-    reported = {}
+    reported, exits = {}, {}
     for name in GATES:
         options = ("--write-report",) if name == "validate_unattended_readiness.py" else ()
         result = gate(root, name, *options)
@@ -112,8 +117,10 @@ def codes(root):
             report = json.loads((root / READINESS_REPORT).read_text(encoding="utf-8"))
             found = {blocker["code"] for blocker in report["blockers"]}
         assert result.returncode == (1 if found else 0), (name, result.stdout, result.stderr)
+        assert not result.stderr, (name, result.stderr)
         reported[name] = found
-    return reported
+        exits[name] = result.returncode
+    return reported, exits
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
@@ -122,9 +129,10 @@ def test_ink_scent_shaped_workflow_is_refused_at_every_public_gate(tmp_path, hos
     workflow = build(tmp_path, host, dialogue="bad-workflow/dialogue.json",
                      plan="bad-workflow/plan.json", readiness="bad-workflow/readiness-spec.json",
                      force_past_front_door=True)
-    reported = codes(tmp_path)
-    # codes() ties each gate's exit status to what it reported, so a named blocker is a
-    # refusal: all three gates exited 1.
+    reported, exits = codes(tmp_path)
+    # Refused three times over: each gate exits 1, and each names what it refused.
+    assert exits == {"validate_bootstrap.py": 1, "check_decision_inputs.py": 1,
+                     "validate_unattended_readiness.py": 1}, exits
     assert all(reported[name] for name in GATES), reported
     assert REFUSED <= set().union(*reported.values()), reported
     # Only the readiness entry runs the scope contract and the structural gates side by
@@ -160,7 +168,11 @@ def test_chosen_direction_does_not_excuse_a_graph_without_design_or_gate(tmp_pat
     assert [node["node_id"] for node in workflow["nodes"]] == [
         node["node_id"] for node in request["nodes"]]
 
-    reported = codes(tmp_path)
+    reported, exits = codes(tmp_path)
+    # The decision-wiring gate has nothing left to ask, so it passes; the two that read the
+    # graph still refuse it.
+    assert exits == {"validate_bootstrap.py": 1, "check_decision_inputs.py": 0,
+                     "validate_unattended_readiness.py": 1}, exits
     assert DIRECTION not in set().union(*reported.values()), reported
     assert DESIGNLESS <= reported["validate_bootstrap.py"], reported
 
@@ -184,8 +196,9 @@ def test_designed_and_gated_workflow_passes_every_public_gate(tmp_path, host):
     assert [intent["id"] for intent in chosen] == [CHOSEN], frozen["intents"]
     assert chosen[0]["origin"] == "model-proposal", chosen[0]
 
-    reported = codes(tmp_path)
-    # codes() holds each gate's exit status to what it reported, so an empty set is a pass.
+    reported, exits = codes(tmp_path)
+    assert exits == {"validate_bootstrap.py": 0, "check_decision_inputs.py": 0,
+                     "validate_unattended_readiness.py": 0}, exits
     assert not any(reported.values()), reported
     report = json.loads((tmp_path / READINESS_REPORT).read_text(encoding="utf-8"))
     assert report["status"] == "ready", report

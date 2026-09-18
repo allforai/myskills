@@ -787,9 +787,14 @@ def test_unattended_readiness_reports_experience_gate_at_run_boundary(tmp_path):
     is the code set — silent on the Must #9 shape, and naming the defect once one is
     removed, which is what proves this gate is registered on the run boundary's path.
     """
-    _experience_gate_project(tmp_path, profile=PRODUCT_PROFILE)
+    # One project per case: a graph written over another leaves the first one's node specs.
+    intact, unrouted, unreviewed = (tmp_path / name for name in ("intact", "unrouted", "unreviewed"))
+    for root in (intact, unrouted, unreviewed):
+        root.mkdir()
 
-    codes = _blocker_codes(tmp_path)
+    _experience_gate_project(intact, profile=PRODUCT_PROFILE)
+
+    codes = _blocker_codes(intact)
 
     assert not [code for code in codes if code.startswith("experience_gate")], codes
     assert codes.isdisjoint({"missing_experience_gate", "missing_experience_design_node",
@@ -797,13 +802,14 @@ def test_unattended_readiness_reports_experience_gate_at_run_boundary(tmp_path):
                              "closure_not_blocked_by_experience_gate"}), codes
 
     # A review whose findings no declared loop routes halts the run instead of repairing.
-    _experience_gate_project(tmp_path, profile=PRODUCT_PROFILE, loops=_experience_gate_loops()[:1])
+    _experience_gate_project(unrouted, profile=PRODUCT_PROFILE, loops=_experience_gate_loops()[:1])
 
-    assert "experience_gate_without_repair_loop" in _blocker_codes(tmp_path)
+    assert "experience_gate_without_repair_loop" in _blocker_codes(unrouted)
 
     # An interface that is built and then never reviewed as it runs.
-    _experience_gate_project(tmp_path, profile=PRODUCT_PROFILE,
+    _experience_gate_project(unreviewed, profile=PRODUCT_PROFILE,
                              nodes=[node for node in _experience_gate_nodes()
                                     if node["node_id"] != "experience-runtime-critique"])
 
-    assert "missing_experience_gate" in _blocker_codes(tmp_path)
+    assert "missing_experience_gate" in _blocker_codes(unreviewed)
+    assert not (unreviewed / ".allforai/bootstrap/node-specs/experience-runtime-critique.md").exists()
