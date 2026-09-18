@@ -36,7 +36,13 @@ GATE_KEYS = {
     "must_fix_before_release",
     "recommended_iterations",
 }
-REVIEW_DOC_HEADINGS = ("## 结论", "## Must-fix", "## 各镜头观察", "## 证据限制")
+REVIEW_DOC_HEADINGS = (
+    "# 体验评审 — <stage>",
+    "## 结论",
+    "## Must-fix",
+    "## 各镜头观察",
+    "## 证据限制",
+)
 VERDICT_ENTRIES = ("cross-exam", "product-review")
 JSON_BLOCK_RE = re.compile(r"```json\n(.*?)\n```", re.DOTALL)
 

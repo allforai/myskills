@@ -53,7 +53,8 @@ are referenced by the program handoff. Do not close app design while a selected
 domain extension is failed or blocked.
 
 Settings audience closure: check `missing_audience` — any settings item in the
-permissions/settings spec, or any settings item or service endpoint carried by
+permissions/settings spec, any service endpoint in the surface topology spec's
+`service_endpoints[]`, or any settings item or service endpoint carried by
 the program handoff in `settings_items[]` or `service_endpoints[]`, lacks
 `audience`. Check `non_end_user_item_in_screen_spec` — any item whose
 `audience` is not `end-user` appears in `screen-requirements-spec.json` or on

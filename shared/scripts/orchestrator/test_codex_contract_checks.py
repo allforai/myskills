@@ -72,6 +72,9 @@ def test_execution_policy_regressions_are_rejected(snapshot, tmp_path, script, d
     ("experience_direction", "experience direction"),
     ("delegation_disclosure", "delegation disclosure"),
     ("self_opened_round", "not yet a current round"),
+    ("delegate_needs_user_turn", "record `delegate` only where the user said"),
+    ("silence_is_not_delegation", "cannot produce a `select` or a `delegate`"),
+    ("experience_passage_removed", "record `delegate` only where the user said"),
 ])
 def test_bundle_contract_regressions_are_rejected(snapshot, tmp_path, damage, expected):
     root = tmp_path / "repo"
@@ -96,7 +99,25 @@ def test_bundle_contract_regressions_are_rejected(snapshot, tmp_path, damage, ex
                  "a round opened in that same turn is not yet a current round",
                  "a round opened in that same turn counts"),
             ],
-        }[damage]
+            # Each of these leaves the word "delegate" elsewhere in the adapter, so a bare-word pin
+            # stays green; only the sentence-level literals notice.
+            "delegate_needs_user_turn": [
+                ("skills/bootstrap.md", "record `delegate` only where the user said",
+                 "record `delegate` whenever a direction looks best, even if nobody said"),
+            ],
+            "silence_is_not_delegation": [
+                ("skills/bootstrap.md", "cannot produce a `select` or a `delegate`",
+                 "may stand in for a `select` or a `delegate`"),
+            ],
+        }.get(damage)
+        if damage == "experience_passage_removed":
+            path = root / "codex/meta-skill/skills/bootstrap.md"
+            text = path.read_text()
+            start = text.index("For the `experience-direction` topic, follow")
+            end = text.index("Plan the experience quality gate as canonical")
+            assert 0 <= start < end, "fixture mutation did not apply"
+            path.write_text(text[:start] + text[end:])
+            mutations = []
         for relative, before, after in mutations:
             path = root / "codex/meta-skill" / relative
             text = path.read_text()

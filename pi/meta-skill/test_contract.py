@@ -86,6 +86,15 @@ class EntryTests(unittest.TestCase):
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
+        # Sentence-level pins: `delegate` alone survives deleting either rule. Silence is not
+        # a delegation, and a round the model opened this turn is not one the user has seen.
+        for sentence in (
+            "沉默、中断、没有回复都不是委托",
+            "同一轮里刚 `propose` 出来的提案还不算当前提案轮",
+            "回应的必须是用户已经看过的那一轮",
+        ):
+            with self.subTest(sentence=sentence):
+                self.assertIn(sentence, text)
         self.assertIn("Pi 没有 `AskUserQuestion`", text)
         for positive in (
             "用 `AskUserQuestion`",

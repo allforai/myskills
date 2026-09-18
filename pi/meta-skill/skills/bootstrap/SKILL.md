@@ -126,7 +126,10 @@ canonical 这部分在 Pi 上照常执行，只有提问方式不同。
    然后等用户回复。用户挑了哪条就记 `select`；用户在那一轮明说"你定"才记 `delegate`，
    批次的 `user_reference` 写那条真实的用户发言，不是推荐本身、也不是展示提案的那一轮。
    assume-and-declare 产生不了 `select`，也产生不了 `delegate`；推荐和展示的默认值不是动作，
-   沉默、中断、没有回复都不是委托。协议出处是
+   沉默、中断、没有回复都不是委托。同一轮里刚 `propose` 出来的提案还不算当前提案轮：
+   `select` 和 `delegate` 回应的必须是用户已经看过的那一轮，所以开出提案的这一轮到"列出方向、
+   话题待定"为止；用户在还没有任何提案时就说"你定"，回应是开一轮提案，不是替他记 `delegate`。
+   协议出处是
    `<canonical-root>/knowledge/product-intent-confirmation.md`，动作用复制后的 `product_intent.py` 记录。
 4. 按 `<canonical-root>/knowledge/bootstrap-planning.md`（Must #9 与游戏路线的同一条）规划 design 与
    runtime 两道体验质量门节点：design 门在任何 UI 实现节点之前，runtime 门在最后一个 UI/产品验证/视觉 QA 之后，

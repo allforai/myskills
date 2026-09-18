@@ -102,3 +102,35 @@ def test_validate_app_experience_pipeline_rejects_missing_term(tmp_path):
     errors = validate_app_experience_pipeline(str(tmp_path))
 
     assert any("missing required term audience_leak" in error for error in errors)
+
+
+def test_validate_app_experience_pipeline_rejects_unwired_bootstrap_corpus(tmp_path):
+    _minimal_repo(tmp_path)
+    _write(
+        tmp_path,
+        "claude/meta-skill/knowledge/bootstrap-planning.md",
+        "9. Experience quality gate: planned, path not named\n",
+    )
+
+    errors = validate_app_experience_pipeline(str(tmp_path))
+
+    assert len(errors) == 1, errors
+    assert errors[0].startswith("bootstrap corpus: ")
+    assert "skills/app-design/40-qa/experience-quality-critique/SKILL.md" in errors[0]
+
+
+def test_validate_app_experience_pipeline_returns_early_on_missing_required_file(
+    tmp_path,
+):
+    _minimal_repo(tmp_path)
+    critique = (
+        tmp_path
+        / "claude/meta-skill/skills/app-design/40-qa/experience-quality-critique/SKILL.md"
+    )
+    critique.unlink()
+    # Also unwire the corpus: an early return reports the missing file and nothing else.
+    _write(tmp_path, "claude/meta-skill/knowledge/bootstrap-planning.md", "unwired\n")
+
+    errors = validate_app_experience_pipeline(str(tmp_path))
+
+    assert errors == [f"{critique}: required app-design pipeline file missing"]

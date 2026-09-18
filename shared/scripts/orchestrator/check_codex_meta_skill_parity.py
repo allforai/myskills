@@ -114,7 +114,11 @@ def main() -> int:
     # Experience direction and its completion disclosure must survive on the Codex side. The two
     # sentences the thought-test failure loop added ride along: a round the model opened in the same
     # turn is not a round to delegate against, and mode = none excludes the gap question outright.
-    for literal in ("experience_priority", "experience-direction", "delegate",
+    # The bare word "delegate" is no pin (the passage says it five times over); the two delegation
+    # literals below each sit in exactly one sentence: who may delegate, and that silence may not.
+    for literal in ("experience_priority", "experience-direction",
+                    "record `delegate` only where the user said",
+                    "cannot produce a `select` or a `delegate`",
                     "a round opened in that same turn is not yet a current round",
                     "excludes `gap-experience-direction` and states `not_applicable.experience`"):
         if literal not in bootstrap_text:
