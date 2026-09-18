@@ -199,5 +199,108 @@
     "E2 与 E5 判 fail，本任务只判定与记录、不改 skill 文本；修复与重测属于 T-M5-11。",
     "/run 内评审的真实截图输入、以及真实宿主里的多轮对话质量都未覆盖。"
   ],
-  "responses_sha256": "7635e5a7c9babbf9cedabf13afbe4f7bee576e2b1c43ceda9cd1bd8c862c323a"
+  "responses_sha256": "9b23a44df5155be9b3306f76b6e354f65303cdd0e8a00ff6b3cbb7296ee7e5a2",
+  "retests": [
+    {
+      "round": "E2b、E5b —— 修复后的重测（T-M5-11 失败回路）",
+      "date": "2026-09-18",
+      "host": "Claude Code headless（claude -p，--allowedTools Read --disallowedTools Bash,Glob,Grep,Task,… --strict-mcp-config --output-format stream-json），两个独立 fresh-context 子会话，串行",
+      "tested_version": {
+        "commit": "762965c1",
+        "note": "受测文本为本分支 product-experience-overhaul 在该提交之上、带 T-M5-11 修复的工作树状态；下面的 sha256 是重测时读进 packet 的内容。",
+        "claude/meta-skill/knowledge/product-intent-confirmation.md": "a5b836235b8ce7b0a250cf458bc95e9902232b428790e270288d64ad806fdc25",
+        "codex/meta-skill/skills/bootstrap.md": "8b5bb5a673971d6ef233ec49a6dd7a63e2b5cd17226e15e5b7c827b8f916970b",
+        "claude/meta-skill/skills/bootstrap/SKILL.md": "30802a5096d8b19fffd95b7157bbe15e0c09dcf263caa721c35e4fb05affc800",
+        "claude/meta-skill/knowledge/bootstrap-planning.md": "38b7da7ccd8c0d46549aa44b79039961bfa0eb15830cb9360996d4da49771c7d",
+        "claude/meta-skill/knowledge/suppress-rules.md": "72de2bd654e5cec9e97cdba9406df0cf1505e9a639975e9d89386839d6c2d383"
+      },
+      "launch": {
+        "method": "场景模拟；受试者不操作真实项目，动作写成伪调用；expected 不进 packet",
+        "isolation": "与第 1 轮同法：subject-prompt.md 的受试者指令 + 该 case skill 列表各文件全文（修复后）+ 该 case 的 situation 拼成单个 packet 文件，放在仓库外的会话 scratchpad；子会话只被允许 Read（其余工具用 --disallowedTools 关掉），隔离由宿主 stream-json 轨迹的 tool_use 事件核对",
+        "fixtures": {
+          "fixtures/product-experience/thought-tests.json": "a0699f77034e91b34fc612058cb1030e8826a4a0ceb611041b226bd7dc26996f",
+          "fixtures/product-experience/subject-prompt.md": "511dd0d60ba9d7dcb35a72bd4894b3844f14261b47e1c85277f9ccba6d8f0df4"
+        }
+      },
+      "cases": [
+        {
+          "id": "E2b",
+          "platform_simulated": "codex",
+          "under_test": "Codex 上 delegate 的两种情形：有当前提案轮时按推荐记 delegate 并标 auto_decided；无提案轮时 delegate 被拒；assume-and-declare 产生不了 select/delegate",
+          "prompt_sha256": "2ccc11dbd5f6da5542b4d771d17b5145ff66dc5f6eab741270724f1375dd3f19",
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "path": "<scratchpad>/pe-packet-E2b.md"
+            }
+          ],
+          "duration_ms": 22240,
+          "verdict": "pass",
+          "notes": "六项全中。情形甲与第 1 轮一样正确（delegate 无 proposal_id 取 D2、user_reference 指向「你定吧……」那一轮、experience-direction-D2 带 origin: model-proposal / auto_decided / confirmation.delegated、同批次 answer 掉 gap-experience-direction、完成时经 product_intent.py . --delegations 披露）。第 1 轮漏掉的情形乙这次命中：本轮只调 propose，不调 decide，纯文本列出方向并点名推荐，话题保持待定，并明说下一轮用户再说「你定」才按情形甲记 delegate。它引的正是新句「a round opened in that same turn is not yet a current round」与「'decide it for me' said before any round exists is answered by opening one, not by closing it」。作废一次：首跑的提示词没有关掉 Bash，受试者用 cat 读 packet 并多读了一个文件，按「多读即作废」重跑，作废的那次不在 cases[] 里。"
+        },
+        {
+          "id": "E5b",
+          "platform_simulated": "codex",
+          "under_test": "mode = none 的全链路：按谁在用判断而非技术栈；不加载体验知识、不排体验质量门；freeze 把 gap-experience-direction 放进 exclude；plan 用 not_applicable.experience",
+          "prompt_sha256": "4a36937e06fc23d81c19bb925b0adc73d4b57a980e4684ddec2e97ad4a52ab38",
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "宿主子会话 stream-json 轨迹的 assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "path": "<scratchpad>/pe-packet-E5b.md"
+            }
+          ],
+          "duration_ms": 17304,
+          "verdict": "pass",
+          "notes": "六项全中。前四项与第 1 轮一样正确（experience_priority = {mode: none, reason: 一句话}、按谁在用而非 Vite/React 判断、不加载那组体验知识、不排 design/runtime 两道门并在摘要写明豁免）。第 1 轮漏掉的两项这次命中：freeze 把 gap-experience-direction 放进 exclude 并写明理由「这个产品没有人看界面」、明说不让它作为待回答问题挂着，plan 带上 not_applicable.experience 及同一条理由。它引的正是 bootstrap-planning.md Must #9 的新句「the run excludes `gap-experience-direction` and states `not_applicable.experience` … Suppressing the gate never means going quiet about the question it came from.」。一次 Read 读全（CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS=120000，与第 1 轮 E5 重跑时相同）。"
+        }
+      ],
+      "responses": "responses.md",
+      "found_defect": false,
+      "limits": [
+        "两个场景各一次运行、同一模型（claude-opus-5），不是重复采样或跨模型复核。",
+        "仍是模拟决策：platform 为 codex 的两个 case 都没有启动 codex CLI，适配器只作为输入文本参与。",
+        "只重测了第 1 轮判 fail 的两个 case，其余七个没有重跑；修复文本落在 product-intent-confirmation.md、codex 适配器与 bootstrap-planning.md，E1/E3/E8 等读同批文本的场景未复测。",
+        "受试者没有真实项目可操作，所有 product_intent.py 调用与产物写入都只是回答里的伪调用。"
+      ],
+      "responses_sha256": "9b23a44df5155be9b3306f76b6e354f65303cdd0e8a00ff6b3cbb7296ee7e5a2"
+    }
+  ],
+  "failure_loop": {
+    "status": "closed",
+    "failed_cases": [
+      "E2",
+      "E5"
+    ],
+    "fixed_files": [
+      "claude/meta-skill/knowledge/product-intent-confirmation.md",
+      "codex/meta-skill/skills/bootstrap.md",
+      "claude/meta-skill/knowledge/bootstrap-planning.md"
+    ],
+    "pinned": [
+      {
+        "defect": "E2 —— 同一轮里自建提案轮再 delegate",
+        "literal": "a round opened in that same turn is not yet a current round",
+        "pins": [
+          "claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py::validate_experience_gate_contract（pins 表新增 knowledge/product-intent-confirmation.md 一项）",
+          "shared/scripts/orchestrator/check_codex_meta_skill_parity.py（T-M5-05 的体验方向 parity 检查块）"
+        ],
+        "破坏性用例": "shared/scripts/orchestrator/test_codex_contract_checks.py::test_bundle_contract_regressions_are_rejected[self_opened_round-not yet a current round]"
+      },
+      {
+        "defect": "E5 —— mode = none 时 gap-experience-direction 与 not_applicable.experience 在 bootstrap 侧断线",
+        "literal": "excludes `gap-experience-direction` and states `not_applicable.experience`",
+        "pins": [
+          "claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py::validate_experience_gate_contract（bootstrap 语料字面量）",
+          "shared/scripts/orchestrator/check_codex_meta_skill_parity.py（同一 parity 检查块，钉住 Codex 孪生句）"
+        ]
+      }
+    ],
+    "note": "两个 fail 的 case 修后重测为 E2b / E5b，均 pass；判据文件未改动，launch.fixtures 的 sha256 与第 1 轮一致。"
+  }
 }

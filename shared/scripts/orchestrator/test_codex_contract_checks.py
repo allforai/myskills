@@ -71,6 +71,7 @@ def test_execution_policy_regressions_are_rejected(snapshot, tmp_path, script, d
     ("delegation", "delegate"),
     ("experience_direction", "experience direction"),
     ("delegation_disclosure", "delegation disclosure"),
+    ("self_opened_round", "not yet a current round"),
 ])
 def test_bundle_contract_regressions_are_rejected(snapshot, tmp_path, damage, expected):
     root = tmp_path / "repo"
@@ -87,6 +88,13 @@ def test_bundle_contract_regressions_are_rejected(snapshot, tmp_path, damage, ex
             "delegation_disclosure": [
                 ("knowledge/orchestrator-template.md", "--delegations", "--handoffs"),
                 ("knowledge/flow-template.py", "--delegations", "--handoffs"),
+            ],
+            # Dropping the sentence alone leaves "delegate only where the user said so" intact, which
+            # is exactly the reading a thought test used to open its own round and delegate at once.
+            "self_opened_round": [
+                ("skills/bootstrap.md",
+                 "a round opened in that same turn is not yet a current round",
+                 "a round opened in that same turn counts"),
             ],
         }[damage]
         for relative, before, after in mutations:

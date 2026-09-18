@@ -157,7 +157,12 @@ not additional product authorities.
   `auto_decided: true` and its `confirmation` `delegated: true`. The same batch
   may `adjust` the new item, and must `answer` `gap-experience-direction` with the
   chosen direction's title. Without a current proposal round both are refused, and
-  a direction already selected is `remove`d before another one is chosen.
+  a round opened in that same turn is not yet a current round: the user must have
+  read those written directions and answered them, so the turn that opens a round
+  ends with the proposals presented and the topic pending. `propose` and then
+  `delegate` in one turn confirms a direction the user never saw, which is the
+  refusal above wearing a round the model built for itself. A direction already
+  selected is `remove`d before another one is chosen.
 - `admit`: `{operation, route: "local-change", goal, areas, items, questions?}`
   admits only the relevant legacy projections to the existing local-requirements
   contract. Each item uses the draft item fields and any actual prior journal

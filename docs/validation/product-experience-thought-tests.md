@@ -1,8 +1,8 @@
 # 产品体验改造 — 思维测试记录
 
-日期：2026-09-18。结论：**9 个场景按预先冻结的判据跑完，7 通过、2 未通过（E2、E5）；两处都是文本没写到位，不是受试者跑偏。** 这是 U3 改造后这批体验语料的第一份验证记录。
+日期：2026-09-18。结论：**9 个场景按预先冻结的判据跑完，首轮 7 通过、2 未通过（E2、E5）；两处都是文本没写到位，不是受试者跑偏。两处已各补一句并各钉一处契约，修后重测 E2b、E5b 均通过，失败回路 `closed`。**
 
-受测版本为 commit `dfeadc8c`（分支 `product-experience-overhaul`）。判据在任何受测代理启动之前就已冻结（T-M5-09），`evidence.json` 的 `launch.fixtures` 用 sha256 对照两份判据文件，证明它们在运行之后没有被改过。**本轮只判定与记录，没有改动任何 skill 文本**；E2、E5 的修复与重测属于 T-M5-11。
+首轮受测版本为 commit `dfeadc8c`（分支 `product-experience-overhaul`），重测在 `762965c1` 之上带 T-M5-11 修复的工作树。判据在任何受测代理启动之前就已冻结（T-M5-09），**修复与重测都没有动它**：`evidence.json` 顶层与 `retests[0]` 的 `launch.fixtures` 是同一对 sha256。首轮只判定与记录，没有改动任何 skill 文本；文本修复、契约钉子与重测都在 T-M5-11 里做。
 
 ## 方法与证据
 
@@ -32,7 +32,7 @@
 
 ## 测出的缺陷与修复
 
-本轮测出两处缺陷，**修复与重测属于 T-M5-11，本任务不改文本**。
+首轮测出两处缺陷，T-M5-11 各补一句、各钉一处契约，并以 `E<n>b` 在修后的文本上按同样的隔离方式重测。
 
 **缺陷 1（E2）—— 自建提案轮再同轮委托，canonical 没堵。**
 `product-intent-confirmation.md` 的原句是「`Without a current proposal round both are refused`」。它只禁「没有轮次」，没禁「同一轮里自己先 `propose` 造出轮次、再立刻 `delegate`」。受试者引的正是这句，然后在情形乙里对着开场那句「体验方向你定，别问我」做了 `propose` + `decide/delegate`——用户一条方向都没看到，确认就成立了。`user_reference` 也确实指向一条真实用户发言，所以现有的 `user_reference` 约束拦不住它。缺的是一句：委托必须是用户**看过该轮提案之后**的回应，同一轮新建的提案轮不能就地被委托掉。
@@ -42,13 +42,32 @@
 
 两处都不是判据写得苛刻：E2 的漏洞会让「用户没看过提案」的确认成立，E5 的断点会把一个本该自动收尾的 gap 变成向用户提问。
 
+### 修复与钉住的字面量
+
+| 缺陷 | 改动文件（孪生同一次改动双写） | 钉住的字面量 | 契约落点 |
+|---|---|---|---|
+| 1（E2） | `claude/meta-skill/knowledge/product-intent-confirmation.md` 的 `decide` 条目、`codex/meta-skill/skills/bootstrap.md` §0b | `a round opened in that same turn is not yet a current round` | `validate_meta_contracts.py::validate_experience_gate_contract`（`pins` 表新增 `knowledge/product-intent-confirmation.md` 一项）；`check_codex_meta_skill_parity.py` 的体验方向 parity 检查块；破坏性用例 `test_codex_contract_checks.py::…[self_opened_round-not yet a current round]` |
+| 2（E5） | `claude/meta-skill/knowledge/bootstrap-planning.md` 的 Must #9、`codex/meta-skill/skills/bootstrap.md` 的体验质量门段 | ``excludes `gap-experience-direction` and states `not_applicable.experience` `` | `validate_meta_contracts.py::validate_experience_gate_contract`（bootstrap 语料字面量）；`check_codex_meta_skill_parity.py` 同一检查块钉住 Codex 孪生句 |
+
+补进 canonical 的那句是：委托必须是用户**读过该轮提案之后**的回应，`propose` 之后同一轮 `delegate` 等于确认一个用户从没看过的方向，「你定」在没有轮次时的正确回应是开一轮、不是关一轮。补进 Must #9 的那句是：`experience_priority.mode` 为 `none` 时既没有门要排、也没有方向要确认，`freeze` 按「没有人看的界面」把 `gap-experience-direction` 放进 `exclude`，`plan` 写 `not_applicable.experience`（该键只在这个 mode 下合法），不把这个 gap 留成悬空待答。
+
+### 重测（E2b、E5b）
+
+| 场景 | 第 1 轮漏掉的 | 重测结果 | 判定 |
+|---|---|---|---|
+| E2b / codex | 情形乙同一轮 `propose` + `delegate` | 本轮只调 `propose`，纯文本列方向并点名推荐，话题保持待定，明说下一轮用户再说「你定」才按情形甲记 `delegate`；情形甲仍全对 | 通过 |
+| E5b / codex | `freeze` 的 `exclude`、`plan` 的 `not_applicable.experience` | `gap-experience-direction` 进 `exclude` 并写明「这个产品没有人看界面」、明说不留成待答；`plan` 带 `not_applicable.experience` 及同一理由；前四项仍全对 | 通过 |
+
+两次重测各只有一次 `Read`（自己的 packet），轨迹核对同第 1 轮。E2b 作废过一次：首跑的提示词没关掉 `Bash`，受试者用 `cat` 读 packet 并多读了一个文件，按「多读即作废」重跑，作废的那次不在 `cases[]` 里。`failure_loop.status` 记为 `closed`。
+
 ## 尚未验证
 
 - **真实宿主对话质量未覆盖**：这九个都是单轮模拟决策，多轮真实会话里的提案质量、追问与改主意都没测；那条线见本计划的 T-M5-16。
 - **真实 codex / pi CLI 未调用**：E2/E5/E7 的 codex 适配与 E9 的 pi 适配只作为输入文本参与，没有启动任何一个 CLI，所以只验证了适配器文本能否把决策带对，没验证它在原生宿主里的加载与执行。
 - **`/run` 内评审的真实截图输入未覆盖**：E6 的体验/创意质量门只测了节点图与阻塞关系，design / runtime 两阶段评审真正吃到截图之后的判定质量没有测。
-- 每个场景各一次运行、同一模型（`claude-opus-5`），不是重复采样或跨模型复核。
+- 每个场景各一次运行、同一模型（`claude-opus-5`），不是重复采样或跨模型复核；重测同样是各一次。
 - 受试者没有真实项目可操作，所有工具调用与产物写入都是回答里的伪调用；「不改上游 spec」「不碰 `.allforai/`」只在其声明的动作层面成立。
-- E2、E5 的修复本身尚未受测。
+- 修复只重测了 E2、E5 两个场景。改动落在 `product-intent-confirmation.md`、`codex` 适配器与 `bootstrap-planning.md`，读同批文本的 E1/E3/E8/E9 没有回归重跑，只由契约钉子与既有单测兜底。
+- 这两句新文本同样只在单轮模拟里验证过：真实多轮会话里用户在提案轮之后改口、或在一轮里既问又委托的情形没有测。
 
 [原始答卷](product-experience-thought-tests/responses.md) · [证据](product-experience-thought-tests/evidence.json)

@@ -131,6 +131,11 @@ For the `experience-direction` topic, follow
   for the user's reply; Codex has no structured choice widget to fall back on
 - record the user's own pick with `select`; record `delegate` only where the user said in that
   very turn to decide for them, with that real user turn as the batch `user_reference`
+- without a current proposal round both are refused, and
+  a round opened in that same turn is not yet a current round: `propose` and then `delegate` in
+  one turn confirms a direction the user never saw, so a first round is presented as plain text
+  and the turn ends with the topic pending — "decide it for me" said before any round exists is
+  answered by opening one, not by closing it
 - the Codex assume-and-declare convention cannot produce a `select` or a `delegate`. A
   recommendation, a displayed default and silence are not actions; an unanswered round stays a
   proposal and the topic stays pending
@@ -151,6 +156,10 @@ requires:
 - the three shared gates (bootstrap, decision inputs, unattended readiness) must pass before the
   generated workflow is presented as executable, and they refuse a workflow whose experience gate
   is missing or mis-wired
+- where `experience_priority.mode` is `none` there is no gate to plan and no direction to confirm:
+  the run excludes `gap-experience-direction` and states `not_applicable.experience`, both with the
+  reason that nobody looks at this product, rather than leaving that gap question dangling; the
+  `not_applicable` key is legal only at that mode
 
 ### 1. Plugin Root Resolution
 

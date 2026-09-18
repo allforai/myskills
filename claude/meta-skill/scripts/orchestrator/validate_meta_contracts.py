@@ -549,10 +549,15 @@ def validate_experience_gate_contract(errors: list[str]) -> None:
         "must_fix_before_release",
         "docs/experience-review/",
         "experience_priority.mode = none",
+        "excludes `gap-experience-direction` and states `not_applicable.experience`",
     ):
         if term not in bootstrap_text:
             errors.append(f"bootstrap.md: missing experience quality gate term {term}")
     pins = (
+        (
+            "knowledge/product-intent-confirmation.md",
+            ("a round opened in that same turn is not yet a current round",),
+        ),
         (
             "knowledge/capabilities/concept-acceptance.md",
             (

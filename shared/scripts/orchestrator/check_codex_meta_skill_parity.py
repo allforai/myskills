@@ -111,8 +111,12 @@ def main() -> int:
     for name in disclosed_protocols:
         check_exists(CLAUDE_META / "knowledge" / name, f"canonical knowledge/{name}", errors)
 
-    # Experience direction and its completion disclosure must survive on the Codex side.
-    for literal in ("experience_priority", "experience-direction", "delegate"):
+    # Experience direction and its completion disclosure must survive on the Codex side. The two
+    # sentences the thought-test failure loop added ride along: a round the model opened in the same
+    # turn is not a round to delegate against, and mode = none excludes the gap question outright.
+    for literal in ("experience_priority", "experience-direction", "delegate",
+                    "a round opened in that same turn is not yet a current round",
+                    "excludes `gap-experience-direction` and states `not_applicable.experience`"):
         if literal not in bootstrap_text:
             errors.append(
                 f"Codex bootstrap adapter drops the experience direction contract ({literal} is absent)"

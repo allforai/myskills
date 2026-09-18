@@ -385,3 +385,114 @@ python3 .allforai/bootstrap/scripts/product_intent.py . < request.json
 - "`delegate` … legal only where the user said in that very turn to decide for them, and the batch `user_reference` must be that real user turn, never the recommendation or the turn it was displayed in."
 - "must `answer` `gap-experience-direction` with the chosen direction's title."
 - "disclosed back to the user at run completion through `product_intent.py . --delegations`."
+
+
+---
+
+# 重测（第 2 轮 · T-M5-11 失败回路）
+
+2026-09-18。只重跑第 1 轮判 `fail` 的 E2、E5，case id 加后缀 `b`。判据文件一字未动（`launch.fixtures` 的
+sha256 与第 1 轮记录相同），改的只是受测的 skill 文本；packet 按第 1 轮同样的方式重新拼装，因此 packet 的
+sha256 与第 1 轮不同——差异就是这次的修复。隔离方式相同：仓库外 scratchpad 的单个 packet 文件，
+子会话只允许 `Read`，轨迹核对工具调用。
+
+## E2b（codex 适配 · 重测）—— Codex 两种情形下的 delegate
+
+## 情形甲：已有第 1 轮，用户这一轮说“你定吧”
+
+**实际调用**：`decide`
+```json
+{"operation":"decide",
+ "batch_id":"exp-dir-r1-delegate",
+ "topic":"experience-direction",
+ "user_reference":"<本轮用户消息的引用：「你定吧，我不懂这些，你按你推荐的来」>",
+ "actions":[
+  {"operation":"delegate",
+   "reason":"用户原话：你定吧，我不懂这些，你按你推荐的来"},
+  {"operation":"answer","id":"gap-experience-direction",
+   "answer":"<D2 的 title>",
+   "reason":"用户委托按推荐方向 D2 决定"}]}
+```
+- `delegate` 不带 `proposal_id`，自动取第 1 轮推荐的 D2。
+- 结果会生成已确认的条目 `experience-direction-D2`：`origin: model-proposal`，`auto_decided: true`，`confirmation.delegated: true`。
+
+**理由**：
+- 第 1 轮已经在上一轮以纯文本给用户看过，所以现在是“当前轮”。
+- 用户在这一轮明确说了让我替他们决定。
+- `user_reference` 必须是这句用户原话，不能是展示推荐的那一轮。
+- 运行结束时，用 `product_intent.py . --delegations` 把这个替用户做的决定告诉用户。
+
+**给用户的答复**：“好，按我推荐的 D2 定下。这个方向会记为‘由我代为决定’，运行结束时会再提醒你一次，到时想换可以改。”
+
+## 情形乙：没有任何 propose，用户第一句就说“体验方向你定，别问我”
+
+**实际调用**：只调用 `propose`，本轮不调用 `decide`。
+```json
+{"operation":"propose",
+ "proposals":[<2–3 条方向，每条的键恰好是：id、title、who、circumstance、core_loop_feel、first_minute、return_reason、goal、anti_goals、tradeoffs、scope、business_rules、acceptance、comparable{product, approach}>],
+ "recommended_id":"<其中一条>",
+ "rationale":"<用用户自己的说法解释为什么推荐>"}
+```
+- 不写 `origin`、`status`、`round`、`recommended` 这些字段，由 CLI 自己加。
+- 不需要 `user_reference`。
+
+**理由**：
+- 没有当前轮时，`select` 和 `delegate` 都会被拒绝。
+- 同一轮里先 `propose` 再 `delegate`，等于确认了一个用户从没看过的方向。
+- 因此这一轮以纯文本列出几条方向、标明推荐项，然后结束，话题保持待定。
+
+**给用户的答复**：“我先写了三个方向，推荐 X。你回一句‘按推荐’或选一个就行，看都不用细看。”
+
+用户下一轮如果再说“你定”，就按情形甲处理 `delegate`，`user_reference` 用那一轮的原话。
+
+## Codex 的 assume-and-declare 约定在这里的作用
+
+**能做的**：只能用在不涉及产品意图批准的地方。这里的体验方向必须等用户回复，所以它帮不上忙。
+
+**不能做的**：
+- 不能产生 `select` 或 `delegate`。
+- 不能把推荐、展示的默认项或用户没说话当成确认。
+- 没人回复的一轮仍然只是提案，话题仍待定。
+
+## 关键原句
+- “a round opened in that same turn is not yet a current round … the turn that opens a round ends with the proposals presented and the topic pending”
+- “"decide it for me" said before any round exists is answered by opening one, not by closing it”
+- “legal only where the user said in that very turn to decide for them, and the batch `user_reference` must be that real user turn”
+- “the Codex assume-and-declare convention cannot produce a `select` or a `delegate`”
+
+## E5b（codex 适配 · 重测）—— 无界面的 API 服务：mode = none 的全链路
+
+## 本轮动作（伪调用）
+
+1. 写入 `.allforai/bootstrap/bootstrap-profile.json`：
+```json
+"architecture_pattern": "rest-api-service",
+"experience_priority": {"mode": "none", "reason": "纯 HTTP API 对账服务，没有终端用户界面，只由两个后端服务调用，运维只看日志和 Grafana"}
+```
+Vite 和 React 生态工具链只是构建工具，不会让 mode 变成 consumer、admin 或 mixed。
+
+2. Step 2 不加载体验那组知识（第 9 项，包括 product-concept.md、consumer-maturity-patterns、journey-emotion-schema、app-design.md）。只按 goals 加载 implement 和 launch-prep 对应的能力文件，再加上 cross-phase-protocols 和 defensive-patterns。
+
+3. 节点图里没有体验相关节点：
+   - 不规划体验设计产物节点，比如 job-story-spec、user-flow-spec。
+   - 不规划 Must #9 的两个 experience-quality-critique 节点（design 和 runtime）。
+   - `required_repair_loops` 里也不声明这两个节点的修复回路。
+
+4. `freeze` 批次：用 `product_intent.py` 把 `gap-experience-direction` 放进 `exclude`，理由写“这个产品没有人看界面”。不让它作为待回答问题挂着。`plan` 带上：
+```json
+"not_applicable": {"experience": "纯后端 API，无终端用户界面，没有人看这个产品"}
+```
+
+5. `user_steps` 仍然是 `["/cross-exam", "/product-review"]`。只有 cli 或 library-sdk 能豁免这两步，这个项目两者都不是。
+
+## 给用户的答复
+
+> 你的服务只提供 HTTP API，调用方是两个后端服务，运维只看日志和 Grafana，没有终端用户界面，所以体验优先级记为 `none`。这次不加载体验设计方法，也不规划体验设计和体验质量评审节点。“体验方向”这个问题我已明确标为不适用并写明原因，不会作为待答问题留着。构建工具用了 Vite，但这不影响判断。流水线结束后，仍然请你依次手动执行 /cross-exam 和 /product-review。
+
+## 判断依据（原句）
+
+- “`none` = there is no end-user interface. Use `none` only when … or the project is pure backend/API. Judge by who the product serves, not by the tech stack”
+- “when `task_route` is `new-product` or `product-reconstruction` and `experience_priority.mode != none`, always load …”
+- “`experience_priority.mode = none` | experience quality gate (Must #9) nodes | no end-user UI to judge”
+- “the run excludes `gap-experience-direction` and states `not_applicable.experience` … `freeze` maps that gap question into `exclude` … Suppressing the gate never means going quiet about the question it came from.”
+- “The only exemption is a suppress rule … a CLI or library-sdk project … Any other project gets both steps”
