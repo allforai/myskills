@@ -61,6 +61,8 @@ class AdapterTests(unittest.TestCase):
                          "runner.available === true", "只用当前会话模型", "继承会话模型",
                          "provider/id:<level>", "off/minimal/low/medium/high/xhigh/max",
                          "从不降", "第二审用原生 Pi 子代理",
+                         "可派列表 ≠ 额度可用", "同一路由", "换路由就是换模型",
+                         "不自行换 provider", "失败通道算**未查**",
                          "不新增外部 receive 方"):
             self.assertIn(boundary, text)
         self.assertNotIn("外部 CLI 还须", text)

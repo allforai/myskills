@@ -185,6 +185,8 @@ class GuardTests(unittest.TestCase):
                          "runner.available === true", "只用当前会话默认模型",
                          "provider/id:<level>", "off/minimal/low/medium/high/xhigh/max",
                          "「已授权的不同模型可用时优先互补模型」在 Pi 不适用",
+                         "注册表里有 ≠ 额度可用", "该路由不可用不是换路由的理由",
+                         "同一路由", "失败通道算**未查**", "git rev-parse HEAD",
                          "不写“跨模型复核”", "inherited"):
             self.assertIn(boundary, text)
         self.assertNotIn("选快且胜任的档位", text)
