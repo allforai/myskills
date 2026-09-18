@@ -56,6 +56,7 @@ Default extra pass: search live competitors only for how they create the same pr
 | 2 走不走得完（前提，`J` 覆盖时不重走） | 每条路有没有终态；失败有没有恢复路；空态、加载、错误态是不是死路；反向操作（撤销、退出、删除）在不在 | feature-gap journey dimensions |
 | 3 该不该有 | Kano：must-be 缺了是 `missing_job`、one-dimensional 弱是 `broken_path`（两者都只在无 `J` 覆盖时成立）或 `ui_friction`；attractive 缺了只在竞品对同一份工作做到时才是 `borrow_*`；indifferent 是装饰，按 `decoration` 写，代价写不出来就不是发现 | product-concept Kano anchor |
 | 4 商业级够不够 | 首次进入有没有被引导；主线是不是功能菜单；核心动作有没有过程反馈；完成后有没有下一步；空态错误态是不是同一套；有没有回来的理由。反面：压缩版后台、概念 demo、功能清单式设计 | consumer-maturity-patterns |
+| 4 商业级够不够 · 受众泄漏 | 最终用户界面里有没有部署方/开发者才该碰的配置（服务地址、访问凭证、密钥、模型选择、环境名、功能开关）。每个设置项只有一个受众：`end-user` / `operator` / `developer`；非 `end-user` 项出现在最终用户可达的界面就是观察，归 `不够商业级`。例外：用户点名的工作本身就是自行接入服务器（自托管类产品） | meta-skill defensive-patterns Pattern J |
 | naming `ui_friction` / `interaction_gap` | 用 Nielsen 十条给**已观察到**的摩擦命名，让 grill 时有共同语言。不用它扫产品 | experience-map Nielsen anchor |
 
 第 4 问的五个镜头与运行内体验质量门（meta-skill `experience-quality-critique`）的五个维度同名同义：引导 = `onboarding` · 过程反馈 = `process_feedback` · 下一步 = `next_step` · 状态一致 = `state_consistency` · 回来理由 = `return_reason`。运行内放行与事后审视用的是同一把尺；该门另有的 `mainline`、`direction_fidelity`、`audience_leak` 不是这五格之一。
@@ -119,7 +120,7 @@ Competitor ideas that do not map to a job in scope go to Out of scope, never int
 - `evidence` is an observation (path, URL, screen state, code line), not "this category has X"
 - `evidence` provenance matches Evidence limits
 - `claim: 进展受阻` → `evidence` 显示这份工作的进展被卡住或变难；"works without it" means delete
-- `claim: 不够商业级` → `evidence` 指出让陌生人不敢把它当正经产品的**具体那一点**（无引导、核心动作没有过程反馈、做完之后没有去处、同类状态两套说法…）；不要求它妨碍把事做完，但说不出具体是哪一点、只剩「体验不好」就删
+- `claim: 不够商业级` → `evidence` 指出让陌生人不敢把它当正经产品的**具体那一点**（无引导、核心动作没有过程反馈、做完之后没有去处、同类状态两套说法、最终用户设置页里要填服务地址或访问凭证…）；不要求它妨碍把事做完，但说不出具体是哪一点、只剩「体验不好」就删
 - `reject` appears only on `borrow_positioning` / `borrow_feature`; a product-observed kind you would reject was not friction — delete
 - the item is not a cross-exam gap or an experience-review must-fix restated
 - `missing_job` / `broken_path` 不落在已被 `J` 判定覆盖的工作上
