@@ -970,14 +970,30 @@ def _discussion(root, concept):
                 item["pending_reason"] = str(exc) if legacy else "Missing or invalid user confirmation provenance"
     topics = []
     latest = {identity: dict(item, topic=item.get("topic", LOCAL_TOPIC)) for identity, item in _latest(concept).items()}
+    # An offer still on the table is itself unfinished business: the experience topic
+    # stays listed while the newest round waits for the user, even once every item and
+    # question under it is settled. Once a direction is confirmed the offer is spent.
+    current = _current_proposals(concept)
+    direction_open = not any(i["topic"] == EXPERIENCE_TOPIC and i["status"] == "confirmed" for i in latest.values())
     for topic in dict.fromkeys([*TOPICS, *(i["topic"] for i in latest.values())]):
         items = [i for i in latest.values() if i["topic"] == topic and i["status"] == "pending" and i["id"] not in excluded]
         questions = [dict(q, status="pending") for q in concept.get("intent_questions", [])
                      if q["topic"] == topic and _question_pending(root, q) and q["id"] not in excluded]
-        if items or questions:
-            topics.append({"topic": topic, "items": items, "questions": questions})
-    return {"status": "discussion", "topics": topics, "history": concept.get("requirements", []),
-            "excluded": excluded, "questions": concept.get("intent_questions", [])}
+        offered = topic == EXPERIENCE_TOPIC and current
+        if not (items or questions or (offered and direction_open)):
+            continue
+        entry = {"topic": topic, "items": items, "questions": questions}
+        if offered:
+            recommended = next(p for p in current if p["recommended"])
+            entry.update(proposals=current, recommended_id=recommended["id"],
+                         rationale=recommended["rationale"])
+        topics.append(entry)
+    presented = {"status": "discussion", "topics": topics, "history": concept.get("requirements", []),
+                 "excluded": excluded, "questions": concept.get("intent_questions", [])}
+    # Absent proposals leave the resumed object byte-identical to what it has always been.
+    if concept.get("experience_proposals"):
+        presented["experience_proposals"] = concept["experience_proposals"]
+    return presented
 
 
 

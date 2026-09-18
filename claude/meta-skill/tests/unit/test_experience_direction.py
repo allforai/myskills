@@ -78,6 +78,13 @@ def propose(root, ids=("calm-pass", "quick-burst"), recommended="calm-pass", rat
     return invoke(root, propose_request([proposal(i) for i in ids], recommended, rationale))
 
 
+def direction(output):
+    """The discussion entry for the experience-direction topic."""
+    entries = [topic for topic in output["topics"] if topic["topic"] == EXPERIENCE_TOPIC]
+    assert len(entries) == 1, output["topics"]
+    return entries[0]
+
+
 def rejections():
     """Every proposal request the contract rejects, with the reason it is offered."""
     cases = [("one direction is no choice", propose_request([proposal("calm-pass")])),
@@ -150,6 +157,54 @@ def test_propose_validates_count_recommendation_and_fields(tmp_path, host):
         assert not (tmp_path / JOURNAL).exists(), label
     accepted = propose(tmp_path)
     assert accepted.returncode == 0, (accepted.stdout, accepted.stderr)
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_propose_stores_rounds_without_journal_and_resume_presents_current_round(tmp_path, host):
+    """A fresh round replaces the offer on the table without erasing what was offered before."""
+    undrafted = tmp_path / "undrafted"
+    project(undrafted, host=host)
+    refused = propose(undrafted)
+    assert refused.returncode == 1, (refused.stdout, refused.stderr)
+    assert not refused.stderr
+    assert json.loads(refused.stdout)["error"] == ("Experience proposals belong to a product session; "
+                                                   "draft the product first")
+    assert not (undrafted / CONCEPT).exists()
+
+    drafted(tmp_path, host)
+    plain = json.loads(invoke(tmp_path, {"operation": "resume"}).stdout)
+    assert "experience_proposals" not in plain
+    assert all("proposals" not in topic for topic in plain["topics"])
+
+    first = propose(tmp_path)
+    assert first.returncode == 0, (first.stdout, first.stderr)
+    assert not (tmp_path / JOURNAL).exists()
+    opened = json.loads((tmp_path / CONCEPT).read_text())["experience_proposals"]
+    assert [(p["id"], p["round"]) for p in opened] == [("calm-pass", 1), ("quick-burst", 1)]
+    assert direction(json.loads(first.stdout))["proposals"] == opened
+
+    second = "The steady ledger asks less of a tired shopkeeper than the burst ever will"
+    again = propose(tmp_path, ids=("steady-ledger", "wide-sweep"), recommended="steady-ledger", rationale=second)
+    assert again.returncode == 0, (again.stdout, again.stderr)
+    assert not (tmp_path / JOURNAL).exists()
+    stored = json.loads((tmp_path / CONCEPT).read_text())["experience_proposals"]
+    assert stored[:2] == opened, "an earlier round stays readable exactly as it was offered"
+    assert [(p["id"], p["round"]) for p in stored[2:]] == [("steady-ledger", 2), ("wide-sweep", 2)]
+
+    resumed = json.loads(invoke(tmp_path, {"operation": "resume"}).stdout)
+    assert resumed == json.loads(again.stdout)
+    assert resumed["experience_proposals"] == stored
+    offered = direction(resumed)
+    assert offered["proposals"] == stored[2:], "only the current round is on the table"
+    assert offered["recommended_id"] == "steady-ledger" and offered["rationale"] == second
+    assert all("proposals" not in t for t in resumed["topics"] if t["topic"] != EXPERIENCE_TOPIC)
+
+    answered = decide(tmp_path, [{"operation": "answer", "id": "gap-" + EXPERIENCE_TOPIC,
+                                  "answer": "steady ledger direction", "reason": "Still weighing the two"}])
+    assert answered.returncode == 0, (answered.stdout, answered.stderr)
+    settled = direction(json.loads(invoke(tmp_path, {"operation": "resume"}).stdout))
+    assert not settled["items"] and not settled["questions"], "nothing is pending under the topic any more"
+    assert settled["proposals"] == stored[2:], "an unanswered offer keeps its topic on the table"
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
