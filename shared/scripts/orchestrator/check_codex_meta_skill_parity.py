@@ -106,9 +106,19 @@ def main() -> int:
         "bootstrap-art-pipeline.md",
         "node-spec-template.md",
         "bootstrap-audits.md",
+        "product-intent-confirmation.md",
     ]
     for name in disclosed_protocols:
         check_exists(CLAUDE_META / "knowledge" / name, f"canonical knowledge/{name}", errors)
+
+    # Experience direction and its completion disclosure must survive on the Codex side.
+    for literal in ("experience_priority", "experience-direction", "delegate"):
+        if literal not in bootstrap_text:
+            errors.append(
+                f"Codex bootstrap adapter drops the experience direction contract ({literal} is absent)"
+            )
+    if "--delegations" not in run_template_text + flow_template_text:
+        errors.append("Codex run contract does not wire the completion delegation disclosure (--delegations)")
 
     if "./canonical/" not in bootstrap_text or "../../claude/meta-skill/" not in bootstrap_text:
         errors.append("Codex bootstrap adapter does not define source and installed canonical roots")

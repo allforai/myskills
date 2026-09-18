@@ -69,6 +69,8 @@ def test_execution_policy_regressions_are_rejected(snapshot, tmp_path, script, d
     ("bundle_location", "outside skill discovery"),
     ("metadata", "source metadata"),
     ("delegation", "delegate"),
+    ("experience_direction", "experience direction"),
+    ("delegation_disclosure", "delegation disclosure"),
 ])
 def test_bundle_contract_regressions_are_rejected(snapshot, tmp_path, damage, expected):
     root = tmp_path / "repo"
@@ -76,16 +78,22 @@ def test_bundle_contract_regressions_are_rejected(snapshot, tmp_path, damage, ex
     if damage == "bootstrap":
         (root / "claude/meta-skill/skills/bootstrap/SKILL.md").unlink()
     else:
-        relative, before, after = {
-            "canonical": ("install_bundle.py", "payload / 'canonical/knowledge'", "payload / 'wrong/knowledge'"),
-            "bundle_location": ("install_bundle.py", "entry.parent.parent / 'skill-bundles/meta-skill'", "entry.parent / 'meta-skill-bundle'"),
-            "metadata": ("install_bundle.py", ".install-source", ".untracked-origin"),
-            "delegation": ("install.sh", 'exec python3 "$SCRIPT_DIR/install_bundle.py"', 'exit 0'),
+        mutations = {
+            "canonical": [("install_bundle.py", "payload / 'canonical/knowledge'", "payload / 'wrong/knowledge'")],
+            "bundle_location": [("install_bundle.py", "entry.parent.parent / 'skill-bundles/meta-skill'", "entry.parent / 'meta-skill-bundle'")],
+            "metadata": [("install_bundle.py", ".install-source", ".untracked-origin")],
+            "delegation": [("install.sh", 'exec python3 "$SCRIPT_DIR/install_bundle.py"', 'exit 0')],
+            "experience_direction": [("skills/bootstrap.md", "experience-direction", "experience-route")],
+            "delegation_disclosure": [
+                ("knowledge/orchestrator-template.md", "--delegations", "--handoffs"),
+                ("knowledge/flow-template.py", "--delegations", "--handoffs"),
+            ],
         }[damage]
-        path = root / "codex/meta-skill" / relative
-        text = path.read_text()
-        assert before in text, "fixture mutation did not apply"
-        path.write_text(text.replace(before, after))
+        for relative, before, after in mutations:
+            path = root / "codex/meta-skill" / relative
+            text = path.read_text()
+            assert before in text, "fixture mutation did not apply"
+            path.write_text(text.replace(before, after))
     code, report = run_check(root, PARITY)
     assert code == 1, report
     assert report["passed"] is False
