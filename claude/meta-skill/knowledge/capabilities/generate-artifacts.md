@@ -25,7 +25,7 @@ that downstream nodes (translate, rebuild, demo-forge, ui-design) consume.
 - Every screen maps to at least one task
 - Every flow has corresponding use cases
 - Entity model supports all business flows end-to-end
-- `experience_priority`, `protection_level`, `audience_type`, `render_as` fields generated
+- `protection_level`, `audience_type`, `render_as` fields generated
 - Structured fields: inputs/outputs/audit as objects, not simple arrays
 
 ## Methodology Guidance (not steps)

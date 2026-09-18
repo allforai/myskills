@@ -96,6 +96,71 @@ Default rules:
 - if the user asks for faithful or high-fidelity reproduction, default `goal_acceptance_threshold = major_surface_fidelity`
 - do not silently downgrade goal completion to "current slice accepted" unless the user explicitly asks to work slice-by-slice
 
+### 0b. Experience Priority, Direction and Quality Gate
+
+The canonical protocol owns this method in full. Codex differs only in where it reads the
+knowledge from and in how it asks, so keep the anchors below when applying the substitutions.
+
+Record `experience_priority` exactly as canonical Step 1.6 defines it:
+
+- `.allforai/bootstrap/bootstrap-profile.json` carries
+  `experience_priority` as `{"mode": "consumer | admin | mixed | none", "reason": "<one sentence>"}`
+- bootstrap is the sole producer of that field on Codex too; downstream nodes read
+  `experience_priority.mode` and never reclassify or rewrite it
+- judge by who the product serves, not by the tech stack; `reason` is mandatory and is one sentence
+- the `local-change` route may omit the whole field
+
+On a product route (`task_route` is `new-product` or `product-reconstruction`) whose
+`experience_priority.mode` is not `none`, always load these, whether or not a goal name matches them:
+
+- `<canonical-root>/knowledge/capabilities/product-concept.md`
+- `<canonical-root>/knowledge/consumer-maturity-patterns.md`
+- `<canonical-root>/knowledge/journey-emotion-schema.md`
+- `<canonical-root>/knowledge/capabilities/app-design.md` when `is_game_project = false`, or
+  `<canonical-root>/knowledge/capabilities/game-design.md` when `is_game_project = true`
+
+This loads method, not a fixed node list.
+
+For the `experience-direction` topic, follow
+`<canonical-root>/knowledge/product-intent-confirmation.md` through the same copied
+`product_intent.py`:
+
+- `propose` two or three written directions with exactly one recommended before the topic is
+  discussed; the user chooses between written directions, never from an empty prompt
+- present that round as plain text — list each direction and name the recommended one, then wait
+  for the user's reply; Codex has no structured choice widget to fall back on
+- record the user's own pick with `select`; record `delegate` only where the user said in that
+  very turn to decide for them, with that real user turn as the batch `user_reference`
+- without a current proposal round both are refused, and
+  a round opened in that same turn is not yet a current round: `propose` and then `delegate` in
+  one turn confirms a direction the user never saw, so a first round is presented as plain text
+  and the turn ends with the topic pending — "decide it for me" said before any round exists is
+  answered by opening one, not by closing it
+- the Codex assume-and-declare convention cannot produce a `select` or a `delegate`. A
+  recommendation, a displayed default and silence are not actions; an unanswered round stays a
+  proposal and the topic stays pending
+- a delegated direction is marked `auto_decided` and is disclosed back to the user at run
+  completion through `product_intent.py . --delegations`
+
+Plan the experience quality gate as canonical `<canonical-root>/knowledge/bootstrap-planning.md`
+requires:
+
+- on non-game product routes whose `experience_priority.mode` is `consumer` or `mixed`, plan two
+  critique nodes — one at `stage: "design"` once the design specs are complete and before any UI
+  implementation node, one at `stage: "runtime"` after the last UI/product-verify/visual QA
+- closure and acceptance nodes are `hard_blocked_by` the runtime critique, and a non-empty
+  must-fix list means that critique has not passed
+- each critique node sits inside its own declared loop in
+  `unattended-run-readiness-spec.json.required_repair_loops`; an exhausted attempt budget follows
+  Run Policy and asks nothing during the run
+- the three shared gates (bootstrap, decision inputs, unattended readiness) must pass before the
+  generated workflow is presented as executable, and they refuse a workflow whose experience gate
+  is missing or mis-wired
+- where `experience_priority.mode` is `none` there is no gate to plan and no direction to confirm:
+  the run excludes `gap-experience-direction` and states `not_applicable.experience`, both with the
+  reason that nobody looks at this product, rather than leaving that gap question dangling; the
+  `not_applicable` key is legal only at that mode
+
 ### 1. Plugin Root Resolution
 
 Whenever the canonical protocol uses its Claude-specific plugin-root placeholder, resolve

@@ -1,0 +1,144 @@
+[
+ {
+  "module": "M1",
+  "design_path": "docs/superpowers/specs/2026-09-18-design-routing-design.md",
+  "covers_req_ids": [
+   "R-M1-01",
+   "R-M1-02",
+   "R-M1-03",
+   "R-M1-04",
+   "R-M1-05",
+   "R-M1-06",
+   "R-M1-07",
+   "R-M1-08",
+   "R-M1-09"
+  ],
+  "exposes": [
+   "data:experiencePriority",
+   "api:validateExperienceDesignCoverage",
+   "data:experienceDesignArtifacts"
+  ],
+  "consumes": []
+ },
+ {
+  "module": "M2",
+  "design_path": "docs/superpowers/specs/2026-09-18-experience-intent-design.md",
+  "covers_req_ids": [
+   "R-M2-01",
+   "R-M2-02",
+   "R-M2-03",
+   "R-M2-04",
+   "R-M2-05",
+   "R-M2-06",
+   "R-M2-07",
+   "R-M2-08",
+   "R-M2-09",
+   "R-M2-10"
+  ],
+  "exposes": [
+   "data:experienceProposals",
+   "api:productIntentPropose",
+   "api:productIntentSelect",
+   "api:productIntentDelegate",
+   "data:experienceDirectionIntent",
+   "data:delegationDisclosure"
+  ],
+  "consumes": [
+   "data:experiencePriority"
+  ]
+ },
+ {
+  "module": "M3",
+  "design_path": "docs/superpowers/specs/2026-09-18-experience-gate-design.md",
+  "covers_req_ids": [
+   "R-M3-01",
+   "R-M3-02",
+   "R-M3-03",
+   "R-M3-04",
+   "R-M3-05",
+   "R-M3-06",
+   "R-M3-07",
+   "R-M3-08",
+   "R-M3-09",
+   "R-M3-10",
+   "R-M3-11"
+  ],
+  "exposes": [
+   "data:experienceCritiqueReport",
+   "data:experienceReviewDoc",
+   "data:experienceLensVocabulary",
+   "api:validateExperienceGateFlow"
+  ],
+  "consumes": [
+   "data:experiencePriority",
+   "data:experienceDesignArtifacts",
+   "data:experienceDirectionIntent",
+   "data:settingsAudience",
+   "data:unspecifiedDecisionGap"
+  ]
+ },
+ {
+  "module": "M4",
+  "design_path": "docs/superpowers/specs/2026-09-18-spec-gap-discipline-design.md",
+  "covers_req_ids": [
+   "R-M4-01",
+   "R-M4-02",
+   "R-M4-03",
+   "R-M4-04",
+   "R-M4-05",
+   "R-M4-06",
+   "R-M4-07"
+  ],
+  "exposes": [
+   "data:settingsAudience",
+   "data:unspecifiedDecisionGap"
+  ],
+  "consumes": [
+   "data:experienceDesignArtifacts"
+  ]
+ },
+ {
+  "module": "M5",
+  "design_path": "docs/superpowers/specs/2026-09-18-regression-parity-design.md",
+  "covers_req_ids": [
+   "R-M5-01",
+   "R-M5-02",
+   "R-M5-03",
+   "R-M5-04",
+   "R-M5-05",
+   "R-M5-06",
+   "R-M5-07"
+  ],
+  "exposes": [
+   "data:regressionFixtures"
+  ],
+  "consumes": [
+   "api:validateExperienceDesignCoverage",
+   "api:productIntentPropose",
+   "api:productIntentSelect",
+   "api:productIntentDelegate",
+   "data:delegationDisclosure",
+   "api:validateExperienceGateFlow",
+   "data:experienceCritiqueReport",
+   "data:unspecifiedDecisionGap"
+  ]
+ },
+ {
+  "module": "M6",
+  "design_path": "docs/superpowers/specs/2026-09-18-review-alignment-design.md",
+  "covers_req_ids": [
+   "R-M6-01",
+   "R-M6-02",
+   "R-M6-03",
+   "R-M6-04",
+   "R-M6-05"
+  ],
+  "exposes": [],
+  "consumes": [
+   "data:experienceDirectionIntent",
+   "data:experienceReviewDoc",
+   "data:experienceLensVocabulary",
+   "data:settingsAudience"
+  ]
+ }
+]

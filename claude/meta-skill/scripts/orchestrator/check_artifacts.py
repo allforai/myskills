@@ -66,6 +66,10 @@ STATUS_FIELDS = (
     "visual_quality_status",
 )
 
+# The two critique stage gates. Reports write them at the top level or under
+# `gates`, so `_production_gap_error` reads both places for these fields only.
+MUST_FIX_GATE_FIELDS = ("must_fix_before_implementation", "must_fix_before_release")
+
 PRODUCTION_GAP_FIELDS = (
     "asset_gaps",
     "audio_gaps",
@@ -89,6 +93,8 @@ PRODUCTION_GAP_FIELDS = (
     # The concept-acceptance coverage gate: behaviour mappings with no evidence. A
     # non-empty list is that gate's QA verdict, never a score (ADR 0008).
     "missing_mappings",
+    # Stage gates of the experience/creative critique: non-empty means not passed.
+    *MUST_FIX_GATE_FIELDS,
 )
 
 FORBIDDEN_PRODUCTION_GAP_TERMS = (
@@ -403,6 +409,8 @@ def _production_gap_error(data: dict) -> dict | None:
 
     for field in PRODUCTION_GAP_FIELDS:
         value = data.get(field)
+        if field in MUST_FIX_GATE_FIELDS and value in (None, [], {}) and isinstance(data.get("gates"), dict):
+            value = data["gates"].get(field)
         if value in (None, [], {}):
             continue
         if field in {
@@ -414,6 +422,8 @@ def _production_gap_error(data: dict) -> dict | None:
             "gaps",
             "major_findings",
             "missing_mappings",
+            "must_fix_before_implementation",
+            "must_fix_before_release",
             "remaining_gaps",
             "test_gaps",
             "unresolved_findings",

@@ -1,0 +1,14 @@
+RED file-level OK:
+  knowledge/defensive-patterns.md: missing
+  knowledge/node-spec-template.md: missing
+  skills/app-design/20-spec/permissions-notifications-settings-spec/SKILL.md: missing
+  skills/app-design/20-spec/app-surface-topology-spec/SKILL.md: missing
+  skills/app-design/30-generate/program-handoff-generation/SKILL.md: missing
+  skills/app-design/40-qa/app-design-closure-qa/SKILL.md: missing
+  knowledge/capabilities/product-verify.md: missing
+GREEN copy OK
+RED term-level OK:
+  knowledge/defensive-patterns.md: missing spec-gap discipline term ## Pattern J: Audience Isolation
+meta contracts OK
+skills OK
+generalization OK

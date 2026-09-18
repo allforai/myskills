@@ -106,9 +106,23 @@ def main() -> int:
         "bootstrap-art-pipeline.md",
         "node-spec-template.md",
         "bootstrap-audits.md",
+        "product-intent-confirmation.md",
     ]
     for name in disclosed_protocols:
         check_exists(CLAUDE_META / "knowledge" / name, f"canonical knowledge/{name}", errors)
+
+    # Experience direction and its completion disclosure must survive on the Codex side. The two
+    # sentences the thought-test failure loop added ride along: a round the model opened in the same
+    # turn is not a round to delegate against, and mode = none excludes the gap question outright.
+    for literal in ("experience_priority", "experience-direction", "delegate",
+                    "a round opened in that same turn is not yet a current round",
+                    "excludes `gap-experience-direction` and states `not_applicable.experience`"):
+        if literal not in bootstrap_text:
+            errors.append(
+                f"Codex bootstrap adapter drops the experience direction contract ({literal} is absent)"
+            )
+    if "--delegations" not in run_template_text + flow_template_text:
+        errors.append("Codex run contract does not wire the completion delegation disclosure (--delegations)")
 
     if "./canonical/" not in bootstrap_text or "../../claude/meta-skill/" not in bootstrap_text:
         errors.append("Codex bootstrap adapter does not define source and installed canonical roots")

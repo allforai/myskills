@@ -22,6 +22,9 @@ spec, monetization spec, flow coverage QA report, approval records, and domain
 QA reports such as
 `.allforai/app-domain/ecommerce/qa/commerce-flow-coverage-qa-report.json`.
 
+The permissions/settings spec is required reading whenever settings items
+exist.
+
 ## Output Contract
 
 Writes `.allforai/app-design/qa/app-design-closure-qa-report.json`.
@@ -49,9 +52,22 @@ If domain QA reports exist, check they are passed and their handoff artifacts
 are referenced by the program handoff. Do not close app design while a selected
 domain extension is failed or blocked.
 
+Settings audience closure: check `missing_audience` — any settings item in the
+permissions/settings spec, or any settings item or service endpoint carried by
+the program handoff in `settings_items[]` or `service_endpoints[]`, lacks
+`audience`. Check `non_end_user_item_in_screen_spec` — any item whose
+`audience` is not `end-user` appears in `screen-requirements-spec.json` or on
+an end-user surface of the UI handoff; an exception item passes when it carries
+the `requirement_ref` of the requirement that puts it there. Write every hit to
+`missing_contracts` as `{code, item_id, artifact, detail}` and set `state` to
+`needs_revision`.
+
 Repair routing: missing UI requirements route to ui-input-handoff-generation;
 missing implementation nodes route to program-handoff-generation; missing
 source contracts route to the owning app-design or app-domain spec skill.
+`missing_audience` and `non_end_user_item_in_screen_spec` both route to
+permissions-notifications-settings-spec; the screen-side reference is removed
+by the skill that owns screen-requirements.
 
 ## Completion Conditions
 

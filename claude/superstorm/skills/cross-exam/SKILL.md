@@ -174,6 +174,13 @@ reviewer）和作者自审时的复核官永远继承会话模型。哪怕降了
 
 1. **整理候选**：把 census 的操作面按"入口 → 能推进到的终态"归成候选旅程，加上需求基准里的任务
    （registry、spec、README；`.allforai/product-map/task-inventory.json` 存在也读，它只是可选数据源）。
+   同一地位的可选数据源还有两处，存在就读、不存在不算缺：`.allforai/product-concept/product-concept.json`
+   的 `requirements[]` 里 `topic == "experience-direction"`、`status == "confirmed"` 的条目（同 id 取最新
+   `revision`）——用户确认过的体验方向；条目带 `who`/`circumstance` 就直接作三元组前两元，不带就从
+   `goal`/`scope` 起草，`progress` 从它的 `acceptance` 起草。以及
+   `.allforai/app-design/concept/job-story-spec.json` 的 job stories（`audience_ref` → who，
+   `situation`/`trigger`/`frequency` → circumstance，`desired_outcome` → progress）。条目
+   `auto_decided: true` 的，候选在摆给用户时句末标注"（此方向由模型受托选定）"。
    每条候选写成三元组草稿。**不另派 agent 读代码，也不凭印象读代码定候选**——census 已经用覆盖法
    列过入口了。census 失败（ledger 顶层 `census: "failed"`）时，候选只来自需求基准与用户补充，
    并在报告里声明旅程候选未经 census 播种。

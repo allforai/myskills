@@ -1,6 +1,6 @@
 ---
 name: app-design
-description: "App product design pack for non-game projects: audience and job stories, then IA, flow, screen, interaction, data, content, permission, and monetization specs, then UI and program handoffs, then closure QA."
+description: "App product design pack for non-game projects: audience and job stories, then IA, flow, screen, interaction, data, content, permission, and monetization specs, then UI and program handoffs, then closure QA and the experience quality gate."
 ---
 
 # App Design Skill Pack
@@ -38,6 +38,7 @@ product, UX, content, data, growth, compliance, and engineering handoff.
 | `30-generate` | `program-handoff-generation` | Structured handoff for implementation nodes: data, APIs, state, permissions, and tests. |
 | `40-qa` | `flow-coverage-qa` | Validate flows cover jobs, screens, errors, empty states, and recovery paths. |
 | `40-qa` | `app-design-closure-qa` | Final cross-contract closure before approval and downstream implementation. |
+| `40-qa` | `experience-quality-critique` | Evidence-typed experience critique in two stages (design, runtime) across the eight experience lenses, with repair routing. |
 
 ## Canonical Invocation Paths
 
@@ -59,6 +60,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/app-design/30-generate/ui-input-handoff-generation/
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/30-generate/program-handoff-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/40-qa/flow-coverage-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/app-design/40-qa/app-design-closure-qa/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/app-design/40-qa/experience-quality-critique/SKILL.md
 ```
 
 ## Boundary
@@ -68,3 +70,38 @@ concept phase. Missing decisions must route back to product concept or the
 relevant app-design child skill. Downstream app UI, frontend, backend, and QA
 nodes consume this pack through explicit handoff artifacts, not conversation
 memory.
+
+## Judgment Types
+
+Experience critique is not a deterministic compiler. The child skill must
+separate four judgment types:
+
+- `contract_defect`: deterministic contradiction, missing required artifact, an
+  unlabelled audience, a user-visible decision the design never made, or a
+  broken downstream contract.
+- `evidence_based_critique`: critique backed by screenshots, HTML review pages,
+  visual reviews, or structured runtime reports.
+- `llm_judgment`: reasoned subjective judgment using product and experience
+  principles, comparisons, and target-audience fit.
+- `insufficient_evidence`: the artifact set cannot support the claim.
+
+Only `contract_defect` and high-confidence `evidence_based_critique` may create
+hard blockers. `llm_judgment` may recommend iterations or upstream repairs, but
+must not masquerade as objective validation.
+
+## Shared Outputs
+
+Experience critique writes machine-readable reports under:
+
+```text
+.allforai/app-design/qa/
+```
+
+and the human-readable review summary into the project repository under:
+
+```text
+docs/experience-review/
+```
+
+Human-facing text is Chinese by default; machine-readable keys remain stable
+English identifiers.

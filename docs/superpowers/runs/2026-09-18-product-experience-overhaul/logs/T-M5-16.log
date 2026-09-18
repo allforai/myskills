@@ -1,0 +1,5 @@
+rc=2
+=== T-M5-16 acceptance run (reality gate: expected to FAIL until a human fills the record) 2026-09-18T12:16:33Z ===
+rc=1
+verdict-line-count=0
+conclusion-line=80:host-run: pending

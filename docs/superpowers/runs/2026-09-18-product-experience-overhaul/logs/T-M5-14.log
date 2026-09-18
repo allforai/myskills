@@ -1,0 +1,219 @@
+=== T-M5-14 re-run (attempt 2) ===
+date: 2026-09-18T20:39:56+09:00
+HEAD: a963d82a fix(cross-exam): 收编本地额度改动，但额度耗尽不再授权换路由
+python3: Python 3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 21.0.0 (clang-2100.1.1.101)] 
+pytest: pytest 9.0.3
+--- git status --short at start ---
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.log
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.supervisor.log
+
+########## BEGIN C1 ##########
+$ python3 -c import subprocess,re,sys; r=subprocess.run([sys.executable,"-m","pytest","-q","-rfE","claude/meta-skill/tests/unit"],capture_output=True,text=True); out=r.stdout; bad={l.split()[1] for l in out.splitlines() if l.startswith(("FAILED ","ERROR "))}; U="claude/meta-skill/tests/unit/"; base={U+"test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[claude]",U+"test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[codex]",U+"test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[claude]",U+"test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[codex]"}; m=re.search(r"(\d+) passed",out); print(out[-2000:]); print("unexpected:",sorted(bad-base)); sys.exit(0 if r.returncode in (0,1) and m and int(m.group(1))>=1198 and bad<=base else 1)
+servation=observed['observation'])
+        assert result.returncode == 0, published
+        scripts = tmp_path / '.allforai/bootstrap/scripts'
+        ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
+                               text=True, capture_output=True)
+        assert ready.returncode == 0, ready.stdout
+        done = subprocess.run([sys.executable, str(scripts / 'check_artifacts.py'), str(tmp_path / WORKFLOW),
+                               '--node', 'deliver-export', '--json'], text=True, capture_output=True)
+        assert json.loads(done.stdout)['all_exist'] is False
+        (tmp_path / 'orders.py').write_text('changed = True\n')
+        ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
+                               text=True, capture_output=True)
+>       assert ready.returncode == 1 and 'stale_evidence' in ready.stdout
+E       assert (0 == 1)
+E        +  where 0 = CompletedProcess(args=['/opt/homebrew/opt/python@3.14/bin/python3.14', '/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28...s": [],\n  "fallback_findings": [],\n  "long_task_findings": [],\n  "recommended_pre_run_actions": []\n}\n', stderr='').returncode
+
+claude/meta-skill/tests/unit/test_evidence_freshness.py:209: AssertionError
+=========================== short test summary info ============================
+FAILED claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[claude]
+FAILED claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[codex]
+FAILED claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[claude]
+FAILED claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[codex]
+4 failed, 1297 passed in 370.18s (0:06:10)
+
+unexpected: []
+RESULT C1 rc=0 dur=370.5s
+########## END C1 ##########
+
+########## BEGIN C2 ##########
+$ python3 -m pytest -q claude/superstorm/scripts
+........................................................................ [ 28%]
+........................................................................ [ 56%]
+........................................................................ [ 84%]
+.......................................                                  [100%]
+255 passed in 6.65s
+RESULT C2 rc=0 dur=6.9s
+########## END C2 ##########
+
+########## BEGIN C3 ##########
+$ python3 -m pytest -q codex/cross-exam-skill/scripts
+........................................................................ [ 41%]
+........................................................................ [ 83%]
+............................                                             [100%]
+172 passed in 6.55s
+RESULT C3 rc=0 dur=6.8s
+########## END C3 ##########
+
+########## BEGIN C4 ##########
+$ python3 -m pytest -q shared/evidence-engine
+..............................................                           [100%]
+46 passed in 2.10s
+RESULT C4 rc=0 dur=3.9s
+########## END C4 ##########
+
+########## BEGIN C5 ##########
+$ python3 -m pytest -q shared/visual-acceptance
+........................................................................ [ 34%]
+........................................................................ [ 68%]
+...................................................................      [100%]
+211 passed in 3.21s
+RESULT C5 rc=0 dur=3.4s
+########## END C5 ##########
+
+########## BEGIN C6a ##########
+$ python3 -m pytest -q shared/scripts/orchestrator
+........................................................................ [ 50%]
+........................................................................ [100%]
+144 passed in 10.74s
+RESULT C6a rc=0 dur=10.9s
+########## END C6a ##########
+
+########## BEGIN C6b ##########
+$ python3 -m pytest -q shared/keep-code-simple
+..............                   [100%]
+14 passed, 40 subtests passed in 0.17s
+RESULT C6b rc=0 dur=0.4s
+########## END C6b ##########
+
+########## BEGIN C6c ##########
+$ python3 -m pytest -q pi/cross-exam
+.......                                                                  [100%]
+7 passed in 0.01s
+RESULT C6c rc=0 dur=0.2s
+########## END C6c ##########
+
+########## BEGIN C7 ##########
+$ python3 -m pytest -q pi/meta-skill/test_contract.py codex/meta-skill/test_flow.py codex/meta-skill/test_install.py
+................................................... [ 25%]
+........................................................................ [ 60%]
+........................................................................ [ 96%]
+.......                                                                  [100%]
+202 passed, 21 subtests passed in 44.58s
+RESULT C7 rc=0 dur=45.6s
+########## END C7 ##########
+
+########## BEGIN C8 ##########
+$ python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py
+{
+  "passed": true,
+  "errors": [],
+  "warnings": []
+}
+RESULT C8 rc=0 dur=0.0s
+########## END C8 ##########
+
+########## BEGIN C9 ##########
+$ python3 claude/superstorm/scripts/check_skill_refs.py
+OK: all 33 referenced files present
+RESULT C9 rc=0 dur=0.0s
+########## END C9 ##########
+
+########## BEGIN A1 ##########
+$ python3 -m pytest -q claude/meta-skill/tests/unit/test_consumer_product_regression.py
+......                                                                   [100%]
+6 passed in 2.36s
+RESULT A1 rc=0 dur=2.6s
+########## END A1 ##########
+
+########## BEGIN A2 ##########
+$ python3 -m pytest -q claude/superstorm/scripts/test_package_manifests.py
+...........                                                              [100%]
+11 passed in 0.01s
+RESULT A2 rc=0 dur=0.2s
+########## END A2 ##########
+
+########## BEGIN I1 ##########
+RESULT I1 grep-rc=1 (expect no output)
+########## END I1 ##########
+
+########## BEGIN I2 ##########
+$ python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
+RESULT I2 rc=0 dur=0.1s
+########## END I2 ##########
+
+PER-SEGMENT RCS: C1=0 C2=0 C3=0 C4=0 C5=0 C6a=0 C6b=0 C6c=0 C7=0 C8=0 C9=0 A1=0 A2=0 I2=0
+
+########## BEGIN FULL-ACCEPTANCE-STRING ##########
+servation=observed['observation'])
+        assert result.returncode == 0, published
+        scripts = tmp_path / '.allforai/bootstrap/scripts'
+        ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
+                               text=True, capture_output=True)
+        assert ready.returncode == 0, ready.stdout
+        done = subprocess.run([sys.executable, str(scripts / 'check_artifacts.py'), str(tmp_path / WORKFLOW),
+                               '--node', 'deliver-export', '--json'], text=True, capture_output=True)
+        assert json.loads(done.stdout)['all_exist'] is False
+        (tmp_path / 'orders.py').write_text('changed = True\n')
+        ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
+                               text=True, capture_output=True)
+>       assert ready.returncode == 1 and 'stale_evidence' in ready.stdout
+E       assert (0 == 1)
+E        +  where 0 = CompletedProcess(args=['/opt/homebrew/opt/python@3.14/bin/python3.14', '/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28...s": [],\n  "fallback_findings": [],\n  "long_task_findings": [],\n  "recommended_pre_run_actions": []\n}\n', stderr='').returncode
+
+claude/meta-skill/tests/unit/test_evidence_freshness.py:209: AssertionError
+=========================== short test summary info ============================
+FAILED claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[claude]
+FAILED claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence[codex]
+FAILED claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[claude]
+FAILED claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion[codex]
+4 failed, 1297 passed in 373.85s (0:06:13)
+
+unexpected: []
+........................................................................ [ 28%]
+........................................................................ [ 56%]
+........................................................................ [ 84%]
+.......................................                                  [100%]
+255 passed in 7.03s
+........................................................................ [ 41%]
+........................................................................ [ 83%]
+............................                                             [100%]
+172 passed in 7.00s
+..............................................                           [100%]
+46 passed in 2.25s
+........................................................................ [ 34%]
+........................................................................ [ 68%]
+...................................................................      [100%]
+211 passed in 3.28s
+........................................................................ [ 50%]
+........................................................................ [100%]
+144 passed in 11.10s
+..............                   [100%]
+14 passed, 40 subtests passed in 0.17s
+.......                                                                  [100%]
+7 passed in 0.01s
+................................................... [ 25%]
+........................................................................ [ 60%]
+........................................................................ [ 96%]
+.......                                                                  [100%]
+202 passed, 21 subtests passed in 46.31s
+{
+  "passed": true,
+  "errors": [],
+  "warnings": []
+}
+OK: all 33 referenced files present
+......                                                                   [100%]
+6 passed in 2.39s
+...........                                                              [100%]
+11 passed in 0.01s
+ACCEPTANCE_RC=0 dur=458.1s
+########## END FULL-ACCEPTANCE-STRING ##########
+--- git status --short at end ---
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/decision-ledger.json
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.log
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-14.supervisor.log
+ M docs/superpowers/runs/2026-09-18-product-experience-overhaul/verification-M5.md
+date: 2026-09-18T20:55:07+09:00

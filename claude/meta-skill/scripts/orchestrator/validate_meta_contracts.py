@@ -176,6 +176,23 @@ def validate_execution_repair_loop_contract(errors: list[str]) -> None:
             errors.append(f"execution-repair-loop/SKILL.md: missing repair contract term {term}")
 
 
+def validate_experience_routing_contract(errors: list[str]) -> None:
+    bootstrap_text = _bootstrap_text()
+    for term in (
+        "experience_priority",
+        '"mode": "consumer | admin | mixed | none"',
+        "experience_priority.mode != none",
+        "knowledge/capabilities/product-concept.md",
+        "knowledge/consumer-maturity-patterns.md",
+        "knowledge/journey-emotion-schema.md",
+        "knowledge/capabilities/app-design.md",
+        "knowledge/capabilities/game-design.md",
+        "3.5.0b App Design Coverage Check",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing experience routing term {term}")
+
+
 def validate_implement_goal_contract(errors: list[str]) -> None:
     bootstrap_text = _bootstrap_text()
     skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -427,6 +444,143 @@ def validate_public_entrypoint_surface(errors: list[str]) -> None:
         )
 
 
+def validate_spec_gap_discipline_contract(errors: list[str]) -> None:
+    # One table pins the whole spec-gap discipline: the two defensive patterns, the node-spec
+    # slot that carries the decisions, and every downstream landing spot in app-design and
+    # product-verify. Half-landing the contract (patterns written, downstream untouched) fails.
+    # Paths resolve from ROOT at call time so the table can be probed against another tree.
+    pins = (
+        (
+            "knowledge/defensive-patterns.md",
+            (
+                '<a id="pattern-i"></a>',
+                "## Pattern I: Specification Gap Escalation",
+                '<a id="pattern-j"></a>',
+                "## Pattern J: Audience Isolation",
+                "unspecified_user_visible_decision",
+                "needed_decision",
+                "blocking_intent_ids",
+                "suggested_owner_artifact",
+                "`end-user`",
+                "`operator`",
+                "`developer`",
+                "requirement_ref",
+            ),
+        ),
+        (
+            "knowledge/node-spec-template.md",
+            (
+                "## User-visible decisions",
+                "defensive-patterns.md#pattern-i",
+                "defensive-patterns.md#pattern-j",
+                "contract_gaps",
+                "unspecified_user_visible_decision",
+            ),
+        ),
+        (
+            "skills/app-design/20-spec/permissions-notifications-settings-spec/SKILL.md",
+            (
+                "audience",
+                "end-user",
+                "operator",
+                "developer",
+                "provisioning",
+                "build-time",
+                "remote-config",
+                "deploy-env",
+                "requirement_ref",
+            ),
+        ),
+        (
+            "skills/app-design/20-spec/app-surface-topology-spec/SKILL.md",
+            (
+                "service_endpoints",
+                "provisioning",
+                "deploy-env",
+            ),
+        ),
+        (
+            "skills/app-design/30-generate/program-handoff-generation/SKILL.md",
+            (
+                "settings_items",
+                "audience",
+                "provisioning",
+            ),
+        ),
+        (
+            "skills/app-design/40-qa/app-design-closure-qa/SKILL.md",
+            (
+                "missing_audience",
+                "non_end_user_item_in_screen_spec",
+                "missing_contracts",
+            ),
+        ),
+        (
+            "knowledge/capabilities/product-verify.md",
+            (
+                "### Audience Leak Check",
+                "audience_leak",
+                "defensive-patterns.md#pattern-j",
+            ),
+        ),
+    )
+    for rel, terms in pins:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for term in terms:
+            if term not in text:
+                errors.append(f"{rel}: missing spec-gap discipline term {term}")
+
+
+def validate_experience_gate_contract(errors: list[str]) -> None:
+    # Must #9 spans three files: the bootstrap corpus plans the gate, concept-acceptance names both
+    # critiques it waits on, and the app-design PACK carries the sub-skill. A half-landed gate (the
+    # planning prose written, the acceptance prerequisite or the PACK entry missing) fails here.
+    bootstrap_text = _bootstrap_text()
+    for term in (
+        "Experience quality gate (products with UI)",
+        "skills/app-design/40-qa/experience-quality-critique/SKILL.md",
+        "experience-quality-critique-design.json",
+        "experience-quality-critique-runtime.json",
+        "must_fix_before_implementation",
+        "must_fix_before_release",
+        "docs/experience-review/",
+        "experience_priority.mode = none",
+        "excludes `gap-experience-direction` and states `not_applicable.experience`",
+    ):
+        if term not in bootstrap_text:
+            errors.append(f"bootstrap.md: missing experience quality gate term {term}")
+    pins = (
+        (
+            "knowledge/product-intent-confirmation.md",
+            ("a round opened in that same turn is not yet a current round",),
+        ),
+        (
+            "knowledge/capabilities/concept-acceptance.md",
+            (
+                "creative-quality-critique",
+                "experience-quality-critique",
+            ),
+        ),
+        (
+            "skills/app-design/PACK.md",
+            ("experience-quality-critique",),
+        ),
+    )
+    for rel, terms in pins:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for term in terms:
+            if term not in text:
+                errors.append(f"{rel}: missing experience quality gate term {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     validate_capability_files(errors)
@@ -435,6 +589,7 @@ def main() -> int:
     validate_approval_scripts_copied(errors)
     validate_unattended_run_contract(errors)
     validate_execution_repair_loop_contract(errors)
+    validate_experience_routing_contract(errors)
     validate_implement_goal_contract(errors)
     validate_feedback_contract(errors)
     validate_canvas2d_contract(errors)
@@ -442,6 +597,8 @@ def main() -> int:
     validate_bootstrap_node_expansion_contract(errors)
     validate_rebootstrap_reconciliation_contract(errors)
     validate_public_entrypoint_surface(errors)
+    validate_spec_gap_discipline_contract(errors)
+    validate_experience_gate_contract(errors)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

@@ -67,7 +67,8 @@ App mapping rules:
 | `modules[].key_files[]` | Entry points for code reading |
 | `architecture_pattern` | Select archetype-specific output schema (see Specialization Guidance) |
 | `detected_patterns[]` | Identify domain-specific conventions (e.g., ECS for games, event-sourcing for backend) |
-| `experience_priority` | Classification hint: consumer / admin / mixed |
+
+Experience classification is not a source-summary field: read `experience_priority.mode` from `bootstrap-profile.json`; never reclassify it here.
 
 **Archetype fallback rule**: If `source-summary.json` is absent (goal = create, or discovery was skipped), infer archetype from `product-concept.json.architecture_pattern`. If neither exists, default to `web-app` archetype and note the assumption in the output artifacts.
 
@@ -137,7 +138,7 @@ Every capability that references a task or role MUST use these IDs.
 
 | Output | When to include |
 |--------|----------------|
-| `journey-emotion-map.json` | Consumer/mixed products (experience_priority != admin) |
+| `journey-emotion-map.json` | Consumer/mixed products (`experience_priority.mode` is `consumer` or `mixed`) |
 | `interaction-gate.json` | After experience-map, always for consumer products |
 | `constraints.json` | When business rules are complex |
 
@@ -158,7 +159,7 @@ Every capability that references a task or role MUST use these IDs.
 
 ### Required Quality
 
-- `experience_priority` classified: consumer / admin / mixed
+- `experience_priority.mode` read from `bootstrap-profile.json` and carried unchanged (never reclassified)
 - Every task has inputs, outputs, and at least one constraint
 - Every screen has state variants (empty/loading/error/success minimum)
 - Every flow has a defined end state

@@ -1,0 +1,163 @@
+{
+  "method": "Fresh context per case. The subject receives only the skill text under test (every file in the case's `skill` list, inlined in full) and the situation. Expected observations stay with the evaluator and are written before the run. These are simulated decisions, not live-host acceptance.",
+  "subject_under_test": [
+    "claude/meta-skill/knowledge/product-intent-confirmation.md (experience direction proposals: propose / select / delegate)",
+    "claude/meta-skill/skills/bootstrap/SKILL.md (Step 1.6 experience_priority, Step 2 knowledge loading)",
+    "claude/meta-skill/knowledge/bootstrap-planning.md (Must #8 creative quality gate, Must #9 experience quality gate)",
+    "claude/meta-skill/knowledge/suppress-rules.md (experience gate exemption on experience_priority.mode = none)",
+    "claude/meta-skill/knowledge/defensive-patterns.md (Pattern I specification gap escalation, Pattern J audience isolation)",
+    "claude/meta-skill/knowledge/node-spec-template.md (contract_gaps on an implementation / UI node)",
+    "claude/meta-skill/knowledge/capabilities/concept-acceptance.md (closure blocked by the quality critique)",
+    "codex/meta-skill/skills/bootstrap.md (Codex adapter §0b: experience priority, direction and quality gate)",
+    "pi/meta-skill/skills/bootstrap/SKILL.md (Pi adapter §7: 体验方向与体验质量门)",
+    "codex/cross-exam-skill/product-review.md (Codex product-review: prior evidence from docs/experience-review/runtime.md)",
+    "claude/superstorm/skills/cross-exam/SKILL.md (§1b 旅程采集: delegated direction disclosure in candidates)"
+  ],
+  "cases": [
+    {
+      "id": "E1",
+      "platform": "claude",
+      "skill": ["claude/meta-skill/knowledge/product-intent-confirmation.md"],
+      "situation": "宿主是 Claude Code，你在跑 /bootstrap，`task_route` 是 `new-product`，`.allforai/bootstrap/bootstrap-profile.json` 已写 `experience_priority {\"mode\": \"consumer\", \"reason\": \"面向上班族个人用户的自学工具\"}`，`is_game_project = false`。用户开场只说了一句：「我想做一个碎片化学习的 App，让上班族用零碎时间背英语单词，最好能坚持下去。」`target-users`、`scenarios` 两个话题已确认；现在轮到 `experience-direction` 话题，还没有任何提案轮次。请给出你这一轮对 `product_intent.py` 的实际调用（operation 与要写的关键字段）、你会摆给用户的方向各自写了什么，以及面向用户的答复。",
+      "expected": [
+        "先 `propose` 再讨论：`{operation: \"propose\", proposals, recommended_id, rationale}`，两三条写好的方向加恰好一条推荐，用户不是从空白提示里选；`propose` 不记 journal、不需要 `user_reference`",
+        "每条方向先答谁在用、在什么情境（含规模与频率）、核心循环该是什么感受、为何有人回来，然后才提到功能；`acceptance` 写可观察的体验判据而不是功能清单",
+        "两三条是方向之别，不是同一个想法的三种规模或预算",
+        "不把「碎片化学习」直译成产品词：不出现按时长切分的选择器、也不出现题型清单式的功能罗列；把它读成排队等车那几分钟的情境来设计",
+        "每条点名一个替同一批人做同一件事的成熟产品，并说它实际怎么做；对照 `consumer-maturity-patterns.md` §B 自查（压缩版管理面板 / 概念演示 / 功能清单式设计）",
+        "本轮不产生确认：没有 `select`、没有 `delegate`，推荐只是推荐"
+      ]
+    },
+    {
+      "id": "E2",
+      "platform": "codex",
+      "skill": [
+        "claude/meta-skill/knowledge/product-intent-confirmation.md",
+        "codex/meta-skill/skills/bootstrap.md"
+      ],
+      "sections": "codex/meta-skill/skills/bootstrap.md 的重点是 §0b Experience Priority, Direction and Quality Gate；canonical 协议以 Experience direction proposals 与 `propose` / `decide` 两段为准。",
+      "situation": "宿主是 Codex CLI，你在跑 bootstrap，产品路线，`experience_priority.mode = \"consumer\"`。情形甲：上一轮你已经用纯文本列出三条方向 D1/D2/D3 并写明推荐 D2，`propose` 已记录为第 1 轮；用户这一轮的原话是「你定吧，我不懂这些，你按你推荐的来」。情形乙：另一个项目里你还没记过任何 `propose`，用户开场第一句就是「体验方向你定，别问我」。两种情形你各自这一轮对 `product_intent.py` 的实际调用是什么（operation、`batch_id`、`topic`、`user_reference`、每个 action 的键与值），分别说明理由；再说明 Codex 的 assume-and-declare 约定在这里能做什么、不能做什么。",
+      "expected": [
+        "情形甲记 `delegate`：`{operation: \"decide\", topic: \"experience-direction\", actions: [{operation: \"delegate\", reason: ...}]}`，不带 `proposal_id`，取该轮 recommended 的 D2",
+        "批次 `user_reference` 指向「你定吧……」这条真实用户发言的那一轮，不是推荐本身，也不是展示提案的那一轮",
+        "该条目记为 `experience-direction-D2`，`origin: model-proposal`，`auto_decided: true`、`confirmation.delegated: true`，同一批次 `answer` 掉 `gap-experience-direction` 并填所选方向的标题；完成时经 `product_intent.py . --delegations` 披露",
+        "情形乙没有当前提案轮次，`delegate` 被拒：先 `propose` 两三条方向并标明推荐，以纯文本呈现并等用户回复，本轮不产生确认",
+        "Codex 的 assume-and-declare 产生不了 `select`，也产生不了 `delegate`；不用「我先按推荐推进，你不反对就算同意」代替用户的委托",
+        "Codex 没有结构化选择控件，提案一律纯文本逐条呈现"
+      ]
+    },
+    {
+      "id": "E3",
+      "platform": "claude",
+      "skill": ["claude/meta-skill/knowledge/product-intent-confirmation.md"],
+      "situation": "宿主是 Claude Code，/bootstrap 产品路线，`experience_priority.mode = \"mixed\"`。你上一轮已 `propose` 了第 1 轮三条方向并推荐 D1，界面上 D1 是高亮的默认项。用户这一轮只回了一句：「先别管这个，你看我后端用 Postgres 还是 MySQL 更省事？」你答完技术问题后，用户接着回：「行，继续吧。」除此之外用户没有提过任何方向。你这一轮的实际动作是什么？`experience-direction` 话题现在是什么状态？如果你想推进到 `freeze`，能不能freeze、为什么？给出面向用户的答复。",
+      "expected": [
+        "不记 `select`、不记 `delegate`、不记 `confirm`：「继续吧」不是对提案的选择，推荐、展示的默认值、沉默和不作答都不是动作",
+        "`experience-direction` 话题保持 pending，第 1 轮仍然只是提案，高亮的 D1 仍是没人回答的默认值",
+        "不进入 `freeze`：`gap-experience-direction` 仍未答；把它排除也不能授权依赖这个选择的工作，所以不用排除来绕过",
+        "面向用户的答复把三条方向重新摆一次，等一个真实的选择，或者请用户明说要不要交给你定",
+        "不自行把 D1 写成已确认条目，也不因为用户说了「继续」就开始规划体验设计节点"
+      ]
+    },
+    {
+      "id": "E4",
+      "platform": "claude",
+      "skill": [
+        "claude/meta-skill/knowledge/defensive-patterns.md",
+        "claude/meta-skill/knowledge/node-spec-template.md"
+      ],
+      "sections": "defensive-patterns.md 的重点是 Pattern I（Specification Gap Escalation）与 Pattern J（Audience Isolation）；node-spec-template.md 的重点是 `contract_gaps` 的可发射性与写法。",
+      "situation": "宿主是 Claude Code，/run 正在执行一个 UI 实现节点 `export-screen-implement`，`capability: frontend-implementation`。Input Contract 列的 `.allforai/app-design/spec/screen-requirements-spec.json` 里，导出页的字段、状态与文案都齐全，唯独「导出完成之后用户落到哪里」这一条谁也没写：user-flow-spec 里这条边是空的，产品概念里也没有，没有任何上游产物说过它。这是一个用户看得见的决定。本节点要实现的其余 11 条屏幕要求都有明确规格且你都能做完。这一轮你怎么做？节点报告怎么写（列出关键字段与字面量）？面向用户说什么？",
+      "expected": [
+        "在节点报告里追加一条 `contract_gaps` 条目，`kind` 为 `\"unspecified_user_visible_decision\"`，写清缺的是哪一个用户可见决定、它本该由哪个上游产物/节点提供",
+        "不为它造一个输入框、不编一个默认目的地当规格、也不留占位实现",
+        "其余 11 条照常实现并留下证据，节点不因为这一条整体 blocked；完成的部分如实报完成、缺的部分如实报缺",
+        "不把它归成 `code_gaps` 或 `test_gaps`，也不在无人值守的节点执行里向用户提问",
+        "不自行改写上游 spec 把这条补上，也不假装规格里本来就有"
+      ]
+    },
+    {
+      "id": "E5",
+      "platform": "codex",
+      "skill": [
+        "claude/meta-skill/skills/bootstrap/SKILL.md",
+        "claude/meta-skill/knowledge/bootstrap-planning.md",
+        "claude/meta-skill/knowledge/suppress-rules.md"
+      ],
+      "sections": "bootstrap/SKILL.md 的重点是 Step 1.6（bootstrap-profile.json 与 experience_priority）与 Step 2（按 route 与 mode 加载知识）；bootstrap-planning.md 的重点是 Must #8 / Must #9；suppress-rules.md 的重点是 mode = none 那一行。",
+      "situation": "宿主是 Codex CLI，走 canonical 协议跑 bootstrap。项目是一个只对外提供 HTTP API 的计费对账服务：没有任何界面，消费方是另外两个后端服务，运维只看日志和 Grafana；技术栈是 TypeScript + React 生态的工具链（构建脚本用了 Vite）。`task_route = \"new-product\"`，`is_game_project = false`，用户目标含实现与上线。请写出你会记进 `.allforai/bootstrap/bootstrap-profile.json` 的 `experience_priority` 字段值，Step 2 要不要加载体验那组知识，规划出来的节点图里有没有体验相关节点、为什么，以及 `freeze` 那一批你会怎么处理 `gap-experience-direction`。",
+      "expected": [
+        "`experience_priority` 写成 `{\"mode\": \"none\", \"reason\": \"<一句话：产品服务谁、为什么是这个 mode>\"}`，`reason` 必填且只有一句",
+        "按谁在用这个产品判断，不按技术栈判断：用了 React/Vite 不代表有终端用户界面；bootstrap 是这个字段的唯一生产者，下游只读不改",
+        "不规划 design / runtime 两道体验质量门节点——Must #9 只在 `consumer` 或 `mixed` 上要求；按 suppress-rules 在摘要里写明这次的豁免与理由",
+        "不开 `experience-direction` 的提案轮，也不加载 product-concept / consumer-maturity-patterns / journey-emotion-schema / app-design 那组体验知识",
+        "`freeze` 时把 `gap-experience-direction` 放进 `exclude` 并给出明确理由（没有人看的界面），不当成已回答，也不把它留成悬空的待答问题",
+        "`plan` 里可以用 `not_applicable.experience` 说明体验工作不适用——它只在 `mode` 为 `none` 时合法"
+      ]
+    },
+    {
+      "id": "E6",
+      "platform": "claude",
+      "skill": [
+        "claude/meta-skill/knowledge/bootstrap-planning.md",
+        "claude/meta-skill/knowledge/capabilities/concept-acceptance.md"
+      ],
+      "sections": "bootstrap-planning.md 的重点是 Must #8（游戏创意质量门）与 Must #9（产品体验质量门）的同一条法则；concept-acceptance.md 的重点是「Blocked by the quality critique」那一段。",
+      "situation": "宿主是 Claude Code，/bootstrap 规划一个 2D 横版闯关小游戏，`is_game_project = true`，用户目标含美术、UI、音频与前端实现，最后要能跑起来验收。你已经排好了 game-design 的一串设计节点（收尾是 `game-design-finalize`）、美术与音频产出节点、前端实现节点、以及最后的视觉 QA 与运行时 smoke，收尾是 `concept-acceptance` 与 `pipeline-closure-verify`。请补全并说明：创意质量评审节点你放几个、各放在哪、`concept-acceptance` 的 `hard_blocked_by` 写谁、`unattended-run-readiness-spec.json.required_repair_loops` 里这些评审各自怎么声明、以及 must-fix 非空时节点算不算完成。",
+      "expected": [
+        "两个创意评审节点都存在：一个在 `game-design-finalize` 之后，另一个在最后一个美术/UI/音频/前端 QA 之后（目标含实现时这一个必须有）",
+        "`concept-acceptance` 的 `hard_blocked_by` 指向实现之后的那一次评审，不是设计之后的那一次",
+        "两个评审各自在 `required_repair_loops` 里有一条声明好的修复回路，`must_fix_*` findings 按 `repair_route.owner_skill` 路由回所属包的修复回路，`max_attempts` 取 Must #2 的预算，预算耗尽走 Run Policy、运行中不提问",
+        "must-fix 列表非空就等于那份产物没通过，`check_artifacts.py` 不把该评审节点判成完成；修复后要重跑受影响的 QA 证据再谈收尾",
+        "这是游戏路线，走 Must #8 的 `creative-quality-critique`，不套用产品路线的 `experience-quality-critique`；节点 id 里不出现 `cross-exam` 或 `product-review`",
+        "不靠节点 id 写死判断，回答按节点的角色与依赖边描述"
+      ]
+    },
+    {
+      "id": "E7",
+      "platform": "codex",
+      "skill": ["codex/cross-exam-skill/product-review.md"],
+      "situation": "宿主是 Codex CLI，用户显式调用了 product-review。范围内一份工作已确认三元组：JOB1 = 上班族 / 通勤路上 / 把今天要背的单词过一遍。仓库里 `docs/experience-review/runtime.md` 存在（评审日期 2026-09-10，被评提交 abc1234，与当前 HEAD 一致），它的镜头观察行覆盖了 JOB1 的「首次引导」与「核心动作过程反馈」两格，must-fix 列表里 EX2（首次进入没有任何引导）仍未关闭并卡住 JOB1；`docs/experience-review/design.md` 也存在；`docs/cross-exam/` 不存在；仓库里有 `.allforai/` 整棵树和 `product-concept.json`。你自己看产品时还发现：单词卡的错误态和空态是两套样式，且离线时没有任何提示。现在写这一条报告并答复用户：说明你读了什么、`商业级` 那几格分别怎么填、`Prior evidence` 行怎么写、哪些进 `R` 号。",
+      "expected": [
+        "读 `docs/experience-review/runtime.md` 并把它当既有证据：被它覆盖的两格直接写 `有|缺 <它的观察>（runtime review 2026-09-10）`，不重新检查",
+        "不读 `design.md`：那份判的是设计产物，不是运行中的产品",
+        "未关闭的 must-fix EX2 写在 `Prior evidence` 行上，按它在该文件里的 id 引用；等它的条目把 `EX2` 写进 `depends_on`；它不占 `R` 号、不被重述成新发现",
+        "该文件没覆盖的镜头与工作照常自己看：错误态/空态两套样式、离线无提示是本次自己的 `R` 条目，各自带 kind / recommend / evidence / tradeoff",
+        "不读也不写 `.allforai/`，不调用 meta-skill 能力；`product-concept.json` 不作为输入",
+        "那份评审的证据局限并入本报告的 `Evidence limits`；被评提交与 HEAD 一致，所以不用标过期，也不在这里重跑那次评审"
+      ]
+    },
+    {
+      "id": "E8",
+      "platform": "claude",
+      "skill": ["claude/superstorm/skills/cross-exam/SKILL.md"],
+      "sections": "重点是 §1b 旅程采集（定面之后、盘问循环之前）里体验方向条目作为候选来源的那几句。",
+      "situation": "宿主是 Claude Code，用户显式调用了 /cross-exam，定面刚做完，现在是 §1b 旅程采集这一步，盘问循环还没开始。项目里 `product_intent.py` 的确认条目中有两条体验方向：`experience-direction-D1`（`who`: 上班族自学者；`circumstance`: 通勤路上的十来分钟；由用户自己 `select`）与 `experience-direction-D3`（`who`: 备考学生；`circumstance`: 晚自习整块时间；`auto_decided: true`、`confirmation.delegated: true`，是用户上一轮说「你定」之后模型取推荐记下的）。另外还有一条来自 README 的旅程线索。请写出你这一步的实际动作、你会摆给用户的候选旅程清单原文（逐条），以及面向用户的答复。",
+      "expected": [
+        "候选旅程的来源里含用户确认过的体验方向条目；带 `who` / `circumstance` 的直接拿来当三元组的前两元，不带的才另行推导",
+        "`auto_decided: true` 的 D3 那条候选，摆给用户时句末标注「（此方向由模型受托选定）」",
+        "用户自己 `select` 的 D1 那条不加这个标注，两者在清单里可区分",
+        "不因为 D3 是模型定的就把它从候选里删掉，也不把它说成用户自己选的",
+        "这一步只采集与呈现候选、等用户定，不提前进入盘问循环"
+      ]
+    },
+    {
+      "id": "E9",
+      "platform": "pi",
+      "skill": [
+        "pi/meta-skill/skills/bootstrap/SKILL.md",
+        "claude/meta-skill/knowledge/product-intent-confirmation.md"
+      ],
+      "sections": "pi/meta-skill/skills/bootstrap/SKILL.md 的重点是 §7 体验方向与体验质量门；canonical 协议以 Experience direction proposals 与 `propose` / `decide` 两段为准。",
+      "situation": "宿主是 Pi，你在跑 bootstrap，`task_route = \"new-product\"`，`experience_priority.mode = \"consumer\"`，`is_game_project = false`。`target-users` 与 `scenarios` 已确认，现在要开 `experience-direction` 话题，还没有任何提案轮次。请先写出你这一轮实际发给用户的消息原文（就是用户会看到的那段字），以及配套的 `product_intent.py` 调用。然后假设用户下一轮只回了两个字「你定」，写出你接着的调用（operation、`user_reference`、每个 action 的键与值）；再说明如果用户那一轮什么都没回、或者会话被打断，你会怎么处理。",
+      "expected": [
+        "发给用户的消息是纯文本：逐条列出两三条方向、标明推荐哪一条并说明理由，然后等用户回复",
+        "不提 `AskUserQuestion`，也不使用任何结构化选择控件——Pi 没有；不发明用户的答案，也不用 Codex 的 assume-and-declare 代替同意",
+        "本轮先 `propose`（`proposals`、`recommended_id`、`rationale`），`propose` 不记 journal、不需要 `user_reference`",
+        "用户明说「你定」这一轮才记 `delegate`（不带 `proposal_id`，取该轮 recommended），批次 `user_reference` 写这条真实发言；条目标 `auto_decided: true`，同批次 `answer` 掉 `gap-experience-direction`",
+        "没有回复、沉默、会话被打断都不是委托：话题保持 pending，该轮仍是提案，下次 `resume` 时把当前轮提案与推荐重新摆出来",
+        "动作一律通过复制进 `.allforai/bootstrap/scripts/` 的 `product_intent.py` 记录；受托选定的方向在运行完成时经 `--delegations` 披露"
+      ]
+    }
+  ]
+}

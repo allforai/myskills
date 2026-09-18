@@ -67,6 +67,7 @@ def project(root, *, confirmed=False, documents=False, host="claude", source_inp
     shutil.copy2(source_scripts / "check_decision_inputs.py", scripts / "check_decision_inputs.py")
     write(root, ".allforai/bootstrap/bootstrap-profile.json", {
         "task_goal": "Add order CSV export", "task_route": "local-change",
+        "experience_priority": {"mode": "none", "reason": "Headless order-service fixture; no end-user interface"},
         "task_scope": {"areas": ["orders"], "requirement_refs": [REF]},
     })
     requirement = {

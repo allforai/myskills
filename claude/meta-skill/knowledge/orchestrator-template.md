@@ -379,6 +379,14 @@ On first iteration if transition_log is non-empty:
    Keep `.allforai/bootstrap/run-log.jsonl`, `.allforai/bootstrap/run-summary.json`,
    and `.allforai/bootstrap/run-summary.md` as the auditable production trace.
 
+0b. **Disclose delegated decisions:**
+   Run `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations`.
+   In the completion text, under the heading `Decisions you delegated to the model`,
+   print every returned entry: its id, the proposal title, the user turn that handed
+   the decision over, and the reason. If the list is empty, print `No delegated decisions.`
+   The user must be able to see which product decisions the model made for them without
+   opening a file. Do not ask the user anything here.
+
 1. **Mark concept drift resolved (if applicable):**
    If `.allforai/product-concept/concept-drift.json` exists AND `resolved = false`
    AND all nodes completed successfully: set `"resolved": true` and write back.

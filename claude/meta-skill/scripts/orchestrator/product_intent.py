@@ -144,6 +144,7 @@ def validate_scope(project_root, workflow, *, consumed_sources=None):
                             "profile through product_intent.py so this gate can assure content")})
         if profile["task_route"] in ("product-reconstruction", "new-product") and scope["requirement_refs"]:
             blockers.extend(_product_contract(root, workflow, profile, retained=retained))
+            blockers.extend(_experience_direction_blockers(root, profile, scope["requirement_refs"]))
         if profile["task_route"] != "product-reconstruction":
             for node in workflow.get("nodes", []):
                 if node.get("capability") == "reverse-concept" and node.get("node_id") not in retained:
@@ -368,7 +369,13 @@ JOURNAL = ".allforai/product-concept/decision-journal.json"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
 LOCAL = ".allforai/bootstrap/local-requirements.json"
-TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop", "tradeoffs")
+TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop",
+          "experience-direction", "tradeoffs")
+EXPERIENCE_TOPIC = "experience-direction"  # The experience the product gives people, decided before its tradeoffs.
+PROPOSAL_ORIGIN = "model-proposal"  # Authored by the model for the user to choose from; never a decision.
+_PROPOSAL_TEXT = ("id", "title", "who", "circumstance", "core_loop_feel", "first_minute", "return_reason", "goal")
+_PROPOSAL_LISTS = ("anti_goals", "tradeoffs", "scope", "business_rules", "acceptance")
+_PROPOSAL_KEYS = {*_PROPOSAL_TEXT, *_PROPOSAL_LISTS, "comparable"}
 LOCAL_TOPIC = "local-requirements"  # Grouping label for hand-projected local requirements without a topic.
 RUN_POLICY = ".allforai/bootstrap/run-policy.json"
 RUN_POLICY_REPAIRS = ".allforai/bootstrap/run-policy-repairs.json"
@@ -464,6 +471,36 @@ def _item(item):
     for key in ("scope", "business_rules", "acceptance"):
         if not isinstance(item.get(key), list) or not item[key] or not all(_text(v) for v in item[key]):
             raise ValueError(f"Intent needs non-empty {key}")
+
+
+def _proposal(value):
+    """Validate one offered experience direction and return the script's own copy.
+
+    The key set is exact on purpose: a proposal carries product meaning only, so a
+    host cannot hand one `origin`, `status`, `round`, `recommended` or a
+    `confirmation` and have the store treat it as something the user decided.
+    """
+    import copy
+    if not isinstance(value, dict) or set(value) != _PROPOSAL_KEYS:
+        raise ValueError("Experience proposal needs exactly its own fields")
+    for key in _PROPOSAL_TEXT:
+        if not _text(value[key]):
+            raise ValueError(f"Experience proposal needs {key}")
+    for key in _PROPOSAL_LISTS:
+        if not isinstance(value[key], list) or not value[key] or not all(_text(v) for v in value[key]):
+            raise ValueError(f"Experience proposal needs non-empty {key}")
+    comparable = value["comparable"]
+    if (not isinstance(comparable, dict) or set(comparable) != {"product", "approach"}
+            or any(not _text(comparable[key]) for key in ("product", "approach"))):
+        raise ValueError("Experience proposal needs comparable product and approach")
+    return copy.deepcopy(value)
+
+
+def _current_proposals(concept):
+    """The offered directions of the newest round; earlier rounds stay as history."""
+    proposals = concept.get("experience_proposals") or []
+    rounds = [p["round"] for p in proposals]
+    return [p for p in proposals if p["round"] == max(rounds)] if rounds else []
 
 
 def _latest(concept):
@@ -740,6 +777,36 @@ def _product_contract(root, workflow, profile, *, retained=()):
     return _intent_drift(root, workflow, concept, refs, frozen, label="Product", path=CONCEPT, retained=retained)
 
 
+def _experience_direction_blockers(root, profile, refs):
+    """A product people live with must carry the direction they chose for it.
+
+    The classification is read, never re-derived: `admin`, `none` and a missing or
+    illegal mode produce nothing here, the last because an unknown mode is the bootstrap
+    gate's own `missing_experience_priority` and answering it twice sends the user to
+    repair the wrong thing. The blocker is global like `pending_product_confirmation`:
+    no single node is at fault when the whole scope never said what living with the
+    product feels like.
+
+    Provenance is not re-checked here. `_product_contract` already put every frozen
+    intent through `_intent_drift` and `_confirmed`, so a confirmed direction of any
+    origin — the model's proposal or the user's own words — satisfies this.
+    """
+    priority = profile.get("experience_priority")
+    mode = priority.get("mode") if isinstance(priority, dict) else None
+    if mode not in ("consumer", "mixed"):
+        return []
+    latest = _latest(_read(root, CONCEPT, {}))
+    for ref in refs:
+        item = latest.get(ref["id"])
+        if (isinstance(item, dict) and item.get("topic") == EXPERIENCE_TOPIC
+                and item.get("status") == "confirmed" and item.get("revision") == ref["revision"]):
+            return []
+    return [{"code": "ui_product_without_experience_direction",
+             "message": f"experience_priority.mode is {mode} but the frozen scope holds no confirmed "
+                        "experience-direction intent; return to interactive bootstrap, propose "
+                        "directions and record the user's select or delegate, then refreeze and replan"}]
+
+
 def _local_contract(root, workflow, profile, *, retained=()):
     """Verify the frozen local scope; bind per-intent drift to the nodes that consume it.
 
@@ -818,11 +885,23 @@ def _intent_drift(root, workflow, concept, refs, frozen, *, label, path, retaine
 
 def _validate_question_ids(concept):
     intent_ids = set(_latest(concept))
+    proposal_ids = set()
+    proposals = concept.get("experience_proposals", [])
+    separate = ("Proposal identities must be unique and separate from intent and question identities")
+    if not isinstance(proposals, list):
+        raise ValueError(separate)
+    for proposal in proposals:
+        identity = proposal.get("id") if isinstance(proposal, dict) else None
+        if not _text(identity) or identity in intent_ids or identity in proposal_ids:
+            raise ValueError(separate)
+        proposal_ids.add(identity)
     question_ids = set()
     for question in concept.get("intent_questions", []):
         identity = question.get("id")
         if not _text(identity) or identity in intent_ids or identity in question_ids:
             raise ValueError("Question identities must be unique and separate from intent identities")
+        if identity in proposal_ids:
+            raise ValueError(separate)
         question_ids.add(identity)
 
 
@@ -922,15 +1001,138 @@ def _discussion(root, concept):
                 item["pending_reason"] = str(exc) if legacy else "Missing or invalid user confirmation provenance"
     topics = []
     latest = {identity: dict(item, topic=item.get("topic", LOCAL_TOPIC)) for identity, item in _latest(concept).items()}
+    # An offer still on the table is itself unfinished business: the experience topic
+    # stays listed while the newest round waits for the user, even once every item and
+    # question under it is settled. Once a direction is confirmed the offer is spent.
+    current = _current_proposals(concept)
+    direction_open = not any(i["topic"] == EXPERIENCE_TOPIC and i["status"] == "confirmed" for i in latest.values())
     for topic in dict.fromkeys([*TOPICS, *(i["topic"] for i in latest.values())]):
         items = [i for i in latest.values() if i["topic"] == topic and i["status"] == "pending" and i["id"] not in excluded]
         questions = [dict(q, status="pending") for q in concept.get("intent_questions", [])
                      if q["topic"] == topic and _question_pending(root, q) and q["id"] not in excluded]
-        if items or questions:
-            topics.append({"topic": topic, "items": items, "questions": questions})
-    return {"status": "discussion", "topics": topics, "history": concept.get("requirements", []),
-            "excluded": excluded, "questions": concept.get("intent_questions", [])}
+        offered = topic == EXPERIENCE_TOPIC and current
+        if not (items or questions or (offered and direction_open)):
+            continue
+        entry = {"topic": topic, "items": items, "questions": questions}
+        if offered:
+            recommended = next(p for p in current if p["recommended"])
+            entry.update(proposals=current, recommended_id=recommended["id"],
+                         rationale=recommended["rationale"])
+        topics.append(entry)
+    presented = {"status": "discussion", "topics": topics, "history": concept.get("requirements", []),
+                 "excluded": excluded, "questions": concept.get("intent_questions", [])}
+    # Absent proposals leave the resumed object byte-identical to what it has always been.
+    if concept.get("experience_proposals"):
+        presented["experience_proposals"] = concept["experience_proposals"]
+    return presented
 
+
+
+def _propose(root, profile, concept_path, concept, request):
+    """Record one round of offered experience directions for the user to choose from.
+
+    Nothing is decided here: the model authors the directions, the user picks one
+    later through `select` or hands the pick back through `delegate`. So this writes
+    no journal batch and asks for no user reference, and the round is appended —
+    an earlier round stays readable as the history of what was already offered.
+    """
+    if concept_path != CONCEPT or profile.get("task_route") not in ("product-reconstruction", "new-product"):
+        raise ValueError("Experience proposals belong to a product session; draft the product first")
+    offered = request.get("proposals")
+    if not isinstance(offered, list) or not 2 <= len(offered) <= 3:
+        raise ValueError("Propose two or three experience directions")
+    proposals = [_proposal(p) for p in offered]
+    if len({p["id"] for p in proposals}) != len(proposals):
+        raise ValueError("Proposal identities must be unique and separate from intent and question identities")
+    if len([p for p in proposals if p["id"] == request.get("recommended_id")]) != 1:
+        raise ValueError("Exactly one proposal must be recommended")
+    if not _text(request.get("rationale")):
+        raise ValueError("A recommendation needs its rationale")
+    opened = max((p["round"] for p in concept.get("experience_proposals", [])), default=0) + 1
+    for proposal in proposals:
+        proposal.update(origin=PROPOSAL_ORIGIN, round=opened, recommended=proposal["id"] == request["recommended_id"])
+        if proposal["recommended"]:
+            proposal["rationale"] = request["rationale"]
+    concept.setdefault("experience_proposals", []).extend(proposals)
+    _validate_question_ids(concept)
+    _write(root, CONCEPT, concept)
+    return _discussion(root, concept)
+
+
+def _direction_intent(concept, concept_path, action, op):
+    """Turn one offered direction into the experience-direction intent, without its stamp.
+
+    The user picks a direction; the product meaning that becomes intent is the
+    proposal's own words, so nothing is reworded on the way in — a different wording
+    is an explicit `adjust` on the new item, recorded as its own decision. Only the
+    round on the table can be picked, and only one proposal-derived direction stands
+    at a time: a change of mind removes the standing one first, so the concept never
+    holds two confirmed directions and the reader never has to guess which one won.
+    The caller attaches the batch confirmation, which is what makes it a decision.
+    """
+    import copy
+    if concept_path != CONCEPT:
+        raise ValueError("Experience directions belong to a product session")
+    current = _current_proposals(concept)
+    if not current:
+        raise ValueError("No current experience proposals; propose before select or delegate")
+    if op == "select":
+        offered = [p for p in current if p["id"] == action.get("proposal_id")]
+        if len(offered) != 1:
+            raise ValueError("Select one proposal of the current round")
+        proposal = offered[0]
+    else:
+        if "proposal_id" in action:
+            raise ValueError("Delegate takes the recommended proposal; use select to name one")
+        proposal = next(p for p in current if p.get("recommended") is True)
+    latest = _latest(concept)
+    if any(i.get("status") == "confirmed" and "proposal_id" in i for i in latest.values()):
+        raise ValueError("An experience direction is already selected; remove it before choosing another")
+    identity = EXPERIENCE_TOPIC + "-" + proposal["id"]
+    if identity in latest:
+        raise ValueError("Added intent needs an unused stable identity")
+    item = {"id": identity, "topic": EXPERIENCE_TOPIC,
+            **{key: copy.deepcopy(proposal[key])
+               for key in ("goal", "scope", "business_rules", "acceptance")}}
+    _item(item)
+    # `who` and `circumstance` travel with the intent: later review reads the journey
+    # from the confirmed direction itself, never from the proposals it came out of.
+    item.update(revision=1, origin=PROPOSAL_ORIGIN, evidence=[], status="confirmed",
+                proposal_id=proposal["id"], who=proposal["who"], circumstance=proposal["circumstance"])
+    if op == "delegate":
+        item.update(auto_decided=True)
+    return item
+
+
+def delegations(root):
+    """Every standing direction the user handed back to the model, for disclosure.
+
+    A delegated direction is the user's own confirmed intent like any other, so the
+    only way a later reader can tell whose judgement chose it is that the record says
+    so out loud and something reads that back. This reads and writes nothing, so it
+    can be run at any point of a run, including after it stopped early.
+
+    The turn and the reason come from the revision that carried the delegation, not
+    from whatever revision stands now: rewording a delegated direction afterwards is
+    the user's own turn, and reporting it as the delegation would move the handover
+    to a turn that never happened.
+    """
+    concept = _read(Path(root), CONCEPT, {})
+    titles = {p["id"]: p.get("title") for p in concept.get("experience_proposals", [])}
+    disclosed = []
+    for item in _latest(concept).values():
+        if item.get("auto_decided") is not True or item.get("status") != "confirmed":
+            continue
+        handed = next((revision for revision in concept.get("requirements", [])
+                       if revision["id"] == item["id"]
+                       and revision.get("confirmation", {}).get("delegated") is True), item)
+        confirmation = handed.get("confirmation", {})
+        disclosed.append({"id": item["id"], "revision": item["revision"],
+                          "proposal_id": item.get("proposal_id"),
+                          "proposal_title": titles.get(item.get("proposal_id")),
+                          "user_reference": confirmation.get("user_reference"),
+                          "reason": confirmation.get("reason")})
+    return {"status": "delegations", "delegations": disclosed}
 
 
 def _external_change(root, request):
@@ -1035,6 +1237,8 @@ def session(root, request):
     """Apply explicit interactive bootstrap input; never called by unattended run."""
     if request.get("operation") in ("run-policy", "run-event"):
         return run_policy(root, request)
+    if request.get("operation") == "delegations":
+        return delegations(root)
     if request.get("operation") == "external-change":
         return _external_change(root, request)
     profile = _read(root, PROFILE, {})
@@ -1074,6 +1278,8 @@ def session(root, request):
         return _discussion(root, concept)
     if operation == "resume":
         return _discussion(root, concept)
+    if operation == "propose":
+        return _propose(root, profile, concept_path, concept, request)
     if operation == "plan":
         import copy
         import re
@@ -1228,6 +1434,12 @@ def session(root, request):
                     raise ValueError("Added intent needs an unused stable identity")
                 item.update(revision=1, origin="user-request", evidence=[], status="confirmed", confirmation=confirmation)
                 concept.setdefault("requirements", []).append(item)
+            elif op in ("select", "delegate"):
+                item = _direction_intent(concept, concept_path, action, op)
+                if op == "delegate":
+                    confirmation["delegated"] = True
+                item["confirmation"] = confirmation
+                concept.setdefault("requirements", []).append(item)
             elif op in ("confirm", "adjust", "remove", "restore") or (op == "reopen" and action["id"] in _latest(concept)):
                 item = _latest(concept)[action["id"]]
                 previous = item.get("confirmation", {}).get("reference")
@@ -1299,7 +1511,8 @@ def session(root, request):
                     item.pop("answer", None)
                     item.update(status="pending", confirmation=confirmation)
             else:
-                raise ValueError("Only explicit confirm/add/adjust/remove/answer/reopen/restore operations are supported")
+                raise ValueError("Only explicit confirm/add/adjust/remove/answer/reopen/restore/select/delegate "
+                                 "operations are supported")
             batch["decisions"].append({"question": action.get("id", item["id"]),
                                        "chosen": item.get("goal", item.get("answer", "Reopen decision")),
                                        "rationale": action["reason"], "operation": op,
@@ -1366,6 +1579,7 @@ if __name__ == "__main__":
     import sys
     try:
         request = ({"operation": "run-policy"} if sys.argv[2:] == ["--run-policy"] else
+                   {"operation": "delegations"} if sys.argv[2:] == ["--delegations"] else
                    {"operation": "run-event", "event": sys.argv[3]} if len(sys.argv) == 4 and sys.argv[2] == "--policy-event"
                    else json.load(sys.stdin))
         result = session(Path(sys.argv[1]).resolve(), request)

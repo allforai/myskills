@@ -10,7 +10,8 @@ from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 
 CONCEPT = ".allforai/product-concept/product-concept.json"
 JOURNAL = ".allforai/product-concept/decision-journal.json"
-TOPICS = ["target-users", "scenarios", "core-problem", "value-proposition", "business-loop", "tradeoffs"]
+TOPICS = ["target-users", "scenarios", "core-problem", "value-proposition", "business-loop",
+          "experience-direction", "tradeoffs"]
 
 
 def invoke(root, request):
@@ -45,7 +46,8 @@ def test_revised_baseline_generates_full_applicable_plan_and_gates_reject_drift(
         for item in request["items"]:
             item.update(origin="user-request", evidence=[])
     assert invoke(tmp_path, request).returncode == 0
-    actions = [{"operation": "confirm", "id": t, "reason": "Chosen direction"} for t in TOPICS[:-2]]
+    kept = [t for t in TOPICS if t not in ("business-loop", "tradeoffs")]
+    actions = [{"operation": "confirm", "id": t, "reason": "Chosen direction"} for t in kept]
     actions += [{"operation": "remove", "id": "business-loop", "reason": "Unwanted legacy loop"},
                 {"operation": "adjust", "id": "tradeoffs", "changes": {"goal": "Privacy before reach"}, "reason": "Customer privacy"},
                 {"operation": "answer", "id": "conflict", "answer": "Exclude archived orders", "reason": "Release scope"},
@@ -54,7 +56,7 @@ def test_revised_baseline_generates_full_applicable_plan_and_gates_reject_drift(
                  "acceptance": ["Reconnect sends exactly one order"]}, "reason": "Unmet customer need"}]
     assert decide(tmp_path, actions).returncode == 0
     freeze = {"operation": "freeze", "batch_id": "scope", "user_reference": "user scope decision",
-              "reason": "Release direction", "include": TOPICS[:-2] + ["tradeoffs", "offline"],
+              "reason": "Release direction", "include": kept + ["tradeoffs", "offline"],
               "exclude": {"business-loop": "Remove legacy loop"}}
     assert invoke(tmp_path, freeze).returncode == 0
     plan = {"operation": "plan", "nodes": [{"node_id": "deliver-orders", "capability": "implement",
@@ -143,7 +145,7 @@ def test_four_explicit_operations_preserve_history_and_user_additions(tmp_path, 
     assert next(i for i in items if i["id"] == "business-loop")["status"] == "removed"
     assert (tmp_path / "orders.py").read_bytes() == source
     resumed = json.loads(invoke(tmp_path, {"operation": "resume"}).stdout)
-    assert [t["topic"] for t in resumed["topics"]] == ["scenarios", "core-problem", "tradeoffs"]
+    assert [t["topic"] for t in resumed["topics"]] == ["scenarios", "core-problem", "experience-direction", "tradeoffs"]
     before = (tmp_path / JOURNAL).read_bytes()
     assert decide(tmp_path, [], batch="silent").returncode == 0
     assert (tmp_path / JOURNAL).read_bytes() == before

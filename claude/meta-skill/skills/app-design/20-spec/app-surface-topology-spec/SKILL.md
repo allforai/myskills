@@ -32,6 +32,16 @@ Surfaces must include `surface_id`, `surface_type`, `audience_refs`,
 `implementation_node_refs`, `compile_node_ref`, `test_node_refs`,
 `product_verify_refs`, `state`, and `consumer_refs`.
 
+Outputs must also include top-level `service_endpoints`. The field is always
+present; pure-client apps write `[]`. Each entry is
+`{endpoint_id, purpose, consumer_surface_refs, audience, provisioning,
+requirement_ref?}`. `audience` means "who supplies this value" and is exactly
+one of `end-user`, `operator` (the deploying party, the default), or
+`developer`; `provisioning` is one of `build-time`, `remote-config`, or
+`deploy-env`. `requirement_ref` is the id of a confirmed requirement and is
+required when `audience` is `end-user`. See
+`knowledge/defensive-patterns.md` Pattern J (Audience Isolation).
+
 Allowed `surface_type` values: `web_app`, `marketing_site`, `admin_console`,
 `operator_console`, `partner_console`, `mobile_app`, `desktop_app`, `backend_api`,
 `baas`, `serverless_functions`, `shared_package`, `cli`, `worker`, `unknown`.
@@ -56,6 +66,11 @@ Check every user-facing surface has an audience, platform, tech stack, module
 path or generation target, and validation path. Check every backend/shared
 module has at least one consumer or explicit standalone reason. Reject generic
 "frontend" or "backend" labels when multiple surfaces or roles exist.
+
+Check every surface with a non-empty `backend_dependency` has a matching
+`service_endpoints[]` entry whose `consumer_surface_refs` names that surface.
+Reject any endpoint missing `audience` or `provisioning`. Reject an
+`audience: "end-user"` endpoint without `requirement_ref`.
 
 For pure-client apps, require local persistence/offline/runtime validation
 instead of API assumptions. For pure-backend apps, mark UI design not

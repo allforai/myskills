@@ -6,7 +6,7 @@
 
 ## A. 11 Mature Product Patterns
 
-When `experience_priority.mode = consumer` or `mixed`, the experience map must meet consumer maturity standards -- not just "feature exists" but "feels like a mature product". LLM must evaluate each pattern below for applicability.
+When `bootstrap-profile.json` `experience_priority.mode = consumer` or `mixed`, the experience map must meet consumer maturity standards -- not just "feature exists" but "feels like a mature product". LLM must evaluate each pattern below for applicability.
 
 ### 1. Onboarding Wizard
 

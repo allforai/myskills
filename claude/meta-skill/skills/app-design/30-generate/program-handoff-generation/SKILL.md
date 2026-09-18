@@ -44,6 +44,17 @@ in `source_refs` and `input_artifacts`. Do not flatten domain-specific modules
 such as catalog, checkout, payment, order, after-sales, merchant ops, or risk
 into a generic "business logic" node.
 
+The handoff JSON also carries top-level `settings_items[]` and
+`service_endpoints[]`. `settings_items[]` carries every entry of the
+permissions/settings spec's `settings_groups[].items[]` verbatim: `setting_id`,
+`audience`, `provisioning`, `surface`, and `requirement_ref` are copied exactly
+as the spec wrote them. `service_endpoints[]` carries the app surface
+topology's `service_endpoints` entries verbatim in the same way. An
+implementation entry that implements a settings item or consumes an endpoint
+names that `setting_id` or `endpoint_id` in its `source_refs`. Audience is
+never rewritten, narrowed, or guessed at handoff time: an item whose `audience`
+or `provisioning` is missing upstream stays missing here and is reported.
+
 Allowed states: `draft`, `validated`, `needs_revision`, `blocked_by_spec_gap`.
 
 ## Invocation Contract
@@ -64,12 +75,19 @@ surface IDs, module paths, tech stack, and validation evidence.
 If a domain handoff extension is present, check every domain module and
 state-machine requirement is consumed by at least one implementation entry and
 one verification entry.
+Check every settings item in the permissions/settings spec appears in
+`settings_items[]`. A non-`end-user` item is never assigned as interface work
+to an implementation entry on an end-user surface; it may only be assigned as
+configuration-injection work on an entry that names its `provisioning`
+(`build-time`, `remote-config`, or `deploy-env`).
 
 Repair routing: missing surface/module ownership routes to
 app-surface-topology-spec; missing feature scope routes to feature-priority-spec;
 missing data/API details route to data-model-spec; missing domain module detail
 routes to the owning app-domain skill; missing validation routes to flow QA or
-product-verify planning.
+product-verify planning. A settings item missing `audience` or `provisioning`
+routes to permissions-notifications-settings-spec; a service endpoint missing
+either field routes to app-surface-topology-spec.
 
 ## Completion Conditions
 

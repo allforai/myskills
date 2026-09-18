@@ -1,0 +1,2 @@
+py-ok ('.allforai/app-design/concept/job-story-spec.json', '.allforai/app-design/spec/user-flow-spec.json', '.allforai/app-design/spec/screen-requirements-spec.json', '.allforai/app-design/spec/permissions-notifications-settings-spec.json', '.allforai/game-design/game-design-doc.json', '.allforai/game-design/design/game-design-doc.json')
+EXIT=0

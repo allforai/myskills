@@ -14,7 +14,7 @@
 | capability / file | artifact / field | required_content | validation_mode |
 |-------------------|-----------------|------------------|-----------------|
 | concept-contract.md | output: `concept-contract.json` | `schema_version`, `canonical_registry`, `file_prefix` per type, halt on unapproved gate | A + B1 + B2 |
-| app-design.md | canonical registry | 6 nodes present, required vs optional split, approval-records path `app-design/` | A + B1 |
+| app-design.md | canonical registry | 6 nodes present, required vs optional split, Decision Inputs section (no `human_gate`, no approval-records written) | A + B1 |
 | game-design.md | `current_state` enum | `locked` as 5th state | A + B1 |
 | game-design.md | `substitution` object | `locked: null` key | B1 |
 | game-design.md | `summary.by_state` | `locked: 0` key | B1 |
@@ -34,7 +34,7 @@
 对每个文件/capability，检查其中声明的结构是否包含 contract 表中要求的所有字段/内容。
 
 - concept-contract.md：输出 Schema 中是否包含 `schema_version`、`canonical_registry`、所有类型的 `file_prefix` 派生规则（character/tile/environment/ui/vfx/icon/audio-cover）？是否有 Completion Check 节？
-- app-design.md：Canonical Node Registry 是否包含全部 6 个节点？是否明确区分 required/optional？Human Gate Protocol 节是否引用 `.allforai/app-design/approval-records.json`（非 game-design）？
+- app-design.md：Canonical Node Registry 是否包含全部 6 个节点？是否明确区分 required/optional？是否已无 Human Gate Protocol 节与 `human_gate: true`，方向决定是否经 `decision_mode: "brainstorm"` + `decision_inputs`？
 - game-design.md：`current_state` 枚举是否包含 `locked`？是否存在 Asset Lifecycle Transition Rules 节？`review_checklist` 是否出现在 approval-records.json schema 中？
 - bootstrap.md：workflow.json schema 是否包含 `hard_blocked_by` 和 `alignment_refs`（无 `blocked_by`）？exit_artifacts 是否包含 `path` + `validation_commands` 对象形式？`has_concept_drift` 是否列出 3 个触发条件？
 - orchestrator-template.md：Core Loop step 4 是否包含 `hard_blocked_by` 和 `alignment_refs` 的说明？

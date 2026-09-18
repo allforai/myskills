@@ -1,0 +1,11 @@
+PYASSERT OK 9
+bootstrap.md: missing experience routing term experience_priority
+bootstrap.md: missing experience routing term "mode": "consumer | admin | mixed | none"
+bootstrap.md: missing experience routing term experience_priority.mode != none
+bootstrap.md: missing experience routing term knowledge/capabilities/product-concept.md
+bootstrap.md: missing experience routing term knowledge/consumer-maturity-patterns.md
+bootstrap.md: missing experience routing term knowledge/journey-emotion-schema.md
+bootstrap.md: missing experience routing term knowledge/capabilities/app-design.md
+bootstrap.md: missing experience routing term knowledge/capabilities/game-design.md
+bootstrap.md: missing experience routing term 3.5.0b App Design Coverage Check
+EXIT=0

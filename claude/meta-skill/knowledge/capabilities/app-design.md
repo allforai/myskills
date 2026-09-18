@@ -2,7 +2,11 @@
 
 > Covers the design phase for non-game app products. Parallel to `game-design.md`
 > but tailored for SaaS, consumer apps, tools, and e-commerce products.
-> Each node in this capability has `human_gate: true` and requires `discipline_owner` approval.
+> Direction choices in this capability are Phase A decisions: a node whose
+> direction is a human decision carries `decision_mode: "brainstorm"` and
+> receives its answer as `decision_inputs` (see `bootstrap-audits.md` Phase A).
+> No node carries `human_gate: true`; nothing here waits for approval at run
+> time.
 
 ## Canonical Node Registry
 
@@ -16,9 +20,17 @@ Bootstrap uses this registry when `business_domain != "gaming"` and the goal inc
 | `content-design` | `lead-content` | `app-design/content-design.html` | `app-design/content-design.json` | `ia-design` |
 | `data-model-design` | `lead-engineer` | `app-design/data-model-design.html` | `app-design/data-model-design.json` | `ia-design` |
 | `monetization-design` | `lead-pm` | `app-design/monetization-design.html` | `app-design/monetization-design.json` | `ia-design` |
+| `experience-critique-design` | `independent-reviewer` | `app-design/qa/experience-quality-critique-design.html` | `app-design/qa/experience-quality-critique-design.json` | all selected spec nodes (`ia-design`, `user-flow-design`, `interaction-design`, plus every optional node selected for this workflow) |
+| `experience-design-repair` | `lead-ux` | _(none — it repairs the spec artifacts in place)_ | the repaired spec node JSONs | `experience-critique-design` |
 | `app-design-finalize` | `lead-pm` | `app-design/app-design-doc.html` | `app-design/app-design-doc.json` | ALL above |
 
 **Required nodes (always included):** `ia-design`, `user-flow-design`, `interaction-design`, `app-design-finalize`
+
+`experience-critique-design` and `experience-design-repair` are additionally required whenever
+`experience_priority.mode` is `consumer` or `mixed` (the planning rule is `bootstrap-planning.md` Must #9); for
+`none` and `admin` they are not planned at all. They are deliberately **not** listed in
+`APP_DESIGN_REQUIRED_NODES` in `validate_bootstrap.py`: the gate is judged from the critique artifacts, not from
+node names.
 
 **Optional nodes:** `content-design` (content-heavy apps), `data-model-design` (data-intensive apps), `monetization-design` (paid/subscription apps)
 
@@ -153,7 +165,15 @@ output, validation, and repair contracts.
 | `content-design` | `app-design/20-spec/content-model-spec` |
 | `data-model-design` | `app-design/20-spec/data-model-spec` |
 | `monetization-design` | `app-design/20-spec/monetization-subscription-spec` |
+| `experience-critique-design` | `app-design/40-qa/experience-quality-critique` (mode `design`) |
+| `experience-design-repair` | the app-design child skill named by `finding.repair_route.owner_skill` of each finding being repaired |
 | `app-design-finalize` | `app-design/30-generate/ui-input-handoff-generation`, `app-design/30-generate/program-handoff-generation`, `app-design/40-qa/app-design-closure-qa` |
+| `experience-critique-runtime` | `app-design/40-qa/experience-quality-critique` (mode `runtime`) |
+
+`experience-critique-runtime` is not an app-design stage node. Its `capability` must not be `app-design`: the
+finalize rule in `validate_app_design_flow` would then make `app-design-finalize` wait for a node that only runs
+after implementation, which closes a cycle. It is planned after the last UI, product-verify, or visual QA node
+instead.
 
 Optional child skill selection:
 
@@ -179,7 +199,7 @@ owns surfaces, screens, flows, UI handoff, and final program handoff.
 
 ### app-design-finalize — Aggregation
 
-Goal: Merge all approved design JSONs into `app-design-doc.json`, then generate
+Goal: Merge all selected design JSONs into `app-design-doc.json`, then generate
 downstream UI and program implementation handoffs and run closure QA.
 
 Blocked by ALL other app-design nodes selected for this workflow (same pattern as `game-design-finalize`).
@@ -222,14 +242,21 @@ implementation nodes are planned. Do not collapse these into a generic
 `program-development-node-handoff.json` must preserve the same `surface_id` and
 module boundaries so bootstrap can create concrete implementation and QA nodes.
 
-## Human Gate Protocol
+## Decision Inputs
 
-Identical to `game-design.md` human gate protocol:
-- Approval tracked in `.allforai/app-design/approval-records.json`
-- Same `gate_status` lifecycle: `pending → in-review → approved | revision-requested`
-- `discipline_owner` approves; `discipline_reviewers` are advisory only
+Direction choices — navigation model, main line, tone of voice, monetization —
+are collected during interactive `/bootstrap` Phase A, written to
+`.allforai/app-design/decision-<id>.json`, and wired to the `decision_inputs` of
+the nodes that consume them.
 
-Bootstrap initialises one `pending` record per selected app-design node at bootstrap time.
+- During `/run`, app-design nodes only read their `decision_inputs`. They ask no
+  questions and wait for no approval.
+- No `.allforai/app-design/approval-records.json` is written and no
+  `approval_record_path` is set. A legacy copy of that file left over in an
+  existing project is still read by the concept-drift detection in
+  `skills/bootstrap/SKILL.md` — a legacy read, unchanged here.
+- The `Discipline Owner` column of the Canonical Node Registry stays: it names
+  the role that owns each node's Phase A decision.
 
 ## Downstream Consumers
 

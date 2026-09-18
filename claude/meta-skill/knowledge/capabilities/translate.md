@@ -50,7 +50,7 @@ Strategy selection per component, compile-verify loop per module.
 - `TODO(migration)` for unmappable items — not silent skip
 - Abstraction preservation — don't expand shared base classes into N copies
 - Route parity — every source route/endpoint has a target equivalent
-- Consumer-priority: if experience_priority = consumer/mixed, UI completion bar is higher
+- Consumer-priority: if `experience_priority.mode` = consumer/mixed, UI completion bar is higher
 
 ## Methodology Guidance (not steps)
 

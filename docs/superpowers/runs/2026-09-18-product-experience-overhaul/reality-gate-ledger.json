@@ -1,0 +1,7 @@
+[
+ {
+  "task_id": "T-M5-16",
+  "reason": "Rerun of acceptance_cmd from /Users/aa/workspace/myskills printed EXIT=1 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-16.supervisor.log). File docs/validation/product-experience-host-run.md (87 lines, committed in 38d55626 \"真实宿主验收记录留出待填模板\", git status clean, only that file in the commit) is an unfilled template: line 80 reads `host-run: pending`; the three symptom rows (lines 60-62) contain `verdict: <fixed\\|not-fixed\\|partial — 待人工填写>` placeholders and \"待人工填写\" for observations and evidence. grep -c of real verdicts = 0 (<3), and `^host-run: pass` absent.",
+  "runbook_ptr": "docs/superpowers/plans/2026-09-18-regression-parity-plan.md#runbook-real-host-bootstrap-run"
+ }
+]

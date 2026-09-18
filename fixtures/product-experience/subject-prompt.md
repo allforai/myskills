@@ -1,0 +1,3 @@
+这是一次隔离的场景模拟，不是评审 skill 文案。你扮演场景里正在按下列协议工作的那个主会话，宿主平台见场景。只根据下列协议与场景，给出本轮实际行动和面向用户的答复；动作（工具调用、`product_intent.py` 的 operation、要写进产物的字段）可写成伪调用。验证对象是你的决策，不是口头宣称规则正确。你没有实际项目可操作，不调用任何现实工具，不读取其它文件，不写文件，不派子代理；把需要采取的动作写在回答中。协议全文已经内联，不用重复读取。场景以外的事实未知。输出不超过 900 个中文字：实际动作（含要写的关键字段与字面量）、面向用户的答复，以及引用支持判断的关键原句。不要猜测测试的预期答案。
+
+Append, in order: every file in this case's `skill` list, in full and in list order, each under a heading naming its repo-relative path (plus the case's `sections` note, when it has one, as reading guidance only — the file is still inlined whole); then this case's situation only. Keep expected observations outside the subject packet.

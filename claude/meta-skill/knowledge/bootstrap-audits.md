@@ -30,7 +30,7 @@ existence or a code-derived "confirmed" label does not satisfy this gate.
 > workflow node. Auto-fix gaps using Closure Thinking and Reverse Backfill convergence
 > rules. Runs silently — no user confirmation needed.
 
-**Trigger**: for product-wide routes after product confirmation, `has_product_concept` is true (from Step 1.0). If false AND `is_game_project` is true, run **Game Design Coverage Check** (§3.5.0) instead. If both false, skip to Step 3.4 (Confirm with User).
+**Trigger**: for product-wide routes after product confirmation, `has_product_concept` is true (from Step 1.0). If false AND `is_game_project` is true, run **Game Design Coverage Check** (§3.5.0) instead. If false AND `is_game_project` is false AND `experience_priority.mode != none`, run **App Design Coverage Check** (§3.5.0b) instead. Otherwise skip to Step 3.4 (Confirm with User).
 
 #### 3.5.0 Game Design Coverage Check (game projects without product-concept.json)
 
@@ -48,6 +48,26 @@ When `is_game_project = true` AND `has_product_concept = false`, run this abbrev
 | Platform-specific constraints | platform capability guard applied | Are suppressed monetization/retention nodes documented as "not applicable" in bootstrap output? |
 
 If any gap is found: add a note to bootstrap output (not a blocker). Game projects in pure design mode proceed to game-design nodes regardless.
+
+#### 3.5.0b App Design Coverage Check (interface products without product-concept.json)
+
+When `is_game_project = false` AND `has_product_concept = false` AND `experience_priority.mode != none`, run this coverage check instead of the full §3.5 flow. The experience design nodes are themselves the design artifacts (equivalent role to product-concept.json), so coverage is judged against the selected experience design artifact nodes and their node-specs — not against a feature list. A product that "has a node for every feature" can still fail every row below.
+
+**Checks to run:**
+
+| System Concern | Trigger Condition | Check |
+|---------------|------------------|-------|
+| First entry & onboarding | always | Is there a node designing the path from first open to first value, including the no-account / no-data state? |
+| Main line, not a feature grid | always | Does the user flow define one main line (entry → core action → result), rather than a home screen that is a grid of feature entry points? |
+| In-progress feedback of the core loop | product has a core action the user repeats | Is in-progress feedback (progress, right/wrong, waiting) defined for every step of the core loop? |
+| What happens after completion | always | Does every main flow define what comes next after completion (continue, review, leave), instead of ending in a dead end? |
+| Empty / loading / error / success states | product has UI screens | Does `screen-requirements-spec.json` cover all four states for each screen? |
+| Reason to return | `experience_priority.mode` is `consumer` or `mixed` | Is a reason to return designed (progress, rhythm, unfinished items), rather than notifications alone? |
+| Settings audience | product has a settings/configuration surface | Does `permissions-notifications-settings-spec.json` contain only what the end user should control, keeping deployer-side configuration out of the end-user interface? |
+
+The Settings-audience row only requires that this check is performed; the field contract for settings audience (`data:settingsAudience`) is defined elsewhere and is not part of this check.
+
+Unlike §3.5.0, a gap on an interface product is **blocking**, not a note. Repair it in place: widen the scope of an existing experience design node-spec, or add a design node and make the UI implementation nodes `hard_blocked_by` it. Then re-run this check. Do not enter Step 3.4 (Confirm with User) until the check is clean. If the node set changed as a result, re-confirm it under the Phase A "Post-confirmation plan delta" rule.
 
 #### 3.5.1 Extract Feature Inventory
 

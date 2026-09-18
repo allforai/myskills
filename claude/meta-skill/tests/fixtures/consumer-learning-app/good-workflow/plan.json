@@ -1,0 +1,325 @@
+{
+  "operation": "plan",
+  "nodes": [
+    {
+      "node_id": "product-contract",
+      "capability": "product-contract",
+      "goal": "Turn the frozen launch scope, chosen direction included, into the product contract",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "product"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/product-contract.json"
+      ],
+      "hard_blocked_by": [],
+      "body": "\n## Attention Contract\n- Primary outcome: the frozen scope restated as the contract every later node is held to\n- Non-goals / out-of-scope: do not reopen the frozen scope or add a topic the user never confirmed.\n- Must-read inputs: the frozen product baseline, the chosen direction and the confirmed acceptance.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does every confirmed intent, the direction included, reach a node that owes something for it?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "content-library",
+      "capability": "generate-artifacts",
+      "goal": "Build the lesson and review content library and document its schema",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "technical",
+        "documentation"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/content-library.json",
+        "docs/content-library.md"
+      ],
+      "hard_blocked_by": [
+        "product-contract"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: one language pair's lessons and review items, with the schema written down\n- Non-goals / out-of-scope: do not author a second language pair before the first one retains learners.\n- Must-read inputs: the product contract and the confirmed acceptance for review scheduling.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: can a reader rebuild the library from the schema document alone?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "design-learner-journeys",
+      "capability": "generate-artifacts",
+      "goal": "Design the learner journeys the chosen direction implies and specify every screen they pass through",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "experience"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/app-design/concept/job-story-spec.json",
+        ".allforai/app-design/spec/user-flow-spec.json",
+        ".allforai/app-design/spec/screen-requirements-spec.json",
+        ".allforai/app-design/spec/permissions-notifications-settings-spec.json"
+      ],
+      "hard_blocked_by": [
+        "product-contract"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: the journeys of the steady-drip direction, and what each screen owes them\n- Non-goals / out-of-scope: do not decide how a screen is built here; this node decides what it must do.\n- Must-read inputs: the product contract, the chosen experience direction and its acceptance.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does every job a learner comes with reach a flow, and every flow a specified screen?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "review-experience-design",
+      "capability": "quality-checks",
+      "goal": "Review the designed journeys against the chosen direction before anything is built",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "verification"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/app-design/qa/experience-quality-critique-design.json",
+        ".allforai/app-design/qa/experience-quality-critique-design.html",
+        "docs/experience-review/design.md"
+      ],
+      "hard_blocked_by": [
+        "design-learner-journeys"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: a fresh-context verdict on the designed journeys, with every must-fix named\n- Non-goals / out-of-scope: do not read the designing node's reasoning or notes; judge the artifacts it shipped.\n- Must-read inputs: the journey and screen specifications and the chosen direction they answer.\n- Optional inputs: none.\n- Context budget: read the listed design artifacts and the direction, nothing else.\n- Quality questions: would a tired learner in four interrupted minutes get through this as designed?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "repair-experience-design",
+      "capability": "quality-checks",
+      "goal": "Repair the design must-fix findings and re-run the design review",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "experience"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/repair-experience-design.json"
+      ],
+      "hard_blocked_by": [
+        "review-experience-design"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: every must-fix the design review recorded is answered in the specifications\n- Non-goals / out-of-scope: do not close a finding by narrowing the direction that produced it.\n- Must-read inputs: the design review report and the specifications it judged.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: is each must-fix closed in the specification, or only argued with?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "implement-mobile-screens",
+      "capability": "implement",
+      "goal": "Implement the mobile/ screens of the steady-drip pass: home, session and progress, exactly as the screen requirements specify them",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "experience",
+        "implementation"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/implement-mobile-screens.json"
+      ],
+      "hard_blocked_by": [
+        "content-library",
+        "review-experience-design",
+        "repair-experience-design"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: every screen in the specification runs in mobile/ and resumes where it stopped\n- Non-goals / out-of-scope: do not invent a screen the specification does not describe, or drop one it does.\n- Must-read inputs: the screen requirements, the journey specification and the reviewed design.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does a screen do what the specification says it owes the journey, or what was easiest?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "implement-service-api",
+      "capability": "implement",
+      "goal": "Implement the server/ lesson delivery, review scheduling and entitlement API",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "implementation"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/implement-service-api.json"
+      ],
+      "hard_blocked_by": [
+        "content-library",
+        "review-experience-design",
+        "repair-experience-design"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: lesson delivery, due-review scheduling and entitlements served from server/\n- Non-goals / out-of-scope: do not silently drop a review item that is already due.\n- Must-read inputs: the content library schema, the reviewed journeys and the confirmed business loop.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does a due item always reach the next pass the learner starts?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "verify-product-acceptance",
+      "capability": "product-verify",
+      "goal": "Verify the built product against the whole confirmed acceptance, direction included",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "verification",
+        "documentation"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/verify-product-acceptance.json"
+      ],
+      "hard_blocked_by": [
+        "implement-mobile-screens",
+        "implement-service-api"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: a run that proves each confirmed acceptance line on the built product\n- Non-goals / out-of-scope: do not accept a criterion on a described behaviour instead of a run.\n- Must-read inputs: the product contract and every implementation node's report.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: is each acceptance line proved by an observed effect?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "verify-learner-flows-on-device",
+      "capability": "product-verify",
+      "goal": "Run the react-native-ui automation suite (detox) over every learner flow on a device profile",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "verification"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/quality-checks/react-native-ui-test-report.json"
+      ],
+      "hard_blocked_by": [
+        "implement-mobile-screens"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: a detox run of each learner flow, interruption included, with its runner evidence kept\n- Non-goals / out-of-scope: do not replace the automated run with documented manual scenarios.\n- Must-read inputs: the journey specification and the mobile implementation report.\n- Optional inputs: report BLOCKED_ENV when no simulator or device is available.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does the react-native-ui-test-report cover every flow, or only the shortest pass?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "review-experience-runtime",
+      "capability": "quality-checks",
+      "goal": "Review the running product against the chosen direction, on the evidence it produced",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "verification"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/app-design/qa/experience-quality-critique-runtime.json",
+        ".allforai/app-design/qa/experience-quality-critique-runtime.html",
+        "docs/experience-review/runtime.md"
+      ],
+      "hard_blocked_by": [
+        "verify-product-acceptance",
+        "verify-learner-flows-on-device"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: a fresh-context verdict on the product as it actually runs, with every must-fix named\n- Non-goals / out-of-scope: do not read the building nodes' reasoning or notes; judge the recorded runs.\n- Must-read inputs: the verification reports, the runner evidence and the chosen direction.\n- Optional inputs: none.\n- Context budget: read the listed run evidence and the direction, nothing else.\n- Quality questions: does living with this product feel like the direction the user chose?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "repair-runtime-experience",
+      "capability": "implement",
+      "goal": "Repair the runtime must-fix findings and re-run the affected checks",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "implementation"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/repair-runtime-experience.json"
+      ],
+      "hard_blocked_by": [
+        "review-experience-runtime"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: every must-fix the runtime review recorded is fixed and re-verified\n- Non-goals / out-of-scope: do not close a finding by narrowing the criterion that found it.\n- Must-read inputs: the runtime review report and the verification runs it judged.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: is each must-fix closed by a rerun rather than an argument?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
+      "node_id": "close-launch-readiness",
+      "capability": "pipeline-closure-verify",
+      "goal": "Close the launch: every confirmed intent delivered, reviewed and repaired",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "verification"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/bootstrap/close-launch-readiness.json"
+      ],
+      "hard_blocked_by": [
+        "review-experience-runtime",
+        "repair-runtime-experience"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: one verdict that the launch scope is delivered and its review findings are closed\n- Non-goals / out-of-scope: do not close while a must-fix before release is still open.\n- Must-read inputs: the runtime review report, the repair report and the verification runs.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: is any must-fix before release still open on the artifact this node closes on?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    }
+  ],
+  "user_steps": [
+    "/cross-exam",
+    "/product-review"
+  ]
+}

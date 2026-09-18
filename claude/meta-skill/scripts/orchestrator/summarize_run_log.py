@@ -8,6 +8,14 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
+try:
+    # Imported at module level on purpose: the generated project ships both scripts in
+    # one directory, and the unit suite only has that directory on sys.path while the
+    # module is being loaded, so a deferred import would find nothing to disclose.
+    from product_intent import delegations as _delegations
+except ImportError:  # a trace copied without the intent CLI still summarizes the run
+    _delegations = None
+
 
 RUN_LOG_PATH = Path(".allforai/bootstrap/run-log.jsonl")
 SUMMARY_JSON = Path(".allforai/bootstrap/run-summary.json")
@@ -35,6 +43,22 @@ def _node_id(event: dict) -> str | None:
     return event.get("node_id") or event.get("node")
 
 
+def _delegated(project_root: Path) -> tuple[list, str | None]:
+    """The directions the user handed to the model, and why they could not be read.
+
+    Summarizing is the last thing a run does, on its way out of a success and out of
+    an early stop alike, so an unreadable concept may not take the whole trace down
+    with it. It costs the reading and says so instead: a disclosure that quietly
+    reports nothing delegated would be worse than one that admits it cannot look.
+    """
+    if _delegations is None:
+        return [], None
+    try:
+        return list(_delegations(project_root)["delegations"]), None
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
+        return [], str(exc)
+
+
 def summarize(project_root: Path) -> dict:
     project_root = project_root.resolve()
     events = _load_events(project_root)
@@ -55,7 +79,8 @@ def summarize(project_root: Path) -> dict:
         if event.get("event") in {"node_failed", "validation_failed", "preflight_blocked", "run_halted"}:
             failures.append(event)
 
-    return {
+    delegated, delegations_error = _delegated(project_root)
+    summary = {
         "schema_version": "1.0",
         "event_count": len(events),
         "run_ids": sorted({event.get("run_id") for event in events if event.get("run_id")}),
@@ -72,7 +97,11 @@ def summarize(project_root: Path) -> dict:
         "failure_count": len(failures),
         "blockers": blockers[-20:],
         "failures": failures[-20:],
+        "delegations": delegated,
     }
+    if delegations_error is not None:
+        summary["delegations_error"] = delegations_error
+    return summary
 
 
 def write_reports(project_root: Path, summary: dict) -> tuple[Path, Path]:
@@ -111,6 +140,16 @@ def write_reports(project_root: Path, summary: dict) -> tuple[Path, Path]:
         )
     if not summary["failures"]:
         lines.append("- none")
+    lines.extend(["", "## Delegated Decisions"])
+    for item in summary.get("delegations", []):
+        lines.append(
+            f"- `{item.get('id')}` proposal=`{item.get('proposal_title')}` "
+            f"user_turn=`{item.get('user_reference')}` reason=`{item.get('reason')}`"
+        )
+    if not summary.get("delegations"):
+        lines.append("- none")
+    if summary.get("delegations_error"):
+        lines.append(f"- unreadable: {summary['delegations_error']}")
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return json_path, md_path
 

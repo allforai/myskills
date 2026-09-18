@@ -9,6 +9,8 @@ Checks:
   - node-spec frontmatter matches workflow node_id, exit_artifacts, and graph fields
   - human_gate workflow nodes have matching approval records
   - app-design workflow closure emits handoff/QA artifacts and routes execution through concept-freeze
+  - product routes with an end-user interface carry an experience design node, and the
+    implementation of that interface is hard_blocked_by it
   - bootstrap-profile.json + workflow.json: mobile UI modules have platform UI automation
   - plan-confirmation.json: the delivered node set and hard_blocked_by edges match the plan
     the user actually confirmed, with user provenance and retained revision history
@@ -172,6 +174,32 @@ APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS = {
     ".allforai/app-design/handoff/program-development-node-handoff.json",
     ".allforai/app-design/qa/app-design-closure-qa-report.json",
 }
+
+
+# The experience-design contract, shared by the planning law and the gate below.
+PRODUCT_ROUTES = ("new-product", "product-reconstruction")
+EXPERIENCE_PRIORITY_MODES = ("consumer", "admin", "mixed", "none")
+EXPERIENCE_DESIGN_MODES = ("consumer", "mixed")
+APP_EXPERIENCE_DESIGN_ARTIFACTS = (
+    ".allforai/app-design/concept/job-story-spec.json",
+    ".allforai/app-design/spec/user-flow-spec.json",
+    ".allforai/app-design/spec/screen-requirements-spec.json",
+    ".allforai/app-design/spec/permissions-notifications-settings-spec.json",
+)
+# The structural floor: which journeys exist and what each screen owes them. The other two
+# artifacts are planning law, judged by the node-spec audit, not by this gate.
+APP_EXPERIENCE_DESIGN_REQUIRED = APP_EXPERIENCE_DESIGN_ARTIFACTS[1:3]
+# Both paths are in live use in this repo; the design doc is the design wherever it sits.
+GAME_EXPERIENCE_DESIGN_DOC_PATHS = (
+    ".allforai/game-design/game-design-doc.json",
+    ".allforai/game-design/design/game-design-doc.json",
+)
+UI_MODULE_ROLES = ("frontend", "mobile")
+UI_IMPLEMENTATION_CAPABILITIES = ("implement", "translate", "ui-forge")
+# Deliberately no bare "ui" or "expo": both hit build, require and export lines in any node.
+UI_IMPLEMENTATION_TERMS = ("screen", "frontend", "front-end", "user interface", "界面", "页面",
+                           "react native", "react-native", "flutter", "swiftui", "jetpack compose")
+GAME_UI_IMPLEMENTATION_TERMS = ("scene", "hud", "gameplay", "canvas", "sprite")
 
 
 GAME_2D_PRODUCTION_REQUIRED_NODES = [
@@ -2035,6 +2063,325 @@ def validate_effect_stage_ownership(bdir: str) -> list:
     return _rendered(effect_stage_ownership_findings(bdir))
 
 
+def _produces(node: dict, required: str) -> bool:
+    """True when this node itself ships `required`, monorepo prefixes included."""
+    for path in _artifact_paths(node.get("exit_artifacts")):
+        if isinstance(path, str) and (path == required or path.endswith("/" + required)):
+            return True
+    return False
+
+
+def _ui_implementation_terms(profile: dict) -> tuple:
+    """The vocabulary that names a user-facing surface in this particular project.
+
+    The generic terms hold everywhere; a game adds its own words for a screen, and the
+    profile's own frontend and mobile module paths name the directories this project
+    puts one in — the same evidence `_profile_has_mobile_ui_module` reads.
+    """
+    terms = list(UI_IMPLEMENTATION_TERMS)
+    if profile.get("is_game_project") is True:
+        terms.extend(GAME_UI_IMPLEMENTATION_TERMS)
+    modules = profile.get("modules")
+    for module in modules if isinstance(modules, list) else []:
+        if isinstance(module, dict) and module.get("role") in UI_MODULE_ROLES:
+            path = module.get("path")
+            if _text(path):
+                terms.append(f"{path.strip().lower()}/")
+    return tuple(terms)
+
+
+def _is_implementation_node(node: dict) -> bool:
+    """True when a node builds something, rather than deciding or reviewing it."""
+    if node.get("capability") in UI_IMPLEMENTATION_CAPABILITIES:
+        return True
+    responsibilities = node.get("responsibilities")
+    return isinstance(responsibilities, list) and "implementation" in responsibilities
+
+
+def _ui_implementation_nodes(workflow: dict, specs_dir: str, profile: dict) -> list:
+    """The one entry that recognises a node as building a user-facing surface.
+
+    Every rule that has to reason about interface work — this gate and the run-time
+    experience gate — asks here, so both refuse the same graphs and neither grows a
+    second heuristic that can drift from this one.
+
+    `_matching_nodes` iterates `workflow["nodes"]` raw and raises on a list that is not
+    one or an entry that is not a dict, so it is handed the addressable subset rather
+    than the workflow: this rule is called directly, not only behind the shape gate.
+    """
+    addressable = {"nodes": list(_addressable_nodes(workflow.get("nodes")).values())}
+    matched = _matching_nodes(addressable, specs_dir, _ui_implementation_terms(profile))
+    return [node for node in matched if _is_implementation_node(node)]
+
+
+def experience_design_coverage_findings(bdir: str) -> list:
+    """A product with end users must design for them before it builds for them.
+
+    A product route that plans screens and designs none of them ships whatever the
+    implementation node improvises. This gate reads the classification bootstrap
+    recorded — `experience_priority.mode`, never re-derived here — and, when the
+    product has an end-user interface, demands three things of the graph: the design
+    exists as a node that produces the design artifacts, the implementation of the
+    interface is held behind it, and no one has declared experience out of scope.
+
+    The classification itself is demanded first and alone: on an unknown mode every
+    later verdict would be guesswork, and reporting a guess beside a missing field
+    invites repairing the wrong thing. All four codes name the interactive
+    `/bootstrap` phase, because that is where a route, a mode and a plan are decided.
+
+    Legacy and local-change inputs are out of scope, and a workflow or profile that
+    cannot be read is left to the scope and shape gates that own those faults.
+    """
+    findings = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    profile_path = os.path.join(bdir, "bootstrap-profile.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(profile_path):
+        return findings
+    try:
+        workflow = _load_json(workflow_path)
+        profile = _load_json(profile_path)
+    except Exception:
+        return findings
+    if not isinstance(workflow, dict) or not isinstance(profile, dict):
+        return findings
+    if profile.get("task_route") not in PRODUCT_ROUTES:
+        return findings
+
+    priority = profile.get("experience_priority")
+    mode = priority.get("mode") if isinstance(priority, dict) else None
+    reason = priority.get("reason") if isinstance(priority, dict) else None
+    if mode not in EXPERIENCE_PRIORITY_MODES or not _text(reason):
+        _structural(
+            findings, "missing_experience_priority",
+            f"bootstrap-profile.json must record experience_priority as "
+            f'{{"mode": one of {list(EXPERIENCE_PRIORITY_MODES)}, "reason": "<one sentence>"}} '
+            f"before a product route can be planned; until the product says who it serves, "
+            f"no node can be held to an experience design contract — {RETURN_TO_BOOTSTRAP}")
+        return findings
+    if mode == "none":
+        return findings
+
+    not_applicable = workflow.get("not_applicable")
+    if isinstance(not_applicable, dict) and "experience" in not_applicable:
+        _structural(
+            findings, "experience_not_applicable_on_ui_product",
+            f"workflow.json declares not_applicable.experience while "
+            f"bootstrap-profile.json classifies experience_priority.mode as '{mode}'; a "
+            f"product that has end users cannot declare designing for them out of scope — "
+            f"{RETURN_TO_BOOTSTRAP}")
+    if mode not in EXPERIENCE_DESIGN_MODES:
+        return findings
+
+    specs_dir = os.path.join(bdir, "node-specs")
+    nodes = _addressable_nodes(workflow.get("nodes"))
+    ui_nodes = _ui_implementation_nodes(workflow, specs_dir, profile)
+    if not ui_nodes:
+        return findings
+
+    if profile.get("is_game_project") is True:
+        required_groups = [GAME_EXPERIENCE_DESIGN_DOC_PATHS]
+    else:
+        required_groups = [(path,) for path in APP_EXPERIENCE_DESIGN_REQUIRED]
+
+    designed = []
+    for group in required_groups:
+        producers = sorted(
+            node_id for node_id, node in nodes.items()
+            if any(_produces(node, path) for path in group)
+        )
+        if not producers:
+            _structural(
+                findings, "missing_experience_design_node",
+                f"workflow.json plans user-facing implementation but no node produces "
+                f"{list(group)}; a product route with an end-user interface must carry an "
+                f"experience design node that decides the journeys before they are built — "
+                f"{RETURN_TO_BOOTSTRAP}")
+            continue
+        designed.append((group, producers))
+
+    for ui_node in sorted(ui_nodes, key=_node_id):
+        ui_id = _node_id(ui_node)
+        for group, producers in designed:
+            if ui_id in producers:
+                continue
+            if any(_downstream_of(nodes, producer, ui_id) for producer in producers):
+                continue
+            _structural(
+                findings, "implementation_not_blocked_by_experience_design",
+                f"workflow.json {ui_id} implements a user-facing surface but no "
+                f"hard_blocked_by path reaches a producer of {list(group)} ({producers}); "
+                f"an interface built before its design is the design — "
+                f"{RETURN_TO_BOOTSTRAP}",
+                node_id=ui_id)
+    return findings
+
+
+def validate_experience_design_coverage(bdir: str) -> list:
+    """Rendered experience-design coverage errors for the bootstrap validator CLI."""
+    return _rendered(experience_design_coverage_findings(bdir))
+
+
+# The experience quality gate. Designing the interface (above) is not reviewing what was
+# built from that design, so the two rules are separate: this one reads the review nodes.
+EXPERIENCE_GATE_PRODUCT_ROUTES = ("new-product", "product-reconstruction")
+EXPERIENCE_GATE_MODES = ("consumer", "mixed")
+APP_EXPERIENCE_CRITIQUE = "experience-quality-critique"
+GAME_CREATIVE_CRITIQUE = "creative-quality-critique"
+# A game's creative critique writes one path whichever time it runs, so the stages below
+# are the app's; a game's "after it was built" review is told apart by graph position.
+APP_EXPERIENCE_CRITIQUE_STAGES = (
+    ("design", f"{APP_EXPERIENCE_CRITIQUE}-design.json"),
+    ("runtime", f"{APP_EXPERIENCE_CRITIQUE}-runtime.json"),
+)
+EXPERIENCE_GATE_CLOSURE_CAPABILITIES = ("concept-acceptance", "pipeline-closure-verify")
+
+
+def _critique_nodes(nodes: dict, marker: str) -> dict:
+    """Node ids that perform the review, mapped to the report paths they write.
+
+    A node is the gate only when it ships the report. Repair nodes and closure nodes read
+    the same report and name the same skill in their spec, so recognising a gate by what a
+    node mentions would turn every reader of a review into a second copy of it.
+    """
+    matched = {}
+    for node_id, node in sorted(nodes.items()):
+        paths = [p for p in _artifact_paths(node.get("exit_artifacts"))
+                 if isinstance(p, str) and marker in p]
+        if paths:
+            matched[node_id] = paths
+    return matched
+
+
+def experience_gate_flow_findings(bdir: str) -> list:
+    """A product with an interface must review the experience it actually ships.
+
+    The design gate above proves the journeys were decided before they were built. This
+    one proves they were judged afterwards, by a graph a run can execute unattended: a
+    review before the interface is implemented, a review of the running product, closure
+    held behind the second one, and a declared repair loop behind each, so a refusal
+    routes findings back into the build instead of stopping the run.
+
+    Nodes are classified by the report they produce, never by their identifier or
+    capability: a node named `experience-review` that writes nothing is not a review, and
+    a node that reads the report is not a second one. An app's two stages are the two
+    report file names; a game's creative critique writes one path both times, so the run
+    after the build is the one that transitively depends on an implementation node.
+
+    The trigger is narrow on purpose. A route that is not a product route, a mode without
+    end users, and a profile written before `experience_priority` existed are all left
+    alone — a missing classification is the design gate's blocker, and a project planned
+    before this law is not retroactively refused at the `/run` boundary. Shape faults
+    belong to the shape gate: an unreadable or mis-shaped input yields no verdict here.
+    """
+    findings = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    profile_path = os.path.join(bdir, "bootstrap-profile.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(profile_path):
+        return findings
+    try:
+        workflow = _load_json(workflow_path)
+        profile = _load_json(profile_path)
+    except Exception:
+        return findings
+    if not isinstance(workflow, dict) or not isinstance(profile, dict):
+        return findings
+    if profile.get("task_route") not in EXPERIENCE_GATE_PRODUCT_ROUTES:
+        return findings
+    priority = profile.get("experience_priority")
+    if not isinstance(priority, dict) or priority.get("mode") not in EXPERIENCE_GATE_MODES:
+        return findings
+
+    nodes = _addressable_nodes(workflow.get("nodes"))
+    specs_dir = os.path.join(bdir, "node-specs")
+    # The one heuristic for "this node builds a user-facing surface" lives with the design
+    # gate; asking it here is what keeps the two gates refusing the same graphs.
+    impl_ids = sorted(_node_id(node) for node in _ui_implementation_nodes(workflow, specs_dir, profile))
+    if not impl_ids:
+        return findings
+
+    game = profile.get("is_game_project") is True
+    critiques = _critique_nodes(nodes, GAME_CREATIVE_CRITIQUE if game else APP_EXPERIENCE_CRITIQUE)
+
+    if game:
+        if not critiques:
+            _structural(
+                findings, "missing_experience_gate",
+                f"workflow.json plans user-facing implementation ({impl_ids}) but no node "
+                f"produces a {GAME_CREATIVE_CRITIQUE} report; a game that is never reviewed "
+                f"against its own creative intent ships whatever the build happened to "
+                f"produce — {RETURN_TO_BOOTSTRAP}")
+        # A game's review runs against one report path, so "the one after the build" is a
+        # graph position: it waits on an implementation node instead of preceding it.
+        closing = [node_id for node_id in critiques
+                   if any(_downstream_of(nodes, impl_id, node_id) for impl_id in impl_ids)]
+    else:
+        staged = {stage: sorted(node_id for node_id, paths in critiques.items()
+                                if any(path.endswith(suffix) for path in paths))
+                  for stage, suffix in APP_EXPERIENCE_CRITIQUE_STAGES}
+        for stage, suffix in APP_EXPERIENCE_CRITIQUE_STAGES:
+            if staged[stage]:
+                continue
+            _structural(
+                findings, "missing_experience_gate",
+                f"workflow.json plans user-facing implementation ({impl_ids}) but no node "
+                f"produces the {stage}-stage experience critique report (an exit artifact "
+                f"ending '{suffix}'); an interface nobody reviews at this stage is released "
+                f"on the author's own opinion of it — {RETURN_TO_BOOTSTRAP}")
+        for impl_id in impl_ids:
+            if staged["design"] and not any(_downstream_of(nodes, critique_id, impl_id)
+                                            for critique_id in staged["design"]):
+                _structural(
+                    findings, "implementation_not_blocked_by_design_critique",
+                    f"workflow.json {impl_id} builds a user-facing surface but no "
+                    f"hard_blocked_by path reaches the design-stage experience critique "
+                    f"{staged['design']}; a review the build did not wait for reviews a "
+                    f"decision already made — {RETURN_TO_BOOTSTRAP}",
+                    node_id=impl_id)
+        closing = staged["runtime"]
+
+    for node_id in sorted(nodes):
+        if nodes[node_id].get("capability") not in EXPERIENCE_GATE_CLOSURE_CAPABILITIES:
+            continue
+        if any(_downstream_of(nodes, critique_id, node_id) for critique_id in closing):
+            continue
+        _structural(
+            findings, "closure_not_blocked_by_experience_gate",
+            f"workflow.json {node_id} closes the pipeline without a hard_blocked_by path "
+            f"to the review of the running product ({closing or 'none planned'}); closure "
+            f"that does not wait for that review accepts a product nobody looked at — "
+            f"{RETURN_TO_BOOTSTRAP}",
+            node_id=node_id)
+
+    declared = set()
+    spec = None
+    spec_path = os.path.join(bdir, "unattended-run-readiness-spec.json")
+    if os.path.exists(spec_path):
+        try:
+            spec = _load_json(spec_path)
+        except Exception:
+            spec = None
+    if isinstance(spec, dict) and isinstance(spec.get("required_repair_loops"), list):
+        for loop in spec["required_repair_loops"]:
+            if isinstance(loop, dict):
+                declared.update(_declared_node_ids(loop, "qa_node_ids", "qa_nodes"))
+    for node_id in sorted(critiques):
+        if node_id in declared:
+            continue
+        _structural(
+            findings, "experience_gate_without_repair_loop",
+            f"workflow.json {node_id} reviews the experience but no "
+            f"unattended-run-readiness-spec.json required_repair_loops entry names it as a "
+            f"qa node; a review with nowhere to send its findings halts the run instead of "
+            f"repairing what it found — {RETURN_TO_BOOTSTRAP}",
+            node_id=node_id)
+    return findings
+
+
+def validate_experience_gate_flow(bdir: str) -> list:
+    """Rendered experience quality-gate errors for the bootstrap validator CLI."""
+    return _rendered(experience_gate_flow_findings(bdir))
+
+
 def workflow_shape_findings(bdir: str) -> list:
     """Node entries no graph rule can address, decided before any rule reads them.
 
@@ -2102,8 +2449,9 @@ def structural_gate_blockers(project_root) -> list:
     """Typed structural-gate blockers for a run-time entry.
 
     `/run` must not assume `/bootstrap` ran and passed on the graph it is about to
-    execute. Both engines re-decide the same repair-loop routing and deferred-effect
-    ownership rules through this call, from the implementations above, so a workflow
+    execute. Both engines re-decide the same repair-loop routing, deferred-effect
+    ownership, experience-design coverage and experience quality-gate rules through this
+    call, from the implementations above, so a workflow
     the bootstrap gate refuses cannot execute unattended on either host, and neither
     host restates the rule as a second copy that can drift.
 
@@ -2117,7 +2465,8 @@ def structural_gate_blockers(project_root) -> list:
     shape = workflow_shape_findings(bdir)
     if shape:
         return shape
-    return repair_loop_declaration_findings(bdir) + effect_stage_ownership_findings(bdir)
+    return (repair_loop_declaration_findings(bdir) + effect_stage_ownership_findings(bdir)
+            + experience_design_coverage_findings(bdir) + experience_gate_flow_findings(bdir))
 
 
 def validate_node_spec(path: str) -> list:
@@ -2163,6 +2512,8 @@ def main():
             errors.extend(validate_node_spec_contracts(bdir))
             errors.extend(validate_approval_records(bdir))
             errors.extend(validate_app_design_flow(bdir))
+            errors.extend(validate_experience_design_coverage(bdir))
+            errors.extend(validate_experience_gate_flow(bdir))
             errors.extend(validate_game_2d_production_flow(bdir))
             errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
             errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
@@ -2213,6 +2564,10 @@ __all__ = [
     "validate_coverage_gate_loop",
     "validate_effect_stage_ownership",
     "effect_stage_ownership_findings",
+    "validate_experience_design_coverage",
+    "experience_design_coverage_findings",
+    "validate_experience_gate_flow",
+    "experience_gate_flow_findings",
     "workflow_shape_findings",
     "workflow_shape_blockers",
     "structural_gate_blockers",

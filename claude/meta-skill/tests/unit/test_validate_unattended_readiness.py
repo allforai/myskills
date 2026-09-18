@@ -674,3 +674,136 @@ def test_a_declared_coverage_loop_satisfies_the_gate(tmp_path):
     _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(spec))
     report = validate_unattended_readiness(tmp_path)
     assert not [b for b in report["blockers"] if b["code"] == "missing_coverage_repair_loop"], report
+
+
+# Planning law Must #9 prescribes one graph for a product with an interface: the experience
+# is reviewed before it is built and again once it runs, and each review hands its refusals
+# to a repair node the run dispatches without asking anyone. A law the run boundary refuses
+# is a law no generated workflow can carry, so the shape is proved admissible here; the
+# second test proves the gate that demands it is reached from this same entry.
+EXPERIENCE_DESIGN_ARTIFACTS = (".allforai/app-design/spec/user-flow-spec.json",
+                               ".allforai/app-design/spec/screen-requirements-spec.json")
+DESIGN_CRITIQUE_ARTIFACT = ".allforai/app-design/qa/experience-quality-critique-design.json"
+RUNTIME_CRITIQUE_ARTIFACT = ".allforai/app-design/qa/experience-quality-critique-runtime.json"
+# M1's fixture wording, so the one rule that decides "this node builds a user-facing
+# surface" recognises the node here exactly as it does where that rule is tested.
+UI_IMPLEMENTATION_GOAL = "Implement the mobile screen stack"
+PRODUCT_PROFILE = {"task_route": "new-product",
+                   "experience_priority": {"mode": "consumer",
+                                           "reason": "Shoppers open the app voluntarily"}}
+
+
+def _experience_node(node_id, artifacts, blocked_by=(), *, capability="qa", goal="review"):
+    """A neutral node: capability `qa` unless it builds, so only the gates under test speak."""
+    return {"node_id": node_id, "goal": goal, "capability": capability,
+            "hard_blocked_by": list(blocked_by),
+            "exit_artifacts": [{"path": path} for path in artifacts]}
+
+
+def _experience_gate_nodes():
+    """Design, review, repair, build, review the running product, close."""
+    return [
+        _experience_node("experience-design", EXPERIENCE_DESIGN_ARTIFACTS,
+                         goal="Decide the user flows and the screen requirements"),
+        _experience_node("experience-design-critique", [DESIGN_CRITIQUE_ARTIFACT],
+                         ["experience-design"],
+                         goal="Review the designed experience before anything is built"),
+        _experience_node("experience-design-repair",
+                         [".allforai/app-design/qa/design-repair.json"],
+                         ["experience-design-critique"],
+                         goal="Repair what the design review refused"),
+        _experience_node("experience-design-accepted",
+                         [".allforai/app-design/qa/design-gate.json"],
+                         ["experience-design-critique", "experience-design-repair"],
+                         goal="Hold the build until the design review and its repair both landed"),
+        _experience_node("implement-mobile",
+                         [".allforai/bootstrap/implement-mobile-report.json"],
+                         ["experience-design-accepted"], capability="implement",
+                         goal=UI_IMPLEMENTATION_GOAL),
+        _experience_node("experience-runtime-critique", [RUNTIME_CRITIQUE_ARTIFACT],
+                         ["implement-mobile"],
+                         goal="Review the experience the running product actually delivers"),
+        _experience_node("experience-runtime-repair",
+                         [".allforai/app-design/qa/runtime-repair.json"],
+                         ["experience-runtime-critique"],
+                         goal="Repair what the runtime review refused"),
+        _experience_node("experience-gate-closure",
+                         [".allforai/app-design/qa/closure.json"],
+                         ["experience-runtime-critique", "experience-runtime-repair"],
+                         goal="Close the pipeline behind the review of the running product"),
+    ]
+
+
+def _experience_gate_loops():
+    """Both loops close on the review rerun, not on the repair alone."""
+    return [_repair_loop(scope="experience-design-critique",
+                         qa_node_ids=["experience-design-critique"],
+                         repair_node_id="experience-design-repair",
+                         closure_node_ids=["experience-design-accepted"]),
+            _repair_loop(scope="experience-runtime-critique",
+                         qa_node_ids=["experience-runtime-critique"],
+                         repair_node_id="experience-runtime-repair",
+                         closure_node_ids=["experience-gate-closure"])]
+
+
+def _experience_gate_project(tmp_path, *, nodes=None, loops=None, profile=None):
+    nodes = _experience_gate_nodes() if nodes is None else nodes
+    _minimal_project(tmp_path)
+    _write(tmp_path, ".allforai/bootstrap/workflow.json",
+           json.dumps({"nodes": nodes, "user_steps": ["/cross-exam", "/product-review"]}))
+    for node in nodes:
+        _write(tmp_path, f".allforai/bootstrap/node-specs/{node['node_id']}.md",
+               f"{node['goal']}\nnon interactive work\n")
+    spec = json.loads((tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json").read_text())
+    spec["required_repair_loops"] = _experience_gate_loops() if loops is None else loops
+    _write(tmp_path, ".allforai/bootstrap/unattended-run-readiness-spec.json", json.dumps(spec))
+    if profile is not None:
+        _write(tmp_path, ".allforai/bootstrap/bootstrap-profile.json", json.dumps(profile))
+
+
+def _blocker_codes(tmp_path):
+    return {blocker["code"] for blocker in validate_unattended_readiness(tmp_path)["blockers"]}
+
+
+def test_unattended_readiness_accepts_experience_gate_repair_loops(tmp_path):
+    """The graph Must #9 asks for must be admissible, or the law refuses every run it governs.
+
+    No profile here: this asks one thing only — the two declared loops route something the
+    orchestrators can run — and the product contract a routed profile would then demand
+    (goal, scope, frozen intents, a confirmed plan) is not what this fixture is about.
+    """
+    _experience_gate_project(tmp_path)
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert report["blockers"] == [], report
+
+
+def test_unattended_readiness_reports_experience_gate_at_run_boundary(tmp_path):
+    """The experience quality gate decides at `/run`, not only at `/bootstrap`.
+
+    Status is not asserted: a product-route profile this small cannot satisfy the scope
+    contract, and `invalid_scope` is that gate's verdict, not this one's. What is asserted
+    is the code set — silent on the Must #9 shape, and naming the defect once one is
+    removed, which is what proves this gate is registered on the run boundary's path.
+    """
+    _experience_gate_project(tmp_path, profile=PRODUCT_PROFILE)
+
+    codes = _blocker_codes(tmp_path)
+
+    assert not [code for code in codes if code.startswith("experience_gate")], codes
+    assert codes.isdisjoint({"missing_experience_gate", "missing_experience_design_node",
+                             "implementation_not_blocked_by_design_critique",
+                             "closure_not_blocked_by_experience_gate"}), codes
+
+    # A review whose findings no declared loop routes halts the run instead of repairing.
+    _experience_gate_project(tmp_path, profile=PRODUCT_PROFILE, loops=_experience_gate_loops()[:1])
+
+    assert "experience_gate_without_repair_loop" in _blocker_codes(tmp_path)
+
+    # An interface that is built and then never reviewed as it runs.
+    _experience_gate_project(tmp_path, profile=PRODUCT_PROFILE,
+                             nodes=[node for node in _experience_gate_nodes()
+                                    if node["node_id"] != "experience-runtime-critique"])
+
+    assert "missing_experience_gate" in _blocker_codes(tmp_path)

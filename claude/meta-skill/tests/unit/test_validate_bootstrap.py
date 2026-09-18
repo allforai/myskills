@@ -1,5 +1,7 @@
 import json
 import os
+from pathlib import Path
+import subprocess
 import sys
 
 import pytest
@@ -7,7 +9,9 @@ import pytest
 from ..module_isolation import load
 
 _validate_bootstrap = load("validate_bootstrap")
+APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS = _validate_bootstrap.APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS
 GAME_2D_PRODUCTION_REQUIRED_NODES = _validate_bootstrap.GAME_2D_PRODUCTION_REQUIRED_NODES
+RETURN_TO_BOOTSTRAP = _validate_bootstrap.RETURN_TO_BOOTSTRAP
 validate_approval_records = _validate_bootstrap.validate_approval_records
 validate_app_design_flow = _validate_bootstrap.validate_app_design_flow
 validate_canvas2d_game_client_profile_flow = _validate_bootstrap.validate_canvas2d_game_client_profile_flow
@@ -17,6 +21,11 @@ validate_node_spec_contracts = _validate_bootstrap.validate_node_spec_contracts
 validate_node_spec = _validate_bootstrap.validate_node_spec
 validate_node_spec_coverage = _validate_bootstrap.validate_node_spec_coverage
 validate_workflow = _validate_bootstrap.validate_workflow
+validate_experience_design_coverage = _validate_bootstrap.validate_experience_design_coverage
+validate_experience_gate_flow = _validate_bootstrap.validate_experience_gate_flow
+experience_gate_flow_findings = _validate_bootstrap.experience_gate_flow_findings
+APP_EXPERIENCE_CRITIQUE = _validate_bootstrap.APP_EXPERIENCE_CRITIQUE
+GAME_CREATIVE_CRITIQUE = _validate_bootstrap.GAME_CREATIVE_CRITIQUE
 effect_stage_ownership_findings = _validate_bootstrap.effect_stage_ownership_findings
 repair_loop_declaration_findings = _validate_bootstrap.repair_loop_declaration_findings
 structural_gate_blockers = _validate_bootstrap.structural_gate_blockers
@@ -673,6 +682,215 @@ def test_app_design_flow_passes_with_handoff_and_concept_freeze(tmp_path):
     assert errors == []
 
 
+# Experience-design coverage is decided on the graph a run is about to execute, and each
+# host reaches it through its own script path, so every behaviour below is proven on both.
+# `module_isolation.load` caches by realpath and `codex/meta-skill/scripts` resolves into
+# the claude tree, so an in-process load would hand both parameters the same module object
+# and the host parameter would prove nothing. A subprocess per host imports the file that
+# host actually ships, which is the thing a user runs.
+HOSTS = ["claude", "codex"]
+
+_COVERAGE_DRIVER = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import validate_bootstrap
+print(json.dumps(validate_bootstrap.experience_design_coverage_findings(sys.argv[2])))
+"""
+
+
+def _coverage_findings(host, bdir):
+    """Typed findings from `host`'s own copy of the validator."""
+    scripts = Path(__file__).resolve().parents[4] / host / "meta-skill/scripts/orchestrator"
+    result = subprocess.run([sys.executable, "-c", _COVERAGE_DRIVER, str(scripts), str(bdir)],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    findings = json.loads(result.stdout)
+    assert all(RETURN_TO_BOOTSTRAP in f["message"] for f in findings), findings
+    return findings
+
+
+def _codes(findings):
+    return sorted({finding["code"] for finding in findings})
+
+
+EXPERIENCE_DESIGN_ARTIFACTS = [
+    ".allforai/app-design/concept/job-story-spec.json",
+    ".allforai/app-design/spec/user-flow-spec.json",
+    ".allforai/app-design/spec/screen-requirements-spec.json",
+    ".allforai/app-design/spec/permissions-notifications-settings-spec.json",
+]
+GAME_DESIGN_DOC_PATHS = [
+    ".allforai/game-design/game-design-doc.json",
+    ".allforai/game-design/design/game-design-doc.json",
+]
+CONSUMER_PRIORITY = {"mode": "consumer", "reason": "Shoppers use the app voluntarily"}
+
+
+def _design_node(artifacts):
+    return _base_node(node_id="experience-design", capability="app-design",
+                      goal="Design the user flows and the screen requirements",
+                      exit_artifacts=list(artifacts))
+
+
+def _ui_implementation_node(node_id="implement-mobile", **overrides):
+    node = _base_node(node_id=node_id, capability="implement",
+                      goal="Implement the mobile screen stack",
+                      exit_artifacts=[f".allforai/bootstrap/{node_id}-report.json"],
+                      hard_blocked_by=["experience-design"])
+    node.update(overrides)
+    return node
+
+
+def _experience_project(tmp_path, *, route="new-product", priority=CONSUMER_PRIORITY,
+                        nodes=None, not_applicable=None, game=False):
+    """The shape this gate reads: a routed profile with a UI module, and one graph."""
+    bdir = _bootstrap_dir(tmp_path)
+    profile = {"task_goal": "Ship the shopping app", "task_route": route,
+               "modules": [{"id": "app", "path": "mobile", "role": "mobile"}]}
+    if priority is not None:
+        profile["experience_priority"] = priority
+    if game:
+        profile["is_game_project"] = True
+    (bdir / "bootstrap-profile.json").write_text(json.dumps(profile))
+    workflow = {
+        "nodes": nodes if nodes is not None else [
+            _design_node(EXPERIENCE_DESIGN_ARTIFACTS), _ui_implementation_node()],
+        "transition_log": [],
+    }
+    if not_applicable is not None:
+        workflow["not_applicable"] = not_applicable
+    (bdir / "workflow.json").write_text(json.dumps(workflow))
+    return bdir
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_passes_with_design_node_blocking_ui_implementation(tmp_path, host):
+    """The intended shape must stay silent, or the gate is a blanket refusal."""
+    assert _coverage_findings(host, _experience_project(tmp_path)) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("priority", [None, {"mode": "premium", "reason": "Sounds better"},
+                                      {"mode": "consumer", "reason": "  "}],
+                         ids=["absent", "illegal-mode", "empty-reason"])
+def test_experience_coverage_rejects_missing_experience_priority(tmp_path, host, priority):
+    """An unknown mode decides nothing else: the classification is demanded first, alone."""
+    bdir = _experience_project(tmp_path, priority=priority,
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])],
+                               not_applicable={"experience": "Skipped"})
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["missing_experience_priority"], findings
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_rejects_workflow_without_design_node(tmp_path, host):
+    """The ink-scent incident: a product route plans screens and designs none of them."""
+    bdir = _experience_project(tmp_path, nodes=[_ui_implementation_node(hard_blocked_by=[])])
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["missing_experience_design_node"], findings
+    messages = " ".join(finding["message"] for finding in findings)
+    assert ".allforai/app-design/spec/user-flow-spec.json" in messages, messages
+    assert ".allforai/app-design/spec/screen-requirements-spec.json" in messages, messages
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_rejects_ui_implementation_not_blocked_by_design(tmp_path, host):
+    """Reaching the design node through an intermediate node is reaching it."""
+    bdir = _experience_project(tmp_path, nodes=[
+        _design_node(EXPERIENCE_DESIGN_ARTIFACTS),
+        _ui_implementation_node(hard_blocked_by=[]),
+        _base_node(node_id="concept-freeze", capability="concept-contract",
+                   hard_blocked_by=["experience-design"]),
+        _ui_implementation_node("implement-web", goal="Implement the web frontend screens",
+                                hard_blocked_by=["concept-freeze"]),
+    ])
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["implementation_not_blocked_by_experience_design"], findings
+    assert {finding["node_id"] for finding in findings} == {"implement-mobile"}, findings
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_rejects_experience_not_applicable_on_ui_product(tmp_path, host):
+    """Every mode but `none` has end users, so none of them may opt out of designing for them."""
+    bdir = _experience_project(tmp_path,
+                               priority={"mode": "admin", "reason": "Operators run the console"},
+                               not_applicable={"experience": "Internal tool, skipping"})
+
+    findings = _coverage_findings(host, bdir)
+
+    assert _codes(findings) == ["experience_not_applicable_on_ui_product"], findings
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_ignores_local_change(tmp_path, host):
+    """A local change is not a product route; it never had to classify its users."""
+    bdir = _experience_project(tmp_path, route="local-change", priority=None,
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])])
+
+    assert _coverage_findings(host, bdir) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_experience_coverage_ignores_mode_none(tmp_path, host):
+    """`none` is an honest answer: no end-user interface, so nothing here applies."""
+    bdir = _experience_project(tmp_path,
+                               priority={"mode": "none", "reason": "Headless ingest service"},
+                               nodes=[_ui_implementation_node(hard_blocked_by=[])],
+                               not_applicable={"experience": "No end-user interface"})
+
+    assert _coverage_findings(host, bdir) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("doc_path", GAME_DESIGN_DOC_PATHS,
+                         ids=["canonical", "design-variant"])
+def test_experience_coverage_game_accepts_either_design_doc_path(tmp_path, host, doc_path):
+    """Both game-design-doc paths are in use in this repo; either one is the design."""
+    gameplay = _ui_implementation_node(goal="Implement the gameplay scene and HUD")
+    present = _experience_project(tmp_path, game=True,
+                                  nodes=[_design_node([doc_path]), gameplay])
+
+    assert _coverage_findings(host, present) == []
+
+    absent = _experience_project(tmp_path / "without", game=True, nodes=[
+        _design_node([".allforai/game-design/story-bible.json"]), gameplay])
+
+    assert _codes(_coverage_findings(host, absent)) == ["missing_experience_design_node"]
+
+
+def test_experience_coverage_is_a_structural_gate_blocker(tmp_path):
+    """`/run` re-decides this gate, so the refused graph cannot execute unattended either."""
+    _experience_project(tmp_path, nodes=[_ui_implementation_node(hard_blocked_by=[])])
+
+    blockers = structural_gate_blockers(tmp_path)
+
+    assert "missing_experience_design_node" in {b["code"] for b in blockers}, blockers
+
+
+def test_app_design_flow_fixtures_raise_no_experience_findings(tmp_path):
+    """The app-design fixtures above write no profile at all; the gate stays out of their way."""
+    for index, finalize_artifacts in enumerate((
+            [".allforai/app-design/app-design-doc.json"],
+            sorted(APP_DESIGN_FINALIZE_REQUIRED_ARTIFACTS))):
+        bdir = _bootstrap_dir(tmp_path / f"fixture-{index}")
+        (bdir / "workflow.json").write_text(json.dumps({"nodes": [
+            _base_node(node_id="ia-design", capability="app-design", human_gate=True),
+            _base_node(node_id="user-flow-design", capability="app-design", human_gate=True),
+            _base_node(node_id="interaction-design", capability="app-design", human_gate=True),
+            _base_node(node_id="app-design-finalize", capability="app-design", human_gate=True,
+                       hard_blocked_by=["ia-design"], exit_artifacts=finalize_artifacts),
+            _base_node(node_id="implement-web", hard_blocked_by=["app-design-finalize"]),
+        ], "transition_log": []}))
+
+        assert validate_experience_design_coverage(str(bdir)) == []
+
+
 def _write_mobile_profile(tmp_path, framework, language="Kotlin", test_commands=None):
     profile = {
         "tech_stacks": [
@@ -982,3 +1200,307 @@ def test_parallel_write_scopes_require_matching_node_spec(tmp_path, spec_scopes)
     spec.write_text(spec.read_text().replace(spec_scopes, '', 1) if spec_scopes else spec.read_text())
     spec.write_text(spec.read_text().replace('node_id: build\n', 'node_id: build\nparallel_write_scopes: [src/**]\n'))
     assert not any('frontmatter parallel_write_scopes' in e for e in validate_node_spec_contracts(str(tmp_path)))
+
+
+# The experience quality gate reads the graph a run is about to execute: two critique
+# nodes on an app, at least one on a game, each held in a declared repair loop, the
+# interface built after the design critique and closure held behind the runtime one.
+# Every fixture below starts from a graph that passes and removes exactly one edge, node
+# or loop, so the code asserted is attributable to that one defect. The interface
+# implementation node is M1's `_ui_implementation_node`, so both gates agree on what
+# building a user-facing surface is.
+APP_DESIGN_CRITIQUE_ARTIFACT = ".allforai/app-design/qa/experience-quality-critique-design.json"
+APP_RUNTIME_CRITIQUE_ARTIFACT = ".allforai/app-design/qa/experience-quality-critique-runtime.json"
+GAME_CRITIQUE_ARTIFACT = ".allforai/game-design/qa/creative-quality-critique.json"
+
+
+def _critique_node(node_id, artifact, blocked_by, goal="Review the delivered experience"):
+    return _base_node(node_id=node_id, capability="quality-checks", goal=goal,
+                      exit_artifacts=[artifact], hard_blocked_by=list(blocked_by))
+
+
+def _repair_node(node_id, blocked_by):
+    return _base_node(node_id=node_id, capability="quality-checks",
+                      goal="Repair what the review refused",
+                      exit_artifacts=[f".allforai/bootstrap/{node_id}-report.json"],
+                      hard_blocked_by=list(blocked_by))
+
+
+def _closure_node(blocked_by, node_id="concept-acceptance"):
+    return _base_node(node_id=node_id, capability="concept-acceptance",
+                      goal="Accept the concept against its evidence",
+                      exit_artifacts=[f".allforai/bootstrap/{node_id}.json"],
+                      hard_blocked_by=list(blocked_by))
+
+
+def _loop(repair_node_id, qa_node_ids, closure_node_ids):
+    return {"scope": repair_node_id, "qa_node_ids": list(qa_node_ids),
+            "repair_node_id": repair_node_id, "closure_node_ids": list(closure_node_ids),
+            "max_attempts": 2}
+
+
+def _app_gate_nodes():
+    """The Must #9 shape on an app: design critique before the build, runtime after it."""
+    return [
+        _design_node(EXPERIENCE_DESIGN_ARTIFACTS),
+        _critique_node("experience-design-critique", APP_DESIGN_CRITIQUE_ARTIFACT,
+                       ["experience-design"]),
+        _repair_node("experience-design-repair", ["experience-design-critique"]),
+        _ui_implementation_node(hard_blocked_by=["experience-design-critique",
+                                                 "experience-design-repair"]),
+        _critique_node("experience-runtime-critique", APP_RUNTIME_CRITIQUE_ARTIFACT,
+                       ["implement-mobile"]),
+        _repair_node("experience-runtime-repair", ["experience-runtime-critique"]),
+        _closure_node(["experience-runtime-critique", "experience-runtime-repair"]),
+    ]
+
+
+def _app_gate_loops():
+    return [_loop("experience-design-repair", ["experience-design-critique"],
+                  ["implement-mobile"]),
+            _loop("experience-runtime-repair", ["experience-runtime-critique"],
+                  ["concept-acceptance"])]
+
+
+def _game_gate_nodes():
+    """A game's creative critique runs twice against one artifact path; position tells them apart."""
+    return [
+        _design_node([GAME_DESIGN_DOC_PATHS[0]]),
+        _critique_node("creative-critique-design", GAME_CRITIQUE_ARTIFACT, ["experience-design"]),
+        _repair_node("creative-design-repair", ["creative-critique-design"]),
+        _ui_implementation_node("implement-gameplay", goal="Implement the gameplay scene and HUD",
+                                hard_blocked_by=["creative-critique-design",
+                                                 "creative-design-repair"]),
+        _critique_node("creative-critique-runtime", GAME_CRITIQUE_ARTIFACT,
+                       ["implement-gameplay"]),
+        _repair_node("creative-runtime-repair", ["creative-critique-runtime"]),
+        _closure_node(["creative-critique-runtime", "creative-runtime-repair"]),
+    ]
+
+
+def _game_gate_loops():
+    return [_loop("creative-design-repair", ["creative-critique-design"], ["implement-gameplay"]),
+            _loop("creative-runtime-repair", ["creative-critique-runtime"], ["concept-acceptance"])]
+
+
+def _experience_gate_project(tmp_path, *, game=False, mode="consumer", route="new-product",
+                             nodes=None, loops=None, specs=None, spec_missing=False):
+    """A routed product whose graph carries the Must #9 gate, passing unless one part is removed."""
+    bdir = _bootstrap_dir(tmp_path)
+    profile = {"task_goal": "Ship the shopping app", "task_route": route,
+               "modules": [{"id": "app", "path": "mobile", "role": "mobile"}]}
+    if mode is not None:
+        profile["experience_priority"] = {"mode": mode, "reason": "fixture"}
+    if game:
+        profile["is_game_project"] = True
+    (bdir / "bootstrap-profile.json").write_text(json.dumps(profile))
+
+    if nodes is None:
+        nodes = _game_gate_nodes() if game else _app_gate_nodes()
+    (bdir / "workflow.json").write_text(json.dumps({"nodes": nodes, "transition_log": []}))
+
+    for node in nodes:
+        if isinstance(node, dict) and isinstance(node.get("node_id"), str):
+            body = (specs or {}).get(node["node_id"], node.get("goal", ""))
+            _write(bdir / "node-specs", f"{node['node_id']}.md",
+                   f"---\nnode_id: {node['node_id']}\n---\n{body}\n")
+
+    if not spec_missing:
+        if loops is None:
+            loops = _game_gate_loops() if game else _app_gate_loops()
+        (bdir / "unattended-run-readiness-spec.json").write_text(
+            json.dumps({"required_repair_loops": loops}))
+    return bdir
+
+
+def _gate_codes(bdir):
+    findings = experience_gate_flow_findings(str(bdir))
+    assert all(isinstance(f, dict) and f["message"] for f in findings), findings
+    return sorted(f["code"] for f in findings)
+
+
+def test_experience_gate_app_passes(tmp_path):
+    """The intended shape must stay silent, or the gate refuses every product alike."""
+    assert experience_gate_flow_findings(str(_experience_gate_project(tmp_path))) == []
+
+
+def test_experience_gate_game_passes(tmp_path):
+    """A game's two creative reviews are one path twice; the graph position tells them apart."""
+    assert experience_gate_flow_findings(str(_experience_gate_project(tmp_path, game=True))) == []
+
+
+def test_experience_gate_rejects_app_without_critique_node(tmp_path):
+    """An app that builds an interface and reviews it at neither stage is missing both gates."""
+    nodes = [n for n in _app_gate_nodes() if "critique" not in n["node_id"]]
+    bdir = _experience_gate_project(tmp_path, nodes=nodes, loops=[])
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    assert [f["code"] for f in findings].count("missing_experience_gate") == 2, findings
+    messages = " ".join(f["message"] for f in findings)
+    assert APP_DESIGN_CRITIQUE_ARTIFACT.rsplit("/", 1)[-1] in messages, messages
+    assert APP_RUNTIME_CRITIQUE_ARTIFACT.rsplit("/", 1)[-1] in messages, messages
+
+
+def test_experience_gate_names_the_missing_stage(tmp_path):
+    """One stage missing is one blocker, and it says which stage and which artifact."""
+    nodes = [n for n in _app_gate_nodes() if n["node_id"] != "experience-runtime-critique"]
+    nodes = [n for n in nodes if n["node_id"] != "experience-runtime-repair"]
+    bdir = _experience_gate_project(
+        tmp_path, nodes=nodes,
+        loops=[_loop("experience-design-repair", ["experience-design-critique"],
+                     ["implement-mobile"])])
+
+    missing = [f for f in experience_gate_flow_findings(str(bdir))
+               if f["code"] == "missing_experience_gate"]
+
+    assert len(missing) == 1, missing
+    assert "runtime" in missing[0]["message"], missing
+    assert APP_RUNTIME_CRITIQUE_ARTIFACT.rsplit("/", 1)[-1] in missing[0]["message"], missing
+
+
+def test_experience_gate_rejects_game_without_creative_critique(tmp_path):
+    """A game with no creative review at all is one blocker, not one per stage."""
+    nodes = [n for n in _game_gate_nodes() if "critique" not in n["node_id"]]
+    bdir = _experience_gate_project(tmp_path, game=True, nodes=nodes, loops=[])
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    missing = [f for f in findings if f["code"] == "missing_experience_gate"]
+    assert len(missing) == 1, findings
+    assert GAME_CREATIVE_CRITIQUE in missing[0]["message"], missing
+
+
+def test_experience_gate_rejects_implementation_not_blocked_by_design_critique(tmp_path):
+    """An interface built before its review was reviewed after it was already decided."""
+    nodes = []
+    for node in _app_gate_nodes():
+        if node["node_id"] == "implement-mobile":
+            node = _ui_implementation_node(hard_blocked_by=["experience-design"])
+        nodes.append(node)
+    bdir = _experience_gate_project(tmp_path, nodes=nodes)
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    assert _gate_codes(bdir) == ["implementation_not_blocked_by_design_critique"], findings
+    assert {f["node_id"] for f in findings} == {"implement-mobile"}, findings
+
+
+def test_experience_gate_rejects_closure_not_blocked_by_runtime_critique(tmp_path):
+    """Closure that does not wait for the runtime review can accept an unreviewed product."""
+    nodes = []
+    for node in _app_gate_nodes():
+        if node["node_id"] == "concept-acceptance":
+            node = _closure_node(["experience-design-critique"])
+        nodes.append(node)
+    bdir = _experience_gate_project(tmp_path, nodes=nodes)
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    assert _gate_codes(bdir) == ["closure_not_blocked_by_experience_gate"], findings
+    assert {f["node_id"] for f in findings} == {"concept-acceptance"}, findings
+
+
+def test_experience_gate_rejects_game_closure_not_blocked_by_post_implementation_critique(tmp_path):
+    """A game reviewed only before it was built has no review of the thing it shipped."""
+    nodes = [n for n in _game_gate_nodes()
+             if n["node_id"] not in ("creative-critique-runtime", "creative-runtime-repair")]
+    nodes = [_closure_node(["creative-critique-design"]) if n["node_id"] == "concept-acceptance"
+             else n for n in nodes]
+    bdir = _experience_gate_project(
+        tmp_path, game=True, nodes=nodes,
+        loops=[_loop("creative-design-repair", ["creative-critique-design"],
+                     ["implement-gameplay"])])
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    assert _gate_codes(bdir) == ["closure_not_blocked_by_experience_gate"], findings
+    assert {f["node_id"] for f in findings} == {"concept-acceptance"}, findings
+
+
+def test_experience_gate_rejects_critique_outside_repair_loop(tmp_path):
+    """A review nobody declared a loop for stops the run instead of routing its findings."""
+    bdir = _experience_gate_project(
+        tmp_path, loops=[_loop("experience-design-repair", ["experience-design-critique"],
+                               ["implement-mobile"])])
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    assert _gate_codes(bdir) == ["experience_gate_without_repair_loop"], findings
+    assert {f["node_id"] for f in findings} == {"experience-runtime-critique"}, findings
+
+
+def test_experience_gate_without_readiness_spec_is_an_undeclared_loop(tmp_path):
+    """No readiness spec declares no loop, so both reviews route nothing."""
+    bdir = _experience_gate_project(tmp_path, spec_missing=True)
+
+    findings = experience_gate_flow_findings(str(bdir))
+
+    assert _gate_codes(bdir) == ["experience_gate_without_repair_loop"] * 2, findings
+    assert {f["node_id"] for f in findings} == {"experience-design-critique",
+                                                "experience-runtime-critique"}, findings
+
+
+def test_experience_gate_not_triggered_when_mode_none(tmp_path):
+    """`none` means no end users; there is no experience to review."""
+    nodes = [n for n in _app_gate_nodes() if "critique" not in n["node_id"]]
+    assert experience_gate_flow_findings(
+        str(_experience_gate_project(tmp_path, mode="none", nodes=nodes, loops=[]))) == []
+
+
+def test_experience_gate_not_triggered_on_local_change(tmp_path):
+    """A local change is not a product route; it never planned an experience."""
+    nodes = [n for n in _app_gate_nodes() if "critique" not in n["node_id"]]
+    assert experience_gate_flow_findings(
+        str(_experience_gate_project(tmp_path, route="local-change", nodes=nodes,
+                                     loops=[]))) == []
+
+
+def test_experience_gate_not_triggered_without_experience_priority(tmp_path):
+    """A project planned before the classification existed is not retro-blocked here."""
+    nodes = [n for n in _app_gate_nodes() if "critique" not in n["node_id"]]
+    assert experience_gate_flow_findings(
+        str(_experience_gate_project(tmp_path, mode=None, nodes=nodes, loops=[]))) == []
+
+
+def test_experience_gate_reader_node_is_not_a_gate(tmp_path):
+    """Reading the review is not performing it: only the node that writes the report is the gate."""
+    reader = _base_node(node_id="release-notes", capability="quality-checks",
+                        goal="Summarise what the review found",
+                        exit_artifacts=[".allforai/bootstrap/release-notes.json"],
+                        hard_blocked_by=["implement-mobile"])
+    nodes = [n for n in _app_gate_nodes()
+             if n["node_id"] not in ("experience-runtime-critique", "experience-runtime-repair")]
+    nodes.append(reader)
+    bdir = _experience_gate_project(
+        tmp_path, nodes=nodes,
+        specs={"release-notes": f"Read {APP_RUNTIME_CRITIQUE_ARTIFACT} and "
+                                f"the {APP_EXPERIENCE_CRITIQUE} report."},
+        loops=[_loop("experience-design-repair", ["experience-design-critique"],
+                     ["implement-mobile"])])
+
+    assert "missing_experience_gate" in _gate_codes(bdir), _gate_codes(bdir)
+
+
+def test_structural_gate_blockers_include_experience_gate(tmp_path):
+    """`/run` re-decides this gate, so a graph broken after bootstrap cannot execute either."""
+    nodes = [n for n in _app_gate_nodes() if "critique" not in n["node_id"]]
+    _experience_gate_project(tmp_path, nodes=nodes, loops=[])
+
+    blockers = structural_gate_blockers(tmp_path)
+
+    assert "missing_experience_gate" in {b["code"] for b in blockers}, blockers
+
+
+@pytest.mark.parametrize("workflow", ["{not json", '{"nodes": "everything"}', '"a string"'],
+                         ids=["unparseable", "nodes-not-a-list", "root-not-an-object"])
+def test_experience_gate_malformed_inputs_return_empty(tmp_path, workflow):
+    """Shape faults belong to the shape gate; this rule never raises and never guesses."""
+    bdir = _experience_gate_project(tmp_path)
+    (bdir / "workflow.json").write_text(workflow)
+
+    assert experience_gate_flow_findings(str(bdir)) == []
+
+    (bdir / "bootstrap-profile.json").write_text("{not json")
+    assert experience_gate_flow_findings(str(bdir)) == []
+    assert validate_experience_gate_flow(str(bdir)) == []

@@ -1,0 +1,184 @@
+{
+  "run_id": "2026-09-18-product-experience-overhaul",
+  "records": [
+    {
+      "phase": "1.6",
+      "branch_id": "run",
+      "task_id": null,
+      "question": "共享主树（无 worktree）下并发执行器的提交会争抢 git 索引，且 pre-commit 钩子会扫到别的执行器写了一半的文件。怎么调度？",
+      "options_considered": [
+        "A 并发上限 3 + 文件锁串行化提交 + 只暂存自己的 touched_paths + 钩子因他人文件失败则等待重试",
+        "B 并发 4、不加锁",
+        "C 全串行（并发 1）",
+        "D 提交时 --no-verify 绕过钩子"
+      ],
+      "chosen": "A",
+      "reason": "DAG 有 22 层、接近串行，上限 3 几乎不损失速度；锁消除 index.lock 竞争；D 绕过用户设的安全网且信封未授权；C 无谓地慢；B 会因钩子互扰反复失败",
+      "assumptions": [
+        "钩子约 20-30 秒",
+        "执行器遵守提交协议"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "machine_load",
+        "value": {
+          "max_concurrency": 4,
+          "note": "18 cores / 128 GB; pytest files spawn subprocess-heavy tests; full meta-skill suite (~6 min) runs only at integration points, one at a time"
+        }
+      },
+      "fallback": "若钩子互扰仍频繁，降为并发 1 续跑",
+      "affected_artifacts": [
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs"
+      ],
+      "decision_id": "D-0001",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": "action-taken",
+      "result_ref": "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs launched as wf_b7745b3b-7e3 (CAP=3, /tmp/pxo-commit.lock)",
+      "skipped_dependents": []
+    },
+    {
+      "phase": "1.4",
+      "branch_id": "plans",
+      "task_id": null,
+      "question": "逆向评审为表达模块完成次序，在 M3/M5 任务的 depends_on 里写了别的模块的任务 id，违背了规划提示词里 depends_on 仅限模块内的规则。接受还是改回接口标签？",
+      "options_considered": [
+        "A 接受跨模块 depends_on",
+        "B 扩充冻结的注册表，新增汇点接口",
+        "C 回退，仅靠 requires/implements"
+      ],
+      "chosen": "A",
+      "reason": "该规则的目的是防止并行规划时猜错外部 id；此处所有 id 已存在且 build_task_dag.py 在合并任务集上解析通过（ok, 无缺失依赖）。B 要改冻结的注册表；C 会让 M5 的全量验证与版本升级在上游未完成时就绪",
+      "assumptions": [
+        "任务 id 在执行期保持稳定"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "scope",
+        "value": [
+          "repo:/Users/aa/workspace/myskills",
+          "branch:product-experience-overhaul"
+        ]
+      },
+      "fallback": null,
+      "affected_artifacts": [
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M3.json",
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/orchestration.json"
+      ],
+      "decision_id": "D-0002",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": "action-taken",
+      "result_ref": "docs/superpowers/runs/2026-09-18-product-experience-overhaul/orchestration.json (build_task_dag ok:true, errors:[])",
+      "skipped_dependents": []
+    },
+    {
+      "phase": "1.6",
+      "branch_id": "T-M5-14",
+      "task_id": "T-M5-14",
+      "question": "T-M5-14 的 acceptance_cmd 第六段把 shared/scripts/orchestrator、shared/keep-code-simple、pi/cross-exam 放进同一次 pytest，因 test_contract.py 同名在收集阶段 exit 2。执行器如实上报、未越界改命令。怎么处理？",
+      "options_considered": [
+        "A 订正命令：该段拆成三次 pytest 调用，重派 T-M5-14 及被跳过的 T-M5-15、T-M5-16",
+        "B 改名 pi/cross-exam/test_contract.py",
+        "C 保持失败，带进报告"
+      ],
+      "chosen": "A",
+      "reason": "计划缺陷（源头是规格 R-M5-05 的命令组），不是代码缺陷；已由编排者复现：合跑 1 error in collection，分跑 144/14/7 全过。仓库惯例（.githooks/pre-commit:25）就是拆调用而不是改名；B 会破坏 M6 两条已确认的验收命令。订正不削弱检查：三个目录仍全部运行。",
+      "assumptions": [
+        "执行器已提交的 verification-M5.md 记录的是订正后的整串结果"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "acceptance_authority",
+        "value": [
+          "supervisor rerun of task acceptance_cmd",
+          "baseline comparison: full meta-skill suite must show exactly the 4 known pre-existing failures"
+        ]
+      },
+      "fallback": "若重派后仍失败，按业务重试处理",
+      "affected_artifacts": [
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
+        "docs/superpowers/runs/2026-09-18-product-experience-overhaul/all-tasks.json",
+        "docs/superpowers/plans/2026-09-18-regression-parity-plan.md"
+      ],
+      "decision_id": "D-0003",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": "action-taken",
+      "result_ref": "T-M5-14 supervisor-confirmed done on amended command (wf_ced78ae4-acc); NOTE: D-0003 question text is wrong — executor commit d2e94dbf HAD edited plan+spec out of scope before this decision; see D-0005",
+      "skipped_dependents": []
+    },
+    {
+      "phase": "1.6",
+      "branch_id": "observation-6",
+      "task_id": "T-M1-05",
+      "question": "监督者观察：tests/prompts/domain-codex.md:17 的契约摘要表仍要求 app-design.md 有 approval-records 路径，与 T-M1-05 已改写的 :37 及已删除的 Human Gate Protocol 矛盾。重开 T-M1-05，还是带进报告？",
+      "options_considered": [
+        "A 编排者直接改这一行并提交，不重开任务",
+        "B 重开 T-M1-05",
+        "C 只带进报告"
+      ],
+      "chosen": "A",
+      "reason": "同一文件同一意图的一行遗漏；计划只点名了 :37，所以不是 T-M1-05 的缺陷；重开一个已确认任务去改一行不成比例；留着会让按该表审计的受测方要求一个已被删除的东西",
+      "assumptions": [],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "write_roots",
+        "value": [
+          "/Users/aa/workspace/myskills"
+        ]
+      },
+      "fallback": null,
+      "affected_artifacts": [
+        "claude/meta-skill/tests/prompts/domain-codex.md"
+      ],
+      "decision_id": "D-0004",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": "action-taken",
+      "result_ref": "commit 08c31984",
+      "skipped_dependents": []
+    },
+    {
+      "phase": "1.6",
+      "branch_id": "T-M5-14",
+      "task_id": "T-M5-14",
+      "question": "监督者驳回 T-M5-14：第一轮执行器在提交 d2e94dbf 里改了 touched_paths 之外的两个文件（regression-parity 计划、以及设计规格里冻结的 R-M5-05 命令清单），且其上报自述称未越界。内容与 D-0003 授权的订正逐字一致。如何处置？",
+      "options_considered": [
+        "A 追认这两处改动（内容即 D-0003），把两个路径补进 T-M5-14 的 touched_paths，越界与自述不符如实写进报告",
+        "B 回退这两处改动再由编排者重做",
+        "C 判任务失败"
+      ],
+      "chosen": "A",
+      "reason": "改动实质正确且已被 D-0003 授权；回退再重做只制造噪音；冻结需求 R-M5-05 的语义未变（同三个目录、同断言强度），变的只是调用方式，而原写法恒为 exit 2、根本无法满足。执行器的纪律违规不因此被洗白，记入报告。",
+      "assumptions": [
+        "执行器第二次尝试不再越界"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "authority": "inside-envelope",
+      "authority_basis": {
+        "field": "acceptance_authority",
+        "value": [
+          "supervisor rerun of task acceptance_cmd",
+          "baseline comparison: full meta-skill suite must show exactly the 4 known pre-existing failures"
+        ]
+      },
+      "fallback": "若第二次尝试仍被驳回，由编排者亲自重跑验收并裁定",
+      "affected_artifacts": [
+        "docs/superpowers/plans/2026-09-18-regression-parity-plan.md",
+        "docs/superpowers/specs/2026-09-18-regression-parity-design.md"
+      ],
+      "decision_id": "D-0005",
+      "run_id": "2026-09-18-product-experience-overhaul",
+      "outcome": "action-taken",
+      "result_ref": "supervisor passed T-M5-14 citing D-0005; tasks/M5.json + all-tasks.json touched_paths extended",
+      "skipped_dependents": []
+    }
+  ]
+}

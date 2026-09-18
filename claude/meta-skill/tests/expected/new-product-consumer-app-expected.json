@@ -1,0 +1,38 @@
+{
+  "host": "claude",
+  "entry": "claude/meta-skill/skills/bootstrap/SKILL.md",
+  "profile": {
+    "task_route": "new-product",
+    "experience_priority.mode": "consumer"
+  },
+  "loaded_knowledge_includes": [
+    "capabilities/product-concept.md",
+    "capabilities/app-design.md",
+    "consumer-maturity-patterns.md",
+    "journey-emotion-schema.md"
+  ],
+  "experience_direction": {
+    "proposed_count": [2, 3],
+    "recommended": 1,
+    "user_action_in": ["select", "delegate"],
+    "must_not": "self-confirmed"
+  },
+  "some_node_exit_artifacts_include": [
+    ".allforai/app-design/spec/user-flow-spec.json",
+    ".allforai/app-design/spec/screen-requirements-spec.json",
+    ".allforai/app-design/qa/experience-quality-critique-design.json",
+    ".allforai/app-design/qa/experience-quality-critique-runtime.json"
+  ],
+  "ordering": [
+    "every UI implementation node transitively depends on the design-stage critique producer",
+    "the closure node transitively depends on the runtime-stage critique producer"
+  ],
+  "repair_loops_cover": [
+    "design-stage critique producer",
+    "runtime-stage critique producer"
+  ],
+  "forbidden": [
+    "assert by node_id",
+    "not_applicable.experience present"
+  ]
+}
