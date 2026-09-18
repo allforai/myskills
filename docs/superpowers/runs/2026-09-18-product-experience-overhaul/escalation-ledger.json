@@ -7,6 +7,7 @@
    "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
    "docs/superpowers/runs/2026-09-18-product-experience-overhaul/all-tasks.json",
    "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs"
-  ]
+  ],
+  "resolution": "resolved by D-0003 (acceptance_cmd amended) + D-0005; task later supervisor-confirmed done; no dependents remained skipped"
  }
 ]

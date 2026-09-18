@@ -424,31 +424,29 @@
   "last_evidence_excerpt": "Rerun from /Users/aa/workspace/myskills (branch product-experience-overhaul), log at docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-13.supervisor.log: test_package_manifests.py '11 passed'; check_codex_meta_skill_parity.py '{\"passed\": true, \"errors\": [], \"warnings\": []}'; pi/meta-skill/test_contract.py '10 passed, 21 subtests passed'; all greps + negative grep passed; EXIT=0.\nNot vacuous: parent d28f7b4c~1 had 'version: \"0.19.1\"' / '# Meta-Skill v0.19.1' in claude/meta-skill/SKILL.md, so the grep pins would have failed before the task.\nDiff: commit d28f7b4c touches exactly the 9 contract files, 12 insertions / 12 deletions, every hunk is a version literal only (0.19.2->0.20.0, 0.42.2->0.43.0, 0.19.1->0.20.0, 0.19.1-codex.2->0.20.0-codex.1, 0.19.2-pi.1->0.20.0-pi.1); bootstrap SKILL.md changed only the version line (1 -/1 +). In-place replacement (no JSON reserialization); all 6 JSON files still parse. pi/cross-exam/package.json correctly untouched: `git diff --stat ad5796c4.. -- pi/cross-exam` is empty, per contract. `git grep '0\\.19\\.[12]\\|0\\.42\\.2'` outside docs/CHANGELOG returns nothing (no residual old versions anywhere in tracked tree). Committed-tree c"
  },
  "T-M5-14": {
-  "status": "failed",
+  "status": "done",
   "attempts": 2,
   "effective_model": "opus",
   "first_model": null,
   "infra_failures": 0,
-  "extended": [
-   "docs/superpowers/plans/2026-09-18-regression-parity-plan.md — preferred fix and the only one needed: replace the sixth segment of T-M5-14's acceptance_cmd (and the matching R-M5-05 line in docs/superpowers/specs/2026-09-18-regression-parity-design.md) with three separate invocations: `python3 -m pytest -q shared/scripts/orchestrator && python3 -m pytest -q shared/keep-code-simple && python3 -m pytest -q pi/cross-exam`. No source file changes are required; the orchestrator can amend the dispatched acceptance_cmd without any repo edit, and the committed record already satisfies the two greps, so a rerun would pass immediately.",
-   "docs/superpowers/specs/2026-09-18-regression-parity-design.md — same one-line correction to R-M5-05's sixth command, if the spec is to stay in sync with the plan.",
-   "pi/cross-exam/test_contract.py — only if a code-side fix is preferred instead: rename to a unique basename (e.g. test_pi_cross_exam_contract.py) so the three directories become co-collectible. More invasive: docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M6.json and the two M6 acceptance commands in all-tasks.json / stage-1.6-execute.mjs invoke that path by name, and M6 tasks are running concurrently. Not recommended."
-  ],
-  "last_evidence_excerpt": "escalate: The dispatched acceptance_cmd cannot exit 0 without an edit outside my touched_paths. Its sixth segment (`python3 -m pytest -q shared/scripts/orchestrator shared/keep-code-simple pi/cross-exam`) is a deterministic pytest basename collision that exits 2 at collection. The stale string lives in three orchestrator dispatch sources I am not permitted to touch: docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json:295, .../all-tasks.json:916, .../stage-1.6-execute.mjs:1062. The one code-side alternative inside my touched_paths (renaming pi/cross-exam/test_contract.py) would break two M6 acceptance commands that invoke that exact path (all-tasks.json:586,616 and stage-1.6-execute.mjs:678,713, M6 running concurrently) and contradicts the repo convention at .githooks/pre-commit:25 of splitting invocations rather than renaming colliding basenames. Per discipline rule 2 I did not work around it with an out-of-set edit. All substantive task work is complete and committed; the only outstanding action is the one-line command amendment. | GREEN (corrected sixth segment, run at HEAD d2e94dbf, cwd /Users/aa/workspace/myskills, log at /Users/aa/workspace/myskills/docs",
-  "proposed_touched_paths": [
-   "docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json",
-   "docs/superpowers/runs/2026-09-18-product-experience-overhaul/all-tasks.json",
-   "docs/superpowers/runs/2026-09-18-product-experience-overhaul/stage-1.6-execute.mjs"
-  ]
+  "last_evidence_excerpt": "Reran the exact acceptance_cmd (byte-extracted from the plan's T-M5-14 section; identical to the dispatched string) from /Users/aa/workspace/myskills at HEAD 22ef8cfd, 21:06-21:13 JST, teed to logs/T-M5-14.supervisor.log. SUPERVISOR_EXIT=0.\nOutput: meta-skill full suite \"4 failed, 1297 passed in 369.29s\"; the FAILED lines are exactly test_decision_gate...fresh_evidence[claude|codex] and test_evidence_freshness...cannot_claim_completion[claude|codex]; no ERROR lines; \"unexpected: []\". Then 255 passed (superstorm), 172 passed (codex cross-exam), 46 passed (evidence-engine), 211 passed (visual-acceptance), 144 passed (shared orchestrator), 14 passed+40 subtests (keep-code-simple), 7 passed (pi/cross-exam), 202 passed+21 subtests (pi/codex meta-skill), parity {\"passed\": true, \"errors\": [], \"warnings\": []}, \"OK: all 33 referenced files present\", 6 passed (consumer regression), 11 passed (package manifests), validate_meta_contracts exit 0, I1 grep empty (non-vacuous: knowledge/ has 21 experience_priority hits, 0 after the two filters), both greps on verification-M5.md hit.\nNot vacuous: >2,300 tests actually collected and run; pass count 1297 >= 1198.\nRecord check: verification-M5.md has ",
+  "attempts_total": 4,
+  "history": "run1: escalate (plan defect, D-0003) ; run2: attempt1 refuted on scope (d2e94dbf out-of-set edits) → D-0005 ratification → attempt2 done"
  },
  "T-M5-15": {
-  "status": "skipped",
-  "blocked_by": "T-M5-14",
-  "attempts": 0
+  "status": "done",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Reran acceptance_cmd from /Users/aa/workspace/myskills on branch product-experience-overhaul: EXIT=0 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-15.supervisor.log). Not vacuous: release-commit-message.txt was created by commit 0a74e1ea (1 file changed, 51 insertions, only the touched path), so the greps could not have passed before. `git status --porcelain` for the touched path prints nothing. Content check vs contract: line 1 = `release: superstorm 0.43.0, meta-skill 0.20.0 (体验方向与体验质量门)`; suite numbers match verification-M5.md (status: pass, tested HEAD a963d82a) row for row: 1297 passed/4 failed (baseline 1198/4, +99), superstorm 255, codex cross-exam 172, evidence-engine 46, visual-acceptance 211, orchestrator 144, keep-code-simple 14 (+40 subtests), pi/cross-exam 7, C7 202 (+21 subtests), A1 6, A2 11; \"4 个既有失败同 `6a59fe44`，未触碰\" present and 6a59fe44 exists in git; thought-test counts (9 scenarios, 7 pass / 2 fail E2,E5, retests E2b/E5b pass, closed) match docs/validation/product-experience-thought-tests.md line 3, and the `## 尚未验证` section exists there (line 63); upgrade-impact paragraph names missing_experience_priority, interactive /bootstrap, l"
  },
  "T-M5-16": {
-  "status": "skipped",
-  "blocked_by": "T-M5-14",
-  "attempts": 0
+  "status": "reality_gated",
+  "attempts": 1,
+  "effective_model": "opus",
+  "first_model": null,
+  "infra_failures": 0,
+  "last_evidence_excerpt": "Rerun of acceptance_cmd from /Users/aa/workspace/myskills printed EXIT=1 (log: docs/superpowers/runs/2026-09-18-product-experience-overhaul/logs/T-M5-16.supervisor.log). File docs/validation/product-experience-host-run.md (87 lines, committed in 38d55626 \"真实宿主验收记录留出待填模板\", git status clean, only that file in the commit) is an unfilled template: line 80 reads `host-run: pending`; the three symptom rows (lines 60-62) contain `verdict: <fixed\\|not-fixed\\|partial — 待人工填写>` placeholders and \"待人工填写\" for observations and evidence. grep -c of real verdicts = 0 (<3), and `^host-run: pass` absent."
  }
 }

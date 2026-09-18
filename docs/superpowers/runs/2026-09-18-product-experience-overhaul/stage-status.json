@@ -10,6 +10,7 @@
   "1.3": "ok (6 plans, 56 tasks, validate_plan_tasks 6/6)",
   "1.4": "ok (2 reverse critics; cross-module ordering defects fixed; residual risks in reverse-review.json)",
   "1.5": "ok (build_task_dag ok:true; 2 same-file ordering warnings, isolated)",
-  "1.6": "launching"
+  "1.6": "done: 55 supervisor-confirmed, 1 reality_gated (T-M5-16); 1 escalation resolved (D-0003/D-0005); wf_b7745b3b-7e3 + wf_ced78ae4-acc",
+  "2": "done: final-report.md"
  }
 }
