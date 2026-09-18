@@ -14,7 +14,7 @@
 | capability / file | artifact / field | required_content | validation_mode |
 |-------------------|-----------------|------------------|-----------------|
 | concept-contract.md | output: `concept-contract.json` | `schema_version`, `canonical_registry`, `file_prefix` per type, halt on unapproved gate | A + B1 + B2 |
-| app-design.md | canonical registry | 6 nodes present, required vs optional split, approval-records path `app-design/` | A + B1 |
+| app-design.md | canonical registry | 6 nodes present, required vs optional split, Decision Inputs section (no `human_gate`, no approval-records written) | A + B1 |
 | game-design.md | `current_state` enum | `locked` as 5th state | A + B1 |
 | game-design.md | `substitution` object | `locked: null` key | B1 |
 | game-design.md | `summary.by_state` | `locked: 0` key | B1 |
