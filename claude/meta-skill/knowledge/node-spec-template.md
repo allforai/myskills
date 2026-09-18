@@ -1,6 +1,6 @@
 # Node-spec template
 
-Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fill project-specific fields. Do not omit Attention Contract, Exit Artifacts, or Effect Verification on implementation/runtime/UI/art nodes.
+Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fill project-specific fields. Do not omit Attention Contract, Exit Artifacts, or Effect Verification on implementation/runtime/UI/art nodes. A node that implements or changes an end-user-visible surface must not omit `User-visible decisions` either.
 
 ## Scoped requirement contract
 
@@ -64,7 +64,10 @@ goal.
   than continuing with assumptions, fallback, mocks, or existence-only output.
 - Repair targets: which gap fields this node may emit for downstream repair,
   such as `code_gaps`, `asset_gaps`, `quality_gaps`, `effect_gaps`, or
-  `experience_gaps`.>
+  `experience_gaps`. An implementation or UI node also lists `contract_gaps`
+  as emittable, whose `kind: "unspecified_user_visible_decision"` entries take
+  the shape defined in
+  `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-i`.>
 
 Bootstrap should spend context once to produce this contract; `/run` should
 then execute in pull mode: start from the listed inputs and evidence, pull more
@@ -113,11 +116,52 @@ not the whole paragraph or table. Bare file names are not enough (the executor
 cannot tell which rule applies); full copies are too much (N nodes carry N
 copies of the same protocol, and the copy goes stale when the protocol moves).
 The executor reads the anchored section when the sentences are not enough and
-notes that it did.>
+notes that it did.
+
+A node that implements or changes an end-user-visible surface additionally anchors
+`${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-i` and
+`${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-j`, each with its own
+two or three load-bearing sentences. From Pattern I: a user-visible decision that no
+upstream design artifact covers is not the executor's to invent; the node implements
+nothing for it and no placeholder, appends a `contract_gaps` entry of kind
+`unspecified_user_visible_decision`, and finishes and evidences the covered remainder;
+the resulting `check_artifacts.py` failure is the intended outcome, not something to
+dodge by emptying the field. From Pattern J: every configuration item carries exactly
+one audience, only `end-user` items may appear on an end-user surface, and an item whose
+audience nobody has decided is escalated through Pattern I rather than guessed.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.
  NOT fixed steps — principles, goals, quality bars, methodology.>
+
+## User-visible decisions
+<Required for every node that implements or changes an end-user-visible surface
+(implementation/UI/mobile/web/game-client). A node with no such surface writes the
+single line `Not applicable — no end-user surface` and nothing else.
+
+One row per interface element and settings item this node will implement:
+
+| Decision | Kind (screen/setting/entry/copy promise/permission/default) | Source artifact path | Audience |
+|---|---|---|---|
+| <what the user sees or chooses> | <one of the kinds above> | <project-relative path of the upstream design artifact that decided it> | <`end-user`, `operator` or `developer`> |
+
+Source artifact paths are project-relative paths into the upstream design artifacts —
+for apps the four `.allforai/app-design/concept/job-story-spec.json`,
+`.allforai/app-design/spec/user-flow-spec.json`,
+`.allforai/app-design/spec/screen-requirements-spec.json` and
+`.allforai/app-design/spec/permissions-notifications-settings-spec.json`; for games
+`.allforai/game-design/game-design-doc.json`. A settings row copies its `Audience`
+verbatim from the settings spec; the node never re-derives it here.
+
+The table is a closed set. A user-visible decision the execution turns out to need but
+the table does not carry goes to
+`${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-i`: do not implement it,
+record it in `contract_gaps` as kind `unspecified_user_visible_decision`. A row whose
+audience is not `end-user` yet is demanded on an end-user surface goes to
+`${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-j` and is recorded in
+`contract_gaps` the same way. Bootstrap must not write a row it has no source artifact
+path for — a decision with no owning artifact is a planning-stage gap that belongs back
+with the design node, not a blank cell here.>
 
 ## Exit Artifacts
 <What files must exist when done, with expected content description.
