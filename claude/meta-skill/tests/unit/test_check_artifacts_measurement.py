@@ -422,3 +422,38 @@ def test_a_blocked_artifact_still_blocks_and_is_still_measured(tmp_path):
     assert result["all_exist"] is False
     assert result["artifacts"][0]["status_error"]["value"] == "blocked"
     assert result["artifacts"][0]["digest"] is not None, "a blocked report is still measurable"
+
+
+# --- a declared specification gap is the intended failure, not a waivable warning -----
+
+
+@pytest.mark.parametrize("flags", [{}, {"allowed_by_production_policy": True}],
+                         ids=["plain", "with-allow-flag"])
+def test_an_unspecified_user_visible_decision_gap_keeps_the_artifact_incomplete(tmp_path, flags):
+    """Pattern I ends with a node that reports the decision it was never given.
+
+    A ``status: "completed"`` report carrying that entry in ``contract_gaps`` must still
+    fail the check: escalation only routes back to the owning design node while the node
+    stays incomplete. The allow flag cannot wave it through either — ``contract_gaps`` is
+    in the hard-fail set, which returns before the flags are ever consulted, so emptying
+    or relabelling the field is the only way to make the check green, and that is the
+    dodge this test exists to catch.
+    """
+    project(tmp_path, confirmed=True)
+    gap = {
+        "kind": "unspecified_user_visible_decision",
+        "where": "settings screen: notification permission prompt",
+        "needed_decision": "when the permission request is shown and what the copy promises",
+        "blocking_intent_ids": ["I-003"],
+        "suggested_owner_artifact":
+            ".allforai/app-design/spec/permissions-notifications-settings-spec.json",
+        **flags,
+    }
+    write(tmp_path, REPORT, {"status": "completed", "contract_gaps": [gap]})
+    result = measure(tmp_path)
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "contract_gaps"
+    # Control: the same report without the gap carries no status_error. all_exist is not
+    # asserted here — in this fixture freshness feeds it too.
+    write(tmp_path, REPORT, {"status": "completed", "contract_gaps": []})
+    assert "status_error" not in artifact(tmp_path)
