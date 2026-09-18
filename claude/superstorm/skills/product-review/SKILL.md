@@ -60,6 +60,8 @@ Default extra pass: search live competitors only for how they create the same pr
 | 4 商业级够不够 | 首次进入有没有被引导；主线是不是功能菜单；核心动作有没有过程反馈；完成后有没有下一步；空态错误态是不是同一套；有没有回来的理由。反面：压缩版后台、概念 demo、功能清单式设计 | consumer-maturity-patterns |
 | naming `ui_friction` / `interaction_gap` | 用 Nielsen 十条给**已观察到**的摩擦命名，让 grill 时有共同语言。不用它扫产品 | experience-map Nielsen anchor |
 
+第 4 问的五个镜头与运行内体验质量门（meta-skill `experience-quality-critique`）的五个维度同名同义：引导 = `onboarding` · 过程反馈 = `process_feedback` · 下一步 = `next_step` · 状态一致 = `state_consistency` · 回来理由 = `return_reason`。运行内放行与事后审视用的是同一把尺；该门另有的 `mainline`、`direction_fidelity`、`audience_leak` 不是这五格之一。
+
 ## 0. Intake
 
 Completion: target named; every job in scope written as a triple and read back; run directory decided; user still present.
