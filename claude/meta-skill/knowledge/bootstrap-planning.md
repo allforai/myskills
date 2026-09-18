@@ -14,6 +14,11 @@ Design the smallest node graph that achieves the user's goals for *this* project
 - Goal combination order: reverse-concept → analyze → implement/translate/rebuild/create → demo → verify/tune/quality-checks → launch-prep.
 - Separate outcome from route. When the user's named means (an engine, a module, a requested node) may not be the best route to the underlying product outcome, record it as a Phase A decision input with the alternative and let the human choose. Never silently swap the route.
   Exception, and the only one: art dimension is a pipeline capability limit, not a route. This pipeline produces 2D / 2.5D assets only because 3D assets cannot be generated; `dimension=3d` and skeletal-animation requests are remapped to 2D frame animation (see `bootstrap-art-pipeline.md`). That remap is never a Phase A option, but it is stated to the user once in the Phase A summary — a recorded remap that nobody was told about is still a silent swap.
+- "Smallest" never means omitting experience design. On a `new-product` or `product-reconstruction` route whose `experience_priority.mode` is `consumer` or `mixed`, the workflow contains node(s) whose `exit_artifacts` produce the experience design artifacts, and every node that implements an interface is (directly or transitively) `hard_blocked_by` them. Merge and name nodes freely; the contract is the artifact path, not the node name:
+  - App: `.allforai/app-design/concept/job-story-spec.json`, `.allforai/app-design/spec/user-flow-spec.json`, `.allforai/app-design/spec/screen-requirements-spec.json`, `.allforai/app-design/spec/permissions-notifications-settings-spec.json`.
+  - Game: `.allforai/game-design/game-design-doc.json` (`.allforai/game-design/design/game-design-doc.json` is accepted as the same artifact).
+
+  `validate_bootstrap.py` refuses a graph that breaks this (`missing_experience_design_node`, `implementation_not_blocked_by_experience_design`).
 
 ## After the pipeline: user steps
 

@@ -121,6 +121,7 @@ not additional product authorities.
   declaration alone is not verified contract or completion evidence.
   `not_applicable` may explain experience
   or technical omissions (for example a headless API has no UI experience work).
+  `not_applicable.experience` is legal only when `bootstrap-profile.json` `experience_priority.mode` is `none`; any other mode is refused as `experience_not_applicable_on_ui_product`.
   This does not mandate every Capability. Emit a complete graph, including
   dependency edges, repair ownership and domain-specific acceptance; the helper
   binds confirmed goals/acceptance and generates matching Node-specs. Run all
