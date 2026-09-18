@@ -71,7 +71,9 @@
   python3 -m pytest -q codex/cross-exam-skill/scripts
   python3 -m pytest -q shared/evidence-engine
   python3 -m pytest -q shared/visual-acceptance
-  python3 -m pytest -q shared/scripts/orchestrator shared/keep-code-simple pi/cross-exam
+  python3 -m pytest -q shared/scripts/orchestrator   # 三个目录必须分三次调用：
+  python3 -m pytest -q shared/keep-code-simple       # keep-code-simple 与 pi/cross-exam 的
+  python3 -m pytest -q pi/cross-exam                 # test_contract.py 同名，同一次调用收集必冲突
   python3 -m pytest -q pi/meta-skill/test_contract.py codex/meta-skill/test_flow.py codex/meta-skill/test_install.py
   python3 shared/scripts/orchestrator/check_codex_meta_skill_parity.py
   python3 claude/superstorm/scripts/check_skill_refs.py
