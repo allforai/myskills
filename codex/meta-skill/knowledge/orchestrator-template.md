@@ -443,6 +443,13 @@ On the first iteration, if `transition_log` is non-empty:
   `workflow.json.user_steps` in order (`cross-exam`, then `product-review`) as the skills the
   user invokes next; they are never dispatched, never started by a node, and never
   reported as done (ADR-0008). An empty list means the project was exempted at bootstrap.
+  Before those user steps, run
+  `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations` and print every
+  returned entry under the heading `Decisions you delegated to the model`: its id, the
+  proposal title, the user turn that handed the decision over, and the reason. An empty
+  list prints `No delegated decisions.` The user must be able to see which product
+  decisions the model made for them without opening a file. This disclosure informs; it
+  never blocks the report, never changes the outcome, and asks the user nothing.
 - `concept-acceptance` names missing behaviour mappings
   (`acceptance-report.json.missing_mappings` non-empty): read `--policy-event
   on_needs_iteration`. An empty list is the gate passing — proceed, ask nothing. A report
@@ -488,10 +495,13 @@ On the first iteration, if `transition_log` is non-empty:
 ## Post-Completion
 
 1. Run `python3 .allforai/bootstrap/scripts/summarize_run_log.py . --write-report` when that script exists
-2. If `.allforai/bootstrap/product-summary.json` exists, run `python3 .allforai/bootstrap/scripts/check_product_summary.py .allforai/bootstrap/product-summary.json`
-3. Read `.allforai/bootstrap/protocols/learning-protocol.md`
-4. Read `.allforai/bootstrap/protocols/feedback-protocol.md`
-5. Summarize reusable experience and proposed feedback
+2. Run `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations` and disclose the
+   delegated product decisions as the success report does, `No delegated decisions.` when the
+   list is empty. Run it whether the run succeeded or stopped early; it asks nothing and blocks nothing
+3. If `.allforai/bootstrap/product-summary.json` exists, run `python3 .allforai/bootstrap/scripts/check_product_summary.py .allforai/bootstrap/product-summary.json`
+4. Read `.allforai/bootstrap/protocols/learning-protocol.md`
+5. Read `.allforai/bootstrap/protocols/feedback-protocol.md`
+6. Summarize reusable experience and proposed feedback
 
 ## Non-Stop Driver
 
