@@ -371,6 +371,10 @@ LOCAL = ".allforai/bootstrap/local-requirements.json"
 TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop",
           "experience-direction", "tradeoffs")
 EXPERIENCE_TOPIC = "experience-direction"  # The experience the product gives people, decided before its tradeoffs.
+PROPOSAL_ORIGIN = "model-proposal"  # Authored by the model for the user to choose from; never a decision.
+_PROPOSAL_TEXT = ("id", "title", "who", "circumstance", "core_loop_feel", "first_minute", "return_reason", "goal")
+_PROPOSAL_LISTS = ("anti_goals", "tradeoffs", "scope", "business_rules", "acceptance")
+_PROPOSAL_KEYS = {*_PROPOSAL_TEXT, *_PROPOSAL_LISTS, "comparable"}
 LOCAL_TOPIC = "local-requirements"  # Grouping label for hand-projected local requirements without a topic.
 RUN_POLICY = ".allforai/bootstrap/run-policy.json"
 RUN_POLICY_REPAIRS = ".allforai/bootstrap/run-policy-repairs.json"
@@ -466,6 +470,36 @@ def _item(item):
     for key in ("scope", "business_rules", "acceptance"):
         if not isinstance(item.get(key), list) or not item[key] or not all(_text(v) for v in item[key]):
             raise ValueError(f"Intent needs non-empty {key}")
+
+
+def _proposal(value):
+    """Validate one offered experience direction and return the script's own copy.
+
+    The key set is exact on purpose: a proposal carries product meaning only, so a
+    host cannot hand one `origin`, `status`, `round`, `recommended` or a
+    `confirmation` and have the store treat it as something the user decided.
+    """
+    import copy
+    if not isinstance(value, dict) or set(value) != _PROPOSAL_KEYS:
+        raise ValueError("Experience proposal needs exactly its own fields")
+    for key in _PROPOSAL_TEXT:
+        if not _text(value[key]):
+            raise ValueError(f"Experience proposal needs {key}")
+    for key in _PROPOSAL_LISTS:
+        if not isinstance(value[key], list) or not value[key] or not all(_text(v) for v in value[key]):
+            raise ValueError(f"Experience proposal needs non-empty {key}")
+    comparable = value["comparable"]
+    if (not isinstance(comparable, dict) or set(comparable) != {"product", "approach"}
+            or any(not _text(comparable[key]) for key in ("product", "approach"))):
+        raise ValueError("Experience proposal needs comparable product and approach")
+    return copy.deepcopy(value)
+
+
+def _current_proposals(concept):
+    """The offered directions of the newest round; earlier rounds stay as history."""
+    proposals = concept.get("experience_proposals") or []
+    rounds = [p["round"] for p in proposals]
+    return [p for p in proposals if p["round"] == max(rounds)] if rounds else []
 
 
 def _latest(concept):
@@ -820,11 +854,23 @@ def _intent_drift(root, workflow, concept, refs, frozen, *, label, path, retaine
 
 def _validate_question_ids(concept):
     intent_ids = set(_latest(concept))
+    proposal_ids = set()
+    proposals = concept.get("experience_proposals", [])
+    separate = ("Proposal identities must be unique and separate from intent and question identities")
+    if not isinstance(proposals, list):
+        raise ValueError(separate)
+    for proposal in proposals:
+        identity = proposal.get("id") if isinstance(proposal, dict) else None
+        if not _text(identity) or identity in intent_ids or identity in proposal_ids:
+            raise ValueError(separate)
+        proposal_ids.add(identity)
     question_ids = set()
     for question in concept.get("intent_questions", []):
         identity = question.get("id")
         if not _text(identity) or identity in intent_ids or identity in question_ids:
             raise ValueError("Question identities must be unique and separate from intent identities")
+        if identity in proposal_ids:
+            raise ValueError(separate)
         question_ids.add(identity)
 
 
@@ -933,6 +979,37 @@ def _discussion(root, concept):
     return {"status": "discussion", "topics": topics, "history": concept.get("requirements", []),
             "excluded": excluded, "questions": concept.get("intent_questions", [])}
 
+
+
+def _propose(root, profile, concept_path, concept, request):
+    """Record one round of offered experience directions for the user to choose from.
+
+    Nothing is decided here: the model authors the directions, the user picks one
+    later through `select` or hands the pick back through `delegate`. So this writes
+    no journal batch and asks for no user reference, and the round is appended —
+    an earlier round stays readable as the history of what was already offered.
+    """
+    if concept_path != CONCEPT or profile.get("task_route") not in ("product-reconstruction", "new-product"):
+        raise ValueError("Experience proposals belong to a product session; draft the product first")
+    offered = request.get("proposals")
+    if not isinstance(offered, list) or not 2 <= len(offered) <= 3:
+        raise ValueError("Propose two or three experience directions")
+    proposals = [_proposal(p) for p in offered]
+    if len({p["id"] for p in proposals}) != len(proposals):
+        raise ValueError("Proposal identities must be unique and separate from intent and question identities")
+    if len([p for p in proposals if p["id"] == request.get("recommended_id")]) != 1:
+        raise ValueError("Exactly one proposal must be recommended")
+    if not _text(request.get("rationale")):
+        raise ValueError("A recommendation needs its rationale")
+    opened = max((p["round"] for p in concept.get("experience_proposals", [])), default=0) + 1
+    for proposal in proposals:
+        proposal.update(origin=PROPOSAL_ORIGIN, round=opened, recommended=proposal["id"] == request["recommended_id"])
+        if proposal["recommended"]:
+            proposal["rationale"] = request["rationale"]
+    concept.setdefault("experience_proposals", []).extend(proposals)
+    _validate_question_ids(concept)
+    _write(root, CONCEPT, concept)
+    return _discussion(root, concept)
 
 
 def _external_change(root, request):
@@ -1076,6 +1153,8 @@ def session(root, request):
         return _discussion(root, concept)
     if operation == "resume":
         return _discussion(root, concept)
+    if operation == "propose":
+        return _propose(root, profile, concept_path, concept, request)
     if operation == "plan":
         import copy
         import re
