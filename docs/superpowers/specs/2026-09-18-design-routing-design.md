@@ -346,9 +346,12 @@ M1 由三层构成，层间只靠两个数据契约耦合：
     （与 `_profile_has_mobile_ui_module` `:626` 同样从 `profile.modules` 取证）。
   - `_is_implementation_node(node) -> bool`：`capability ∈ UI_IMPLEMENTATION_CAPABILITIES`，或
     `responsibilities` 含 `"implementation"`（产品路线 `plan` 操作写入的责任标签）。
-  - 界面实现节点 = `_matching_nodes(workflow, specs_dir, _ui_implementation_terms(profile))`（`:766`，
+  - `_ui_implementation_nodes(workflow, specs_dir, profile) -> list[dict]`（模块级私有函数，**界面实现节点的唯一识别入口**）：
+    `_matching_nodes(workflow, specs_dir, _ui_implementation_terms(profile))`（`:766`，
     节点条目 + node-spec 正文的词项匹配，既有办法）再按 `_is_implementation_node` 过滤。
     刻意不用裸词 `"ui"`、`"expo"`（会命中 build/require/export）。
+    M3 的 `experience_gate_flow_findings` 直接调用这个函数（闭环评审补充：M3 设计要求"与 M1 同源识别"，
+    因此这里必须落成具名函数而不是内联在校验函数里，M3 无需再做抽取）。
   - `experience_design_coverage_findings(bdir) -> list[dict]`，判定顺序：
     1. `workflow.json` 或 `bootstrap-profile.json` 不存在、不可解析、根不是 dict → `[]`
        （与 `plan_confirmation_findings` `:1662-1672` 同样的让位方式；这些故障由 scope/shape 门负责）。
@@ -358,7 +361,7 @@ M1 由三层构成，层间只靠两个数据契约耦合：
     4. `mode == "none"` → `[]`。
     5. `workflow.not_applicable` 是 dict 且含 `"experience"` → `experience_not_applicable_on_ui_product`（不返回，继续）。
     6. `mode ∉ EXPERIENCE_DESIGN_MODES`（即 `admin`）→ 返回当前 findings。
-    7. 取界面实现节点；为空 → 返回（规格："且工作流含界面实现节点"）。
+    7. 经 `_ui_implementation_nodes` 取界面实现节点；为空 → 返回（规格："且工作流含界面实现节点"）。
     8. 必需产物分组：应用 = `[(user-flow,), (screen-requirements,)]`；游戏（`profile.is_game_project is True`）=
        `[GAME_EXPERIENCE_DESIGN_DOC_PATHS]`。每组求生产者节点集；为空 → 每组一条
        `missing_experience_design_node`（消息含缺失路径）。
@@ -508,7 +511,8 @@ M1 由三层构成，层间只靠两个数据契约耦合：
 - A5 游戏判定用 `profile.is_game_project is True`，与 SKILL.md Step 2/§3.5.0 的判据一致。
 - A6 产物路径匹配接受 monorepo 前缀（`endswith("/" + path)`）。
 - A7 内部命名（常量名、`_produces`、`_ui_implementation_terms`、`_is_implementation_node`、测试助手名）
-  为私有选择，非注册表接口。
+  为私有选择，非注册表接口。例外：`_ui_implementation_nodes` 与测试助手 `_experience_project` 的名字被 M3 的设计引用
+  （同文件内复用），实现时不得改名。
 - A8 Step 2 新条目作为第 9 条追加（不重排既有编号），第 1 条加一句指针；`experience_priority` 在 profile JSON 块中置于
   `architecture_pattern` 之后。
 - A9 `local-change` 路线的 profile 可不带 `experience_priority`；无 `task_route` 的遗留 profile 不触发新检查。

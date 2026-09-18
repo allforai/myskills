@@ -104,8 +104,9 @@ M4 全部是文本契约加一个钉住函数与一个单元用例，没有新�
 ```
 
 `data:experienceDesignArtifacts`（M1）的消费方式：Pattern I 的"上游设计产物"与 `suggested_owner_artifact` 的取值域，
-以及 node-spec 新节的"来源产物路径"，都指 R-M1-04 的那组路径（应用四个 `.allforai/app-design/...` 产物，游戏的
-`game-design-doc.json`）。M4 只引用路径，不改 M1 的文件。
+以及 node-spec 新节的"来源产物路径"，都指 R-M1-04 的那组路径（应用四个 `.allforai/app-design/...` 产物；游戏的
+`.allforai/game-design/game-design-doc.json`——M1 设计已更正为该规范路径，`.allforai/game-design/design/game-design-doc.json`
+作为同一产物同样被接受，M4 的文本写规范路径）。M4 只引用路径，不改 M1 的文件。
 
 ### 数据形状（冻结接口的具体字段）
 
@@ -121,7 +122,9 @@ M4 全部是文本契约加一个钉住函数与一个单元用例，没有新�
 }
 ```
 
-五个键全部必填。`blocking_intent_ids` 取 `product-intent.json` 的意图 id，无法对应时写 `[]` 并在 `needed_decision`
+五个键全部必填。`blocking_intent_ids` 取节点自身 `requirement_refs[].id`——即
+`.allforai/product-concept/product-concept.json` 的 `requirements[]` 里已确认意图的 id（仓库里不存在
+`product-intent.json` 这个文件；闭环评审更正）；示例里的 `"I-003"` 只是占位。无法对应时写 `[]` 并在 `needed_decision`
 里说明。`suggested_owner_artifact` 是项目相对路径，必须是某个上游节点 `exit_artifacts` 里的路径；找不到拥有者时写
 最接近的 `data:experienceDesignArtifacts` 路径。
 

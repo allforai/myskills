@@ -181,12 +181,37 @@ plan-confirmation 与 freshness 合约；手写这些等于在夹具里复制一
 | `bad-workflow/plan.json` | `plan` 请求：**13 个节点**（1 契约、1 内容库、6 implement、其余 verify/repair；实现节点把 `experience` 写进自己的 `responsibilities`——ink-scent 正是这样让"阶段全覆盖"通过的），无任何节点产出 `.allforai/app-design/**`，无节点引用 `experience-quality-critique`；每节点含 `body`（≥ `ATTENTION_CONTRACT_BODY` 的术语） |
 | `bad-workflow/readiness-spec.json` | `_minimal_project` 同形，`required_repair_loops: []` |
 | `good-workflow/profile.json` | 同 bad |
-| `good-workflow/dialogue.json` | `draft`（同六话题）→ `propose`（3 条方向、1 条推荐，字段按 R-M2-02）→ `decide`（六话题 `confirm` + `{"operation":"select","proposal_id":…,"reason":…}`）→ `freeze`（include 含由 select 生成的体验方向意图） |
+| `good-workflow/dialogue.json` | `draft`（同六话题）→ `propose`（3 条方向、1 条推荐，字段按 R-M2-02；`comparable` 为 `{product, approach}` 对象，见 M2 设计 A2）→ `decide`（六话题 `confirm` + `{"operation":"select","proposal_id":…,"reason":…}` + 对 `gap-experience-direction` 的 `{"operation":"answer",…}`；动作键是 `operation`，见 `product_intent.py:1217`）→ `freeze`（include 含由 select 生成的体验方向意图 `experience-direction-<proposal_id>`） |
 | `good-workflow/plan.json` | 同一产品：体验设计节点（`exit_artifacts` 覆盖 R-M1-04 四个应用产物路径）→ design 阶段评审 → 界面实现节点（传递 `hard_blocked_by` 设计评审）→ verify → runtime 阶段评审 → 收尾节点（`hard_blocked_by` runtime 评审）→ 两个修复节点。节点**不用** `capability: "app-design"` 也不用 `APP_DESIGN_REQUIRED_NODES` 里的 id，避免触发 `validate_app_design_flow`（`:1257-1320`）的固定六节点要求——R-M1-04 的契约是产物路径不是节点名 |
 | `good-workflow/readiness-spec.json` | `required_repair_loops` 两条：design 评审回路、runtime 评审回路（形状取 `test_validate_unattended_readiness.py:122-169` 的 `_repair_loop`，`qa_node_ids` 含两个评审节点） |
 
 约束：每个冻结意图必须有消费节点，且这些节点的 `responsibilities` 并集覆盖六个阶段
 （`product_intent.py:736-741`），否则 `plan` 以 "lacks applicable full-process responsibilities" 拒绝。
+
+与上游各门的对接约束（闭环评审补充；都是夹具形状，不改上游代码）：
+
+- **界面实现节点必须被 M1 的识别函数认出。** M1 的 `_ui_implementation_nodes` 要求节点 `capability ∈ {implement, translate,
+  ui-forge}` 或 `responsibilities` 含 `implementation`，**并且**节点条目/`body` 命中界面词项（`screen`、`frontend`、`react native`、
+  `界面`、`页面`，或 profile 中 `role ∈ {frontend, mobile}` 模块的 `"<path>/"`）。bad 与 good 两份计划的移动端实现节点的 goal/`body`
+  都要写出 `screen` 与模块路径（如 `mobile/`）。否则 M1 第 7 步、M3 触发条件 3 直接返回空，`missing_experience_design_node` /
+  `missing_experience_gate` 不会出现，测试会因夹具形状而不是上游缺陷失败。
+- **评审节点按 `exit_artifacts` 被认出（M3 U3）。** good 计划的 design 评审节点 `exit_artifacts` 含
+  `.allforai/app-design/qa/experience-quality-critique-design.json`（及 `.html`、`docs/experience-review/design.md`），runtime 评审节点含
+  `…-runtime.json`（及 `.html`、`docs/experience-review/runtime.md`）；两个评审节点的 id 都在某条回路的 `qa_node_ids` 里，
+  回路的 closure 节点直接 `hard_blocked_by` 该评审节点与 repair 节点（`repair_loop_declaration_findings` 的既有要求）。
+  节点 id 不含 `product-review` / `cross-exam`。
+- **收尾节点的 capability** 取 M3 `EXPERIENCE_GATE_CLOSURE_CAPABILITIES` 之一（首选 `pipeline-closure-verify`），使
+  `closure_not_blocked_by_experience_gate` 这条检查在 good 图上真正被走到；若该 capability 牵出其它校验器的固定要求而夹具
+  成本过高，退回普通 capability 并在 README 注明该码只由 M3 自己的单测覆盖。
+- **Expo 移动模块会同时触发既有的 `validate_mobile_ui_coverage`**（`_profile_has_mobile_ui_module` +
+  `_required_mobile_ui_platforms` 见 "expo" 即要求 react-native 平台 UI 自动化节点）。good 计划的 verify 段必须含一个满足
+  `_ui_node_present(…, "react-native")` 的 UI 自动化节点（带 runner evidence 措辞），否则 `validate_bootstrap.py` 不会 exit 0。
+  bad 计划可含可不含（断言是 ⊇）。
+- **体验方向意图的 id** 是 `experience-direction-<proposal_id>`（M2 设计 A1）；good 的 `freeze.include` 与各消费节点的
+  `intent_ids` 用这个派生 id，`decide` 批次里在 `select` 之后追加 `{"operation":"answer", …}` 关闭
+  `gap-experience-direction`（M2 设计 A3：`select` 不自动关缺口，漏写则 `freeze` 失败）。
+- **共享夹具 `project()`** 在 M1 落地后自带 `experience_priority: {"mode": "none", …}`；`build` 合并 `profile.json` 时以夹具的
+  `consumer` 覆盖它。`force_past_front_door` 的"临时移除"等价于临时保持 `none`，两种写法都可。
 
 **测试文件** `claude/meta-skill/tests/unit/test_consumer_product_regression.py`。风格：模块 docstring 沿用
 `test_bootstrap_scope.py:1-4` 的声明；helper 从既有模块导入，不复制：
@@ -386,6 +411,9 @@ def delegation_disclosure(project_root: Path):
 判定规则：失败集合 == 基线四个 → 通过；出现任何其它失败 → 本次回归，记录失败 id 与首段回溯，
 状态 `regression`，M5 不得宣告完成（修复归引入它的模块；属 M5 自己文件的当场修）。
 四个基线失败中若有变为通过，如实记录为"基线变化"，不算失败，也不去动它们。
+另跑两条跨模块不变量并记入同一记录（M2、M3、M4 都往 `knowledge/` 写过字，M1 的不变量须在最终文本上复核）：
+`grep -rn "experience_priority" claude/meta-skill/knowledge | grep -v "experience_priority.mode" | grep -v bootstrap`（期望为空）、
+`python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py`（exit 0：M1/M3/M4 三个新钉住函数同时成立）。
 
 ### U6 版本（R-M5-06）
 
@@ -406,6 +434,9 @@ def delegation_disclosure(project_root: Path):
 release 提交由编排器执行；本单元把提交正文草稿写到运行目录 `release-commit-message.txt`：
 标题 `release: superstorm 0.43.0, meta-skill 0.20.0 (体验方向与体验质量门)`，正文含 U5 的各套件数字、
 "4 个既有失败同 `6a59fe44`，未触碰"、思维测试 pass/fail 计数与 `## 尚未验证` 指针。不 push（信封 D6）。
+正文另含一段**升级影响**（M1 设计 Error handling 点名要求由 M5 披露）：已 bootstrap 的产品路线项目在升级后的下一次 `/run`
+会被 `missing_experience_priority` 拦下，需回到交互式 `/bootstrap` 补 `experience_priority`（界面产品随后还会被要求补体验方向、
+体验设计节点与体验质量门）；`local-change` 路线与无 `task_route` 的遗留 profile 不受影响。
 
 ### U7 文档（R-M5-07）
 
@@ -415,6 +446,8 @@ release 提交由编排器执行；本单元把提交正文草稿写到运行目
   `/bootstrap → /run` 一行（`:226`）的 Why 列补"运行内含体验质量门，`/product-review` 采信其
   `docs/experience-review/` 留痕"。
 - `README.md`：`:136` 的统一入口段补同义一句中文。其余 bootstrap 提及处（`:60,:98,:112`）是命令清单，不改。
+- `CLAUDE.md` 的同一处再补一句升级影响（与 U6 提交正文同义）：旧的产品路线项目升级后首次 `/run` 会得到
+  `missing_experience_priority`，回交互式 `/bootstrap` 即可。
 - 不新增 CHANGELOG。
 
 ### 数据流

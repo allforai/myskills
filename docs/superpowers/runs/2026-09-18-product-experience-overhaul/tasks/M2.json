@@ -1,0 +1,154 @@
+[
+ {
+  "id": "T-M2-01",
+  "title": "Topic experience-direction in TOPICS, test mirror, and repair of the two session tests the insertion breaks",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_product_intent_session.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_topic_is_listed_before_tradeoffs_and_missing_direction_is_a_gap claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_intent_review_corrections.py",
+  "depends_on": [],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-02",
+  "title": "Proposal storage, validation, three-namespace id uniqueness and operation propose",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_propose_validates_count_recommendation_and_fields claude/meta-skill/tests/unit/test_experience_direction.py::test_proposal_identity_is_unique_across_proposals_intents_and_questions claude/meta-skill/tests/unit/test_experience_direction.py::test_proposal_cannot_be_confirmed_or_frozen claude/meta-skill/tests/unit/test_product_question_identity.py",
+  "depends_on": [
+   "T-M2-01"
+  ],
+  "implements": [
+   "data:experienceProposals",
+   "api:productIntentPropose"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-03",
+  "title": "_discussion/resume present the current proposal round; old output byte-identical",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_propose_stores_rounds_without_journal_and_resume_presents_current_round claude/meta-skill/tests/unit/test_product_intent_resume.py",
+  "depends_on": [
+   "T-M2-02"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-04",
+  "title": "decide action select producing the confirmed experience-direction intent that freezes and passes the three gates",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_selected_direction_freezes_and_passes_all_public_gates claude/meta-skill/tests/unit/test_experience_direction.py::test_select_then_adjust_in_one_batch_keeps_revision_lineage claude/meta-skill/tests/unit/test_experience_direction.py::test_select_needs_a_current_round_proposal_and_a_free_direction_slot",
+  "depends_on": [
+   "T-M2-03"
+  ],
+  "implements": [
+   "api:productIntentSelect",
+   "data:experienceDirectionIntent"
+  ],
+  "requires": [
+   "data:experiencePriority"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-05",
+  "title": "decide action delegate: recommended proposal, auto_decided and confirmation.delegated, refused without a current round",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_delegate_records_the_recommended_proposal_as_an_auto_decision claude/meta-skill/tests/unit/test_experience_direction.py::test_delegate_and_select_need_a_current_proposal_round",
+  "depends_on": [
+   "T-M2-04"
+  ],
+  "implements": [
+   "api:productIntentDelegate"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-06",
+  "title": "Read-only disclosure: public delegations() and CLI --delegations",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_delegate_records_auto_decision_and_is_disclosed",
+  "depends_on": [
+   "T-M2-05"
+  ],
+  "implements": [
+   "data:delegationDisclosure"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-07",
+  "title": "validate_scope blocker ui_product_without_experience_direction (fires for consumer/mixed, silent otherwise)",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/product_intent.py",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_ui_product_without_direction_is_blocked_at_every_gate claude/meta-skill/tests/unit/test_experience_direction.py::test_direction_gate_stays_silent_when_it_does_not_apply",
+  "depends_on": [
+   "T-M2-06"
+  ],
+  "requires": [
+   "data:experiencePriority"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-08",
+  "title": "run-summary and orchestrator-template Post-Completion step 0b disclose delegated decisions",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/summarize_run_log.py",
+   "claude/meta-skill/knowledge/orchestrator-template.md",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_run_summary_and_completion_text_disclose_delegations claude/meta-skill/tests/unit/test_run_logging.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
+  "depends_on": [
+   "T-M2-06"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-09",
+  "title": "Protocol text rewrite in product-intent-confirmation.md (topic, select/delegate as actions, propose entry, proposals section, --delegations)",
+  "touched_paths": [
+   "claude/meta-skill/knowledge/product-intent-confirmation.md",
+   "claude/meta-skill/tests/unit/test_experience_direction.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_protocol_text_names_the_new_topic_and_actions && ! grep -n \"experience_priority\" claude/meta-skill/knowledge/product-intent-confirmation.md | grep -v \"experience_priority.mode\" | grep -q . && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
+  "depends_on": [
+   "T-M2-01"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M2-10",
+  "title": "Backward-compatibility proof (pre-module concept reads without drift) and full module regression",
+  "touched_paths": [
+   "claude/meta-skill/tests/unit/test_experience_direction.py",
+   "claude/meta-skill/scripts/orchestrator/product_intent.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py::test_pre_existing_concept_and_journal_read_without_drift && python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py && python3 -m pytest -q claude/meta-skill/tests/unit/test_product_intent_session.py claude/meta-skill/tests/unit/test_product_intent_resume.py claude/meta-skill/tests/unit/test_freeze_idempotence.py claude/meta-skill/tests/unit/test_product_question_identity.py claude/meta-skill/tests/unit/test_product_retained_scope.py claude/meta-skill/tests/unit/test_intent_review_corrections.py claude/meta-skill/tests/unit/test_legacy_profile_authority.py claude/meta-skill/tests/unit/test_legacy_projection_authority.py claude/meta-skill/tests/unit/test_local_reopen_scope.py claude/meta-skill/tests/unit/test_acceptance_allocation.py claude/meta-skill/tests/unit/test_run_logging.py claude/meta-skill/tests/unit/test_evidence_freshness.py::test_selected_intent_payload_drift_in_real_producer_baseline_is_stale && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
+  "depends_on": [
+   "T-M2-07",
+   "T-M2-08",
+   "T-M2-09"
+  ],
+  "reality_gate": false
+ }
+]

@@ -1,0 +1,110 @@
+[
+ {
+  "id": "T-M4-01",
+  "title": "defensive-patterns.md: add Pattern I (Specification Gap Escalation) and Pattern J (Audience Isolation) with explicit #pattern-i/#pattern-j anchors",
+  "touched_paths": [
+   "claude/meta-skill/knowledge/defensive-patterns.md"
+  ],
+  "acceptance_cmd": "F=claude/meta-skill/knowledge/defensive-patterns.md; for t in '<a id=\"pattern-i\"></a>' '## Pattern I: Specification Gap Escalation' '<a id=\"pattern-j\"></a>' '## Pattern J: Audience Isolation' unspecified_user_visible_decision needed_decision blocking_intent_ids suggested_owner_artifact suspected_root_node requirement_ref '`end-user`' '`operator`' '`developer`' build-time remote-config deploy-env '.allforai/app-design/spec/permissions-notifications-settings-spec.json'; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && ! grep -qi 'ink-scent' \"$F\" && python3 -c \"t=open('claude/meta-skill/knowledge/defensive-patterns.md',encoding='utf-8').read(); assert t.count('## Pattern H:')==1 and t.index('## Pattern H:')<t.index('## Pattern I: Specification Gap Escalation')<t.index('## Pattern J: Audience Isolation'); tail=t.split('## Pattern I: Specification Gap Escalation')[1]; assert all(tail.count(s)>=2 for s in ('**Trigger condition**:','**Protocol**:','**Key principles**:','**Example**:')), 'four-part layout incomplete'\" && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
+  "depends_on": [],
+  "implements": [
+   "data:unspecifiedDecisionGap"
+  ],
+  "requires": [
+   "data:experienceDesignArtifacts"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-02",
+  "title": "node-spec-template.md: add '## User-visible decisions' section, Pattern I/J knowledge anchors, contract_gaps repair target",
+  "touched_paths": [
+   "claude/meta-skill/knowledge/node-spec-template.md"
+  ],
+  "acceptance_cmd": "F=claude/meta-skill/knowledge/node-spec-template.md; for t in '## User-visible decisions' 'defensive-patterns.md#pattern-i' 'defensive-patterns.md#pattern-j' contract_gaps unspecified_user_visible_decision 'Not applicable — no end-user surface' 'Source artifact path' '## Attention Contract' 'Repair targets' '## Effect Verification' '## Quality Acceptance' 'Bootstrap should spend context once' 'execute in pull mode'; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && python3 -c \"t=open('claude/meta-skill/knowledge/node-spec-template.md',encoding='utf-8').read(); assert t.index('\\n## Guidance')<t.index('\\n## User-visible decisions')<t.index('\\n## Exit Artifacts'); assert t.count('\\n## User-visible decisions')==1\" && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py",
+  "depends_on": [
+   "T-M4-01"
+  ],
+  "requires": [
+   "data:experienceDesignArtifacts"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-03",
+  "title": "Settings spec and topology spec SKILL.md: settings items and service_endpoints carry audience/provisioning/surface/requirement_ref",
+  "touched_paths": [
+   "claude/meta-skill/skills/app-design/20-spec/permissions-notifications-settings-spec/SKILL.md",
+   "claude/meta-skill/skills/app-design/20-spec/app-surface-topology-spec/SKILL.md"
+  ],
+  "acceptance_cmd": "S=claude/meta-skill/skills/app-design/20-spec/permissions-notifications-settings-spec/SKILL.md; T=claude/meta-skill/skills/app-design/20-spec/app-surface-topology-spec/SKILL.md; for t in 'settings_groups[].items[]' setting_id audience end-user operator developer provisioning build-time remote-config deploy-env requirement_ref admin_console operator_console 'Pattern J'; do grep -qF -- \"$t\" \"$S\" || { echo \"settings missing: $t\"; exit 1; }; done && for t in 'service_endpoints' endpoint_id consumer_surface_refs audience provisioning build-time remote-config deploy-env requirement_ref; do grep -qF -- \"$t\" \"$T\" || { echo \"topology missing: $t\"; exit 1; }; done && python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py",
+  "depends_on": [],
+  "implements": [
+   "data:settingsAudience"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-04",
+  "title": "program-handoff-generation SKILL.md: handoff carries settings_items[] and service_endpoints[] with audience/provisioning verbatim",
+  "touched_paths": [
+   "claude/meta-skill/skills/app-design/30-generate/program-handoff-generation/SKILL.md"
+  ],
+  "acceptance_cmd": "F=claude/meta-skill/skills/app-design/30-generate/program-handoff-generation/SKILL.md; for t in 'settings_items' 'service_endpoints' setting_id audience provisioning requirement_ref end-user; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py",
+  "depends_on": [
+   "T-M4-03"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-05",
+  "title": "app-design-closure-qa SKILL.md: Settings audience closure checks (missing_audience, non_end_user_item_in_screen_spec) -> missing_contracts + needs_revision",
+  "touched_paths": [
+   "claude/meta-skill/skills/app-design/40-qa/app-design-closure-qa/SKILL.md"
+  ],
+  "acceptance_cmd": "F=claude/meta-skill/skills/app-design/40-qa/app-design-closure-qa/SKILL.md; for t in 'Settings audience closure' missing_audience non_end_user_item_in_screen_spec missing_contracts needs_revision item_id requirement_ref 'screen-requirements-spec.json'; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py",
+  "depends_on": [
+   "T-M4-03"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-06",
+  "title": "product-verify.md: add '### Audience Leak Check', Rule 6 Audience isolation, #pattern-j knowledge reference",
+  "touched_paths": [
+   "claude/meta-skill/knowledge/capabilities/product-verify.md"
+  ],
+  "acceptance_cmd": "F=claude/meta-skill/knowledge/capabilities/product-verify.md; for t in '### Audience Leak Check' audience_leak 'defensive-patterns.md#pattern-j' observed_audience spec_ref contract_gaps code_gaps requirement_ref '5. **Screenshot-backed UI acceptance**'; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && grep -qE '^6\\. \\*\\*Audience isolation\\*\\*' \"$F\" && python3 -c \"t=open('claude/meta-skill/knowledge/capabilities/product-verify.md',encoding='utf-8').read(); assert t.index('### Multi-Client Feature Parity Verification')<t.index('### Audience Leak Check')<t.index('## Rules (Must Preserve)')\" && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py",
+  "depends_on": [
+   "T-M4-01"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-07",
+  "title": "Characterization test: an unspecified_user_visible_decision contract gap keeps the artifact incomplete, allow-flag included",
+  "touched_paths": [
+   "claude/meta-skill/tests/unit/test_check_artifacts_measurement.py"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q \"claude/meta-skill/tests/unit/test_check_artifacts_measurement.py::test_an_unspecified_user_visible_decision_gap_keeps_the_artifact_incomplete\" && python3 -m pytest -q claude/meta-skill/tests/unit/test_check_artifacts_measurement.py claude/meta-skill/tests/unit/test_check_artifacts.py",
+  "depends_on": [],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M4-08",
+  "title": "validate_meta_contracts.py: add and register validate_spec_gap_discipline_contract pinning the seven-file literal table",
+  "touched_paths": [
+   "claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py"
+  ],
+  "acceptance_cmd": "V=claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py; [ \"$(grep -c 'validate_spec_gap_discipline_contract(errors' \"$V\")\" -ge 2 ] && for t in 'defensive-patterns.md#pattern-i' '## Pattern I: Specification Gap Escalation' '## User-visible decisions' 'settings_items' 'service_endpoints' 'non_end_user_item_in_screen_spec' 'missing_audience' '### Audience Leak Check' 'defensive-patterns.md#pattern-j' 'missing spec-gap discipline term'; do grep -qF -- \"$t\" \"$V\" || { echo \"validator lacks pin: $t\"; exit 1; }; done && python3 -c \"\nimport sys,tempfile,pathlib,shutil\nsys.path.insert(0,'claude/meta-skill/scripts/orchestrator')\nimport validate_meta_contracts as v\nsrc=pathlib.Path('claude/meta-skill'); tmp=pathlib.Path(tempfile.mkdtemp())\nv.ROOT=tmp; e=[]; v.validate_spec_gap_discipline_contract(e)\nassert len([x for x in e if x.endswith(': missing')])==7, e\nshutil.copytree(src/'knowledge', tmp/'knowledge'); shutil.copytree(src/'skills/app-design', tmp/'skills/app-design')\ne=[]; v.validate_spec_gap_discipline_contract(e); assert e==[], e\np=tmp/'knowledge/defensive-patterns.md'; p.write_text(p.read_text(encoding='utf-8').replace('## Pattern J: Audience Isolation','## Pattern J'),encoding='utf-8')\ne=[]; v.validate_spec_gap_discipline_contract(e)\nassert any('missing spec-gap discipline term' in x and 'Pattern J: Audience Isolation' in x for x in e), e\n\" && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py && python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-skill/skills && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py",
+  "depends_on": [
+   "T-M4-01",
+   "T-M4-02",
+   "T-M4-03",
+   "T-M4-04",
+   "T-M4-05",
+   "T-M4-06"
+  ],
+  "reality_gate": false
+ }
+]

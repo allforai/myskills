@@ -194,6 +194,13 @@ Review Doc / Automatic Validation / Completion Conditions。
   缺失的可选输入：在 `evidence_inventory[]` 记 `available: false`，并产生一条 `judgment_type: "insufficient_evidence"`
   的 finding；不得静默忽略。缺失的必需输入：返回 `UPSTREAM_DEFECT`。体验方向意图带 `auto_decided: true` 时照常评审，
   并在报告 `direction.delegated: true` 留痕（不因委托而放宽或加严）。
+  **体验方向意图的读法（与 M2 设计 U4 的形状一致）：** 取 `product-concept.json.requirements[]` 中
+  `topic == "experience-direction"` 且 `status == "confirmed"` 的条目（被取代的 revision 状态为 `superseded`，自然排除）；
+  评审节点自己的 `requirement_refs` 非空时只取其中点名的 id。可能有多条（至多一条由提案生成，另可有用户自述条目）：
+  `direction.intent_ids` 列全部 id，`direction.acceptance` 是各条 `acceptance` 的并集，任一条 `auto_decided is True` 则
+  `direction.delegated: true`。条目的 `who`/`circumstance`（仅提案生成的条目带，用 `.get`）可直接用作 finding
+  `observation.who/circumstance` 的基准人群与情境。一条也没有 → 必需输入缺失，`UPSTREAM_DEFECT`
+  （界面产品缺体验方向本应已被 M2 的 `ui_product_without_experience_direction` 拦在 bootstrap）。
 - **Output Contract（`data:experienceCritiqueReport`）：**
   `.allforai/app-design/qa/experience-quality-critique-<stage>.json` 与同名 `.html`，`<stage> ∈ {design, runtime}`。
 
@@ -207,7 +214,7 @@ Review Doc / Automatic Validation / Completion Conditions。
     "reviewed_at": "<ISO-8601 with offset>",
     "reviewed_commit": "<git sha | 'uncommitted' | 'no-git'>",
     "reviewer": {"context": "fresh-subagent", "authored_reviewed_artifacts": false},
-    "direction": {"intent_id": "string", "delegated": false, "acceptance": ["string"]},
+    "direction": {"intent_ids": ["string"], "delegated": false, "acceptance": ["string"]},
     "evidence_inventory": [{"artifact_path": ".allforai/...", "artifact_type": "json|html|image|runtime_report|directory",
                             "available": true, "used_for": ["onboarding"], "limitations": []}],
     "lenses": {"<dimension>": {"observation": "有|缺|未查", "summary": "string", "confidence": 0.0}},
@@ -247,14 +254,19 @@ Review Doc / Automatic Validation / Completion Conditions。
   （`validate_skills.py` 会解析每个 json 块；沿用游戏侧把枚举写进字符串值的做法，注释一律不写进块内）。
 - **Lenses（`data:experienceLensVocabulary`，R-M3-03）：** 八个标识符按此顺序、此拼写出现：
   `onboarding`、`process_feedback`、`next_step`、`state_consistency`、`return_reason`、`mainline`、
-  `direction_fidelity`、`audience_leak`。前五个写明"与 `/product-review` 第 4 问五个镜头同名同义"
+  `direction_fidelity`、`audience_leak`。八个标识符在 Lenses 一节里每个至少一次以**反引号行内代码**形式出现
+  （如 `` `onboarding` ``）——M6 的契约测试按 `` `<标识符>` `` 子串查找，Output schema 的 json 块里那个用 `|` 拼接的
+  枚举串不满足它。前五个写明"与 `/product-review` 第 4 问五个镜头同名同义"
   （引导/过程反馈/下一步/状态一致/回来理由；M6 的 `test_experience_lens_parity.py` 会在本文件里找这五个标识符）。
   每个镜头一段：问什么、design 阶段看哪份产物、runtime 阶段看哪类证据。
   `direction_fidelity`：逐条核对体验方向意图的 `acceptance`；并检查**直译**——用户用语被逐字变成功能/控件
   （例："碎片化学习" → 时长选择器 + 题型清单）。`audience_leak`：判据不在此重述，引用
   `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md` Pattern J 与
   `${CLAUDE_PLUGIN_ROOT}/knowledge/capabilities/product-verify.md` 的 "audience leak" 检查（M4）；
-  design 阶段读设置规格的 `audience`/`provisioning`，runtime 阶段读截图与 verify 报告。
+  design 阶段读设置规格 `settings_groups[].items[]` 的 `audience`（`end-user`/`operator`/`developer`）、`provisioning`
+  （`build-time`/`remote-config`/`deploy-env`）、`surface`、`requirement_ref`，以及拓扑规格 `service_endpoints[]` 的
+  `audience`/`provisioning`（字段名与取值以 M4 设计"数据形状"为准，不另造同义词）；runtime 阶段读截图与 verify 报告
+  （含 M4 product-verify 写出的 `kind: "audience_leak"` 的 `contract_gaps`/`code_gaps` 条目）。
   反面对照：`${CLAUDE_PLUGIN_ROOT}/knowledge/consumer-maturity-patterns.md` §B 三个反模式
   （The Compressed Admin Panel / The Concept Demo / Feature Checklist Design），命中时写进
   `counterexample_or_comparison`。
@@ -296,7 +308,10 @@ Review Doc / Automatic Validation / Completion Conditions。
     `experience-critique-runtime → app-design/40-qa/experience-quality-critique`（mode `runtime`），并注明它**不是**
     app-design 阶段节点：`capability` 不得为 `app-design`（否则 `validate_app_design_flow` 会要求 finalize 等它，成环），
     位于最后一个 UI/product-verify/visual QA 之后。
-  - 若 M1 已按 R-M1-05 改写 Human Gate 段，本模块不再碰该段；两个新节点一律 `human_gate: false`。
+  - M1 先行落地后该 capability 已无 Human Gate 段、无任何 `human_gate` 字段（R-M1-05）；本模块不碰 M1 写的
+    `## Decision Inputs` 段，两个新节点的行与说明里**不出现** `human_gate` 字样，也不带 `decision_mode`（评审与修复都不是方向决定）。
+  - 本文件受 M1 U2 不变量约束：提到 `experience_priority` 的每一行必须同行含字面量 `experience_priority.mode`
+    （`suppress-rules.md` 的新行同理；`bootstrap-planning.md` 因文件名含 `bootstrap` 不在该 grep 范围内，但同样写 `.mode`）。
 - 孤儿检查：PACK 的 canonical 路径 + capability 文件里的 slug `app-design/40-qa/experience-quality-critique`
   都落在 `validate_skills._reference_roots` 内，`validate_skills.py:166-167` 通过。
 
@@ -329,8 +344,9 @@ def validate_experience_gate_flow(bdir: str) -> list:   # return _rendered(exper
 2. `profile["experience_priority"]` 是 dict 且其 `mode in EXPERIENCE_GATE_MODES`（缺失、`none`、`admin`、旧的平铺字符串
    均不触发——缺失由 M1 的 `missing_experience_priority` 负责；因此 M1 之前生成的旧项目在 `/run` 边界不会被本门误伤）；
 3. 界面实现节点集合 `impl` 非空。**`impl` 必须取自 M1 为 `validate_experience_design_coverage` 落地的那个识别函数**
+   ——M1 设计 U7 的模块级私有函数 `_ui_implementation_nodes(workflow, specs_dir, profile)`
    （R-M1-07："复用 `validate_mobile_ui_coverage` 与 `_matching_nodes` 的既有办法"）。M3 不得另写一套启发式；
-   若 M1 把识别逻辑内联在其校验函数里，M3 的第一步是把它原样抽成模块级私有函数（行为不变、M1 的测试不变）再复用。
+   万一 M1 落地时把识别逻辑内联了，M3 的第一步是把它原样抽成该名字的函数（行为不变、M1 的测试不变）再复用。
 
 **节点分类（按产物，不按节点名、不按 capability）：**
 - 游戏与否：`profile.get("is_game_project") is True`。
@@ -475,6 +491,9 @@ def validate_experience_gate_flow(bdir: str) -> list:   # return _rendered(exper
 - **`tests/unit/test_validate_unattended_readiness.py`（edit，追加一例）：**
   `test_unattended_readiness_accepts_experience_gate_repair_loops`——最小 UI 产品图带 design/runtime 两条回路，
   `status == "ready"` 且无 `*repair_loop*` 阻断；证明 Must #9 描述的回路形状被既有就绪门接受。复用 `_repair_loop`、`_write`。
+  该夹具的 profile 若写成产品路线 + `mode: consumer`（推荐，这样才真正经过 `structural_gate_blockers` 里的 M1、M3 两项），
+  图里必须同时含 M1 要求的体验设计节点（`exit_artifacts` 覆盖 user-flow 与 screen-requirements，界面实现节点传递依赖它），
+  否则会被 M1 的 `missing_experience_design_node` 拦下而不是证明回路形状。
   `validate_unattended_readiness.py` 本身**不改**。
 
 ### 验收命令（在规格"验收"一节基础上补全；均在 `/Users/aa/workspace/myskills` 根目录执行）
@@ -493,6 +512,12 @@ python3 claude/meta-skill/scripts/orchestrator/validate_skills.py claude/meta-sk
 python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 python3 -m py_compile claude/meta-skill/scripts/orchestrator/*.py
 grep -n "validate_app_experience_pipeline.py" .githooks/pre-commit   # 期望 1 行
+grep -rn "experience_priority" claude/meta-skill/knowledge | grep -v "experience_priority.mode" | grep -v bootstrap  # M1 不变量，期望为空
+# 新结构门进了 structural_gate_blockers 与 main()：回归 M1/M2 已落地的产品路线夹具（consumer 模式下断言三门 exit 0 的用例在此）
+python3 -m pytest -q claude/meta-skill/tests/unit/test_experience_direction.py \
+  claude/meta-skill/tests/unit/test_bootstrap_scope.py \
+  claude/meta-skill/tests/unit/test_product_intent_session.py \
+  claude/meta-skill/tests/unit/test_acceptance_allocation.py
 ```
 
 不得以目录形式运行 `pytest codex/meta-skill` 或 `pytest pi/meta-skill`。全量套件的 4 个既有失败不属本模块，不触碰。
@@ -514,7 +539,11 @@ grep -n "validate_app_experience_pipeline.py" .githooks/pre-commit   # 期望 1 
 8. `docs/experience-review/<stage>.md` 覆盖写、只留最新；历史靠项目自身的 git。M6 读 `runtime.md`。
 9. `lenses.*` 用 `有|缺|未查`（与 `/product-review` 报告行同词），不设数值分；`confidence` 保留。
    高置信阈值定为 `>= 0.8`（游戏侧只写"high-confidence"未给数；此阈值只写在应用 skill 内）。
-10. 界面实现节点的识别完全委托给 M1 的函数；若 M1 未抽函数，M3 先做零行为变化的抽取。
+10. 界面实现节点的识别完全委托给 M1 的 `_ui_implementation_nodes`；若 M1 未抽函数，M3 先做零行为变化的抽取。
+11. 与 M2 已落地测试的关系：`test_experience_direction.py` 有在 `mode == consumer` 下断言三个门 exit 0 的用例，其夹具刻意
+    不含界面实现节点（M2 设计 A10），所以本门的触发条件 3 不成立、不受影响。若回归命令显示它们被本门拦下，先查是夹具
+    文本混入了界面词项（修夹具措辞），不得为此放宽触发条件。
+12. `direction` 用 `intent_ids[]`（而非单个 id），因为 M2 允许提案生成的方向与用户自述的方向并存。
 
 ### File touch list
 

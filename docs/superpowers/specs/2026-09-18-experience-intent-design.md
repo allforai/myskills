@@ -243,7 +243,22 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
      `"Added intent needs an unused stable identity"`（沿用 `add` 的文案）；
   6. 条目：`{id, topic: EXPERIENCE_TOPIC, goal, scope, business_rules, acceptance}`（后四项从提案深拷贝）
      → 过 `_item` → `update(revision=1, origin=PROPOSAL_ORIGIN, evidence=[], status="confirmed",
-     proposal_id=proposal["id"])`；`delegate` 再 `update(auto_decided=True)`。
+     proposal_id=proposal["id"], who=proposal["who"], circumstance=proposal["circumstance"])`；
+     `delegate` 再 `update(auto_decided=True)`。
+     `who`/`circumstance` 从提案原样带到条目上（闭环评审补充）：R-M6-03 要求 cross-exam 从体验方向意图的
+     `who/circumstance` 直接取旅程三元组的前两元，而 M6 不消费 `data:experienceProposals`；`_item` 不限制多余键
+     （`proposal_id` 同理），两字段与其它字段一样在写日志那一刻定型，`adjust` 的 `deepcopy` 会带到新 revision。
+- **`data:experienceDirectionIntent` 的最终形状**（M3、M6 按此读取；位置是 `product-concept.json.requirements[]`，
+  同 id 取 `status == "confirmed"` 的那条 revision）：
+  `{id: "experience-direction-<proposal_id>", topic: "experience-direction", goal, scope[], business_rules[], acceptance[],
+  revision, origin: "model-proposal", evidence: [], status: "confirmed", proposal_id, who, circumstance,
+  auto_decided?: true（仅 delegate）, confirmation: {source: "user", reference, decision_id, reason, user_reference,
+  delegated?: true（仅 delegate）}}`。用户自述（`origin: "user-request"`）的体验方向条目没有
+  `proposal_id`/`who`/`circumstance`/`auto_decided`，读者一律用 `.get(...)`。
+- 动作的键名：既有 `decide` 动作一律以 `action["operation"]` 取动作名（`:1217` `op = action["operation"]`）。
+  规格 R-M2-04/05 里写的 `{op: "select", …}` 是简写；`select`/`delegate` 与其它动作同形，请求体是
+  `{"operation": "select", "proposal_id": …, "reason": …}` / `{"operation": "delegate", "reason": …}`，不另引入 `op` 键
+  （M5 的重放夹具按此书写）。
 - `decide` 循环（`:1216-1306`）在 `if op == "add"` 之后、`elif op in ("confirm", ...)` 之前加一个分支：
 
   ```python
@@ -372,7 +387,7 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
      `proposals`/`recommended_id`/`rationale`。
   6. `decide` 动作目录（`:80-91`）补：`select` 选定当前轮一条提案（`proposal_id`）；`delegate` 仅在用户明说
      "你定"时使用，批次 `user_reference` 必须是该话语所在的真实用户轮次，系统取当前轮推荐；两者生成 id 为
-     `experience-direction-<proposal_id>` 的已确认条目（`origin: model-proposal`；`delegate` 另有
+     `experience-direction-<proposal_id>` 的已确认条目（`origin: model-proposal`，并带提案的 `who`/`circumstance`；`delegate` 另有
      `auto_decided: true` 与 `confirmation.delegated: true`）；同一批次可接 `adjust`；同一批次须用 `answer`
      关闭 `gap-experience-direction`（答案写所选提案标题）；无当前轮提案时两者都被拒绝；已有选定方向时须先
      `remove`。
@@ -390,6 +405,9 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
        `auto_decided`）。可选引用 `innovation-protocols.md` §A 作为生成方法，不是本协议的要求。
   8. 文末 CLI 段补一句 `--delegations` 是只读入口。
 - 不删除任何被 `validate_meta_contracts.py` 钉住的字面量（该文件不钉本协议文本，已 grep）。
+- 遵守 M1 U2 的不变量（M1 验收第 4 条 grep，M1 先于本模块落地）：本文件里任何提到 `experience_priority` 的行必须
+  同行含字面量 `experience_priority.mode`；写完后重跑
+  `grep -rn "experience_priority" claude/meta-skill/knowledge | grep -v "experience_priority.mode" | grep -v bootstrap`，期望为空。
 
 #### U9 新测试文件 — R-M2-10（并覆盖 R-M2-01…09 的可执行证明）
 
@@ -399,7 +417,9 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
   `.test_validate_bootstrap` 导入 `ATTENTION_CONTRACT_BODY`。全部用例
   `@pytest.mark.parametrize("host", ["claude", "codex"])`，经复制到 `tmp_path` 的 CLI 以子进程驱动。
 - 本文件的私有助手：
-  - `proposal(identity, **overrides)`：返回字段齐全的提案；
+  - `proposal(identity, **overrides)`：返回字段齐全的提案；其 `goal`/`scope`/`business_rules`/`acceptance` 的措辞
+    **不得含 M1 的界面词项**（`screen`、`frontend`、`界面`、`页面` 等，见 M1 `UI_IMPLEMENTATION_TERMS`）——这些文本会经
+    `plan` 投影进 node-spec 正文，而 M1/M3 的界面实现节点识别正是对 node-spec 正文做词项匹配（见 A10）；
   - `propose(root, ids=("calm-ritual", "quick-burst"), recommended="calm-ritual")`；
   - `new_product_draft()`：`draft()` 的 new-product 变体，**去掉** `experience-direction` 话题的条目
     （从而生成 `gap-experience-direction`），`questions=[]`；
@@ -423,7 +443,7 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
      含提案 id → exit 1 且无 baseline 文件。
   6. `test_selected_direction_freezes_and_passes_all_public_gates`（04、06）：`set_mode(consumer)` →
      `propose` → 一个批次内 `select` + `answer gap-experience-direction` + 其余话题 `confirm` →
-     条目断言（`topic`、`status`、`origin`、`proposal_id`、`confirmation.source == "user"`、无 `auto_decided`、
+     条目断言（`topic`、`status`、`origin`、`proposal_id`、`who`/`circumstance` 等于提案原值、`confirmation.source == "user"`、无 `auto_decided`、
      日志 `operation == "select"` 且 `intent == 条目`）→ `freeze` → `plan` → `confirm_plan` →
      `publish_contract` → 三个门 exit 0。
   7. `test_select_then_adjust_in_one_batch_keeps_revision_lineage`（04）：同批 `select` + `adjust`
@@ -469,8 +489,9 @@ gates(validate_bootstrap / check_decision_inputs / validate_unattended_readiness
    decision 的 `intent` 同时定型。
 4. `freeze include` 含 `experience-direction-<proposal_id>` → baseline `intents[]` 含该条目 → `plan` 把它的
    `acceptance` 经 `requirement_refs` 写入消费节点的 `acceptance` 与 Node-spec（既有 `:1107-1122`，不改）。
-   这就是 `data:experienceDirectionIntent` 流入节点验收的路径，M3/M6 从 `product-concept.json` 里按
-   `topic == "experience-direction"`、`status == "confirmed"` 读取，`auto_decided` 标记随条目可见。
+   这就是 `data:experienceDirectionIntent` 流入节点验收的路径，M3/M6 从 `product-concept.json` 的 `requirements[]` 里按
+   `topic == "experience-direction"`、`status == "confirmed"` 读取，`auto_decided`、`who`、`circumstance` 随条目可见
+   （形状见 U4）。可能同时存在多条（至多一条由提案生成，另可有用户自述的条目），读者须按列表处理。
 5. 三个门经 `validate_scope` 执行 U5a；`/run` 收尾经 `--delegations` 与 `run-summary` 披露委托。
 
 ### Error handling
@@ -528,10 +549,15 @@ python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py      #
 - **A8 `propose` 要求已存在产品会话**（profile 的 `task_route` 为产品路线），即先 `draft` 后 `propose`。
 - **A9 披露文本的英文标题** "Decisions you delegated to the model" / "No delegated decisions." 为本模块选定的
   字面量；M5 在 codex/pi 模板孪生中沿用。
-- **A10 与 M1 的集成假设。** U9 第 6、11 条用例要求三个门 exit 0，夹具是无界面措辞的 `implement` 节点
-  （`orders.py`）。若 M1 落地后的 `validate_experience_design_coverage` 把该节点识别为界面实现节点，实现者按
-  M1 的产物路径契约给夹具补一个设计节点，而不是放宽断言或改 M1 的检查。M1 对 `project()` 夹具的
-  `experience_priority` 补齐（R-M1-09）不与本模块冲突：本模块的用例一律经 `set_mode` 显式写入。
+- **A10 与 M1、M3 的集成假设。** U9 第 6、11 条用例要求 `mode == consumer` 下三个门 exit 0，夹具是无界面措辞的
+  单个 `implement` 节点（`orders.py`）。M1 的 `validate_experience_design_coverage` 与之后落地的 M3
+  `validate_experience_gate_flow` 都只在"存在界面实现节点"时才要求设计节点/评审节点/修复回路，识别方式是对节点条目与
+  node-spec 正文做词项匹配（已核对：共用的 `ATTENTION_CONTRACT_BODY` 不含任何 M1 界面词项）。因此本模块的首选做法是
+  **让夹具保持无界面**：`proposal()` 助手、`plan_request` 的 goal/body 均不写界面词项，profile 不带 `role ∈ {frontend, mobile}`
+  的模块。这样 M3 落地后这两条用例无需回改。只有在无法避免被识别为界面实现节点时，才按 M1 的产物路径契约补设计节点
+  （M3 落地后还须补两阶段评审节点与回路）；任何情况下都不放宽断言、不改 M1/M3 的检查。M1 对 `project()` 夹具的
+  `experience_priority` 补齐（R-M1-09，值为 `none`）不与本模块冲突：本模块的用例一律经 `set_mode` 显式写入；
+  用例 10 所说"`mode` 缺失下 `plan` 成功"在 M1 落地后实际是 `mode == none`，两者对 U5a 等价（均不触发）。
 - **A11 不改 `skills/bootstrap/SKILL.md`。** 它是共享热点文件且 bootstrap 步骤文本归 M1；本模块的协议入口是
   `product-intent-confirmation.md`，SKILL.md 已经把产品路线指向该协议。
 

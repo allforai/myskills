@@ -92,6 +92,9 @@ python3 -m pytest -q pi/cross-exam
    M2 规格没有承诺意图条目本身带 `who`/`circumstance`（这两个字段定义在提案 `experience_proposals[]` 上）。
    `data:experienceProposals` 不在本模块的消费清单内，因此设计不读提案数组：条目带 `who`/`circumstance` 就直接用，
    不带就从 `goal`/`scope` 起草——§1b 第 3 步本来就要读回用户确认，起草不准不会漏进 ledger。
+   **闭环评审后的现状：** M2 设计 U4 已补上——由 `select`/`delegate` 生成的条目把提案的 `who`/`circumstance` 原样写在
+   条目顶层（与 `proposal_id`、`auto_decided` 同级），R-M6-03 的"直接给出前两元"对这类条目成立；
+   `goal`/`scope` 起草分支只服务用户自述（`origin: "user-request"`）的体验方向条目。U3 的插入文字无需改。
 6. **基线**（本次设计时实跑）：`claude/superstorm/scripts` 255 passed、`codex/cross-exam-skill/scripts` 172 passed、
    `pi/cross-exam` 7 passed、`check_skill_refs.py` OK（33 个文件）。没有任何现有测试读取 product-review 或 lenses.md 的正文；
    `pi/cross-exam/test_contract.py` 只断言 `codex/cross-exam-skill/lenses.md` 存在和 Pi 适配器自己的字符串，不受影响。
@@ -264,8 +267,11 @@ U1 先写测试并看它失败（product-review 尚无标识符），再加对�
   （M3 的 `finding_id`），product-review 原样引用，不另造前缀。若 M3 最终不写 id，就引用其 must-fix 的标题文字——
   `depends_on` 是 Markdown 自由文本，无解析器依赖。
 - A3 只采信 `runtime.md`，不读 `design.md`（R-M6-02 只点名 runtime；design 判的不是已交付产品）。
-- A4 不读 `experience_proposals[]`（见 Spec corrections 5）。若 M2 的设计让意图条目自带 `who`/`circumstance`，
-  U3 的文字已直接受益，无需再改。
+- A4 不读 `experience_proposals[]`（见 Spec corrections 5）。M2 的设计已让提案生成的意图条目自带顶层
+  `who`/`circumstance`，U3 的文字直接受益；`auto_decided` 同为条目顶层布尔字段（委托轮次在 `confirmation.delegated`，本模块不读）。
+- A8 M3 的 Lenses 一节保证八个标识符各以反引号行内代码形式出现（M3 设计 U1），U1 契约测试对 GATE 的
+  `` `<标识符>` `` 子串断言因此成立；`runtime.md` 的镜头行格式是 `<标识符>（中文名）: 有|缺|未查 · <一句观察>`，
+  must-fix 每条带 `finding_id`（形如 `experience-001`）——U2 引用的 id 即它。
 - A5 契约测试额外断言"中文名 = 标识符"成对与两份孪生对应行相同，属于 R-M6-01 的收紧，不是新需求。
 - A6 `data:settingsAudience` 的消费方式是词汇对齐（三个受众值与"非 end-user 不进最终用户界面"的判据），
   事后评审两个 skill 都不解析 M4 的 JSON 字段。

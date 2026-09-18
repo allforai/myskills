@@ -1,0 +1,77 @@
+[
+ {
+  "id": "T-M6-01",
+  "title": "Lens-name parity: contract test + five-lens mapping paragraph in both product-review twins (R-M6-01)",
+  "touched_paths": [
+   "shared/scripts/orchestrator/test_experience_lens_parity.py",
+   "claude/superstorm/skills/product-review/SKILL.md",
+   "codex/cross-exam-skill/product-review.md"
+  ],
+  "acceptance_cmd": "python3 -m pytest -q shared/scripts/orchestrator/test_experience_lens_parity.py && [ \"$(diff claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md | grep -c '^[<>]')\" = \"12\" ] && python3 claude/superstorm/scripts/check_skill_refs.py",
+  "depends_on": [],
+  "requires": [
+   "data:experienceLensVocabulary"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M6-02",
+  "title": "product-review adopts docs/experience-review/runtime.md as prior evidence (R-M6-02)",
+  "touched_paths": [
+   "claude/superstorm/skills/product-review/SKILL.md",
+   "codex/cross-exam-skill/product-review.md"
+  ],
+  "acceptance_cmd": "for f in claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md; do grep -qF '`docs/cross-exam/` and `docs/experience-review/` are readable input' \"$f\" && grep -qF 'Do not read or write that tree' \"$f\" && grep -qF 'Prior evidence — runtime experience review' \"$f\" && grep -qF 'docs/experience-review/runtime.md (<review date>, <reviewed commit>)' \"$f\" && grep -qF 'lens cells adopted' \"$f\" && grep -qF 'experience-review must-fix ids' \"$f\" && grep -qF 'not a cross-exam gap or an experience-review must-fix restated' \"$f\" && ! grep -qF 'not a cross-exam gap restated' \"$f\" && grep -qF 'Prior evidence: none' \"$f\" || exit 1; done && [ \"$(diff claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md | grep -c '^[<>]')\" = \"12\" ] && python3 -m pytest -q shared/scripts/orchestrator/test_experience_lens_parity.py && python3 claude/superstorm/scripts/check_skill_refs.py",
+  "depends_on": [
+   "T-M6-01"
+  ],
+  "requires": [
+   "data:experienceReviewDoc"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M6-03",
+  "title": "cross-exam §1b step 1 gains experience-direction intent and job-story candidate sources in both twins (R-M6-03)",
+  "touched_paths": [
+   "claude/superstorm/skills/cross-exam/SKILL.md",
+   "codex/cross-exam-skill/SKILL.md"
+  ],
+  "acceptance_cmd": "A=claude/superstorm/skills/cross-exam/SKILL.md; B=codex/cross-exam-skill/SKILL.md; for f in \"$A\" \"$B\"; do grep -qF 'topic == \"experience-direction\"' \"$f\" && grep -qF 'status == \"confirmed\"' \"$f\" && grep -qF '.allforai/app-design/concept/job-story-spec.json' \"$f\" && grep -qF 'auto_decided: true' \"$f\" && grep -qF '此方向由模型受托选定' \"$f\" && grep -qF 'task-inventory.json` 存在也读，它只是可选数据源' \"$f\" || exit 1; done && [ \"$(grep -F -e 'experience-direction' -e 'job-story-spec' -e '受托选定' \"$A\")\" = \"$(grep -F -e 'experience-direction' -e 'job-story-spec' -e '受托选定' \"$B\")\" ] && python3 -m pytest -q claude/superstorm/scripts && python3 -m pytest -q codex/cross-exam-skill/scripts && python3 claude/superstorm/scripts/check_skill_refs.py && python3 -m pytest -q pi/cross-exam/test_contract.py",
+  "depends_on": [],
+  "requires": [
+   "data:experienceDirectionIntent"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M6-04",
+  "title": "product-review question 4 audience-leak observation row + self-check example in both twins (R-M6-04)",
+  "touched_paths": [
+   "claude/superstorm/skills/product-review/SKILL.md",
+   "codex/cross-exam-skill/product-review.md"
+  ],
+  "acceptance_cmd": "for f in claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md; do grep -F '受众泄漏' \"$f\" | grep -q '^| 4 商业级够不够 · 受众泄漏 |' && grep -F '受众泄漏' \"$f\" | grep -qF '`end-user` / `operator` / `developer`' && grep -F '受众泄漏' \"$f\" | grep -qF 'defensive-patterns Pattern J' && grep -F 'claim: 不够商业级' \"$f\" | grep -qF '最终用户设置页里要填服务地址或访问凭证' || exit 1; done && [ \"$(diff claude/superstorm/skills/product-review/SKILL.md codex/cross-exam-skill/product-review.md | grep -c '^[<>]')\" = \"12\" ] && python3 -m pytest -q shared/scripts/orchestrator/test_experience_lens_parity.py && python3 claude/superstorm/scripts/check_skill_refs.py",
+  "depends_on": [
+   "T-M6-02"
+  ],
+  "requires": [
+   "data:settingsAudience"
+  ],
+  "reality_gate": false
+ },
+ {
+  "id": "T-M6-05",
+  "title": "cross-exam lenses.md (claude + codex, byte-identical): audience-leak clause in the 细节质量 row (R-M6-04)",
+  "touched_paths": [
+   "claude/superstorm/knowledge/cross-exam/lenses.md",
+   "codex/cross-exam-skill/lenses.md"
+  ],
+  "acceptance_cmd": "A=claude/superstorm/knowledge/cross-exam/lenses.md; B=codex/cross-exam-skill/lenses.md; grep -F '这一项是给谁填的' \"$A\" | grep -q '^| 细节质量 ' && grep -F '这一项是给谁填的' \"$A\" | grep -qF '部署方/开发者才该碰的配置（服务地址、访问凭证、模型、环境）' && [ \"$(grep -c '^| 细节质量 ' \"$A\")\" = \"1\" ] && cmp \"$A\" \"$B\" && python3 -m pytest -q claude/superstorm/scripts && python3 -m pytest -q codex/cross-exam-skill/scripts && python3 claude/superstorm/scripts/check_skill_refs.py && python3 -m pytest -q pi/cross-exam/test_contract.py",
+  "depends_on": [],
+  "requires": [
+   "data:settingsAudience"
+  ],
+  "reality_gate": false
+ }
+]
