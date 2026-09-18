@@ -2221,6 +2221,167 @@ def validate_experience_design_coverage(bdir: str) -> list:
     return _rendered(experience_design_coverage_findings(bdir))
 
 
+# The experience quality gate. Designing the interface (above) is not reviewing what was
+# built from that design, so the two rules are separate: this one reads the review nodes.
+EXPERIENCE_GATE_PRODUCT_ROUTES = ("new-product", "product-reconstruction")
+EXPERIENCE_GATE_MODES = ("consumer", "mixed")
+APP_EXPERIENCE_CRITIQUE = "experience-quality-critique"
+GAME_CREATIVE_CRITIQUE = "creative-quality-critique"
+# A game's creative critique writes one path whichever time it runs, so the stages below
+# are the app's; a game's "after it was built" review is told apart by graph position.
+APP_EXPERIENCE_CRITIQUE_STAGES = (
+    ("design", f"{APP_EXPERIENCE_CRITIQUE}-design.json"),
+    ("runtime", f"{APP_EXPERIENCE_CRITIQUE}-runtime.json"),
+)
+EXPERIENCE_GATE_CLOSURE_CAPABILITIES = ("concept-acceptance", "pipeline-closure-verify")
+
+
+def _critique_nodes(nodes: dict, marker: str) -> dict:
+    """Node ids that perform the review, mapped to the report paths they write.
+
+    A node is the gate only when it ships the report. Repair nodes and closure nodes read
+    the same report and name the same skill in their spec, so recognising a gate by what a
+    node mentions would turn every reader of a review into a second copy of it.
+    """
+    matched = {}
+    for node_id, node in sorted(nodes.items()):
+        paths = [p for p in _artifact_paths(node.get("exit_artifacts"))
+                 if isinstance(p, str) and marker in p]
+        if paths:
+            matched[node_id] = paths
+    return matched
+
+
+def experience_gate_flow_findings(bdir: str) -> list:
+    """A product with an interface must review the experience it actually ships.
+
+    The design gate above proves the journeys were decided before they were built. This
+    one proves they were judged afterwards, by a graph a run can execute unattended: a
+    review before the interface is implemented, a review of the running product, closure
+    held behind the second one, and a declared repair loop behind each, so a refusal
+    routes findings back into the build instead of stopping the run.
+
+    Nodes are classified by the report they produce, never by their identifier or
+    capability: a node named `experience-review` that writes nothing is not a review, and
+    a node that reads the report is not a second one. An app's two stages are the two
+    report file names; a game's creative critique writes one path both times, so the run
+    after the build is the one that transitively depends on an implementation node.
+
+    The trigger is narrow on purpose. A route that is not a product route, a mode without
+    end users, and a profile written before `experience_priority` existed are all left
+    alone — a missing classification is the design gate's blocker, and a project planned
+    before this law is not retroactively refused at the `/run` boundary. Shape faults
+    belong to the shape gate: an unreadable or mis-shaped input yields no verdict here.
+    """
+    findings = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    profile_path = os.path.join(bdir, "bootstrap-profile.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(profile_path):
+        return findings
+    try:
+        workflow = _load_json(workflow_path)
+        profile = _load_json(profile_path)
+    except Exception:
+        return findings
+    if not isinstance(workflow, dict) or not isinstance(profile, dict):
+        return findings
+    if profile.get("task_route") not in EXPERIENCE_GATE_PRODUCT_ROUTES:
+        return findings
+    priority = profile.get("experience_priority")
+    if not isinstance(priority, dict) or priority.get("mode") not in EXPERIENCE_GATE_MODES:
+        return findings
+
+    nodes = _addressable_nodes(workflow.get("nodes"))
+    specs_dir = os.path.join(bdir, "node-specs")
+    # The one heuristic for "this node builds a user-facing surface" lives with the design
+    # gate; asking it here is what keeps the two gates refusing the same graphs.
+    impl_ids = sorted(_node_id(node) for node in _ui_implementation_nodes(workflow, specs_dir, profile))
+    if not impl_ids:
+        return findings
+
+    game = profile.get("is_game_project") is True
+    critiques = _critique_nodes(nodes, GAME_CREATIVE_CRITIQUE if game else APP_EXPERIENCE_CRITIQUE)
+
+    if game:
+        if not critiques:
+            _structural(
+                findings, "missing_experience_gate",
+                f"workflow.json plans user-facing implementation ({impl_ids}) but no node "
+                f"produces a {GAME_CREATIVE_CRITIQUE} report; a game that is never reviewed "
+                f"against its own creative intent ships whatever the build happened to "
+                f"produce — {RETURN_TO_BOOTSTRAP}")
+        # A game's review runs against one report path, so "the one after the build" is a
+        # graph position: it waits on an implementation node instead of preceding it.
+        closing = [node_id for node_id in critiques
+                   if any(_downstream_of(nodes, impl_id, node_id) for impl_id in impl_ids)]
+    else:
+        staged = {stage: sorted(node_id for node_id, paths in critiques.items()
+                                if any(path.endswith(suffix) for path in paths))
+                  for stage, suffix in APP_EXPERIENCE_CRITIQUE_STAGES}
+        for stage, suffix in APP_EXPERIENCE_CRITIQUE_STAGES:
+            if staged[stage]:
+                continue
+            _structural(
+                findings, "missing_experience_gate",
+                f"workflow.json plans user-facing implementation ({impl_ids}) but no node "
+                f"produces the {stage}-stage experience critique report (an exit artifact "
+                f"ending '{suffix}'); an interface nobody reviews at this stage is released "
+                f"on the author's own opinion of it — {RETURN_TO_BOOTSTRAP}")
+        for impl_id in impl_ids:
+            if staged["design"] and not any(_downstream_of(nodes, critique_id, impl_id)
+                                            for critique_id in staged["design"]):
+                _structural(
+                    findings, "implementation_not_blocked_by_design_critique",
+                    f"workflow.json {impl_id} builds a user-facing surface but no "
+                    f"hard_blocked_by path reaches the design-stage experience critique "
+                    f"{staged['design']}; a review the build did not wait for reviews a "
+                    f"decision already made — {RETURN_TO_BOOTSTRAP}",
+                    node_id=impl_id)
+        closing = staged["runtime"]
+
+    for node_id in sorted(nodes):
+        if nodes[node_id].get("capability") not in EXPERIENCE_GATE_CLOSURE_CAPABILITIES:
+            continue
+        if any(_downstream_of(nodes, critique_id, node_id) for critique_id in closing):
+            continue
+        _structural(
+            findings, "closure_not_blocked_by_experience_gate",
+            f"workflow.json {node_id} closes the pipeline without a hard_blocked_by path "
+            f"to the review of the running product ({closing or 'none planned'}); closure "
+            f"that does not wait for that review accepts a product nobody looked at — "
+            f"{RETURN_TO_BOOTSTRAP}",
+            node_id=node_id)
+
+    declared = set()
+    spec = None
+    spec_path = os.path.join(bdir, "unattended-run-readiness-spec.json")
+    if os.path.exists(spec_path):
+        try:
+            spec = _load_json(spec_path)
+        except Exception:
+            spec = None
+    if isinstance(spec, dict) and isinstance(spec.get("required_repair_loops"), list):
+        for loop in spec["required_repair_loops"]:
+            if isinstance(loop, dict):
+                declared.update(_declared_node_ids(loop, "qa_node_ids", "qa_nodes"))
+    for node_id in sorted(critiques):
+        if node_id in declared:
+            continue
+        _structural(
+            findings, "experience_gate_without_repair_loop",
+            f"workflow.json {node_id} reviews the experience but no "
+            f"unattended-run-readiness-spec.json required_repair_loops entry names it as a "
+            f"qa node; a review with nowhere to send its findings halts the run instead of "
+            f"repairing what it found — {RETURN_TO_BOOTSTRAP}",
+            node_id=node_id)
+    return findings
+
+
+def validate_experience_gate_flow(bdir: str) -> list:
+    """Rendered experience quality-gate errors for the bootstrap validator CLI."""
+    return _rendered(experience_gate_flow_findings(bdir))
+
+
 def workflow_shape_findings(bdir: str) -> list:
     """Node entries no graph rule can address, decided before any rule reads them.
 
@@ -2289,8 +2450,8 @@ def structural_gate_blockers(project_root) -> list:
 
     `/run` must not assume `/bootstrap` ran and passed on the graph it is about to
     execute. Both engines re-decide the same repair-loop routing, deferred-effect
-    ownership and experience-design coverage rules through this call, from the
-    implementations above, so a workflow
+    ownership, experience-design coverage and experience quality-gate rules through this
+    call, from the implementations above, so a workflow
     the bootstrap gate refuses cannot execute unattended on either host, and neither
     host restates the rule as a second copy that can drift.
 
@@ -2305,7 +2466,7 @@ def structural_gate_blockers(project_root) -> list:
     if shape:
         return shape
     return (repair_loop_declaration_findings(bdir) + effect_stage_ownership_findings(bdir)
-            + experience_design_coverage_findings(bdir))
+            + experience_design_coverage_findings(bdir) + experience_gate_flow_findings(bdir))
 
 
 def validate_node_spec(path: str) -> list:
@@ -2352,6 +2513,7 @@ def main():
             errors.extend(validate_approval_records(bdir))
             errors.extend(validate_app_design_flow(bdir))
             errors.extend(validate_experience_design_coverage(bdir))
+            errors.extend(validate_experience_gate_flow(bdir))
             errors.extend(validate_game_2d_production_flow(bdir))
             errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
             errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
@@ -2404,6 +2566,8 @@ __all__ = [
     "effect_stage_ownership_findings",
     "validate_experience_design_coverage",
     "experience_design_coverage_findings",
+    "validate_experience_gate_flow",
+    "experience_gate_flow_findings",
     "workflow_shape_findings",
     "workflow_shape_blockers",
     "structural_gate_blockers",
