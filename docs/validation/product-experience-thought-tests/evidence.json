@@ -269,6 +269,211 @@
         "受试者没有真实项目可操作，所有 product_intent.py 调用与产物写入都只是回答里的伪调用。"
       ],
       "responses_sha256": "9b23a44df5155be9b3306f76b6e354f65303cdd0e8a00ff6b3cbb7296ee7e5a2"
+    },
+    {
+      "round": 3,
+      "date": "2026-09-18",
+      "host": "Claude Code headless（claude -p，--allowedTools Read --disallowedTools Bash,Glob,Grep,Task,… --strict-mcp-config --output-format stream-json），两个独立 fresh-context 子会话，串行",
+      "tested_version": {
+        "commit": "cbeac167",
+        "note": "受测文本为分支 product-experience-followups 在该提交的内容（A、C 两组跟进修复已提交；之后的 e0069acb 只改代码与测试，不碰任何受测文本）。下面是读进 packet 的各文件 sha256。",
+        "claude/meta-skill/knowledge/bootstrap-planning.md": "38b7da7ccd8c0d46549aa44b79039961bfa0eb15830cb9360996d4da49771c7d",
+        "claude/meta-skill/knowledge/capabilities/concept-acceptance.md": "830fc74fd1f6790d0b87f549afaaf2cd2ce4982242af7a2c0a0615adad97faa6",
+        "claude/meta-skill/knowledge/defensive-patterns.md": "0471014f4cccb2c762de560b7566c266856ef9ad8628fa28527fbf0d772e382c",
+        "claude/meta-skill/knowledge/node-spec-template.md": "2c0ee1620eddfad343d99eb9c9e36e7f5fa5b77532a5802fde761e6bb30fbf81",
+        "claude/meta-skill/knowledge/product-intent-confirmation.md": "a5b836235b8ce7b0a250cf458bc95e9902232b428790e270288d64ad806fdc25",
+        "claude/meta-skill/knowledge/suppress-rules.md": "72de2bd654e5cec9e97cdba9406df0cf1505e9a639975e9d89386839d6c2d383",
+        "claude/meta-skill/skills/bootstrap/SKILL.md": "e2e125dcfcedcb9feb55c757daffad3c3778e9626eb532306c210e214cef6e27",
+        "claude/superstorm/skills/cross-exam/SKILL.md": "faada9f35d8a02643cb6b0b1680c5edbc9f34f6ce3aa287ce9ed7a29ff035ce0",
+        "codex/cross-exam-skill/product-review.md": "1273ab517f21d6ad06019f6107a674824a8566b9679c054a0e862b7885f5d28e",
+        "codex/meta-skill/skills/bootstrap.md": "8b5bb5a673971d6ef233ec49a6dd7a63e2b5cd17226e15e5b7c827b8f916970b",
+        "pi/meta-skill/skills/bootstrap/SKILL.md": "2a20eba5c0b46b9c9b93ab5dd8cd090716a19d17c0456d765f5e525a3f255ba3"
+      },
+      "launch": {
+        "method": "场景模拟；受试者不操作真实项目，动作写成伪调用；expected 不进 packet",
+        "isolation": "与前两轮同法；子会话以 --allowedTools Read --strict-mcp-config 启动，隔离由宿主 stream-json 轨迹的 tool_use 事件核对：六个子会话都只 Read 了自己的 packet（E5c 对同一文件 Read 了两次，85 KB 分页）",
+        "fixtures": {
+          "fixtures/product-experience/thought-tests.json": "a0699f77034e91b34fc612058cb1030e8826a4a0ceb611041b226bd7dc26996f",
+          "fixtures/product-experience/subject-prompt.md": "511dd0d60ba9d7dcb35a72bd4894b3844f14261b47e1c85277f9ccba6d8f0df4"
+        },
+        "evaluator": "编排者（会话模型）对照冻结的 expected 逐条判定；受测方 resolved model 为 claude-opus-5"
+      },
+      "why": "第 2 轮只重测了 E2、E5；读了同一批修复文本的 E1、E3、E6、E9 未重跑，且 Pi 适配器此后又补了一句。本轮在最终文本上把 packet 发生变化的六个场景全部重跑。",
+      "cases": [
+        {
+          "id": "E1c",
+          "platform_simulated": "claude",
+          "under_test": [
+            "claude/meta-skill/knowledge/product-intent-confirmation.md"
+          ],
+          "prompt_sha256": "cff1fcf622ab6c5ec1ca300cbbf9522ac7e9c780afcd1a27e55ba079368b7943",
+          "prompt_changed_since_round_1": true,
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "host stream-json assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E1.md"
+            }
+          ],
+          "duration_ms": 22494,
+          "raw_trace_sha256": "c9cd970d56e5403ad0391ddee5acfea1a6cb754292e132a22b11c7d34ec5567a",
+          "verdict": "pass",
+          "notes": "三条方向之别（排队一分钟 / 工作里遇到的词 / 和同事结伴），先情境与感受后功能，各点名成熟产品；无时长选择器、无题型清单；本轮不 select 不 delegate。"
+        },
+        {
+          "id": "E2c",
+          "platform_simulated": "codex",
+          "under_test": [
+            "claude/meta-skill/knowledge/product-intent-confirmation.md",
+            "codex/meta-skill/skills/bootstrap.md"
+          ],
+          "prompt_sha256": "77f07bf5f72bb532a5a0bd6bd02d81df25d15a2a23ef32a7b448760d42c30c61",
+          "prompt_changed_since_round_1": true,
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "host stream-json assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E2.md"
+            }
+          ],
+          "duration_ms": 14993,
+          "raw_trace_sha256": "f1dfacbbe76426da3a80bb36bfec444b291ae2d03a9ec154e2b2afd7179dd4e1",
+          "verdict": "pass",
+          "notes": "情形甲记 delegate（不带 proposal_id，user_reference 指向「你定吧」那一轮，同批 answer gap，--delegations 披露）；情形乙只 propose、不 delegate，并引了「a round opened in that same turn is not yet a current round」；assume-and-declare 产生不了 select/delegate。首轮未过的场景，在最终文本上再次通过。"
+        },
+        {
+          "id": "E3c",
+          "platform_simulated": "claude",
+          "under_test": [
+            "claude/meta-skill/knowledge/product-intent-confirmation.md"
+          ],
+          "prompt_sha256": "0a655b6a4286d41d6c19b35940f9c449c1da841df8ea144dbd2796eeb2d028c1",
+          "prompt_changed_since_round_1": true,
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "host stream-json assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E3.md"
+            }
+          ],
+          "duration_ms": 16770,
+          "raw_trace_sha256": "569fd8004bdb2834ffe54cab7562428f36092f2b863d2e209e5277dff8a162a3",
+          "verdict": "pass",
+          "notes": "「继续吧」不记 select/delegate/confirm；话题 pending；不 freeze，也不用 exclude 绕过（mode=mixed）；重摆三条方向等真实选择。"
+        },
+        {
+          "id": "E5c",
+          "platform_simulated": "codex",
+          "under_test": [
+            "claude/meta-skill/skills/bootstrap/SKILL.md",
+            "claude/meta-skill/knowledge/bootstrap-planning.md",
+            "claude/meta-skill/knowledge/suppress-rules.md"
+          ],
+          "prompt_sha256": "5397ac0f17000e9a7b5dbc4a3f9eb5f2e8f929630786f6e020edaef93bcd2bef",
+          "prompt_changed_since_round_1": true,
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "host stream-json assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E5.md"
+            },
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E5.md"
+            }
+          ],
+          "duration_ms": 21320,
+          "raw_trace_sha256": "03e9bbf23a13a16478e0b9b611717bee9a00f5211a69b6ad77d766d037e9949b",
+          "verdict": "pass",
+          "notes": "mode=none，按谁在用判断而非 React/Vite；不加载体验知识、不开提案轮、不规划质量门并在摘要写明豁免；freeze 显式 exclude gap 并给理由；plan 写 not_applicable.experience。首轮未过的场景，在最终文本上再次通过。备注：判据第 2 条后半句「bootstrap 是唯一生产者，下游只读」受测方未说出口，该情境下不影响任何行为判断。"
+        },
+        {
+          "id": "E6c",
+          "platform_simulated": "claude",
+          "under_test": [
+            "claude/meta-skill/knowledge/bootstrap-planning.md",
+            "claude/meta-skill/knowledge/capabilities/concept-acceptance.md"
+          ],
+          "prompt_sha256": "af58010f7037064eb4fa6ae2d340354d752f1977e15e27d1cf5796f41af0f2e1",
+          "prompt_changed_since_round_1": true,
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "host stream-json assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E6.md"
+            }
+          ],
+          "duration_ms": 19485,
+          "raw_trace_sha256": "66a6442b068e3de6642975a5a579ccaa0af235287f50f61315472e6580a8acea",
+          "verdict": "pass",
+          "notes": "两个 creative-quality-critique 节点（定稿后 / 最后 QA 后）；concept-acceptance 与 pipeline-closure-verify 都依赖后一个；各一条 required_repair_loops（max_attempts 3，预算尽走 Run Policy 不提问）；must-fix 非空节点不算完成；未套用 experience-quality-critique。备注：未点名 check_artifacts.py，只说「评审节点不算完成」。"
+        },
+        {
+          "id": "E9c",
+          "platform_simulated": "pi",
+          "under_test": [
+            "pi/meta-skill/skills/bootstrap/SKILL.md",
+            "claude/meta-skill/knowledge/product-intent-confirmation.md"
+          ],
+          "prompt_sha256": "3a15c3e52522e0daf4166c999ac7f12e23a3d4cc843a766626b27a45ef63c066",
+          "prompt_changed_since_round_1": true,
+          "requested_model": "opus",
+          "resolved_model": "claude-opus-5",
+          "model_source": "host stream-json assistant message.model",
+          "observed_tool_calls": [
+            {
+              "name": "Read",
+              "file_suffix": "d/pxt3/pe-packet-E9.md"
+            }
+          ],
+          "duration_ms": 20442,
+          "raw_trace_sha256": "12b8fbfb1fe186d11b76b98b81aaaf2851d633eb079077775986925733c85bd6",
+          "verdict": "pass",
+          "notes": "Pi：纯文本列三条方向并标推荐后等回复，未提 AskUserQuestion；用户回「你定」才记 delegate（依据是「用户已经看过这一轮提案」——本轮补进 Pi 适配器的那句）；沉默/中断什么都不记，resume 时重摆；--delegations 披露。"
+        }
+      ],
+      "carried_unchanged": [
+        {
+          "id": "E4",
+          "prompt_sha256": "da71fc2c17eb903844e65e9ab86fb1f4e663ebf730bea84c7910edb56affcf21",
+          "note": "packet 与第 1 轮逐字节相同（prompt_sha256 一致），第 1 轮判定沿用，未重跑"
+        },
+        {
+          "id": "E7",
+          "prompt_sha256": "d339a34c80bfe69be586e0afef1ff3f2afd009dee286b2dd94f0c09c5b876028",
+          "note": "packet 与第 1 轮逐字节相同（prompt_sha256 一致），第 1 轮判定沿用，未重跑"
+        },
+        {
+          "id": "E8",
+          "prompt_sha256": "a2c694ec2a912bd8e185f237d7483970a68dd3d0247627b4b0532578a1c1f295",
+          "note": "packet 与第 1 轮逐字节相同（prompt_sha256 一致），第 1 轮判定沿用，未重跑"
+        }
+      ],
+      "found_defect": [],
+      "limits": [
+        "模拟决策，不是真实宿主验收（T-M5-16 仍待人工）",
+        "判定由编排者一人做出，未经第二评审",
+        "E5c、E6c 各有一条判据的从句受测方未说出口，见 notes"
+      ],
+      "raw_archive": {
+        "location": "仓库外的私有目录（公开仓库不收宿主轨迹：含会话 id 与本机路径）",
+        "files": {
+          "round1-and-retest.tar.gz": "09b18ddc90372311770f48d497c8d8b6c34c7cf6b2be2769579f87fb5f850840",
+          "round3.tar.gz": "91f252127723ae1636209952fc4e2d11d789807c8c5d3668ce9d94b8740b5bba"
+        }
+      },
+      "responses": "responses.md（\"第 3 轮\"一节）",
+      "responses_sha256": "c0bfddd7a3aed1135dfa80965f023367cf5098f42eee4cd4684178d742ed507b"
     }
   ],
   "failure_loop": {
@@ -302,5 +507,7 @@
       }
     ],
     "note": "两个 fail 的 case 修后重测为 E2b / E5b，均 pass；判据文件未改动，launch.fixtures 的 sha256 与第 1 轮一致。"
-  }
+  },
+  "responses_sha256_after_round_3": "c0bfddd7a3aed1135dfa80965f023367cf5098f42eee4cd4684178d742ed507b",
+  "responses_sha256_note": "顶层与 retests[0] 的 responses_sha256 钉的是第 3 轮追加之前的 responses.md（git 提交 dbf07d01 时的内容）；第 3 轮把六个场景的回答追加在文件末尾，未改动此前任何一行，追加后的哈希见 retests[1].responses_sha256。"
 }

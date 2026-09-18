@@ -60,6 +60,29 @@
 
 两次重测各只有一次 `Read`（自己的 packet），轨迹核对同第 1 轮。E2b 作废过一次：首跑的提示词没关掉 `Bash`，受试者用 `cat` 读 packet 并多读了一个文件，按「多读即作废」重跑，作废的那次不在 `cases[]` 里。`failure_loop.status` 记为 `closed`。
 
+## 第 3 轮：在最终文本上重跑（2026-09-18）
+
+第 2 轮只重测了 E2、E5。读了同一批修复文本的其它场景没有重跑，Pi 适配器此后又补了一句
+（委托回应的必须是用户已经看过的提案轮——此前只双写到了 Codex）。第 3 轮按最终文本（提交 `cbeac167`）
+重建全部九份 packet：E4、E7、E8 与第 1 轮逐字节相同（`prompt_sha256` 一致），判定沿用；其余六份发生了变化，全部重跑。
+判据仍是第 1 轮之前冻结的那一份，两个 fixture 的 sha256 与 `evidence.json` 顶层记录逐一相同。
+
+| 场景 | 平台 | 判定 | 要点 |
+|---|---|---|---|
+| E1c | claude | 通过 | 三条是方向之别；先情境与感受后功能；无时长选择器、无题型清单；不产生确认 |
+| E2c | codex | 通过 | 甲记 `delegate`（`user_reference` 指向「你定吧」那一轮）；乙只 `propose`；assume-and-declare 产生不了动作 |
+| E3c | claude | 通过 | 「继续吧」不是选择；不 `freeze`，也不用 `exclude` 绕过 |
+| E5c | codex | 通过（一条从句未说出口） | `mode: none` 按谁在用判断；不规划质量门；`freeze` 显式排除 gap。未说"bootstrap 是该字段唯一生产者"，该情境下不影响行为 |
+| E6c | claude | 通过（一处未点名） | 两个创意评审节点、收尾依赖后一个、各一条修复回路、must-fix 非空不算完成。未点名 `check_artifacts.py` |
+| E9c | pi | 通过 | 纯文本提案后等回复；「你定」才记 `delegate`，依据是"用户已经看过这一轮"；沉默与中断什么都不记 |
+
+隔离：六个子会话的宿主轨迹里各只有对自己 packet 的 `Read`（E5c 对同一文件读了两次，85 KB 分页）；
+resolved model `claude-opus-5`，取自轨迹。判定由编排者一人对照冻结判据做出。
+
+**原始轨迹的去向。** 本仓库是公开的，宿主 stream-json 轨迹含会话 id 与本机路径，不进仓库。三轮的轨迹与 packet
+打成两个包存在仓库外的私有目录，`evidence.json` 的 `retests[1].raw_archive` 记了两个包的 sha256，
+拿到包的人可以据此核对它就是当时那一份；每个第 3 轮 case 另记了自己那份轨迹的 `raw_trace_sha256`。
+
 ## 尚未验证
 
 - **真实宿主对话质量未覆盖**：这九个都是单轮模拟决策，多轮真实会话里的提案质量、追问与改主意都没测；那条线见本计划的 T-M5-16。
@@ -71,3 +94,5 @@
 - 这两句新文本同样只在单轮模拟里验证过：真实多轮会话里用户在提案轮之后改口、或在一轮里既问又委托的情形没有测。
 
 [原始答卷](product-experience-thought-tests/responses.md) · [证据](product-experience-thought-tests/evidence.json)
+- 第 3 轮的判定只有编排者一人做出，没有第二评审；E5c、E6c 各有一条判据的从句受测方没有说出口。
+- 三轮都是模拟决策。真实宿主里模型提出的体验方向有没有品位，仍然只有 `product-experience-host-run.md` 那次人工验收能回答。

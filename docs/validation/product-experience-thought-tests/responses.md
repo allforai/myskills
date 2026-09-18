@@ -496,3 +496,294 @@ Vite 和 React 生态工具链只是构建工具，不会让 mode 变成 consume
 - “`experience_priority.mode = none` | experience quality gate (Must #9) nodes | no end-user UI to judge”
 - “the run excludes `gap-experience-direction` and states `not_applicable.experience` … `freeze` maps that gap question into `exclude` … Suppressing the gate never means going quiet about the question it came from.”
 - “The only exemption is a suppress rule … a CLI or library-sdk project … Any other project gets both steps”
+
+---
+
+# 第 3 轮（最终文本，2026-09-18，受测提交 cbeac167）
+
+## E1c（claude 适配）
+
+### 本轮动作
+
+1. **自检（`consumer-maturity-patterns.md` §B）**：三个方向都没有"碎片模块"之类的功能名，也不是同一个想法换三种预算。
+2. **调用 `product_intent.py`**（伪调用）：
+
+```
+python3 .allforai/bootstrap/scripts/product_intent.py . < request.json
+{"operation":"propose","recommended_id":"dir-queue-minute",
+ "rationale":"你说要用零碎时间、还要能坚持：排队那一分钟打开就能背完一组，第二天有东西在等你，才坚持得住",
+ "proposals":[
+  {"id":"dir-queue-minute","title":"排队一分钟","who":"通勤、排队、等电梯的上班族",
+   "circumstance":"一天 5–10 次，每次 30–90 秒，单手操作，随时会被打断",
+   "core_loop_feel":"打开就背，不用选，也不用加载","first_minute":"不注册，直接背 5 个词",
+   "return_reason":"到期要复习的词在等你，断了的进度不清零",
+   "goal":"把零散的几分钟攒成稳定的记忆","anti_goals":["长课程","开屏选菜单"],
+   "tradeoffs":["放弃深度讲解"],"scope":["间隔复习","中断续背"],
+   "business_rules":["一组不超过 90 秒"],
+   "acceptance":["冷启动 3 秒内出现第一个词","中途被打断，回来还在原位置"],
+   "comparable":{"product":"Duolingo","approach":"几分钟一课，连续打卡加定时提醒"}},
+  {"id":"dir-work-context","title":"工作里遇到的词","who":"要读英文邮件和文档的职员",
+   "circumstance":"工作中碰到生词，回头利用空档背","core_loop_feel":"背的词都是自己真用得上的",...,
+   "comparable":{"product":"LingQ","approach":"从用户自己读的材料里收词"}},
+  {"id":"dir-buddy","title":"和同事结伴","who":"一个人容易放弃的人",
+   "circumstance":"两三人一组，每天互相看到对方进度","core_loop_feel":"不想拖别人后腿",...,
+   "comparable":{"product":"Duolingo 联赛","approach":"每周排名加好友互相督促"}}]}
+```
+
+后两个方向的 `first_minute`、`return_reason`、`goal`、`anti_goals`、`tradeoffs`、`scope`、`business_rules`、`acceptance` 同样写成非空的文本或列表。
+
+3. **本轮不调用 `decide`**：不 `select`，不 `delegate`，不回答 `gap-experience-direction`。话题保持待定。
+
+### 给用户的答复
+
+体验方向我写了三个，它们是三种不同的做法，不是同一个方案的大小版本：
+
+- **A 排队一分钟（推荐）**：打开就背，90 秒一组，被打断了回来接着背。每天有到期要复习的词，帮你坚持。参照的是 Duolingo 的短课加连续打卡。
+- **B 工作里遇到的词**：只背你在工作中真碰到的词，有用，所以你愿意回来背。参照的是 LingQ。
+- **C 和同事结伴**：靠彼此看得见的进度坚持下去。参照的是 Duolingo 联赛。
+
+我推荐 A，因为它最直接对应你说的"零碎时间"和"坚持"。推荐只是我的建议，不算替你做了决定。请选一个，或者告诉我怎么改；你也可以说"你帮我定"。
+
+### 依据原句
+
+- "propose is mandatory before the experience-direction topic is discussed"
+- "The user's words are the circumstance to design for, never vocabulary to transcribe."
+- "the turn that opens a round ends with the proposals presented and the topic pending"
+- "A recommendation is not an action."
+
+## E2c（codex 适配）
+
+### 情形甲（第 1 轮已展示，用户本轮说「你定吧……按你推荐的来」）
+
+**实际调用：**
+```
+product_intent.py . < {
+  operation: "decide",
+  batch_id: "exp-dir-r1-delegate",
+  topic: "experience-direction",
+  user_reference: "<本轮用户原话所在的 user turn：『你定吧，我不懂这些，你按你推荐的来』>",
+  actions: [
+    { operation: "delegate", reason: "用户本轮明确要求按推荐方向替其决定" },
+    { operation: "answer", id: "gap-experience-direction", answer: "<D2 的 title>", reason: "用户委托，采用推荐方向 D2" }
+  ]
+}
+```
+这里 delegate 不带 `proposal_id`，CLI 会取第 1 轮推荐的 D2。它记下已确认的 `experience-direction-D2`：`origin: model-proposal`，`auto_decided: true`，`confirmation.delegated: true`。
+
+**理由：** 当前已有一轮建议，而且是上一轮展示给用户、用户已经读过的。用户在本轮亲口要求替他定。`user_reference` 必须填本轮用户的发言，不能填推荐本身，也不能填上一轮展示方向的那一轮。
+
+**给用户的答复：** 「好，按推荐的 D2《…》来。这是替你做的决定，会标记为委托，跑完时会通过 `--delegations` 列给你看。以后想换，随时说。」
+
+### 情形乙（还没有任何 propose，用户开场说「体验方向你定，别问我」）
+
+**实际调用：**
+```
+product_intent.py . < {
+  operation: "propose",
+  proposals: [D1, D2, D3],
+  recommended_id: "D2",
+  rationale: "<用用户自己的话说明为什么推荐>"
+}
+```
+每条方向都写满 `id/title/who/circumstance/core_loop_feel/first_minute/return_reason/goal/anti_goals/tradeoffs/scope/business_rules/acceptance/comparable{product,approach}`，不带 `origin/status/recommended` 这类权限字段。本轮**不调用 decide，也不 delegate**。用纯文本列出三条方向并点明推荐 D2，本轮到此结束，这个话题保持待定。
+
+**理由：** 原文写道：「Without a current proposal round both are refused, and a round opened in that same turn is not yet a current round」，以及「`propose` and then `delegate` in one turn confirms a direction the user never saw」。Codex 适配器也写明：「'decide it for me' said before any round exists is answered by opening one, not by closing it」。
+
+**给用户的答复：** 「可以替你定。不过得先有写好的方向，才谈得上替你选。下面是三个方向，我推荐 D2，理由是……你回一句『就按推荐』，我就按委托记下，跑完时会告诉你这是我替你定的。」
+
+### Codex 的 assume-and-declare 约定
+
+**能做的：**
+- 在纯文本里声明推荐哪条、理由是什么。
+- 声明其它非权限性质的技术假设。
+
+**不能做的：**
+- 原文：「the Codex assume-and-declare convention cannot produce a `select` or a `delegate`. A recommendation, a displayed default and silence are not actions」。
+- 所以它不能把推荐当成用户已选，也不能在用户没回应时把方向记成已确认。没人回应的一轮始终只是建议。
+
+## E3c（claude 适配）
+
+**本轮实际动作**
+
+1. 不调用 `decide`，也就是不写 `select` 或 `delegate`。原因是「行，继续吧」只是让我往下走，没有选任何方向。
+2. 伪调用 `product_intent.py . < {"operation":"resume"}`。它会返回待处理的话题 `topics`，其中 `experience-direction` 下挂着当前第 1 轮的 `proposals`，还有 `recommended_id:"D1"` 和 `rationale`。我用这些内容把三条方向重新摆给用户。
+3. 不再 `propose` 开新一轮。第 1 轮用户还没回答，仍是当前轮，用户应该从这三条里选。
+4. 不 `freeze`，不 `plan`。
+
+**`experience-direction` 话题现在的状态**
+
+仍然待定（pending）。D1 只是推荐，也是界面默认高亮的一项，但还只是提议，不是已确认的方向。`gap-experience-direction` 还没有答案，也没有生成 `experience-direction-D1` 这个已确认条目。
+
+**能不能 freeze**
+
+不能。理由有三条：
+
+- `freeze` 的 `include` 只能放已确认的条目。现在没有已确认的体验方向。
+- 如果把 `gap-experience-direction` 放进 `exclude`，协议只允许在「没人看的产品」上这样做。当前 `mode="mixed"`，这是会被人看到的 UI 产品，排除理由不成立。而且排除一个未回答的问题，也不能授权依赖它的工作。
+- 如果我自己把「继续吧」当成 `delegate`，就是自作主张替用户做了决定。用户这一轮没有说「你替我定」。
+
+**面向用户的答复**
+
+> 数据库那边就按刚才说的办。现在回到还没定的一步：产品的体验方向。上一轮我写了三条方向，分别是 D1、D2、D3，每条都包括是给谁用、在什么场景下用、核心体验是什么感觉、用户为什么会回来，还有一个做同类事情的成熟产品作对照。我推荐 D1，理由是〔rationale〕。但推荐不算你的选择，界面上高亮的默认项也不算。
+>
+> 「继续吧」我不会当成选了 D1。请你直接回我下面三种之一：
+> - 选 D1、D2 或 D3，也可以说想改哪里；
+> - 说「你替我定」，我就采用 D1，把它标成替你做的决定，跑完时会明确告诉你；
+> - 都不满意，说说原因，我重新写一轮方向。
+>
+> 方向定下来之前，我不会冻结范围，也不会生成执行计划。
+
+**支持判断的关键原句**
+
+- "recommendations, displayed defaults, omitted answers and silence are not actions; `select` and `delegate` are actions."
+- "A recommendation is not an action. Only the user's own `select`, or a `delegate` they asked for in that turn, creates a confirmed experience direction; a displayed default nobody answered stays a proposal."
+- "`delegate` … is legal only where the user said in that very turn to decide for them"
+- "Never restore by relabeling old code or interpreting continue/accept as a product choice."
+- "A product nobody looks at excludes `gap-experience-direction` at `freeze`"
+- "Excluding a question cannot authorize work that depends on its unanswered choice."
+
+## E5c（codex 适配）
+
+**实际动作**
+
+1. 写入 `bootstrap-profile.json`：
+```json
+"experience_priority": {"mode": "none", "reason": "纯 HTTP API 计费对账服务，没有终端用户界面，消费方是两个后端服务，运维只看日志和 Grafana。"}
+```
+工具链里的 React 和 Vite 不影响判断。
+
+2. Step 2 第 9 项不加载。这四份文件都不强制加载：product-concept.md、consumer-maturity-patterns.md、journey-emotion-schema.md、app-design.md。`create` 没有对应的能力文件。按 `goals` 该加载的仍然照常加载，比如 implement、launch-prep、cross-phase-protocols。
+
+3. 节点图不放体验设计节点，也不放 design 和 runtime 两个 experience-quality-critique 节点。`required_repair_loops` 不写体验回路。规划摘要里写明豁免原因：没有终端用户界面，没有东西可评。
+   `user_steps` 保持 `["/cross-exam", "/product-review"]`。这个项目的类型不是 cli，也不是 library-sdk，不在豁免范围内。
+
+4. 处理 freeze 这一批（伪调用）：
+```
+product_intent.py freeze → gap-experience-direction 映射为 exclude，
+  reason: "无终端用户界面，没有人看这个产品"
+product_intent.py plan → not_applicable: {experience: "无终端用户界面，没有人看这个产品"}
+```
+这样这个问题不会一直挂在待定里，也不会因为跳过而没有说明。
+
+**面向用户的答复**
+
+这个项目只提供 HTTP API，调用方是两个后端服务，没有终端用户界面。所以我把体验优先级定为 `none`：不提体验方向，不规划体验设计节点和体验质量门。"体验方向"这个问题已经在 freeze 里明确排除，并记下了原因。计划里也写了体验不适用及原因。
+
+流水线跑完后，仍建议你依次执行 `/cross-exam` 和 `/product-review`。如果将来要给这个服务加管理后台，请重新运行 `/bootstrap` 改分类。
+
+**依据原句**
+
+- 「`none` = there is no end-user interface. Use `none` only when … the project is pure backend/API. Judge by who the product serves, not by the tech stack」
+- Step 2 第 9 项：「when `task_route` is `new-product` … and `experience_priority.mode != none`, always load …」
+- Must #9：「Where `experience_priority.mode` is `none` there is no gate to plan and no direction to confirm: the run excludes `gap-experience-direction` and states `not_applicable.experience` … `freeze` maps that gap question into `exclude`」
+- suppress-rules：「`experience_priority.mode = none` | experience quality gate (Must #9) nodes | … the summary states the exemption」
+- 「"Smallest" never means omitting experience design. On a … route whose `experience_priority.mode` is `consumer` or `mixed`」：这条只约束 consumer 和 mixed，不约束 none。
+
+## E6c（claude 适配）
+
+### 本轮动作（伪调用）
+
+**1. 放两个创意质量评审节点**，两个都执行 `${CLAUDE_PLUGIN_ROOT}/skills/game-creative/40-qa/creative-quality-critique/SKILL.md`：
+- `creative-critique-design`：`hard_blocked_by: ["game-design-finalize"]`。美术、音频、前端实现节点都 `hard_blocked_by` 它。
+- `creative-critique-runtime`：`hard_blocked_by` 最后一个美术/UI/音频/前端 QA 节点，也就是视觉 QA 和运行时 smoke。
+- 两个节点都不用 `experience-quality-critique`，那是非游戏产品用的。节点 id 里不出现 `cross-exam` 或 `product-review`。产物路径按该 skill 的 Output Contract 写，我不另起名字。
+
+**2. 收尾节点的依赖**
+- `concept-acceptance.hard_blocked_by: ["creative-critique-runtime", ...原有依赖]`
+- `pipeline-closure-verify` 也 `hard_blocked_by` `creative-critique-runtime`。依据是 Must #9 对产品这样要求，并说明 Must #8 是同一条法则。
+
+**3. `required_repair_loops` 每个评审声明一个循环**
+```json
+[{"qa_node_ids":["creative-critique-design"],
+  "repair_node_id":"game-design-creative-repair",
+  "closure_node_ids":["<首批美术/音频/前端实现节点>"],
+  "max_attempts":3},
+ {"qa_node_ids":["creative-critique-runtime"],
+  "repair_node_id":"game-impl-creative-repair",
+  "closure_node_ids":["concept-acceptance","pipeline-closure-verify"],
+  "max_attempts":3}]
+```
+- 设计循环里，must-fix 交给出问题的那个设计 pack 的修复节点重跑。
+- 运行时循环里，先修实现，再重跑受影响的视觉 QA 和 smoke，最后重跑 `creative-critique-runtime`。
+- 修复预算用尽时按 Run Policy 处理，运行中不再问用户。
+
+**4. 其余配套**
+- workflow 写入 `"user_steps": ["/cross-exam", "/product-review"]`。
+- `game-design-finalize` 的 exit_artifacts 包含 `.allforai/game-design/game-design-doc.json`，实现节点间接 `hard_blocked_by` 它。
+- 规划后跑 `validate_bootstrap.py`，由 `validate_experience_gate_flow` 检查。
+
+### 给用户的答复
+
+创意质量评审放两个：一个在游戏设计定稿后、动手实现前，另一个在最后的视觉 QA 和 smoke 之后。`concept-acceptance` 和 `pipeline-closure-verify` 都要等第二个评审通过。两个评审各有一个修复循环，最多修 3 次。
+
+评审报告里的 must-fix 清单只要不为空，评审节点就不算完成，收尾的覆盖检查也不会开始。评审负责判断质量并把问题分派去修；`concept-acceptance` 仍然只查概念里声明的行为有没有证据，不打分。跑完后，你接着输入 `/cross-exam` 和 `/product-review`。
+
+### 依据原句
+
+- Must #8："After `game-design-finalize`, and again after the last art/UI/audio/frontend QA … `concept-acceptance` is `hard_blocked_by` it; `must_fix_*` findings route to the owning pack's repair loop."
+- Must #9："Item 8 states the same law for games"
+- concept-acceptance："While that critique's `must_fix_*` list is non-empty the critique node is not complete, so this gate does not start."
+- Must #2："max 3 attempts"
+
+## E9c（pi 适配）
+
+### 本轮动作（开第一轮提案）
+
+还没有任何提案轮次，所以这一轮只开一轮提案，不记录任何决定。场景没给出已确认的 target-users 和 scenarios 的具体内容，下面用〈〉占位。实际填写时，每条都要按已确认的内容写完整。
+
+```
+product_intent.py . < {
+ "operation":"propose",
+ "proposals":[
+  {"id":"exp-dir-a","title":"〈A〉","who":"…","circumstance":"〈含规模与频率〉",
+   "core_loop_feel":"…","first_minute":"…","return_reason":"…","goal":"…",
+   "anti_goals":[…],"tradeoffs":[…],"scope":[…],"business_rules":[…],
+   "acceptance":["〈可观察的体验标准〉"],
+   "comparable":{"product":"〈成熟产品〉","approach":"〈它实际怎么做〉"}},
+  {"id":"exp-dir-b",…},{"id":"exp-dir-c",…}],
+ "recommended_id":"exp-dir-a",
+ "rationale":"〈用用户自己的话说明为什么推荐〉"}
+```
+
+发给用户的原文：
+
+> 接下来定体验方向。下面三条是方向不同，不是同一个想法的大小档位：
+> **A.〈标题〉（推荐）**：给〈谁〉，在〈什么情境、多频繁〉下用；核心循环的感觉是〈…〉；第一分钟〈…〉；回来的理由是〈…〉；参照〈产品〉，它〈做法〉；代价是〈…〉。
+> **B.〈标题〉**：…
+> **C.〈标题〉**：…
+> 我推荐 A，因为〈理由〉。请选一条，也可以说要改哪里，或者让我来定。
+
+这一轮到此结束，话题保持待定。
+
+### 用户下一轮回「你定」
+
+用户已经看过这一轮提案，而且是在这一轮明说让我来定，所以可以记 `delegate`：
+
+```
+product_intent.py . < {
+ "operation":"decide","batch_id":"exp-direction-1","topic":"experience-direction",
+ "user_reference":"〈用户那一轮的真实发言：「你定」〉",
+ "actions":[
+  {"operation":"delegate","reason":"用户说「你定」，委托我按推荐方向决定"},
+  {"operation":"answer","id":"gap-experience-direction","answer":"〈A 的 title〉",
+   "reason":"用户委托，采用推荐方向 A"}]}
+```
+
+- 这一步会生成一条已确认的 `experience-direction-exp-dir-a`，`origin: model-proposal`，`auto_decided: true`，`confirmation.delegated: true`。
+- `delegate` 不带 `proposal_id`。
+- 回复用户：「按你的委托选了 A。这个决定会标成替你定的，运行结束时会再列给你看。想换的话随时说。」
+
+### 用户没回，或会话被打断
+
+- 不记 `select`，也不记 `delegate`，什么都不写。
+- 再进入时先调 `resume`，把当前这一轮的 `proposals` / `recommended_id` 原样再出示一遍，继续等用户答复。
+- 这个话题待定期间，不 freeze 也不 plan 依赖它的工作。Pi 上也不能用 assume-and-declare 代替用户同意。
+
+### 支持判断的关键原句
+
+- 「a round opened in that same turn is not yet a current round … the turn that opens a round ends with the proposals presented and the topic pending」
+- 「`delegate` … is legal only where the user said in that very turn to decide for them, and the batch `user_reference` must be that real user turn」
+- 「must `answer` `gap-experience-direction` with the chosen direction's title」
+- 「沉默、中断、没有回复都不是委托」
+- 「assume-and-declare 产生不了 `select`，也产生不了 `delegate`」
+- 「disclosed back to the user at run completion through `product_intent.py . --delegations`」
