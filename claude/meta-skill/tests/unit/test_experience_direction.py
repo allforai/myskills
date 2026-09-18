@@ -9,9 +9,11 @@ import importlib.util
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
+from ..module_isolation import load
 from .test_bootstrap_scope import confirm_plan, gate, project, publish_contract
 from .test_product_intent_session import CONCEPT, JOURNAL, TOPICS, decide, draft, invoke
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
@@ -19,7 +21,8 @@ from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
 EXPERIENCE_TOPIC = "experience-direction"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
-GATES = ("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py")
+TEMPLATE = Path(__file__).resolve().parents[2] / "knowledge/orchestrator-template.md"
+GATES =("validate_bootstrap.py", "check_decision_inputs.py", "validate_unattended_readiness.py")
 DIRECTION_BLOCKER = "ui_product_without_experience_direction"
 # Mirror of the proposal key set the script accepts; the wording of every value stays
 # clear of interface terms so the same fixtures can reach the gates in later units.
@@ -656,3 +659,86 @@ def test_direction_gate_stays_silent_when_it_does_not_apply(tmp_path, host):
     assert json.loads((headless / PROFILE).read_text())["experience_priority"]["mode"] == "none"
     for name, result in verdicts(headless).items():
         assert result.returncode == 0, (name, result.stdout, result.stderr)
+
+
+DELEGATION_REASON = "The tired half hour is read better here than the shopkeeper can read it tonight"
+
+
+def delegated_concept(batch="handed-over"):
+    """The concept record a run holds after the user handed the pick to the model.
+
+    Written straight to disk rather than driven through a session: what the closing
+    summary owes the user is readable from the record alone, so the disclosure path
+    is proven without a whole bootstrap behind it, on either host's copy.
+    """
+    item = chosen_item(batch=batch, reason=DELEGATION_REASON, auto_decided=True)
+    item["confirmation"]["delegated"] = True
+    offered = dict(proposal("calm-pass"), origin="model-proposal", round=1,
+                   recommended=True, rationale=RATIONALE)
+    return {"requirements": [item], "experience_proposals": [offered]}
+
+
+def report_section(report, heading):
+    """The body lines of one `##` section of run-summary.md."""
+    assert "\n## " + heading + "\n" in report, (heading, report)
+    return report.split("\n## " + heading + "\n", 1)[1].split("\n## ", 1)[0].strip().splitlines()
+
+
+def test_run_summary_and_completion_text_disclose_delegations(tmp_path):
+    """A finished run says which directions the user never chose for themselves.
+
+    A delegation is only a line in a file until something reads it back out, so the
+    closing summary carries it into the run's auditable trace and the orchestrator
+    template makes the completion text name each one. Disclosure has to survive a run
+    that ended badly too: an unreadable record costs the reading, never the report.
+    """
+    product_intent, summarize_run_log = load("product_intent", "summarize_run_log")
+    assert summarize_run_log._delegations is product_intent.delegations, \
+        "the summary discloses through the CLI that records delegations, never a copy of it"
+
+    handed = tmp_path / "handed-over"
+    (handed / CONCEPT).parent.mkdir(parents=True)
+    (handed / CONCEPT).write_text(json.dumps(delegated_concept()), encoding="utf-8")
+    summary = summarize_run_log.summarize(handed)
+    assert summary["schema_version"] == "1.0", "the summary only gained a key"
+    assert "delegations_error" not in summary
+    assert summary["delegations"] == [
+        {"id": EXPERIENCE_TOPIC + "-calm-pass", "revision": 1, "proposal_id": "calm-pass",
+         "proposal_title": proposal("calm-pass")["title"],
+         "user_reference": "user turn handed-over", "reason": DELEGATION_REASON}]
+
+    report = summarize_run_log.write_reports(handed, summary)[1].read_text(encoding="utf-8")
+    assert report.index("## Delegated Decisions") > report.index("## Recent Failures"), \
+        "the disclosure closes the report, after what the run itself did"
+    assert report_section(report, "Delegated Decisions") == [
+        "- `" + EXPERIENCE_TOPIC + "-calm-pass` proposal=`" + proposal("calm-pass")["title"]
+        + "` user_turn=`user turn handed-over` reason=`" + DELEGATION_REASON + "`"]
+
+    picked = tmp_path / "picked"
+    picked.mkdir()
+    quiet = summarize_run_log.summarize(picked)
+    assert quiet["delegations"] == [] and "delegations_error" not in quiet
+    assert report_section(summarize_run_log.write_reports(picked, quiet)[1].read_text(encoding="utf-8"),
+                          "Delegated Decisions") == ["- none"], \
+        "a run nobody delegated anything in still says so"
+
+    torn = tmp_path / "torn"
+    (torn / CONCEPT).parent.mkdir(parents=True)
+    (torn / CONCEPT).write_text("{ the record was cut off", encoding="utf-8")
+    broken = summarize_run_log.summarize(torn)
+    assert broken["delegations"] == [] and broken["delegations_error"], \
+        "a record that cannot be read may not be reported as nothing delegated"
+    torn_lines = report_section(summarize_run_log.write_reports(torn, broken)[1].read_text(encoding="utf-8"),
+                                "Delegated Decisions")
+    assert torn_lines[0] == "- none"
+    assert torn_lines[1] == "- unreadable: " + broken["delegations_error"]
+
+    parts = TEMPLATE.read_text(encoding="utf-8").split("## Post-Completion", 1)
+    assert len(parts) == 2, "the template still closes with one Post-Completion section"
+    closing = parts[1]
+    assert "product_intent.py . --delegations" in closing
+    assert "Decisions you delegated to the model" in closing
+    assert "No delegated decisions." in closing
+    assert (closing.index("Run log summary") < closing.index("--delegations")
+            < closing.index("Mark concept drift resolved")), \
+        "the disclosure runs between the run log summary and the drift mark"
