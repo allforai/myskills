@@ -1512,6 +1512,17 @@ def run_script(project_root: Path, name: str, args: list[str],
                        execution_policy(project_root)["helper_timeout_seconds"], stdin_text)
 
 
+def delegation_disclosure(project_root: Path):
+    """Model-delegated product choices, disclosed at completion. Never blocks completion."""
+    result = run_script(project_root, "product_intent.py", [".", "--delegations"])
+    if result is None or result.returncode:
+        return "unavailable"
+    try:
+        return json.loads(result.stdout)
+    except ValueError:
+        return "unavailable"
+
+
 def run_preflight(project_root: Path) -> int:
     run_script(project_root, "record_run_event.py", [".", "--event", "run_started", "--status", "started", "--message", "codex flow.py invoked"])
     started = time.monotonic()
@@ -2287,7 +2298,12 @@ def main() -> int:
             if not workflow.get("nodes") or not run_post_checks(project_root):
                 print(json.dumps({"passed": False, "done": False, "error": "final validation failed"}), file=sys.stderr)
                 return 6
-            print(json.dumps({"passed": True, "done": True, "iterations": iteration - 1}, indent=2, ensure_ascii=False))
+            # Disclosure, not a gate: what the model chose on the user's behalf is told
+            # here verbatim, and an unobtainable list never turns a finished run into a
+            # failed one.
+            print(json.dumps({"passed": True, "done": True, "iterations": iteration - 1,
+                              "delegations": delegation_disclosure(project_root)},
+                             indent=2, ensure_ascii=False))
             return 0
 
         node_id = str(node.get("node_id") or node.get("id"))

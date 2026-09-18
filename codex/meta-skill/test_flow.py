@@ -2670,3 +2670,77 @@ def test_subprocess_timeout_notifies(tmp_path, capsys):
     assert result.returncode == 124
     event = json.loads(capsys.readouterr().out)
     assert event['reason'] == 'timeout' and event['returncode'] == 124
+
+
+# --- delegated product choices disclosed at completion (R-M5-04) ---
+#
+# The choices the model was asked to make on the user's behalf are told at completion, not
+# gated on: the driver forwards whatever `product_intent.py --delegations` printed, verbatim
+# and uninterpreted, and every way of failing to obtain that list degrades to "unavailable"
+# without touching `passed` / `done`. An old project whose copied `product_intent.py` does
+# not know the argument must still be able to finish.
+
+DELEGATED = {'delegations': [{'intent_id': 'experience-direction-p2', 'proposal_id': 'p2',
+                              'title': 'ambient micro-sessions', 'delegated_at_turn': 3,
+                              'reason': 'the user deferred the choice to the model'}]}
+
+
+def disclosure_stub(monkeypatch, result):
+    """Answer `product_intent.py --delegations` from a box; every other helper stays real."""
+    real = flow.run_script
+    box = {'result': result}
+
+    def run_script(project_root, name, args, stdin_text=None):
+        if name == 'product_intent.py' and '--delegations' in args:
+            return box['result']
+        return real(project_root, name, args, stdin_text)
+
+    monkeypatch.setattr(flow, 'run_script', run_script)
+    return box
+
+
+def completion_payload(out):
+    """The driver's last stdout document: the completion report, after any heartbeat events."""
+    decoder, documents, index = json.JSONDecoder(), [], 0
+    while index < len(out):
+        if out[index].isspace():
+            index += 1
+            continue
+        document, index = decoder.raw_decode(out, index)
+        documents.append(document)
+    assert documents, f'the driver printed nothing on stdout: {out!r}'
+    return documents[-1]
+
+
+def run_to_completion(tmp_path, monkeypatch):
+    """A graph whose every node succeeds on its first attempt, driven to the done report."""
+    concept_gate_project(tmp_path)
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    drive_real_routing(tmp_path, monkeypatch, gate_executor(covered_from_attempt=1), max_iterations=8)
+
+
+def test_completion_discloses_delegations(tmp_path, monkeypatch, capsys):
+    disclosure_stub(monkeypatch, subprocess.CompletedProcess([], 0, json.dumps(DELEGATED)))
+    run_to_completion(tmp_path, monkeypatch)
+    payload = completion_payload(capsys.readouterr().out)
+    assert payload['done'] is True and payload['passed'] is True, payload
+    assert payload['delegations'] == DELEGATED, \
+        f'the helper\'s list is disclosed as it stands, not re-described: {payload.get("delegations")!r}'
+
+
+def test_delegation_disclosure_failure_never_blocks_completion(tmp_path, monkeypatch, capsys):
+    box = disclosure_stub(monkeypatch, None)
+    cases = {
+        'no-helper': None,
+        'unknown-argument': subprocess.CompletedProcess([], 2, '', 'unrecognized arguments: --delegations'),
+        'not-json': subprocess.CompletedProcess([], 0, 'usage: product_intent.py [-h] project_root'),
+    }
+    for name, result in cases.items():
+        box['result'] = result
+        root = tmp_path / name
+        root.mkdir()
+        run_to_completion(root, monkeypatch)
+        payload = completion_payload(capsys.readouterr().out)
+        assert payload['delegations'] == 'unavailable', f'{name}: {payload.get("delegations")!r}'
+        assert payload['done'] is True and payload['passed'] is True, \
+            f'{name}: disclosure is a notice, not a gate: {payload}'
