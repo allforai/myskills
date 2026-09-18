@@ -29,6 +29,17 @@ P1 在旧文本下主判据全中，但它在复核环节写的是「仅当宿�
 
 **P1b 是在修复后的文本上重跑的同一场景**（不是对旧答卷重判）：同一环境、同一判据外加「不得把已授权模型当例外」。原件与复测的适配 SHA256 都在证据里，旧判定保留不改。
 
+## 宿主侧核查：谁真正决定子代理模型
+
+思维测试只证明了文本被读懂，证明不了根因。补查宿主后结论是：**Pi 没有把子代理送去 Codex 的路径，唯一入口是派发文本让主会话自己挑 `codex-exec`。**
+
+- 原生子代理的模型解析顺序（`docs/models.md`，实现 `src/runs/shared/model-resolution.ts:399` `resolveModelSelection`）：per-run `model` → `agentOverridesByProvider` → `agentOverrides.<name>.model` → 代理 frontmatter `model` → `subagents.defaultModel` → 父会话模型。
+- **本机没有任何模型策略**：`~/.pi/agent/settings.json` 没有 `subagents` 键，项目没有 `.pi/settings.json`，也没有 `~/.pi/agent/extensions/subagent/config.json`。所以内置代理全部落到父会话模型，与本轮 6 个子运行 receipt 里 resolved 的 `openrouter/deepseek/deepseek-v4.1-flash` 一致（同 `PI_MODEL`）。
+- **外部 CLI runner 是换模型换 harness**：`src/api/preflight.ts:386` 对 `runner.type === "external-cli"` 直接 `model = undefined`，pi-subagents 不给 `codex` 传任何模型；codex 用自己的 `~/.codex/config.toml`（`model = "gpt-5.6-luna"`、`model_reasoning_effort = "medium"`）。外部适配器也不参与模型校验（`model_verification_failed` 只针对原生子代理），所以 Pi 侧看不到那次实际用了什么模型。
+- **没有兜底替换**：`agent` 是调用方显式参数，名字不存在或已禁用直接报 `Agent 'x' not found`（`src/agents/agent-management.ts:641`、`1048`），不会自动改派到别的 agent，也没有默认 agent。
+
+即根因确实在技能文本层（`runner.available === true` 那句把 `codex-exec` 放进了候选），本次改动位置正确。**但旧文本下的实际选择仍未复现**：本轮 P1–P5 都跑在修好的文本上，宿主核查只排除了“宿主自己送去 Codex”这一替代解释，不等于旧文本必定会选 codex。
+
 ## 尚未验证
 
 - 真实 Pi 会话里技能被自动加载、用户级 `subagents` 配置（含 `agentOverrides`、`maxThinking`）对档位的实际钳制、真实异步调度；本轮子代理是宿主默认档位，未逐案传档位后缀。
