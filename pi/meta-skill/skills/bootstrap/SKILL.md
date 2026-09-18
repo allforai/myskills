@@ -109,6 +109,31 @@ node-specs 仍是运行时合约，并标准化为 `## Spec` / `## Design` / `##
 复制 helper 之后，对生成项目运行 bootstrap、decision-inputs、unattended-readiness 三道共享门。
 决策输入或 DAG 结构透镜不是 OK、或 node-spec 审计未过时，不得把 `/skill:run` 说成可执行。
 
+### 7. 体验方向与体验质量门
+
+canonical 这部分在 Pi 上照常执行，只有提问方式不同。
+
+1. 按 canonical Step 1.6 把 `experience_priority {mode, reason}` 写进
+   `.allforai/bootstrap/bootstrap-profile.json`。Pi 上 bootstrap 同样是这个字段的唯一生产者，
+   下游节点只读它，不重新分类、不改写。
+2. `task_route` 是 `new-product` 或 `product-reconstruction` 且 `experience_priority.mode != none` 时，
+   无论 goal 名字是否匹配，都加载 `<canonical-root>/knowledge/capabilities/product-concept.md`、
+   `<canonical-root>/knowledge/consumer-maturity-patterns.md`、
+   `<canonical-root>/knowledge/journey-emotion-schema.md`，以及
+   `<canonical-root>/knowledge/capabilities/app-design.md`（`is_game_project = false`）
+   或 `<canonical-root>/knowledge/capabilities/game-design.md`（`is_game_project = true`）。
+3. `experience-direction` 话题先 `propose` 再谈：用纯文本逐条列出 2–3 条方向并标明推荐的哪一条，
+   然后等用户回复。用户挑了哪条就记 `select`；用户在那一轮明说"你定"才记 `delegate`，
+   批次的 `user_reference` 写那条真实的用户发言，不是推荐本身、也不是展示提案的那一轮。
+   assume-and-declare 产生不了 `select`，也产生不了 `delegate`；推荐和展示的默认值不是动作，
+   沉默、中断、没有回复都不是委托。协议出处是
+   `<canonical-root>/knowledge/product-intent-confirmation.md`，动作用复制后的 `product_intent.py` 记录。
+4. 按 `<canonical-root>/knowledge/bootstrap-planning.md`（Must #9 与游戏路线的同一条）规划 design 与
+   runtime 两道体验质量门节点：design 门在任何 UI 实现节点之前，runtime 门在最后一个 UI/产品验证/视觉 QA 之后，
+   收尾与验收节点 `hard_blocked_by` runtime 那道门；两道门各自在
+   `unattended-run-readiness-spec.json.required_repair_loops` 里有修复回路。
+   把 `/skill:run` 说成可执行之前，第 6 节那三道共享门必须通过。
+
 ## Validation
 
 生成后确认：

@@ -67,6 +67,35 @@ class EntryTests(unittest.TestCase):
         self.assertIn("Pi 没有 `AskUserQuestion`", text)
         self.assertTrue((CANONICAL / "skills/bootstrap/SKILL.md").is_file())
 
+    def test_bootstrap_carries_experience_direction(self):
+        # Pi users answer in plain text: the adapter must carry the experience
+        # direction protocol without pretending `AskUserQuestion` exists here.
+        text = (PACKAGE / "skills/bootstrap/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("### 7. 体验方向与体验质量门", text)
+        for anchor in (
+            "experience_priority",
+            "experience-direction",
+            "propose",
+            "select",
+            "delegate",
+            "product-intent-confirmation.md",
+            "consumer-maturity-patterns.md",
+            "journey-emotion-schema.md",
+            "capabilities/product-concept.md",
+            "bootstrap-planning.md",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+        self.assertIn("Pi 没有 `AskUserQuestion`", text)
+        for positive in (
+            "用 `AskUserQuestion`",
+            "调用 `AskUserQuestion`",
+            "使用 `AskUserQuestion`",
+            "AskUserQuestion 提问",
+        ):
+            with self.subTest(positive=positive):
+                self.assertNotIn(positive, text)
+
     def test_router_does_not_pretend_run_lives_in_the_package(self):
         text = (PACKAGE / "skills/meta-skill/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("../bootstrap/SKILL.md", text)
@@ -88,6 +117,21 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn(".codex/commands/run.md", text)
         self.assertNotIn("python .allforai/codex/flow.py", text)
         self.assertIn("There is no `.allforai/codex/flow.py`", text)
+
+    def test_completion_discloses_delegations(self):
+        # Delegated product choices are disclosed at completion, in both the
+        # success report and the post-completion steps, and never as a gate.
+        text = (PACKAGE / "knowledge/orchestrator-template.md").read_text(encoding="utf-8")
+        command = "python3 .allforai/bootstrap/scripts/product_intent.py . --delegations"
+        self.assertIn(command, text)
+        self.assertGreaterEqual(text.count("--delegations"), 2)
+        self.assertIn("No delegated decisions.", text)
+        termination = text.split("## Termination", 1)[1]
+        termination, post_completion = termination.split("## Post-Completion", 1)
+        self.assertIn(command, termination)
+        self.assertIn(command, post_completion)
+        self.assertNotIn(".claude/commands/run.md", text)
+        self.assertNotIn(".codex/commands/run.md", text)
 
     def test_pi_dispatch_keeps_the_session_model(self):
         # Pi children inherit the session model and vary only thinking level;
