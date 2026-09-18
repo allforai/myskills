@@ -368,7 +368,9 @@ JOURNAL = ".allforai/product-concept/decision-journal.json"
 BASELINE = ".allforai/product-concept/concept-baseline.json"
 PROFILE = ".allforai/bootstrap/bootstrap-profile.json"
 LOCAL = ".allforai/bootstrap/local-requirements.json"
-TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop", "tradeoffs")
+TOPICS = ("target-users", "scenarios", "core-problem", "value-proposition", "business-loop",
+          "experience-direction", "tradeoffs")
+EXPERIENCE_TOPIC = "experience-direction"  # The experience the product gives people, decided before its tradeoffs.
 LOCAL_TOPIC = "local-requirements"  # Grouping label for hand-projected local requirements without a topic.
 RUN_POLICY = ".allforai/bootstrap/run-policy.json"
 RUN_POLICY_REPAIRS = ".allforai/bootstrap/run-policy-repairs.json"
