@@ -301,6 +301,48 @@ Parity modes from product-concept:
 - `explicit`: each client declares `supported_features[]` → only check declared features
 - **Fallback (no parity_mode declared)**: treat as `full` — verify all features across all clients, flag gaps as minor severity
 
+### Audience Leak Check
+
+Applies to every module with an end-user surface; non-UI projects follow the Skip conditions above
+(no end-user surface, no check). The criterion is `defensive-patterns.md#pattern-j` (Audience
+Isolation): exactly one audience per item, and only `end-user` items on an end-user surface.
+
+This is a dynamic walk, not a code read. In the running build, as the end-user role, open every
+settings / configuration / account / debug surface that role can reach — including hidden entries,
+long-press menus, multi-tap developer menus, and anything behind an "Advanced" disclosure — and
+compare each input and toggle against the `audience` recorded for it in the settings spec
+(`.allforai/app-design/spec/permissions-notifications-settings-spec.json`). Service endpoints,
+access credentials, vendor keys, model selection, feature flags and environment names are
+`operator` or `developer` by default.
+
+Classify each `operator`- or `developer`-natured item found on an end-user surface:
+
+- the spec is silent on its audience, or the item is absent from the spec entirely → `contract_gaps`
+  (a decision the design still owes; route it back to the owning design node, never patch it here)
+- the spec says non-`end-user` and the build still shows it → `code_gaps` (implementation drift;
+  repaired through the existing execution repair loop)
+
+Both kinds of entry share one shape, with `evidence` the screenshot path that shows the item:
+
+```json
+{
+  "kind": "audience_leak",
+  "where": "<surface or screen id where the item is visible>",
+  "item": "<label as the end user sees it>",
+  "observed_audience": "<operator | developer>",
+  "spec_ref": "<settings spec path + item id, or the fact that no spec entry exists>",
+  "evidence": "<screenshot path>"
+}
+```
+
+An item carrying a `requirement_ref` is the Pattern J exception (a confirmed requirement that the
+end user connects their own server) and is not a leak — but check that the referenced requirement
+really exists; a `requirement_ref` naming no confirmed requirement is a `contract_gaps` entry like
+any unlabelled audience.
+
+The experience-quality critique's `audience_leak` dimension
+(`skills/app-design/40-qa/experience-quality-critique/SKILL.md`) uses this section's criterion.
+
 ## Rules (Must Preserve)
 
 1. **Static before dynamic**: Cheaper checks first, catch obvious gaps early.
@@ -308,6 +350,7 @@ Parity modes from product-concept:
 3. **App must be running**: Dynamic verification requires live app. Fail if app can't start.
 4. **Evidence-based**: Each check records screenshot or response body as proof.
 5. **Screenshot-backed UI acceptance**: UI modules require screenshots plus reviewer one visual review. DOM-only or assertion-only product verification is incomplete.
+6. **Audience isolation**: an end-user surface shows `end-user` items only. An operator or developer item reachable by the end-user role is a finding — `contract_gaps` when the spec never named its audience, `code_gaps` when the spec did and the build ignored it.
 
 ## Knowledge References
 
@@ -315,6 +358,7 @@ Parity modes from product-concept:
 - design-audit-dimensions.md: 8-dimension audit framework
 - consumer-maturity-patterns.md: consumer maturity scoring
 - experience-map-schema.md §Interaction-Gate: gate scoring for verification
+- defensive-patterns.md#pattern-j: Audience Isolation — the criterion of the Audience Leak Check
 
 ## Downstream Consumers
 
