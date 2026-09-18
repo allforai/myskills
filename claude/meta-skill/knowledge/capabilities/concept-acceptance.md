@@ -38,6 +38,15 @@ that describe state-driven behaviour (`core_loop` feedback, `economy` rules, per
 missing. Bootstrap Step 3.5 Level 4 flags them as "premature mapping"; this gate does
 not re-judge that.
 
+**Blocked by the quality critique.** This node is `hard_blocked_by` the creative /
+experience critique that judges the built product: for game projects the
+post-implementation `creative-quality-critique` (bootstrap-planning Must #8), for
+non-game products with an interface the runtime-stage `experience-quality-critique`
+(Must #9). While that critique's `must_fix_*` list is non-empty the critique node is
+not complete, so this gate does not start. The division of labour stands: the critique
+judges quality and routes repair; this gate still only checks coverage and scores
+nothing (ADR-0008 unchanged).
+
 ## What LLM Must Accomplish (not how)
 
 ### Required Outputs

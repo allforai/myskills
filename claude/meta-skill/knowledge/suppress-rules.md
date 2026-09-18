@@ -17,5 +17,6 @@ Apply after Step 1 classification. A match means do not emit that node class.
 | Roblox | generic `monetization-design` and launch-prep IAP | Roblox economy optional node; keep retention |
 | `implement` / `tune` / verify-only goals on a game | game-design node injection | consume existing approved artifacts |
 | All-approved `approval-records.json` and goals are not create/rebuild | regenerate game-design nodes | skip |
+| `experience_priority.mode = none` | experience quality gate (Must #9) nodes | no end-user UI to judge; the summary states the exemption |
 
 Serverless HTTP functions: do **not** suppress `demo-forge`.
