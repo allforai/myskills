@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "run_mode": "unattended",
+  "forbid_mid_run_user_prompts": true,
+  "forbid_hidden_fallback_completion": true,
+  "max_repair_attempts": 3,
+  "required_capabilities": [],
+  "required_repair_loops": [
+    {
+      "scope": "experience-design",
+      "qa_node_ids": [
+        "review-experience-design"
+      ],
+      "repair_node_id": "repair-experience-design",
+      "closure_node_ids": [
+        "implement-mobile-screens",
+        "implement-service-api"
+      ],
+      "max_attempts": 3
+    },
+    {
+      "scope": "experience-runtime",
+      "qa_node_ids": [
+        "review-experience-runtime"
+      ],
+      "repair_node_id": "repair-runtime-experience",
+      "closure_node_ids": [
+        "close-launch-readiness"
+      ],
+      "max_attempts": 3
+    }
+  ],
+  "long_task_policy": {
+    "file_based_handoff": true,
+    "polling": true,
+    "timeout": true,
+    "retry": true,
+    "resume": true
+  }
+}

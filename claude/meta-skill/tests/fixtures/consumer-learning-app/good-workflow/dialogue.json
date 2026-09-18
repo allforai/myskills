@@ -1,0 +1,267 @@
+[
+  {
+    "operation": "draft",
+    "route": "new-product",
+    "goal": "Ship a consumer language-learning app people reach for in spare minutes",
+    "facts": [],
+    "questions": [],
+    "items": [
+      {
+        "id": "target-users",
+        "topic": "target-users",
+        "scope": [
+          "learning"
+        ],
+        "goal": "Office workers learning a second language in the gaps of a commuting day",
+        "business_rules": [
+          "A learner may use the app without ever creating a paid account"
+        ],
+        "acceptance": [
+          "A first-time learner can finish something useful before signing up"
+        ],
+        "origin": "user-request",
+        "evidence": []
+      },
+      {
+        "id": "scenarios",
+        "topic": "scenarios",
+        "scope": [
+          "learning"
+        ],
+        "goal": "Learning in fragmented time: on a platform, in a queue, waiting for a meeting",
+        "business_rules": [
+          "Any session must be resumable after an interruption"
+        ],
+        "acceptance": [
+          "The home screen offers a 2-minute, a 5-minute and a 10-minute session length",
+          "Each session length lists the question types it will draw from"
+        ],
+        "origin": "user-request",
+        "evidence": []
+      },
+      {
+        "id": "core-problem",
+        "topic": "core-problem",
+        "scope": [
+          "learning"
+        ],
+        "goal": "Learners forget what they studied because review never meets them where the gap is",
+        "business_rules": [
+          "A review that is due today is never silently dropped"
+        ],
+        "acceptance": [
+          "Due review items appear in the next session the learner starts"
+        ],
+        "origin": "user-request",
+        "evidence": []
+      },
+      {
+        "id": "value-proposition",
+        "topic": "value-proposition",
+        "scope": [
+          "learning"
+        ],
+        "goal": "Spare minutes add up to measurable retention the learner can see",
+        "business_rules": [
+          "Progress is stated in learner terms, never in internal scores"
+        ],
+        "acceptance": [
+          "After a week a learner can see what they retained and what slipped"
+        ],
+        "origin": "user-request",
+        "evidence": []
+      },
+      {
+        "id": "business-loop",
+        "topic": "business-loop",
+        "scope": [
+          "learning"
+        ],
+        "goal": "Free daily practice, paid unlimited review history and offline packs",
+        "business_rules": [
+          "A paywall never interrupts a session already in progress"
+        ],
+        "acceptance": [
+          "An expired subscription keeps read access to past progress"
+        ],
+        "origin": "user-request",
+        "evidence": []
+      },
+      {
+        "id": "tradeoffs",
+        "topic": "tradeoffs",
+        "scope": [
+          "learning"
+        ],
+        "goal": "Depth of one language over breadth of many at launch",
+        "business_rules": [
+          "No second language ships before the first one retains learners"
+        ],
+        "acceptance": [
+          "The launch build offers exactly one language pair"
+        ],
+        "origin": "user-request",
+        "evidence": []
+      }
+    ]
+  },
+  {
+    "operation": "propose",
+    "proposals": [
+      {
+        "id": "steady-drip",
+        "title": "The steady drip",
+        "who": "A commuter who studies alone, in whatever minutes the day leaves over",
+        "circumstance": "A crowded platform, a queue, the five minutes before a meeting starts",
+        "core_loop_feel": "One short unhurried pass that always ends finished, never cut off",
+        "first_minute": "The oldest thing they nearly forgot is already waiting, nothing else asked",
+        "return_reason": "Tomorrow starts from what yesterday settled, so nothing piles up",
+        "goal": "Turn the day's spare minutes into one finished pass over what is about to slip",
+        "anti_goals": [
+          "Never ask a learner to choose a study plan before they have studied anything"
+        ],
+        "tradeoffs": [
+          "Fewer items in a sitting in exchange for a sitting that always ends complete"
+        ],
+        "scope": [
+          "learning"
+        ],
+        "business_rules": [
+          "A pass interrupted mid-way is resumed, never restarted from the beginning"
+        ],
+        "acceptance": [
+          "A learner who studies only in spare minutes finishes a whole pass every day"
+        ],
+        "comparable": {
+          "product": "A pocket notebook of things to look at again",
+          "approach": "A handful of cards a day, each one struck off once it is settled"
+        }
+      },
+      {
+        "id": "sprint-streak",
+        "title": "The sprint streak",
+        "who": "A competitive learner who studies in bursts and likes to see a number climb",
+        "circumstance": "A free ten minutes taken deliberately, with the intention to push",
+        "core_loop_feel": "A timed burst against yesterday's result, with the streak on the line",
+        "first_minute": "A countdown starts and the first item is already in front of them",
+        "return_reason": "The streak breaks if today is skipped, and the streak is the point",
+        "goal": "Make daily practice a run the learner is unwilling to break",
+        "anti_goals": [
+          "Never let a broken streak erase the progress the learner already earned"
+        ],
+        "tradeoffs": [
+          "Pressure that motivates the committed at the cost of the tired and interrupted"
+        ],
+        "scope": [
+          "learning"
+        ],
+        "business_rules": [
+          "A streak is preserved when a day was spent on review the learner already owed"
+        ],
+        "acceptance": [
+          "A learner can see their current run and what would end it before it ends"
+        ],
+        "comparable": {
+          "product": "A running log kept for the unbroken chain of days",
+          "approach": "One entry a day, and the chain is the reward"
+        }
+      },
+      {
+        "id": "story-path",
+        "title": "The story path",
+        "who": "A learner who keeps going for the story rather than for the practice",
+        "circumstance": "An evening half hour taken for pleasure, not for duty",
+        "core_loop_feel": "A continuing story that moves forward a little whenever they study",
+        "first_minute": "The story picks up exactly where it stopped, with the words it needs",
+        "return_reason": "They want to know what happens next, and studying is how it happens",
+        "goal": "Carry the learner through practice on the pull of a story they want finished",
+        "anti_goals": [
+          "Never gate the next part of the story behind practice the learner cannot yet do"
+        ],
+        "tradeoffs": [
+          "A much longer authoring effort per language in exchange for voluntary return"
+        ],
+        "scope": [
+          "learning"
+        ],
+        "business_rules": [
+          "Story progress is never rolled back because a review item was answered wrongly"
+        ],
+        "acceptance": [
+          "A learner who stops for a week resumes the story without rereading what passed"
+        ],
+        "comparable": {
+          "product": "A graded reader worked through chapter by chapter",
+          "approach": "Each chapter teaches what the next one assumes"
+        }
+      }
+    ],
+    "recommended_id": "steady-drip",
+    "rationale": "The steady drip is the only one of the three that still works on the day a learner has four interrupted minutes and nothing more"
+  },
+  {
+    "operation": "decide",
+    "batch_id": "consumer-learning-scope-1",
+    "topic": "Product direction",
+    "user_reference": "bootstrap user turn 3",
+    "actions": [
+      {
+        "operation": "confirm",
+        "id": "target-users",
+        "reason": "These are the people we are building for"
+      },
+      {
+        "operation": "confirm",
+        "id": "scenarios",
+        "reason": "Fragmented time is the situation we serve"
+      },
+      {
+        "operation": "confirm",
+        "id": "core-problem",
+        "reason": "Forgetting is the problem worth solving"
+      },
+      {
+        "operation": "confirm",
+        "id": "value-proposition",
+        "reason": "Visible retention is the promise"
+      },
+      {
+        "operation": "confirm",
+        "id": "business-loop",
+        "reason": "Free practice, paid history is the model"
+      },
+      {
+        "operation": "confirm",
+        "id": "tradeoffs",
+        "reason": "One language done well comes first"
+      },
+      {
+        "operation": "select",
+        "proposal_id": "steady-drip",
+        "reason": "Spare minutes are what our learners actually have; a pass that always ends finished fits them, a streak under pressure does not"
+      },
+      {
+        "operation": "answer",
+        "id": "gap-experience-direction",
+        "answer": "The steady drip: one short pass a day that always ends finished",
+        "reason": "The direction is chosen and the topic is settled"
+      }
+    ]
+  },
+  {
+    "operation": "freeze",
+    "batch_id": "consumer-learning-baseline-1",
+    "user_reference": "bootstrap user turn 4",
+    "reason": "Freeze the launch scope, direction included, and start planning",
+    "include": [
+      "target-users",
+      "scenarios",
+      "core-problem",
+      "value-proposition",
+      "business-loop",
+      "tradeoffs",
+      "experience-direction-steady-drip"
+    ],
+    "exclude": {}
+  }
+]
