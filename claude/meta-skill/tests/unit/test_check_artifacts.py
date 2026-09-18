@@ -167,6 +167,50 @@ def test_quality_gaps_are_not_complete(tmp_path):
     assert result["artifacts"][0]["status_error"]["field"] == "quality_gaps"
 
 
+def test_must_fix_before_implementation_in_gates_is_not_complete(tmp_path):
+    f = tmp_path / "experience-quality-critique-design.json"
+    f.write_text('{"status":"passed","gates":{"must_fix_before_implementation":[{"id":"F1","finding":"主流程缺少空状态"}]}}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "must_fix_before_implementation"
+
+
+def test_must_fix_before_release_in_gates_is_not_complete(tmp_path):
+    f = tmp_path / "creative-quality-critique.json"
+    f.write_text('{"status":"passed","gates":{"must_fix_before_release":[{"id":"F2","finding":"反馈音效缺失"}]}}')
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == "must_fix_before_release"
+
+
+@pytest.mark.parametrize("field", ["must_fix_before_implementation", "must_fix_before_release"])
+def test_top_level_must_fix_is_not_complete(tmp_path, field):
+    f = tmp_path / "experience-quality-critique-runtime.json"
+    f.write_text('{"status":"passed","%s":[{"id":"F3","finding":"引导步骤无法回退"}]}' % field)
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == field
+
+
+def test_empty_must_fix_gates_are_complete(tmp_path):
+    f = tmp_path / "experience-quality-critique-design.json"
+    f.write_text(
+        '{"status":"passed","gates":{"must_fix_before_implementation":[],"must_fix_before_release":[],'
+        '"recommended_iterations":[{"id":"R1","finding":"可以再收紧标题层级"}]}}'
+    )
+
+    result = check_node_artifacts(_make_node([str(f)]))
+
+    assert result["all_exist"] is True
+    assert result["artifacts"][0].get("status_error") is None
+
+
 def test_asset_gap_with_placeholder_terms_is_not_complete(tmp_path):
     f = tmp_path / "qa.json"
     f.write_text('{"asset_gaps":[{"severity":"minor","notes":"VFX frames missing; tween fallback active"}]}')
