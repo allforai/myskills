@@ -40,6 +40,23 @@ and a **method** (how to execute).
 2. WebSearch until the problem statement has evidence: industry pain points, academic research, market reports
 3. Present the decisions with evidence-backed options, all in one round
 
+**Acceptance — this layer holds situations, not things to build:**
+- The problem statement and every opportunity node read as a situation a person is in:
+  who, in what circumstance, what they cannot get done. Test: take this product out of
+  the world — does the sentence still make sense? A line naming something that can be
+  built (a feature, a screen, a mechanism, an integration) is a solution and does not
+  belong at this layer, however it is worded.
+- A user who opens with solutions has given a solution set, not a problem. Record each
+  as the user's candidate solution under the situation it is meant to address, where
+  other ways of addressing that situation can sit beside it. Never rename a requested
+  feature into an opportunity. Tell the user this is what happened; which situation is
+  the real one is theirs to confirm.
+- Each situation carries its cause, or an explicit "cause unknown" naming where the
+  answer would come from (the user, the repo, a search). Different causes of the same
+  symptom call for different products (carts abandoned because shipping shows up late,
+  because checkout demands an account, or because people were only comparing prices);
+  a solution fixed before the cause is known is a guess, and is recorded as one.
+
 **Output:** `problem-domain.json` (problem essence, opportunity tree skeleton)
 
 **Skip when:** User provides a clear, validated problem statement already.
@@ -118,6 +135,10 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
 2. Define roles using JTBD: what job is each role hiring this product to do?
 3. VPC per role: Jobs / Pains / Gains → Pain Relievers / Gain Creators
 4. Mom Test principle: questions based on behavioral facts, not opinion predictions
+   A job names no product, feature or screen and carries its circumstance ("when …").
+   "Upload my receipts to the app" is usage the product imposes; "hand my accountant
+   something she accepts without redoing it" is the job — it is what the person would
+   still want if this product did not exist, and other things could satisfy it.
 5. **Producer-side closure check**: if someone consumes, who produces? who operates?
 6. **Multi-client declaration**: for each role, identify ALL client platforms they use.
    A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
