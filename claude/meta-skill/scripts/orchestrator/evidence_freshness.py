@@ -20,6 +20,26 @@ STATE = '.allforai/bootstrap/evidence-freshness.json'
 OBSERVATIONS = '.allforai/bootstrap/input-observations'
 READS = '.allforai/bootstrap/observed-input-dependencies.json'
 EXTERNAL = '.allforai/bootstrap/external-changes.json'
+# The run's own bookkeeping. It changes on every committed transition, so a node that
+# registered it as a dependency would find its evidence stale after each commit the
+# engine records — including its own — and every consumer would wait on it forever.
+ORCHESTRATION_STATE = frozenset({
+    WORKFLOW, STATE, READS, EXTERNAL,
+    '.allforai/bootstrap/run-log.jsonl',
+    '.allforai/bootstrap/repair-authorizations.json',
+    '.allforai/bootstrap/run-policy.json',
+    '.allforai/bootstrap/run-summary.json',
+    '.allforai/bootstrap/unattended-run-readiness.json',
+    '.allforai/bootstrap/workflow-state-index.json',
+    '.allforai/bootstrap/workflow-reconciliation-plan.json',
+})
+ORCHESTRATION_STATE_DIRS = (OBSERVATIONS + '/',)
+
+
+def orchestration_state(path):
+    """True for the run's own bookkeeping, which is never a product input."""
+    normalized = Path(path).as_posix()
+    return normalized in ORCHESTRATION_STATE or normalized.startswith(ORCHESTRATION_STATE_DIRS)
 
 
 # Caches exist only inside one read-only gate. Never reuse them across observe,
@@ -276,7 +296,9 @@ def _dependencies(root, node, workflow):
                  for n in workflow.get('nodes', [])
                  for item in [*n.get('exit_artifacts', []), *n.get('required_documents', [])]}
     state = read_json(root, STATE, {'nodes': {}})
-    consumed = expand_paths(root, node.get('input_dependencies', []))
+    # A copy: the expansion is memoized for the evaluation, and extending it in place
+    # would make the next expansion of the same inputs look like changed membership.
+    consumed = set(expand_paths(root, node.get('input_dependencies', [])))
     consumed.update(observed_reads(root).get(node['node_id'], []))
     for bucket in ('nodes', 'contracts'):
         consumed.update(state.get(bucket, {}).get(node['node_id'], {}).get('extra', []))
@@ -953,6 +975,10 @@ def session(root, request):
             return {'status': 'stale', 'reason': 'Inputs changed after observation; reverify current inputs'}
         if operation == 'read':
             path = request['path']
+            if orchestration_state(path):
+                raise ValueError(f'{path} is orchestration state, not a product input: it changes on every '
+                                 'committed transition, so registering it would make this evidence stale '
+                                 'after each commit; read it without registering')
             fingerprint(root, path)  # Validate project containment before reading.
             content = (root / path).read_bytes()
             observation['extra'] = sorted(set(observation.get('extra', [])) | {path})

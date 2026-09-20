@@ -293,7 +293,7 @@ function expandPrompt(expander) {
 
 function readinessPrompt() {
   return [
-    'Run python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report.',
+    'Run `python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report`.',
     'Read .allforai/bootstrap/unattended-run-readiness.json. Return status "ready" only when',
     'the command succeeds and the report status is exactly "ready"; otherwise return',
     '{status:"not_ready", blockers:[...]}. Never weaken or bypass a blocker.'
@@ -414,7 +414,8 @@ function shellQuote(value) {
 function authorizationPrompt(request) {
   return [
     'Run EXACTLY this command, once, and return its stdout parsed as your JSON result:',
-    `printf '%s' ${shellQuote(JSON.stringify(request))} | python3 .allforai/bootstrap/scripts/repair_authorization.py .`,
+    `\`printf '%s' ${shellQuote(JSON.stringify(request))} | python3 .allforai/bootstrap/scripts/repair_authorization.py .\``,
+    '(the command is everything between the backticks; its final `.` is the project-root argument, not punctuation).',
     'This is the canonical repair-authorization ledger at',
     '.allforai/bootstrap/repair-authorizations.json. Return the verdict object exactly as the',
     'command printed it. Do NOT invent, summarize, complete, correct or re-order it; do NOT',
@@ -517,17 +518,19 @@ function measuredDelivery(node, gate, open) {
   // missing, outside the project root, or unreadable — never a delivery, whatever `exists`
   // says about a symlink.
   if (declared.some(rel => !measured.get(rel).digest)) return null
-  // Content identity and input binding answer different questions and both are required:
-  // the bytes moved, and they were judged against inputs that are current now. A digest
-  // alone cannot establish a rebinding after a source change.
-  if (!m.binding_identity) return null
-  if (m.readiness_status !== 'valid') return null
+  // Deliberately NOT required here: the repair node's own readiness, and an input binding
+  // unchanged across the attempt. A repair edits the very source its QA node checks, so
+  // both move by doing the work — demanding they stand still made every real repair
+  // unmeasurable and burned the loop's budget on a rule no repair could satisfy. What a
+  // delivery claims is narrow: this attempt wrote its declared artifacts, and nothing but
+  // its own QA node is withholding it. Whether the repair was RIGHT is not measured here
+  // and never was: the QA rerun that follows is the proof, and the declared budget bounds
+  // the attempts either way (ADR-0005, ADR-0006).
   // Measured across the attempt, by the same independent step: something the attempt wrote
   // has to differ from what was there before it ran. A pre-existing or touched artifact is
   // not a delivery.
   const before = open && open.before
   if (!before || !Array.isArray(before.artifacts)) return null
-  if (before.binding_identity !== m.binding_identity) return null   // inputs moved mid-attempt
   const wasThere = new Map(before.artifacts.filter(a => a && a.path).map(a => [a.path, a.digest]))
   const produced = declared.filter(rel => wasThere.get(rel) !== measured.get(rel).digest)
   if (produced.length === 0) return null
@@ -578,7 +581,7 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
     }
     if ((r.missing_mappings || []).length > 0) {
       const missing = r.missing_mappings
-      const event = await agent('Run python3 .allforai/bootstrap/scripts/product_intent.py . --policy-event on_needs_iteration. Return its JSON verbatim; do not ask questions.', {
+      const event = await agent('Run `python3 .allforai/bootstrap/scripts/product_intent.py . --policy-event on_needs_iteration`. Return its JSON verbatim; do not ask questions.', {
         label: 'policy:on_needs_iteration', schema: { type: 'object', required: ['action'], properties: { action: { type: 'string' } } }
       })
       const action = event && event.action
@@ -658,7 +661,7 @@ async function commitNode(result, agent, done) {
 async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) {
   phase('Load')
   const recorded = await agent(
-    'Run python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy and return its JSON verbatim. ' +
+    'Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy` and return its JSON verbatim. ' +
     'Missing or invalid policy blocks execution; return to the interactive run entry, never ask or choose defaults here.',
     { label: 'run-policy', schema: { type: 'object', required: ['status'], properties: {
       status: { type: 'string' }, policy: { type: 'object' }
@@ -893,8 +896,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     if (safetyHalted) {
       const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
       const quotedNodes = "'" + JSON.stringify(ready.map(n => n.node_id)).replace(/'/g, "'\\''") + "'"
-      const quarantine = await agent('Run python3 .allforai/bootstrap/scripts/run_safety.py . --nodes-json ' +
-        quotedNodes + " --reason 'Recorded Run Policy requires a run-wide safety halt'. " +
+      const quarantine = await agent('Run `python3 .allforai/bootstrap/scripts/run_safety.py . --nodes-json ' +
+        quotedNodes + " --reason 'Recorded Run Policy requires a run-wide safety halt'`. " +
         'Return its JSON verbatim. Do not invent a persistence receipt, delete artifacts, mark nodes complete, or clear the halt.',
         { label: 'quarantine-wave', schema: { type: 'object', required: ['status'], properties: {
           status: { type: 'string' }, node_ids: { type: 'array', items: { type: 'string' } }

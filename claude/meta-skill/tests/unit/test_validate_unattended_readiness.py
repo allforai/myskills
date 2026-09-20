@@ -813,3 +813,38 @@ def test_unattended_readiness_reports_experience_gate_at_run_boundary(tmp_path):
 
     assert "missing_experience_gate" in _blocker_codes(unreviewed)
     assert not (unreviewed / ".allforai/bootstrap/node-specs/experience-runtime-critique.md").exists()
+
+
+def _implicit_dependency_project(tmp_path, b_blocked_by):
+    _minimal_project(tmp_path)
+    nodes = [
+        {"node_id": "a", "goal": "a", "capability": "implement", "hard_blocked_by": [],
+         "exit_artifacts": [{"path": "docs/a.md"}]},
+        {"node_id": "b", "goal": "b", "capability": "implement", "hard_blocked_by": b_blocked_by,
+         "exit_artifacts": [{"path": "docs/b.md"}]},
+    ]
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps({"nodes": nodes}))
+    for node_id in ("a", "b"):
+        _write(tmp_path, f".allforai/bootstrap/node-specs/{node_id}.md", "non interactive work")
+    # A read recorded before a replan: b once read a file that a now produces.
+    _write(tmp_path, ".allforai/bootstrap/observed-input-dependencies.json", json.dumps({"b": ["docs/a.md"]}))
+
+
+def test_a_recorded_read_of_a_node_outside_the_graph_blocks_the_run(tmp_path):
+    """A dynamic read makes its producer an upstream the scheduler never waits for: the
+    consumer runs first and can never publish. Surface it before the run, not mid-wave."""
+    _implicit_dependency_project(tmp_path, b_blocked_by=[])
+
+    report = validate_unattended_readiness(tmp_path)
+
+    found = [b for b in report["blockers"] if b["code"] == "dependency_outside_graph"]
+    assert [b.get("node_id") for b in found] == ["b"]
+    assert "docs/a.md" in found[0]["message"] and "a" in found[0]["message"]
+
+
+def test_a_recorded_read_of_an_upstream_node_is_not_a_blocker(tmp_path):
+    _implicit_dependency_project(tmp_path, b_blocked_by=["a"])
+
+    report = validate_unattended_readiness(tmp_path)
+
+    assert not [b for b in report["blockers"] if b["code"] == "dependency_outside_graph"]
