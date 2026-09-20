@@ -59,12 +59,35 @@ P1 在旧文本下主判据全中，但它在复核环节写的是「仅当宿�
 - 它没有点名 codex，所以“会调用到 codex”仍是一次**机制上成立但未直接观测到**的链路：本机已认证路由只有 xai、openrouter、openai-codex，而这个会话跑在 openrouter（用户默认是 xai）——换路由的落点集合里就有 Codex。
 - 副作用：R2b 一边换路由一边声称“继承 deep-tier”，说明这句话还能让报告里的模型记录失真。
 
-### 本地未提交改动的处置（待用户拍板）
+### 本地未提交改动的处置（已定：方案 A）
 
-安装目录 `~/.pi/agent/git/github.com/allforai/myskills` 有未提交改动（keep-code-simple 与 cross-exam 各一份，从未来过仓库，无 commit/stash/branch）。已备份到 `/tmp/kcs-local-edits/`（patch sha `22f96b4b…`）。其中值得收编的是：复核通道的 git 元数据工具合同、失败通道算未查、派发前后 HEAD/工作区漂移检查、按 receipt 记 requested/resolved、额度≠注册表。**不能收编的是「换一条已确认可用的模型路由」**——它与“只用当前会话模型”直接冲突，按本文件上面的规则应改成：同协议、同路由重试；该路由不可用就把通道标未查并交用户决定。
+安装目录 `~/.pi/agent/git/github.com/allforai/myskills` 有未提交改动（keep-code-simple 与 cross-exam 各一份，从未来过仓库，无 commit/stash/branch）。已备份到 `/tmp/kcs-local-edits/`（patch sha `22f96b4b…`）。其中值得收编的是：复核通道的 git 元数据工具合同、失败通道算未查、派发前后 HEAD/工作区漂移检查、按 receipt 记 requested/resolved、额度≠注册表。**不能收编的是「换一条已确认可用的模型路由」**——它与“只用当前会话模型”直接冲突，已改成：同协议、同路由重试；该路由不可用就把通道标未查并交用户决定（`a430a830`，两份适配同步，契约测试各加一条钉住）。
 
 ## 尚未验证
 
 - 真实 Pi 会话里技能被自动加载、用户级 `subagents` 配置（含 `agentOverrides`、`maxThinking`）对档位的实际钳制、真实异步调度；本轮子代理是宿主默认档位，未逐案传档位后缀。
 - 全部 5 个场景在两轮间的重复采样稳定性，以及 `cross-exam` 视觉/截图路径与 `meta-skill` 长流程上的连锁影响。
 - 契约测试（`shared/keep-code-simple` 14 项、`pi/cross-exam` 7 项、`pi/meta-skill` 8 项）只证明文本边界在，不证明模型会照做；本轮思维测试补的正是这一层，但仍是模拟决策，不代替真机验收。
+
+## 真机验收：未做
+
+这份记录里的全部证据是冻结的文案契约测试 + 6 个模拟场景 + 宿主侧机制核查；**没有在真实 Pi 会话里跑过一次 `/skill:keep-code-simple`**。这一步没做，原因不是技术上不可行，而是该技能 user-invoked only——模型不能自行启动它，只能由用户敲：
+
+```
+重启/重载 Pi          # 安装目录已在 7f277f49
+cd /tmp/kcs-acceptance
+/skill:keep-code-simple
+```
+
+靶子已备好：`/tmp/kcs-acceptance`（git 仓库，`apps/orders` 与 `apps/billing` 各自手写 CSV 转义，`packages/tabular/csv_writer.py` 已是共享实现，正好触发协议里的「先查复用」）。
+
+验收判据（跑完照宿主轨迹核对，不由受测者自报）：
+
+- 派发的 `agent` 只有原生 `scout`/`reviewer`/`oracle`/`delegate`，**0 个** `codex-exec`/`claude-code`/`cursor-agent`；
+- `model` 参数为空或只有会话模型自身的 `provider/id:<level>` 后缀，没有别的 provider 或模型家族；
+- `context:"fresh"`、cwd 是被审项目；
+- 单顶层 workflow、`async:true`、内部 `runs.all`；
+- 只写 `<靶子>/docs/keep-code-simple/<日期>-<slug>/`，不碰被审源码；
+- 报告「派发」节的 requested/resolved 是 inherited/receipt 型号或 unknown，没有「跨模型复核」。
+
+在真机验收完成前，本问题的状态是**已改完、未验收**：能说的是三处授权已变成禁令、契约测试全绿、安装目录与仓库逐字节一致；不能说的是“真机上再也不会出现 codex”。
