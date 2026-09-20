@@ -315,6 +315,25 @@ the decisions made here and do NOT re-ask the user for choices already made.
 3. Value proposition: one sentence — why this product exists
 4. Positioning statement: for [user], who [need], [product] is [category] that [benefit]
 
+**Acceptance — a positioning excludes something:**
+- The value proposition and the positioning statement each survive three questions.
+  Said in plain words, is anything left beyond the product category itself? Would a sane
+  competitor ever claim the opposite (if nobody would, the sentence rules nothing out)?
+  Could a competitor named upstream paste it onto their own homepage unchanged? A
+  sentence that fails any of the three is not a positioning yet.
+- Wording cannot repair what upstream did not supply. When the ERRC or the problem
+  statement is itself generic ("faster", "higher quality", "all-in-one"), or the one
+  claimed differentiator was never checked against the competitors, `positioning.json`
+  says so instead of covering it: `status: "not_differentiated"`, the single upstream
+  fact that is missing, and the sub-phase that owns it, routed back. A polished sentence
+  over an unchecked differentiator is worse than a stated gap, because every downstream
+  node reads it as settled. Checked means a source shows the competitor lacks it; a
+  feature absent from a one-line summary of a competitor is not absent from the
+  competitor. `status` takes exactly these two values — a statement resting on an
+  unchecked differentiator is `not_differentiated` with the best draft attached.
+- `status: "differentiated"` names, next to the statement, what it rules out: the
+  customer it is not for or the competitor strength it concedes.
+
 **Output:** `positioning.json`
 
 **Depends on:** market-research, innovation-exploration, user-role-definition
