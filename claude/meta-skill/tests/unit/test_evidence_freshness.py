@@ -206,7 +206,18 @@ def test_fresh_contract_allows_execution_but_cannot_claim_completion(tmp_path, h
     (tmp_path / 'orders.py').write_text('changed = True\n')
     ready = subprocess.run([sys.executable, str(scripts / 'validate_unattended_readiness.py'), str(tmp_path)],
                            text=True, capture_output=True)
-    assert ready.returncode == 1 and 'stale_evidence' in ready.stdout
+    # The edit is this node's own declared source input and it holds only a contract: it
+    # re-reads that input when it runs and must republish before it can complete, so
+    # readiness stays startable rather than blocking the runner with nothing it may run.
+    # The stale contract still withholds completion — which is what this test's name claims.
+    assert ready.returncode == 0, ready.stdout
+    assert 'stale_evidence' not in ready.stdout
+    done = subprocess.run([sys.executable, str(scripts / 'check_artifacts.py'), str(tmp_path / WORKFLOW),
+                           '--node', 'deliver-export', '--json'], text=True, capture_output=True)
+    payload = json.loads(done.stdout)
+    assert payload['all_exist'] is False
+    assert payload['freshness']['readiness_status'] == 'stale'
+    assert payload['freshness']['diff']['files'] == {'orders.py': 'changed'}
 
 
 @pytest.mark.parametrize('host', ['claude', 'codex'])

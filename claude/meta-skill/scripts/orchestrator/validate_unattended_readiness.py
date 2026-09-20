@@ -604,6 +604,27 @@ def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dic
                 )
 
 
+def _stale_evidence_blocks_start(node: dict, freshness: dict) -> bool:
+    """Whether a node's stale record must stop the run before it starts.
+
+    A node that has published nothing has no contract or evidence to invalidate, so it
+    stays startable. A node whose *own* declared source inputs moved while it still holds
+    only a contract is re-read when it runs and must republish before it can complete, so
+    it too stays startable — blocking it is what once left the runner with nothing it
+    could run. Two states do block: an input the node merely consumed moved (a wired
+    decision file, another node's output — the plan is stale and running this node does
+    not repair it), and published evidence exists at all (a completion claim is at risk
+    however the input is declared).
+    """
+    diff = freshness.get("diff") if isinstance(freshness.get("diff"), dict) else {}
+    if diff.get("contract") == "unpublished":
+        return False
+    if diff.get("evidence") != "unpublished":
+        return True
+    changed = set(diff.get("files") or {})
+    return bool(changed - set(node.get("source_inputs") or []))
+
+
 def validate_unattended_readiness(project_root: Path) -> dict:
     bootstrap_root = project_root / ".allforai/bootstrap"
     workflow_path = bootstrap_root / "workflow.json"
@@ -683,8 +704,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
             _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
         elif (freshness.get("readiness_status") != "valid"
-              and freshness.get("diff", {}).get("contract") != "unpublished"
-              and freshness.get("diff", {}).get("evidence") != "unpublished"):
+              and _stale_evidence_blocks_start(by_id.get(node_id, {}), freshness)):
             message = freshness.get("reason") or "Reconcile inputs and reverify affected evidence"
             repair = freshness.get("repair") if isinstance(freshness.get("repair"), dict) else None
             if repair:
