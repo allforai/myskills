@@ -7,7 +7,10 @@ set -euo pipefail
 # is run on demand (see below), and the fast batteries simply always run, because deciding is slower to
 # read than running them.
 #
-# Before a release or a change to claude/meta-skill, run the full suite yourself:
+# What that also removed was the only thing that would have noticed 3ce49e8d narrowing the
+# stale_evidence blocker to "evidence is published": two tests it silently reddened stayed red for four
+# days. So the rules that decide whether a run may start and whether it may claim completion run here
+# as a named subset — about six seconds. Full suite, before a release or a claude/meta-skill change:
 #     python3 -m pytest -q claude/meta-skill/tests/unit
 
 # git exports GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE into hook processes, and several suites build a
@@ -26,6 +29,19 @@ run_pytest claude/superstorm/scripts          # the two test_render_report.py co
 run_pytest codex/cross-exam-skill/scripts
 run_pytest shared/evidence-engine
 run_pytest shared/visual-acceptance
+
+# The named subset is deliberate: renaming one of these tests fails the hook loudly instead of quietly
+# dropping the guard. test_validate_unattended_readiness and test_check_artifacts cover the two gates
+# whole; the four node ids are the start/completion rules themselves (own source input changed with
+# only a contract published stays startable; a consumed upstream input blocks; published evidence
+# blocks; a resolved decision clears only its own blocker).
+run_pytest \
+  claude/meta-skill/tests/unit/test_validate_unattended_readiness.py \
+  claude/meta-skill/tests/unit/test_check_artifacts.py \
+  claude/meta-skill/tests/unit/test_decision_gate.py::test_a_resolved_choice_restores_readiness_only_with_fresh_evidence \
+  claude/meta-skill/tests/unit/test_evidence_freshness.py::test_fresh_contract_allows_execution_but_cannot_claim_completion \
+  claude/meta-skill/tests/unit/test_freshness_admission_corrections.py::test_declared_pending_node_without_publication_does_not_block_runner_start \
+  claude/meta-skill/tests/unit/test_freshness_admission_corrections.py::test_intent_aware_node_without_source_inputs_fails_closed_until_declared_and_published
 
 STAGED_AFTER="$(staged_tree)"
 if [ "$STAGED_AFTER" != "$STAGED_BEFORE" ]; then
@@ -58,4 +74,4 @@ if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|r
   exit 1
 fi
 
-echo "[pre-commit] ok — meta-skill 单测未跑，需要时: python3 -m pytest -q claude/meta-skill/tests/unit"
+echo "[pre-commit] ok — meta-skill 就绪/新鲜度子集已跑，全量单测需要时: python3 -m pytest -q claude/meta-skill/tests/unit"
