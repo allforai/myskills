@@ -224,3 +224,31 @@ def test_snapshot_scope_does_not_cross_real_document_verification(tmp_path, monk
     assert result['status'] == 'stale'
     assert 'document verification' in result['reason']
     assert module._READ_EVALUATION.get() is None
+
+
+def test_dependency_lookup_does_not_mutate_the_cached_expansion(tmp_path):
+    """A node with an observed read must not poison the memoized input expansion.
+
+    `dependencies()` extends the consumed set with dynamic reads; when that set is the
+    object `expand_paths` memoized for the evaluation, the next snapshot of the same
+    node sees a "changed" membership and the whole gate fails as undeterminable.
+    """
+    module = load('evidence_freshness')
+    put(tmp_path, 'src/data.json', {'version': 1})
+    put(tmp_path, 'docs/contract.json', {'v': 1})
+    put(tmp_path, 'docs/extra.json', {'v': 1})
+    nodes = [{'node_id': 'up', 'source_inputs': ['src/**'], 'hard_blocked_by': [],
+              'exit_artifacts': ['docs/contract.json']},
+             {'node_id': 'down', 'source_inputs': ['src/**'], 'hard_blocked_by': ['up'],
+              'input_dependencies': ['docs/contract.json'], 'exit_artifacts': []}]
+    workflow = {'nodes': nodes}
+    put(tmp_path, module.WORKFLOW, workflow)
+    put(tmp_path, module.READS, {'down': ['docs/extra.json']})
+
+    @module._read_only_gate
+    def gate(root):
+        module.dependencies(root, nodes[1], workflow)
+        return module.snapshot(root, nodes[1])
+
+    snapshot = gate(tmp_path)
+    assert 'docs/extra.json' in snapshot['files']

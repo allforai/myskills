@@ -65,3 +65,14 @@ test('commitPrompt records verification verbatim (no upgrade)', () => {
 test('commitFailuresPrompt references diagnosis_history', () => {
   assert.match(core.commitFailuresPrompt([{ node_id: 'c' }]), /diagnosis_history/)
 })
+
+// The project-root argument is a bare `.`. Written at the end of a sentence it reads as
+// punctuation, and an agent that drops it runs the helper with no root at all. Every
+// command an agent must run verbatim is therefore delimited, root argument inside.
+test('commands with a bare project-root argument are delimited so the root is not punctuation', () => {
+  const ledger = core.authorizationPrompt({ operation: 'consumption' })
+  assert.match(ledger, /`printf '%s' '\{"operation":"consumption"\}' \| python3 \.allforai\/bootstrap\/scripts\/repair_authorization\.py \.`/)
+  assert.doesNotMatch(ledger, /repair_authorization\.py \. [A-Z]/)
+  const readiness = core.readinessPrompt()
+  assert.match(readiness, /`python3 \.allforai\/bootstrap\/scripts\/validate_unattended_readiness\.py \. --write-report`/)
+})

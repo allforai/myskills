@@ -1405,3 +1405,13 @@ def test_a_missing_mapping_repair_no_loop_declares_is_refused_as_undeclared(root
     assert refused['undeclared'] == ['concept-acceptance']
     assert ra.consumption(root)['obligations'] == []
     assert not start_permits_execution(root, 'iter-1')
+
+
+def test_cli_without_a_root_argument_reads_the_current_directory(root):
+    """An agent that drops the trailing `.` must reach the same ledger, not an IndexError."""
+    started(root)
+    with_root, verdict = cli(root, {'operation': 'consumption'})
+    without = subprocess.run([sys.executable, str(SCRIPT)], input=json.dumps({'operation': 'consumption'}),
+                             text=True, capture_output=True, cwd=root)
+    assert without.returncode == with_root.returncode == 0, without.stdout
+    assert json.loads(without.stdout) == verdict

@@ -1378,7 +1378,11 @@ def session(root: Path, request: Any) -> dict:
 
 def main() -> int:
     try:
-        result = session(Path(sys.argv[1]).resolve(), json.load(sys.stdin))
+        # The project root defaults to the working directory: the engine's prompt ends the
+        # command with a bare `.`, and an agent that reads it as punctuation must still
+        # reach this project's ledger rather than fail before reading any accounting.
+        root = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
+        result = session(root, json.load(sys.stdin))
     except Refusal as refusal:
         result = refusal.verdict
     except (ValueError, KeyError, TypeError, OSError, IndexError) as exc:

@@ -233,10 +233,18 @@ and applies it:
   reporting what it printed; the node's own result is never the evidence. The same step
   runs once before the node and once after, and a delivery requires all of: every declared
   exit artifact present with no status error, the gate withheld only by this loop's own QA
-  node, one input-binding identity unchanged across the attempt, and at least one artifact
-  whose content digest moved. Anything less — an absent measurement, a missing field, a
-  touched or pre-existing artifact, a blocked report, a drifted snapshot — is
-  `unmeasured_repair_delivery`, a hard failure, never a quiet advance.
+  node, and at least one artifact whose content digest moved. Anything less — an absent
+  measurement, a missing field, a touched or pre-existing artifact, a blocked report, a gate
+  withheld by anything else — is `unmeasured_repair_delivery`, a hard failure, never a quiet
+  advance.
+
+  The repair node's own readiness and input binding are deliberately **not** part of that
+  bar (ADR-0009). A repair edits the very source its QA node checks, so both move by doing
+  the work; requiring them to stand still made every real repair unmeasurable and spent the
+  loop's budget on a rule no repair could satisfy. A delivery therefore claims only that
+  this attempt wrote its declared artifacts and that nothing but its own QA node withholds
+  it. Whether the repair was *right* is not measured here and never was: the QA rerun that
+  follows is the proof, and the declared budget bounds the attempts either way.
 
   Nothing is waived. A delivery never commits, so the repair node stays out of `done`; it
   is dispatched again once the QA node passes, and must pass this same independent gate on

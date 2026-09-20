@@ -171,20 +171,27 @@ test('measuredDelivery: a missing or blocked artifact is not a delivery', () => 
     measured({ artifact: { status_error: 'status=failed_env' } }), open('before')), null)
 })
 
-test('measuredDelivery: an unbound delivery is not a delivery', () => {
-  assert.equal(core.measuredDelivery(declared, measured({ binding_identity: null }), open('before')), null)
+test('measuredDelivery: a repair that moved its own inputs still delivers', () => {
+  // A repair edits the source its QA node checks, so its own readiness goes stale and its
+  // input binding moves — by doing the work. Requiring either to stand still made every
+  // real repair unmeasurable and spent the loop's budget on a rule no repair could meet.
+  assert.ok(core.measuredDelivery(declared, measured({ binding_identity: null }), open('before')))
   const drifted = { qa: ['verify'], before: { artifacts: [{ path: 'repair.json', exists: true, digest: 'before' }],
     withheld_by: ['verify'], binding_identity: 'snapshot-b', readiness_status: 'valid' } }
-  assert.equal(core.measuredDelivery(declared, measured(), drifted), null, 'the snapshot moved mid-attempt')
+  assert.ok(core.measuredDelivery(declared, measured(), drifted), 'the attempt rebound its own inputs')
+  for (const readiness_status of ['stale', 'invalid', 'uncertain', 'undeclared', null]) {
+    assert.ok(core.measuredDelivery(declared, measured({ readiness_status }), open('before')),
+      `readiness_status ${readiness_status} is the repair's own edit, not a failed delivery`)
+  }
 })
 
-test('measuredDelivery: a binding that is no longer current is not a delivery', () => {
-  // Content identity and binding answer different questions: after a source change the
-  // recorded observation can still match while the node is no longer readable as current.
-  for (const readiness_status of ['stale', 'invalid', 'uncertain', 'undeclared', null]) {
-    assert.equal(core.measuredDelivery(declared, measured({ readiness_status }), open('before')), null,
-      `readiness_status ${readiness_status} must not deliver`)
-  }
+test('measuredDelivery: delivery still claims nothing about whether the repair was right', () => {
+  // The narrow claim: this attempt wrote its declared artifacts and only its own QA node
+  // withholds it. The QA rerun is the proof, and the budget bounds the attempts either way.
+  const delivery = core.measuredDelivery(declared, measured(), open('before'))
+  assert.deepEqual(Object.keys(delivery.produced), ['repair.json'])
+  assert.equal(core.measuredDelivery(declared, measured({ withheld_by: ['verify', 'elsewhere'] }),
+    open('before')), null, 'anything else withholding it is a cross-node blocker, not a delivery')
 })
 
 test('measuredDelivery: an unreadable artifact is not a delivery even when it exists', () => {
@@ -212,4 +219,24 @@ test('measurePrompt runs the shipped checker and forbids inventing its fields', 
   const prompt = core.measurePrompt(declared)
   assert.match(prompt, /check_artifacts\.py/)
   assert.match(prompt, /do not compute, infer or fill in any/)
+})
+
+
+// The case every real repair is: the repair changes the very source the QA node checks.
+// Both the repair node's own inputs and the QA node's inputs move, so neither the repair's
+// readiness nor its input binding can stay what they were before the attempt.
+test('runEngine closes a declared loop whose repair edits the source the QA node checks', async () => {
+  const { root, nodes } = declaredLoopProject()
+  const calls = []
+  const executor = (dir, n) => {
+    if (n === 1) {
+      fs.writeFileSync(path.join(dir, 'src/orders.py'), 'def export():\n    return ["column"]\n')
+      writeReport(dir, 'repair.json', { status: 'passed', fixed: 'export column' })
+    }
+  }
+  const agent = declaredLoopAgent(root, nodes, calls, { executor })
+  const res = await core.runEngine({ agent, pipeline })
+
+  assert.equal(res.status, 'complete', `run did not close: ${JSON.stringify(res)}\n${calls.join(' ')}`)
+  assert.equal(agent.counters.verify, 2, 'the QA node reran against the repaired source')
 })

@@ -428,6 +428,54 @@ def _coverage_gate_loop_blockers(project_root: str, nodes: list[dict], spec: dic
                  node_id=gate)
 
 
+def _dependency_outside_graph_blockers(project_root: Path, by_id: dict, blockers: list[dict]) -> None:
+    """A recorded dynamic read of another node's output is an upstream the graph omits.
+
+    Freshness treats the producer of every consumed file as an upstream, so a read
+    recorded before a replan — or a read of a node that runs later — makes the consumer
+    wait on a node the scheduler never orders before it: the consumer runs, cannot
+    publish, and the run stalls mid-wave. The fix is a planning one (drop the stale read,
+    or declare the edge), so it is reported here, before anything runs.
+    """
+    reads_path = Path(project_root) / ".allforai/bootstrap/observed-input-dependencies.json"
+    try:
+        reads = json.loads(reads_path.read_text(encoding="utf-8")) if reads_path.exists() else {}
+    except (OSError, ValueError):
+        return  # A malformed register is the freshness gate's own finding.
+    if not isinstance(reads, dict):
+        return
+    producers = {}
+    for node_id, node in by_id.items():
+        for item in [*(node.get("exit_artifacts") or []), *(node.get("required_documents") or [])]:
+            path = item.get("path") if isinstance(item, dict) else item
+            if isinstance(path, str):
+                producers[path] = node_id
+
+    def ancestors(node_id):
+        seen, stack = set(), list(by_id.get(node_id, {}).get("hard_blocked_by") or [])
+        while stack:
+            current = stack.pop()
+            if isinstance(current, str) and current not in seen:
+                seen.add(current)
+                stack.extend(by_id.get(current, {}).get("hard_blocked_by") or [])
+        return seen
+
+    for node_id in sorted(by_id):
+        paths = reads.get(node_id)
+        if not isinstance(paths, list):
+            continue
+        upstream = ancestors(node_id)
+        for path in sorted({p for p in paths if isinstance(p, str)}):
+            producer = producers.get(path)
+            if producer and producer != node_id and producer not in upstream:
+                _add(blockers, "dependency_outside_graph",
+                     f"{node_id} has a recorded read of {path}, which {producer} produces, but "
+                     f"{producer} is not upstream of {node_id} in hard_blocked_by; {node_id} would "
+                     "wait on a node the scheduler does not order before it. At the interactive "
+                     "bootstrap entry, remove the stale read from observed-input-dependencies.json "
+                     "or declare the dependency.", node_id=node_id)
+
+
 def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[dict],
                             warnings: list[dict] | None = None) -> None:
     """Neither skill calls the other (ADR-0008); the graph may only list them for the user.
@@ -622,6 +670,8 @@ def validate_unattended_readiness(project_root: Path) -> dict:
                    and all(isinstance(n, dict) for n in workflow["nodes"]))
     by_id = ({n["node_id"]: n for n in workflow["nodes"] if isinstance(n.get("node_id"), str)}
              if well_formed else {})
+    if well_formed:
+        _dependency_outside_graph_blockers(project_root, by_id, blockers)
     for node_id, freshness in (freshness_states(project_root, workflow) if well_formed else {}).items():
         admission = freshness.get("admission")
         if admission == "invalid":

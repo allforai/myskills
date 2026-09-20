@@ -443,3 +443,31 @@ def test_selected_intent_payload_drift_in_real_producer_baseline_is_stale(tmp_pa
     _, checked = invoke(tmp_path, 'check')
     assert checked['nodes']['deliver-export']['status'] == 'stale'
     assert checked['nodes']['deliver-export']['readiness_status'] == 'stale'
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
+@pytest.mark.parametrize('state_path', [
+    '.allforai/bootstrap/workflow.json',
+    '.allforai/bootstrap/run-log.jsonl',
+    '.allforai/bootstrap/evidence-freshness.json',
+    '.allforai/bootstrap/observed-input-dependencies.json',
+    '.allforai/bootstrap/repair-authorizations.json',
+])
+def test_read_refuses_orchestration_state_as_a_dependency(tmp_path, host, state_path):
+    """The run's own bookkeeping changes on every commit; registering it makes the
+    node's evidence go stale after each transition the engine records."""
+    setup(tmp_path, host)
+    target = tmp_path / state_path
+    if not target.exists():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('{"nodes": {}}' if state_path.endswith('evidence-freshness.json') else '{}')
+    (tmp_path / 'policy.txt').write_text('region = JP')
+    _, original = invoke(tmp_path, 'observe', node_id='deliver-export')
+    result, refused = invoke(tmp_path, 'read', observation=original['observation'], path=state_path)
+    assert result.returncode == 1 and refused['status'] == 'invalid'
+    assert 'orchestration state' in refused['reason']
+    reads = tmp_path / '.allforai/bootstrap/observed-input-dependencies.json'
+    assert not reads.exists() or state_path not in reads.read_text()
+    # An ordinary product file is still registered.
+    result, observed = invoke(tmp_path, 'read', observation=original['observation'], path='policy.txt')
+    assert result.returncode == 0 and observed['content'] == 'region = JP'
