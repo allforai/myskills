@@ -20,22 +20,24 @@ class HostCommandError(RuntimeError):
     pass
 
 
-ZERO_INHERIT = {"--oss", "--strict-config"}
-DANGEROUS_ZERO = {
-    "--dangerously-bypass-approvals-and-sandbox", "--dangerously-bypass-hook-trust",
-    "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules",
+ZERO_INHERIT = {
+    "--oss", "--strict-config", "--dangerously-bypass-approvals-and-sandbox",
+    "--dangerously-bypass-hook-trust", "--skip-git-repo-check",
+    "--ignore-user-config", "--ignore-rules",
 }
 ROOT_ZERO = {"--search"}
 ONE_INHERIT = {
     "-c", "--config", "--enable", "--disable", "-p", "--profile",
-    "--local-provider", "--add-dir",
+    "--local-provider", "-s", "--sandbox", "--add-dir",
 }
 ROOT_ONE = {"-a", "--ask-for-approval"}
 ZERO_DROP = {"--json", "--ephemeral", "--no-alt-screen"}
 ONE_DROP = {
     "-m", "--model", "-C", "--cd", "-o", "--output-last-message",
-    "--color", "--output-schema", "-s", "--sandbox",
+    "--color", "--output-schema",
 }
+SANDBOX_SELECTORS = {"-s", "--sandbox", "--dangerously-bypass-approvals-and-sandbox"}
+CONFIG_SANDBOX_MODE = re.compile(r"^\s*sandbox_mode\s*=", re.MULTILINE)
 SENSITIVE = re.compile(
     r"(?:^|[._-])(token|secret|password|api[_-]?key|apikey|authorization|credential)(?:$|[._-])",
     re.IGNORECASE,
@@ -64,7 +66,6 @@ class InvocationSpec:
     executable_pins: tuple = ()
     wrapper_contract_hash: str = ""
     secret_placeholders: tuple = ()
-    dangerous_args: tuple = ()
     verified: bool = True
     wrapper_model_ownership: str = ""
     wrapper_model_evidence: str = ""
@@ -97,12 +98,13 @@ class InvocationSpec:
         channel = (["--output-last-message", str(out)] if output_flags is None
                    else list(output_flags))
         result_dir = str(Path(out).resolve().parent)
+        # The host's permission mode wins. `codex exec` alone defaults to read-only,
+        # which no interactive host runs in, so an unselected mode gets the
+        # interactive default instead of a worker that cannot write its worktree.
+        sandbox = ([] if host_selects_sandbox(self.exec_args, environ)
+                   else ["--sandbox", "workspace-write"])
         return [*prefix, *self.root_args, "exec", *self.exec_args,
-                "--ephemeral", *model_args, "--sandbox", "workspace-write",
-                "-c", "sandbox_workspace_write.writable_roots=[]",
-                "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
-                "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
-                "-c", "sandbox_workspace_write.network_access=false",
+                "--ephemeral", *model_args, *sandbox,
                 "--add-dir", result_dir,
                 "-C", str(cwd),
                 *channel, prompt]
@@ -160,6 +162,23 @@ class InvocationSpec:
             "wrapper_contract_hash": self.wrapper_contract_hash,
             "verified": self.verified,
         }
+
+
+def host_selects_sandbox(exec_args, environ=None):
+    args = list(exec_args)
+    if SANDBOX_SELECTORS & set(args):
+        return True
+    for flag, value in zip(args, args[1:]):
+        if flag in ("-c", "--config") and value.split("=", 1)[0].strip() == "sandbox_mode":
+            return True
+    if "--ignore-user-config" in args:
+        return False
+    env = os.environ if environ is None else environ
+    home = env.get("CODEX_HOME") or os.path.join(env.get("HOME", ""), ".codex")
+    try:
+        return bool(CONFIG_SANDBOX_MODE.search(Path(home, "config.toml").read_text()))
+    except OSError:
+        return False
 
 
 def canonical_executable(value, require_codex=True):
@@ -251,7 +270,7 @@ def _wrapper_prefix(argv, contract, environ):
 
 
 def normalize_host_argv(argv, source, executable=None, wrapper_contract=None,
-                        environ=None, capability_approvals=()):
+                        environ=None):
     if not argv or not all(isinstance(v, str) and v for v in argv):
         raise HostCommandError("host argv must be a non-empty string array")
     argv = list(argv)
@@ -268,8 +287,7 @@ def normalize_host_argv(argv, source, executable=None, wrapper_contract=None,
         wrapper_ownership, wrapper_evidence = "", ""
         args = list(argv[1:])
     root_args, exec_args = [], []
-    dangerous_args, argv_model = [], ""
-    approvals = set(capability_approvals)
+    argv_model = ""
     in_exec = False
     prompt_seen = False
     i = 0
@@ -284,12 +302,6 @@ def normalize_host_argv(argv, source, executable=None, wrapper_contract=None,
         if token == "--" or token == "-":
             raise HostCommandError(f"unsupported host argument: {token}")
         name, equals_value = _split_option(token)
-        if name in DANGEROUS_ZERO:
-            if equals_value is not None:
-                raise HostCommandError(f"flag does not take a value: {name}")
-            if name not in approvals:
-                raise HostCommandError(f"dangerous host capability not approved: {name}")
-            dangerous_args.append(name); i += 1; continue
         if name in ZERO_INHERIT:
             if equals_value is not None:
                 raise HostCommandError(f"flag does not take a value: {name}")
@@ -331,7 +343,7 @@ def normalize_host_argv(argv, source, executable=None, wrapper_contract=None,
         exe, tuple(root_args), tuple(exec_args), source, tuple(argv),
         launch_prefix=prefix, argv_model=argv_model, executable_pins=pins,
         wrapper_contract_hash=contract_hash, secret_placeholders=placeholders,
-        dangerous_args=tuple(dangerous_args), wrapper_model_ownership=wrapper_ownership,
+        wrapper_model_ownership=wrapper_ownership,
         wrapper_model_evidence=wrapper_evidence)
 
 
@@ -418,7 +430,7 @@ def _darwin_snapshot(pid):
 
 
 def discover_host(start_pid=None, platform=None, snapshot_reader=None,
-                  wrapper_contract=None, environ=None, capability_approvals=()):
+                  wrapper_contract=None, environ=None):
     platform = platform or sys.platform
     reader = snapshot_reader
     if reader is None:
@@ -447,7 +459,7 @@ def discover_host(start_pid=None, platform=None, snapshot_reader=None,
                 return normalize_host_argv(
                     snap.argv, "linux-procfs" if platform.startswith("linux")
                     else "macos-kern-procargs2", wrapper_contract=wrapper_contract,
-                    environ=environ, capability_approvals=capability_approvals)
+                    environ=environ)
             except HostCommandError:
                 pass
         pid = snap.ppid
@@ -456,7 +468,7 @@ def discover_host(start_pid=None, platform=None, snapshot_reader=None,
 
 def resolve_invocation(template=None, environ=None, start_pid=None,
                        platform=None, snapshot_reader=None, wrapper_contract=None,
-                       capability_approvals=(), allow_unsafe_template=False,
+                       allow_unsafe_template=False,
                        legacy_model_policy="tiered"):
     env = os.environ if environ is None else environ
     if template is not None:
@@ -489,9 +501,8 @@ def resolve_invocation(template=None, environ=None, start_pid=None,
             except ValueError as exc:
                 raise HostCommandError("wrapper contract is not valid JSON") from exc
         return normalize_host_argv(argv, "environment", wrapper_contract=contract,
-                                   environ=env, capability_approvals=capability_approvals)
-    return discover_host(start_pid, platform, snapshot_reader, wrapper_contract,
-                         env, capability_approvals)
+                                   environ=env)
+    return discover_host(start_pid, platform, snapshot_reader, wrapper_contract, env)
 
 
 def _redact_url(value):
