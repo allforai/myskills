@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { generateVideoKling } from "../fal/client.js";
-import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { checkSavePath, saveFile } from "./save-file.js";
 export const klingVideoSchema = {
     prompt: z.string().describe("Video generation prompt"),
     duration: z
@@ -21,19 +19,18 @@ export const klingVideoSchema = {
 export function registerKlingVideo(server) {
     server.tool("kling_generate_video", "Generate video using Kling 2.1 Master via fal.ai. Best value at ~$0.03/sec, 4K support, native audio.", klingVideoSchema, async (params) => {
         try {
+            if (params.save_path)
+                checkSavePath(params.save_path);
             const result = await generateVideoKling(params.prompt, {
                 duration: params.duration,
                 aspectRatio: params.aspect_ratio,
             });
             let savedPath;
             if (params.save_path && result.url) {
-                const dir = dirname(params.save_path);
-                if (!existsSync(dir))
-                    await mkdir(dir, { recursive: true });
                 const videoRes = await fetch(result.url);
                 if (videoRes.ok) {
                     const buffer = Buffer.from(await videoRes.arrayBuffer());
-                    await writeFile(params.save_path, buffer);
+                    await saveFile(params.save_path, buffer);
                     savedPath = params.save_path;
                 }
             }

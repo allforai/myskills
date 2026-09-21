@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { generateImage } from "../google-ai/client.js";
-import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { checkSavePath, saveFile } from "./save-file.js";
 export const generateImageSchema = {
     prompt: z.string().describe("Image generation prompt describing the desired image"),
     aspect_ratio: z
@@ -23,6 +21,8 @@ export const generateImageSchema = {
 export function registerGenerateImage(server) {
     server.tool("generate_image", "Generate an image using Google Imagen 4. Returns base64 data; optionally saves to file.", generateImageSchema, async (params) => {
         try {
+            if (params.save_path)
+                checkSavePath(params.save_path);
             const results = await generateImage(params.prompt, {
                 aspectRatio: params.aspect_ratio,
                 numberOfImages: params.count,
@@ -33,10 +33,7 @@ export function registerGenerateImage(server) {
                     const path = results.length === 1
                         ? params.save_path
                         : params.save_path.replace(/(\.\w+)$/, `-${i + 1}$1`);
-                    const dir = dirname(path);
-                    if (!existsSync(dir))
-                        await mkdir(dir, { recursive: true });
-                    await writeFile(path, Buffer.from(results[i].base64, "base64"));
+                    await saveFile(path, Buffer.from(results[i].base64, "base64"));
                     saved.push(path);
                 }
             }

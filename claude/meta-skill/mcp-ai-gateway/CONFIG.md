@@ -111,3 +111,9 @@ routing:
   competitive_analysis: "qwen"  # 覆盖默认路由
   market_research: "deepseek"
 ```
+
+## Where generated media may be saved
+
+Every media tool's `save_path` must stay inside the directory the gateway was started in —
+the project — and may not leave it through `..`, an absolute path or a symlinked directory.
+Set `AI_GATEWAY_SAVE_ROOT` to allow a different root.

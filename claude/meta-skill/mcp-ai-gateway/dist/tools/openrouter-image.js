@@ -1,7 +1,5 @@
 import { z } from "zod";
-import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { checkSavePath, saveFile } from "./save-file.js";
 const BASE_URL = "https://openrouter.ai/api/v1";
 function getApiKey() {
     const key = process.env.OPENROUTER_API_KEY;
@@ -29,6 +27,8 @@ export const openrouterImageSchema = {
 export function registerOpenRouterImage(server) {
     server.tool("openrouter_generate_image", "Generate image via OpenRouter using GPT-5 Image or Gemini Image models. Uses existing OpenRouter key, no extra API key needed.", openrouterImageSchema, async (params) => {
         try {
+            if (params.save_path)
+                checkSavePath(params.save_path);
             const model = params.model ?? "openai/gpt-5-image-mini";
             const isGemini = model.startsWith("google/");
             const res = await fetch(`${BASE_URL}/chat/completions`, {
@@ -63,10 +63,7 @@ export function registerOpenRouterImage(server) {
                     const path = images.length === 1
                         ? params.save_path
                         : params.save_path.replace(/(\.\w+)$/, `-${i + 1}$1`);
-                    const dir = dirname(path);
-                    if (!existsSync(dir))
-                        await mkdir(dir, { recursive: true });
-                    await writeFile(path, Buffer.from(base64Match[1], "base64"));
+                    await saveFile(path, Buffer.from(base64Match[1], "base64"));
                     saved.push(path);
                 }
             }

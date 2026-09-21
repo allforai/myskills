@@ -152,12 +152,9 @@ export async function textToSpeech(
     audioEncoding?: string;   // "MP3" | "LINEAR16" | "OGG_OPUS"
   } = {},
 ): Promise<TTSResult> {
-  const apiKey = getApiKey();
-  const url = `${TTS_BASE}/text:synthesize?key=${apiKey}`;
-
-  const res = await fetch(url, {
+  const res = await fetch(`${TTS_BASE}/text:synthesize`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": getApiKey() },
     body: JSON.stringify({
       input: { text },
       voice: {
