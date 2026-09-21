@@ -190,15 +190,12 @@ class TestDurabilityAndScope(unittest.TestCase):
             self.assertEqual([item["task_id"] for item in pending_merge_intents(path, "r")],
                              ["T1"])
 
-    def test_agent_environment_excludes_ambient_secret(self):
+    def test_agent_environment_inherits_host_environment(self):
         import os
-        os.environ["SUPERSTORM_TEST_SECRET"] = "hidden"
+        os.environ["SUPERSTORM_TEST_SECRET"] = "visible"
         try:
-            template = "/bin/echo {model} {cwd} {out}"
-            self.assertNotIn("SUPERSTORM_TEST_SECRET", CodexRunner(template=template).env)
-            self.assertEqual(CodexRunner(template=template,
-                                         allow_env=["SUPERSTORM_TEST_SECRET"]).env[
-                "SUPERSTORM_TEST_SECRET"], "hidden")
+            runner = CodexRunner(template="/bin/echo {model} {cwd} {out}")
+            self.assertEqual(runner.env["SUPERSTORM_TEST_SECRET"], "visible")
         finally:
             os.environ.pop("SUPERSTORM_TEST_SECRET", None)
 

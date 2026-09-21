@@ -173,10 +173,13 @@ The runner owns:
   executor envelope with the real Git diff, validates paths, links, control hashes and typed
   interfaces, then supervises. A required contract change yields `needs_replan` and blocks the
   affected subgraph.
-- The runner, not the host profile, owns the worker security envelope: CLI-precedence
-  `workspace-write`, empty configured writable roots, no ambient temp-directory writes, and no
-  network. Inherited sandbox flags, bypass flags, and host `--add-dir` are rejected/dropped. A
-  single runner-owned `--add-dir` exposes only the attempt's schema-bound result directory.
+- Workers inherit every capability of the host session: its sandbox mode (including
+  `--dangerously-bypass-approvals-and-sandbox`), approval mode, `--add-dir` roots, network
+  access and environment. The runner never narrows them. It adds one `--add-dir` for the
+  attempt's schema-bound result directory, and `--sandbox workspace-write` only when neither
+  the host argv nor its config selects a mode, because bare `codex exec` would otherwise be
+  read-only. What stays untrusted is the worker's output, not its reach: the checks above and
+  candidate admission below still gate everything it produces.
 - Integration is transactional: merge into a candidate ref/worktree, rerun post-merge checks,
   durably record merge intent, CAS-publish the integration ref, durably record completion, then
   release dependents. Conflicts or crashes never publish unchecked content.
@@ -184,10 +187,13 @@ The runner owns:
   infrastructure failures retry separately and never burn that budget. Reality-gated
   environmental proof failure commits/merges implementation, enters a pending-proof ledger,
   and satisfies dependencies.
-- **Capability envelope:** `codex exec` uses workspace-write + ephemeral sessions and a
-  minimal environment. Ambient secrets are excluded; Phase 0-approved variables are passed
-  explicitly with repeated `--allow-env NAME`. Network/external/destructive tasks require
-  exact Phase 0 authorization and must be rejected when the host sandbox cannot enforce it.
+- **Capability envelope:** `codex exec` runs ephemeral sessions with the host's permissions
+  and full environment. Network/external/destructive tasks still require exact Phase 0
+  authorization in the decision envelope; that authorization is the limit, since the worker
+  sandbox no longer is. When the host itself is sandboxed and a task's `acceptance_cmd` needs
+  what that sandbox withholds (loopback CDP, desktop UI, keychain, packaging caches), set the
+  task's `acceptance_executor` to `"trusted-host"`: the worker implements without running it
+  and the runner executes the hashed command during candidate admission.
 - **Vacuous auto-reinjection** and
   **fresh-context supervision** (`verify` model reruns `acceptance_cmd` itself, never sees
   the executor's narrative).

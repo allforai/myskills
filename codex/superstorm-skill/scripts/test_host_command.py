@@ -34,19 +34,34 @@ class HostCommandTests(unittest.TestCase):
             spec = normalize_host_argv([
                 str(codex), "-a", "never", "--search", "--profile", "team", "-c", "x=1",
                 "--dangerously-bypass-approvals-and-sandbox", "-m", "old",
-                "-C", "/old", "--color=always"], "fixture",
-                capability_approvals={"--dangerously-bypass-approvals-and-sandbox"})
+                "-C", "/old", "--color=always"], "fixture")
             child = spec.build("new", "/new path", "/tmp/out", "do work")
             self.assertEqual(child[:5], [str(target.resolve()), "-a", "never", "--search", "exec"])
             self.assertIn("--profile", child); self.assertIn("team", child)
-            self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", child)
-            self.assertIn("--sandbox", child); self.assertIn("workspace-write", child)
+            self.assertIn("--dangerously-bypass-approvals-and-sandbox", child)
+            self.assertNotIn("--sandbox", child)
             self.assertNotIn("old", child); self.assertNotIn("/old", child)
             self.assertEqual(child.count("-m"), 1); self.assertEqual(child.count("-C"), 1)
             self.assertEqual(child[-1], "do work")
-            with self.assertRaisesRegex(HostCommandError, "not approved"):
-                normalize_host_argv(
-                    [str(codex), "--dangerously-bypass-approvals-and-sandbox"], "fixture")
+
+    def test_host_sandbox_mode_wins_and_unselected_mode_gets_interactive_default(self):
+        with tempfile.TemporaryDirectory() as td:
+            codex, _ = self._codex_link(td)
+            home = Path(td, "home"); home.mkdir()
+            env = {"CODEX_HOME": str(home)}
+            def child(*host_args):
+                return normalize_host_argv([str(codex), *host_args], "fixture").build(
+                    "m", td, "/tmp/o", "p", environ=env)
+            argv = child("--sandbox", "danger-full-access", "--add-dir", "/shared")
+            self.assertEqual(argv[argv.index("--sandbox") + 1], "danger-full-access")
+            self.assertEqual(argv.count("--sandbox"), 1); self.assertIn("/shared", argv)
+            self.assertNotIn("network_access=false", " ".join(argv))
+            self.assertNotIn("--sandbox", child("-c", "sandbox_mode=read-only"))
+            bare = child()
+            self.assertEqual(bare[bare.index("--sandbox") + 1], "workspace-write")
+            (home / "config.toml").write_text('[profiles.x]\nsandbox_mode = "read-only"\n')
+            self.assertNotIn("--sandbox", child())
+            self.assertIn("--sandbox", child("--ignore-user-config"))
 
     def test_exec_prompt_removed_and_resume_rejected(self):
         with tempfile.TemporaryDirectory() as td:
