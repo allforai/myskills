@@ -76,7 +76,7 @@ User workflow: `/bootstrap` analyzes the target project → generates `.allforai
 
 On a product route that ships a user interface, `/bootstrap` does more before it plans: it writes `experience_priority` into the profile, proposes 2–3 experience directions (体验方向) with one recommended and records the one the user selects — or, only when the user explicitly delegates the choice, the one it picks on their behalf — then plans experience-design nodes and a two-stage experience quality gate (体验质量门: design and runtime) that blocks the run from finishing. `/run` discloses every delegated decision when it completes.
 
-Upgrade impact: a product-route project bootstrapped before this has no `experience_priority`, so its first `/run` after the upgrade stops with `missing_experience_priority` — rerun the interactive `/bootstrap` to fill it in. `local-change` routes and legacy profiles without `task_route` are unaffected.
+Upgrade impact: a product-route project bootstrapped before this has no `experience_priority`, so its first `/run` after the upgrade stops with `missing_experience_priority` — rerun the interactive `/bootstrap` to fill it in. `local-change` routes and legacy profiles without `task_route` are unaffected. A project whose `.allforai/bootstrap/` still holds only the retired `state-machine.json` (no `workflow.json`) now fails validation with `retired_bootstrap_format` instead of passing silently — rerun `/bootstrap`.
 
 ## Shared Data Contract: `.allforai/`
 

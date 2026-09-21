@@ -688,8 +688,11 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   // A completion inherited from an earlier session is a claim read out of transition_log, not a
   // measurement. Before anything is dispatched on it, the gate re-measures each inherited
   // completion that a remaining node depends on; one that no longer passes is not done, so it
-  // runs again instead of handing its consumer a missing, stale or unusable artifact. The Codex
-  // driver measures every node the same way (ADR-0004), and the receiving side verifies (ADR-0010).
+  // runs again instead of handing its consumer a missing, stale or unusable artifact. The receiving
+  // side verifies (ADR-0010). This is narrower than the Codex driver, which measures EVERY node on
+  // every pass: a completed node that nothing remaining depends on — typically the last verify
+  // node — is not re-measured here, so the two hosts can still disagree about it (ADR-0004).
+  // Closing that residual gap is a separate decision: it costs one gate run per completed node.
   const nodeById = new Map((dag.nodes || []).map(n => [n.node_id, n]))
   const measured = new Set()
   for (let changed = true; changed;) {
