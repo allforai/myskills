@@ -116,7 +116,10 @@ Each operation_line has at least one node. Each node has at least one screen. Sc
   ],
   "screen_index": {
     "S001": "// complete screen object duplicate, keyed by screen ID for fast lookup"
-  }
+  },
+  "non_screen_tasks": [
+    {"task_id": "T7", "role": "R2", "reason": "// upstream ground, quoted — only for roles that are clientless per Hard Constraints"}
+  ]
 }
 ```
 
@@ -329,7 +332,7 @@ Describes **intra-screen view transitions** -- how the same page changes structu
 | Constraint | Rule | Rationale |
 |-----------|------|-----------|
 | **Platform** | For a role that declares `clients[]`: consumer role -> `mobile-ios` single-column layout; professional role -> `desktop-web` sidebar layout | Physical device differences |
-| **Roles without a client** | A role whose `product-concept.json roles[]` entry declares no `clients[]` — its work runs through an agent interface or a tool the team already uses, or the choice is still an open question for the user — gets no screen, no `app` and no operation line. Its tasks are exempt from Task coverage and are listed instead in top-level `non_screen_tasks[]` (`task_id`, `role`, `reason` carried from product-concept), so nothing downstream can mistake them for forgotten work. Human roles that wait on such a role still get their Handoff states. A console drawn for it is a defect, not a default | product-concept decides who is a client (Sub-Phase 5, producer-side closure check). A node that gives every professional role a desktop console overrides that decision without anyone having made it |
+| **Roles without a client** | A role is clientless only when product-concept says so: its `roles[]` entry declares no `clients[]` AND the concept records the ground — the settled mode and what it rests on (an agent interface, or a tool the team already uses), or an open question that names that role. Such a role gets no screen, no `app` and no operation line; its tasks are exempt from Task coverage and are listed in top-level `non_screen_tasks[]` (`task_id`, `role`, `reason` — the upstream ground quoted, never composed here). A role with no `clients[]` and no such ground is missing upstream data, not a decision: stop and return it as an upstream defect rather than exempting its tasks or drawing it a console. Human roles that wait on a clientless role still get their Handoff states. A console drawn for it is a defect, not a default | product-concept decides who is a client (Sub-Phase 5, producer-side closure check). A node that gives every professional role a desktop console overrides that decision without anyone having made it; a node that exempts a role because a key is absent invents a decision nobody made |
 | **App ownership** | Every screen must have `app` field. In cross-role flows, screen app is derived from **node role**, not operation line's main role | merchant and admin are different deployable apps even if both desktop-web |
 | **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array, or in `non_screen_tasks[]` when its role declares no client | Functional completeness |
 | **Business flow continuity** | Adjacent tasks in a business flow must have navigable paths between their screens (via `flow_context`) | Flow reachability |
@@ -404,7 +407,7 @@ LLM loads journey-emotion-map.json alongside experience-map.json and checks:
 1. **Emotion intent landed?** -- design_hint reflected in emotion_design and interaction_pattern
 2. **High-risk nodes protected?** -- error prevention, confirmation, reversibility present
 3. **Emotion arc coherent?** -- interface sequence shows progressive experience
-4. **Journey lines complete?** -- every journey_line has a corresponding operation_line
+4. **Journey lines complete?** -- every journey_line has a corresponding operation_line, except journey_lines whose role is clientless (Hard Constraints, "Roles without a client"): those are accounted for in `non_screen_tasks[]`, and saying so is part of this check
 
 ---
 
