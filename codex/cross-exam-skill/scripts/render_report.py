@@ -569,6 +569,18 @@ def _journey_block(j, e):
     return out
 
 
+def _judged_build_line(ledger):
+    """报告评的是哪棵树：intake 时记下的构建标识，原样打印。渲染器不重算——续盘后重渲染时，此刻的树可能已经
+    不是被评的那棵；没记就说没记，读报告的一方据此知道新鲜度无从核对。"""
+    recorded = ledger.get("judged_build")
+    build = recorded.get("build") if isinstance(recorded, dict) else None
+    if not isinstance(build, str) or not build.strip():
+        return "被评构建：未记录（intake 未写 judged_build；读这份报告的一方无法核对它是否过期）"
+    when = recorded.get("recorded_at")
+    when = when.strip() if isinstance(when, str) and when.strip() else "时间未记录"
+    return f"被评构建：{build.strip()}（intake 记录于 {when}）"
+
+
 def render(run_dir):
     run_dir = Path(run_dir)
     ledger = _load(run_dir)
@@ -654,6 +666,8 @@ def render(run_dir):
     if surfaces is not None:
         head += f" · 操作面 {len(surface_by_id)} 个，裁决触及 {len(touched)} 个"
     out.append(head)
+    if ledger.get("ledger_version", 1) >= 3:   # v2 and older render byte for byte as they always did
+        out.append(_judged_build_line(ledger))
     out.append("")
     out.append("## 总览")
     out.append("")

@@ -1121,6 +1121,44 @@ class TestSmallHonestyFixes(unittest.TestCase):
             self.assertIn("开发实例后端为 mock", render(run))
 
 
+class TestJudgedBuild(unittest.TestCase):
+    """The header names the tree the run judged, as recorded at intake; the renderer never recomputes it."""
+    RECORDED = "被评构建：0123abc-89abcdef01234567（intake 记录于 2026-09-22T10:00:00+08:00）"
+    MISSING = "被评构建：未记录（intake 未写 judged_build；读这份报告的一方无法核对它是否过期）"
+    V3 = {"ledger_version": 3,
+          "rule_consistency": {"status": "not_examined", "reason": "规则来源尚未审查"}}
+
+    def _report(self, tmp, **top):
+        run = _mk_run(tmp, [{"id": "F1", "name": "面一", "status": "examined"}],
+                      [_entry("q1", verdict="gap", severity="low")])
+        _with_top(run, **top)
+        return render(run)
+
+    def test_recorded_build_is_printed_under_the_baseline_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = self._report(tmp, **self.V3, judged_build={
+                "build": "0123abc-89abcdef01234567", "recorded_at": "2026-09-22T10:00:00+08:00",
+                "excludes": [".allforai"]})
+        lines = report.splitlines()
+        at = next(i for i, line in enumerate(lines) if line.startswith("需求基准："))
+        self.assertEqual(lines[at + 1], self.RECORDED)
+
+    def test_a_v3_run_without_the_field_says_so(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIn(self.MISSING, self._report(tmp, **self.V3))
+
+    def test_a_malformed_field_counts_as_not_recorded(self):
+        for bad in ("0123abc", {"build": ""}, {"build": 7}, []):
+            with tempfile.TemporaryDirectory() as tmp:
+                self.assertIn(self.MISSING, self._report(tmp, **self.V3, judged_build=bad), bad)
+
+    def test_older_ledgers_keep_their_header(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertNotIn("被评构建", self._report(tmp, ledger_version=2))
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertNotIn("被评构建", self._report(tmp))
+
+
 if __name__ == "__main__":
     unittest.main()
 
