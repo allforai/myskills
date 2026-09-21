@@ -258,6 +258,11 @@ def _snapshot(root, node, extra=(), seen=()):
     source_files = expand_paths(root, node.get('source_inputs', []), track=False)
     product_files = inventory(root, workflow)
     source_files = {p for p in source_files if p in product_files or not (root / p).exists()}
+    # Invalidation follows the graph. What the flow delivers further down is an output
+    # of the plan, not an input to the work that planned it: binding a design to the
+    # implementation it governs would let that delivery stale the frozen design it was
+    # built from, leaving neither able to publish.
+    source_files -= downstream_write_scope(root, node['node_id'], workflow)
     paths = source_files | expand_paths(root, node.get('input_dependencies', [])) | extra
     refs = node.get('requirement_refs', [])
     ref_paths = {ref['path'] for ref in refs}
@@ -549,6 +554,28 @@ def consumers(root, node_id, workflow):
                 reached.add(consumer)
                 frontier.add(consumer)
     return reached
+
+
+def downstream_write_scope(root, node_id, workflow):
+    """Paths a transitive consumer of ``node_id`` declares that it writes.
+
+    Only a declared ``parallel_write_scopes`` exempts, and only on a node that
+    depends on this one: a node cannot exempt its own inputs, and an implementation
+    that never declares what it writes keeps invalidating its planners — that is the
+    missing declaration surfacing, not freshness being bypassed. Changes inside the
+    scope still invalidate the node owning it and that node's own consumers.
+    """
+    return _memoized(('downstream-write-scope', node_id),
+                     lambda: _downstream_write_scope(root, node_id, workflow))
+
+
+def _downstream_write_scope(root, node_id, workflow):
+    by_id = {n['node_id']: n for n in workflow.get('nodes', [])}
+    scoped: set[str] = set()
+    for consumer in consumers(root, node_id, workflow):
+        scopes = by_id.get(consumer, {}).get('parallel_write_scopes') or []
+        scoped |= expand_paths(root, scopes)
+    return scoped
 
 
 def change_impact(root, node, workflow, files):

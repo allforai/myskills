@@ -328,9 +328,10 @@ Describes **intra-screen view transitions** -- how the same page changes structu
 
 | Constraint | Rule | Rationale |
 |-----------|------|-----------|
-| **Platform** | consumer role -> `mobile-ios` single-column layout; professional role -> `desktop-web` sidebar layout | Physical device differences |
+| **Platform** | For a role that declares `clients[]`: consumer role -> `mobile-ios` single-column layout; professional role -> `desktop-web` sidebar layout | Physical device differences |
+| **Roles without a client** | A role whose `product-concept.json roles[]` entry declares no `clients[]` — its work runs through an agent interface or a tool the team already uses, or the choice is still an open question for the user — gets no screen, no `app` and no operation line. Its tasks are exempt from Task coverage and are listed instead in top-level `non_screen_tasks[]` (`task_id`, `role`, `reason` carried from product-concept), so nothing downstream can mistake them for forgotten work. Human roles that wait on such a role still get their Handoff states. A console drawn for it is a defect, not a default | product-concept decides who is a client (Sub-Phase 5, producer-side closure check). A node that gives every professional role a desktop console overrides that decision without anyone having made it |
 | **App ownership** | Every screen must have `app` field. In cross-role flows, screen app is derived from **node role**, not operation line's main role | merchant and admin are different deployable apps even if both desktop-web |
-| **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array | Functional completeness |
+| **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array, or in `non_screen_tasks[]` when its role declares no client | Functional completeness |
 | **Business flow continuity** | Adjacent tasks in a business flow must have navigable paths between their screens (via `flow_context`) | Flow reachability |
 | **Handoff states** | Every entry of `journey-emotion-map.json` `handoffs[]` lands as named states on a screen each waiting role actually has open: what they see while waiting, when the receiver refuses, and when nobody picks it up. A failure path shown only on the receiver's screen does not count | In a cross-role flow `flow_context` stops at the app boundary; the wait between two roles is on nobody's line unless a screen is made to hold it (journey-emotion-schema.md §Handoffs) |
 

@@ -225,15 +225,23 @@ halt, resetting repair consumption, or replaying an uncertain dispatch.
 Copy `knowledge/input-freshness.md` from the canonical root into
 `.allforai/bootstrap/protocols/`. Follow it on every bootstrap/resume, including
 unchanged product intent: declare each scoped node's `source_inputs` (project-relative
-product source files, directories or globs; explicit `[]` only when no product source is
-relevant) plus consumed `input_dependencies` and `required_documents`, each mapped in
+product source files, directories or globs the node reads to produce its own work, never the
+source a node depending on it writes later; explicit `[]` only when no product source is
+relevant), `parallel_write_scopes` on every node that writes product source,
+plus consumed `input_dependencies` and `required_documents`, each mapped in
 `document_verification` to a project-specific argv that executes the document's stated facts
 against the current source (never existence or a status field), observe
 before generating documents, publish verified contract observations, then consume
 reconciliation and readiness. The shared gates refuse a scoped node that omits or
 malforms these declarations (`missing_document_verification` for an unchecked document);
 freshness is never opt-in, and evidence publication runs every document check so a code-only
-acceptance cannot complete a delivery whose facts are outdated. Use the same evidence publication CLI after actual
+acceptance cannot complete a delivery whose facts are outdated. A design, spec or concept node
+that names the implementation tree it governs (`mobile/**`, `src/**`) inverts the graph — delivering
+that implementation stales the frozen design it was built from and the delivery can never publish —
+so `validate_bootstrap.py` reports `inverted_source_inputs` when a node's `source_inputs` intersect
+the declared write scope of a node depending on it; an audit of pre-existing code belongs to the node
+that performed it, pinned to what it read. The declared write scope is the only thing that exempts a
+path from invalidating upstream planners; an undeclared one exempts nothing. Use the same evidence publication CLI after actual
 verification; preserve journal authority and unrelated valid work. Invalidated items name a `diff` and
 `repair_owner`: resolve `interactive-bootstrap` items here (answer the pending decision, or refreeze and
 replan the recorded change) and leave node-owned items for the run to repair and republish.

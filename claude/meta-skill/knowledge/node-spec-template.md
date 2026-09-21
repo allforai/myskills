@@ -7,9 +7,18 @@ Write each `.allforai/bootstrap/node-specs/<node_id>.md` from this skeleton. Fil
 For a node consuming `task_scope` requirements, mirror workflow
 `requirement_refs`, `responsibilities`, `decision_inputs` and `source_inputs`
 (plus `input_dependencies`, `parallel_write_scopes`, `required_documents` and `document_verification` when declared) in YAML
-frontmatter. `source_inputs` names the project-relative product source the
-node's documents and evidence trace to; write explicit `[]` only when no
-product source is relevant. A scoped node without it cannot pass any gate.
+frontmatter. `source_inputs` names the project-relative product source the node
+reads to produce its own documents and evidence, never the source a node
+depending on it writes later; write explicit `[]` only when no product source is
+relevant. A scoped node without it cannot pass any gate. A design, spec or
+concept node that names the implementation tree it governs (`mobile/**`,
+`src/**`) inverts the graph — delivering that implementation stales the frozen
+design it was built from and the delivery can never publish — so
+`validate_bootstrap.py` refuses it as `inverted_source_inputs`; an audit of
+pre-existing code belongs to the node that performed it, pinned to what it
+actually read. A node that writes product source declares those paths in
+`parallel_write_scopes` (see the write contract below); that declaration is the
+only thing that exempts a path from invalidating upstream planners.
 For each required document, `document_verification` names its project-specific
 check against current source; mirror the workflow's command unchanged.
 In Must-read inputs, name the exact requirement path/id/revision and its user
@@ -425,8 +434,9 @@ wire protocol — NOT just REST routes. Include in the stitch node-spec:
 
 ### Optional Codex parallel draft write contract
 
-`parallel_write_scopes` is an optional non-empty list of project-relative write paths
-or globs, identical in workflow and node-spec frontmatter. It must cover all product
+`parallel_write_scopes` is a non-empty list of project-relative write paths
+or globs, identical in workflow and node-spec frontmatter, required on every node
+that writes product source. It must cover all product
 exit artifacts and required documents; driver control state is excluded. Without
 it, Codex conservatively reserves reads and outputs as potential writes. With it,
 `source_inputs` and `input_dependencies` still declare all reads, including shared
@@ -437,3 +447,10 @@ change to one ordered owner or a serial integration node. Draft import rejects a
 entire patch on any out-of-scope write or changed declared input before copying
 files, and serial publication must independently reverify fresh main-workspace
 state. Never remove a real input merely to make branches appear independent.
+
+The same declaration carries freshness. A path covered by a consumer's declared
+write scope is excluded from an upstream planner's binding, so delivering it never
+stales the work that planned it. That declaration is the only such exemption: an
+undeclared write scope exempts nothing, and an implementation that never says what
+it writes keeps invalidating its planners. Changes inside a declared scope still
+invalidate the node owning that scope and its own consumers.

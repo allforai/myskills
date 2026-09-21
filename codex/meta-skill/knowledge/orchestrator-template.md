@@ -29,10 +29,15 @@ If `.allforai/bootstrap/product-summary.json` exists, treat it as provisional in
 recorded user decision_inputs remain the product authority.
 
 Treat `.allforai/bootstrap/*` artifacts as the canonical completion surface for workflow nodes.
-Every scoped node declares `source_inputs` (project-relative product source; explicit `[]` only when
-none applies) and follows `.allforai/bootstrap/protocols/input-freshness.md`. Readiness reports
-`missing_source_inputs` / `invalid_source_inputs` as blockers and the artifact gate withholds
-completion for such nodes; return them to `bootstrap` instead of declaring inside the run.
+Every scoped node declares `source_inputs` (the project-relative product source it reads to produce
+its own work, never what a node depending on it writes later; explicit `[]` only when none applies),
+and every node that writes product source declares `parallel_write_scopes` — the only declaration that
+keeps a delivery from invalidating the planners upstream of it. Both follow
+`.allforai/bootstrap/protocols/input-freshness.md`. Readiness reports
+`missing_source_inputs` / `invalid_source_inputs` as blockers, planning refuses `source_inputs` that
+reach into the declared write scope of a node depending on them (`inverted_source_inputs`), and the
+artifact gate withholds completion for such nodes; return them to `bootstrap` instead of declaring
+inside the run.
 Retained legacy nodes without provenance are warning-only when dependency declarations
 and recorded freshness state are valid. Malformed declarations or unreadable state block
 even retained nodes because their dependency impact cannot be established.
@@ -356,8 +361,10 @@ this loop apply it:
 A legacy QA node that genuinely needs its declared repair loop is one declaration and one
 observation away from it:
 
-1. Add `source_inputs` to the node in `workflow.json` — the product sources it judges, or
-   an explicit `[]` when none applies — and `input_dependencies` for the files it reads.
+1. Add `source_inputs` to the node in `workflow.json` — the product sources it reads to judge, or
+   an explicit `[]` when none applies, never what a node downstream of it writes — and
+   `input_dependencies` for the files it reads. A node that writes product source also declares
+   `parallel_write_scopes`.
 2. Observe and publish the node once through the generated helper:
 
    ```bash

@@ -141,9 +141,20 @@ references cannot authorize extra work. Retained unrelated completed branches
 keep their historical contracts. On each consuming node emit `requirement_refs`,
 `responsibilities` (the applicable entries from `implementation`, `documentation`,
 `verification`), the reference paths in `decision_inputs`, and `source_inputs`:
-the project-relative product source the node traces to, or explicit `[]` only
-when no product source is relevant. The public gates refuse a scoped node that
-omits or malforms this declaration; freshness is not opt-in. The Node-spec
+the project-relative product source the node reads to produce its own work, or
+explicit `[]` only when no product source is relevant — never the source a node
+depending on it writes later. A design, spec or concept node that names the
+implementation tree it governs (`mobile/**`, `src/**`) inverts the graph:
+delivering that implementation stales the design it was built from, the design
+sits behind a freeze a run may not reopen, and the delivery can never publish.
+An audit of pre-existing code belongs to the node that performed it, pinned to
+what it actually read. A node that writes product source declares those paths in
+`parallel_write_scopes`; that declaration is the only thing that exempts a path
+from invalidating upstream planners, and an undeclared write scope exempts
+nothing. The public gates refuse a scoped node that omits or malforms these
+declarations; freshness is not opt-in, and `validate_bootstrap.py` reports
+`inverted_source_inputs` when a node's `source_inputs` intersect the declared
+write scope of a node that depends on it. The Node-spec
 mirrors these fields and explains the actual code boundary, relevant document
 updates, acceptance evidence and repair owner. This is a responsibility contract,
 not a fixed node menu. Audits inspect semantic adequacy; labels alone are not proof.

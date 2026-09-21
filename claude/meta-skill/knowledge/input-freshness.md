@@ -12,7 +12,9 @@ for generated fact documents that must accompany delivery, each mapped in
 stated facts against the current source (documented examples, interfaces or
 behaviors run against the code; existence, a hash or a status field is not a
 check). A required document without that mapping is refused by every gate as
-`missing_document_verification`. Keep existing
+`missing_document_verification`. A node that writes product source declares
+those paths in `parallel_write_scopes`: what a node delivers is part of its
+contract, not something the gates infer from what it happens to read. Keep existing
 `requirement_refs`, `decision_inputs` and `hard_blocked_by` contracts. Declare
 other generated files in workflow `generated_outputs`; never classify product
 source as generated merely to silence drift. Missing dependency knowledge is
@@ -88,6 +90,24 @@ and affected documents rather than claiming zero impact or rebuilding everything
 Revalidating a producer does not refresh its consumers. Reconcile only affected
 work, preserve unrelated valid records, and reverify affected consumers in order.
 Repeated checks are read-only and identical publication does not rewrite state.
+
+Invalidation travels the way the flow does. A node's `source_inputs` bind what it
+consumed in order to produce its work, so a path the flow itself delivers further
+down the graph is an output of the plan, not an input to the work that planned it.
+A design that names the implementation it governs inverts the graph: delivering
+that implementation then stales the design it was built from, the design cannot be
+refreshed without reopening frozen work, and the delivery can never publish. A path
+covered by the declared `parallel_write_scopes` of a transitive consumer is
+therefore excluded from an upstream node's binding instead of being fingerprinted
+into it. The exclusion follows the dependency graph and never a node's claim about
+itself: a node cannot exempt its own inputs, and an undeclared write scope excludes
+nothing, so an implementation that never says what it writes keeps invalidating its
+planners — that is the missing declaration reported, not freshness failing. Changes
+inside a declared write scope still invalidate the node owning that scope and its
+own consumers, and still surface as external change when no delivery accounts for
+them. Planning refuses the inversion rather than tolerating it: `source_inputs`
+that intersect the declared write scope of a node depending on that node are
+reported as `inverted_source_inputs`.
 
 ## Source changed outside the delivery flow
 

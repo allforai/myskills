@@ -66,6 +66,7 @@ Rules:
 - **Design tokens first**: Establish visual language before screen design
 - **Per-role previews**: Each role sees different screens — design separately
 - **Multi-client roles**: Load `product-concept.json roles[].clients[]`. For `feature_parity: full` → one unified screen set. For `partial` → base screen set plus per-client deviation specs for each `parity_exceptions[]` item. For `independent` → separate screen sets per client. For `explicit` → design only `supported_features[]` per client. Use `client_type` to select component vocabulary (Cupertino for `swiftui-ios`, Material for `kotlin-android`).
+- **Roles without a client**: a role with no `clients[]` has no screens to design — its surface is an agent interface or an existing tool, decided upstream. Do not design an admin panel for it; if experience-map carries `non_screen_tasks[]`, leave those tasks out of the UI spec.
 - **State completeness**: Every screen includes all state variants in the spec
 - **Don't over-specify**: Describe intent and constraints, not pixel coordinates
 - **Component reuse**: Identify shared components across screens, define once

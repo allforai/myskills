@@ -555,6 +555,104 @@ UI_TEST_PLATFORMS = {
 }
 
 
+_GLOB_CHARS = re.compile(r"[*?\[]")
+
+
+def _declaration_root(pattern: str) -> str:
+    """The literal path a path declaration is rooted at, before any glob."""
+    return _GLOB_CHARS.split(pattern, maxsplit=1)[0].rstrip("/")
+
+
+def _covers(outer: str, outer_globbed: bool, inner: str) -> bool:
+    if not outer:
+        return True
+    if inner == outer or inner.startswith(outer + "/"):
+        return True
+    # A glob root can stop mid-segment ('scripts/verify-*.ts'); a literal one cannot.
+    return outer_globbed and inner.startswith(outer)
+
+
+def _declarations_overlap(a: str, b: str) -> bool:
+    root_a, root_b = _declaration_root(a), _declaration_root(b)
+    return (_covers(root_b, bool(_GLOB_CHARS.search(b)), root_a)
+            or _covers(root_a, bool(_GLOB_CHARS.search(a)), root_b))
+
+
+def _string_list(value, *, allow_artifacts: bool = False) -> list:
+    """The usable path/id strings in a declaration, ignoring malformed entries.
+
+    Shape is reported by the checks that own it; a graph reading of a plan must not
+    crash on the malformed value those checks are about to name.
+    """
+    if not isinstance(value, list):
+        return []
+    items = []
+    for raw in value:
+        if isinstance(raw, str) and raw:
+            items.append(raw)
+        elif allow_artifacts and isinstance(raw, dict) and isinstance(raw.get("path"), str) and raw["path"]:
+            items.append(raw["path"])
+    return items
+
+
+def _dependency_edges(nodes: list) -> dict:
+    """node_id -> the nodes it depends on: declared blockers plus the producers of
+    the artifacts it consumes."""
+    producers = {}
+    for node in nodes:
+        for field in ("exit_artifacts", "required_documents"):
+            for raw in _string_list(node.get(field), allow_artifacts=True):
+                producers[raw] = node["node_id"]
+    edges = {}
+    for node in nodes:
+        deps = {d for d in _string_list(node.get("hard_blocked_by")) if _addressable_id(d)}
+        for consumed in _string_list(node.get("input_dependencies")):
+            producer = producers.get(consumed)
+            if producer and producer != node["node_id"]:
+                deps.add(producer)
+        edges[node["node_id"]] = deps
+    return edges
+
+
+def _inverted_source_inputs(raw_nodes: list) -> list:
+    """Refuse a plan whose freshness runs against the flow.
+
+    A node's `source_inputs` are what it reads to produce its own work. When they
+    reach into the write scope of a node that depends on it, delivering that work
+    stales the node that planned it, and neither can publish again without
+    reopening frozen work. See knowledge/input-freshness.md.
+    """
+    nodes = [n for n in raw_nodes if isinstance(n, dict) and _addressable_id(n.get("node_id"))]
+    edges = _dependency_edges(nodes)
+    by_id = {n["node_id"]: n for n in nodes}
+    errors = []
+    for node in nodes:
+        nid = node["node_id"]
+        sources = _string_list(node.get("source_inputs"))
+        if not sources:
+            continue
+        reached, frontier = set(), {nid}
+        while frontier:
+            current = frontier.pop()
+            for consumer, deps in edges.items():
+                if current in deps and consumer not in reached:
+                    reached.add(consumer)
+                    frontier.add(consumer)
+        for consumer in sorted(reached):
+            scopes = _string_list(by_id[consumer].get("parallel_write_scopes"))
+            overlap = next(((source, scope) for scope in scopes for source in sources
+                            if _declarations_overlap(source, scope)), None)
+            if overlap:
+                source, scope = overlap
+                errors.append(
+                    f"inverted_source_inputs: workflow.json: {nid} source_input '{source}' lies in "
+                    f"the write scope '{scope}' of '{consumer}', which depends on {nid}; delivering "
+                    f"that work would stale the node that planned it. Declare what this node reads "
+                    f"to produce its own work, not what the flow writes downstream"
+                )
+    return errors
+
+
 def validate_workflow(wf_path: str) -> list:
     """Validate workflow.json schema."""
     errors = []
@@ -650,6 +748,8 @@ def validate_workflow(wf_path: str) -> list:
                         f"workflow.json: {nid} {field} references "
                         f"non-existent node '{cid}'"
                     )
+
+    errors.extend(_inverted_source_inputs(wf["nodes"]))
 
     return errors
 
