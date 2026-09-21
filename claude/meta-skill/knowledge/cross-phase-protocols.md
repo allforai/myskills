@@ -1,6 +1,6 @@
 # Cross-Phase Integrity Protocols
 
-> Five mechanisms that prevent information decay, ensure verification rigor, maintain upstream faithfulness, gate user confirmation, and handle downstream-discovered gaps. Each section is self-contained and can be referenced by a Theory Anchors section in any node-spec (e.g., "See cross-phase-protocols.md **Push-Pull**").
+> Six mechanisms that prevent information decay, ensure verification rigor, maintain upstream faithfulness, gate user confirmation, handle downstream-discovered gaps, and guard the seams between nodes. Each section is self-contained and can be referenced by a Theory Anchors section in any node-spec (e.g., "See cross-phase-protocols.md **Push-Pull**").
 
 ---
 
@@ -584,3 +584,27 @@ Each phase has a clear cutoff ring; deeper derivations are not pursued.
 ### Post-Backfill Verification
 
 After backfill entries are written to upstream files, subsequent FVL phase 2 normally audits these entries -- they receive the exact same verification standard as original entries. During design-audit final review, `_backfill` entries are separately listed in coverage statistics.
+
+---
+
+## F. Seam Protocol
+
+### Problem
+
+Most failures in a generated workflow are not inside a node. They sit between two nodes that were each correct on their own terms: the producer validated its artifact and was satisfied, the consumer found the file and started work, and what the consumer needed was never there. A field whose key exists but whose value is `[]`, `"TBD"`, or a placeholder passes every existence check and specifies nothing. Two hand-maintained copies of one table agree on the day they are written and on no day after.
+
+### Principle
+
+A seam is any point where work, data, or responsibility passes from one party to another. **The receiving side guards it.** A producer's own validation is an input to the receiver's check, never a substitute for it, because only the receiver knows what it is about to do with what arrived.
+
+### What a guarded seam looks like
+
+These are acceptance criteria. How a node meets them depends on what crosses and is the node-spec author's judgement.
+
+- **Usable, not just present.** For each required Context Pull field, the consuming node-spec says what makes the value usable for this node's purpose, and what the node does when it is present but unusable. "Missing" and "present but unspecified" are the same defect to a consumer; a spec that guards only the first has left the seam open. A seam check that lives only in prose is a claim, not a guard: the executor may skip it and nothing will notice. Whatever part of the check a command can decide — a consumed value is not a placeholder, two copies agree — is written as `validation_commands` on the artifact that crosses, in the producing node's `exit_artifacts` in workflow.json, derived from what its consumers declared they read. Those commands are run by the orchestrator, not by the producer, which is what makes them a guard rather than a self-report. The consuming node-spec's prose carries only the part that needs judgement.
+- **One source, named.** When the same content reaches a node by more than one route — the design artifact and one or more implementations derived from it — the node-spec names which one is authoritative and keeps it a required pull. Derived copies are read for their shape, not trusted for their content. A node that depends on two copies agreeing states how their agreement is established; discovering a disagreement is a finding routed to the node that owns the copy, not something to reconcile locally.
+- **Unchecked is its own outcome.** A node that could not complete a check it owes — tool absent, surface unreachable, input unreadable — returns that distinctly. It is not a pass and not an empty finding. Verification nodes already hold this line through their blocked statuses; the same holds for any check a node owes at its entry.
+
+### Relationship to the other protocols
+
+Push-Pull (A) decides what crosses a seam and the Downstream Contract (A.5) tells the producer who is waiting for it. Upstream Baseline Validation (C) asks whether the downstream artifact is faithful to upstream intent, after the work. The Seam Protocol sits before the work: it is the consumer establishing that it has something to be faithful to. Reverse Backfill (E) is where a seam finding goes when the defect is upstream.

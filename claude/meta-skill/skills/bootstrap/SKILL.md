@@ -683,7 +683,9 @@ For each node, write `.allforai/bootstrap/node-specs/<node_id>.md` from
 
 **Context Pull:** for each upstream producer (this node appears in their
 `consumers[]`), keep relevant Downstream Consumers rows; mark required vs
-optional. First nodes omit Context Pull.
+optional. First nodes omit Context Pull. Each pull is a seam the consuming
+node guards: write it to meet
+`${CLAUDE_PLUGIN_ROOT}/knowledge/cross-phase-protocols.md` §F.
 
 **Safety:** demo-forge node-specs start with the staging-vs-production check
 from `knowledge/safety.md`.
