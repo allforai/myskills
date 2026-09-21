@@ -135,7 +135,7 @@ QA 层       meta-skill        产品验收→测试锻造→完整性扫描
 
 统一入口。`/bootstrap` 分析目标项目并生成 node-spec + `workflow.json`；`/run`（Codex 为生成的 `.codex/commands/run.md`）执行。有界面的产品路线上，`/bootstrap` 会先写下 `experience_priority`、提案 2–3 条体验方向并由用户选定（只有用户明说委托时才代选），再规划体验设计节点与 design / runtime 两阶段体验质量门；该门阻断 `/run` 收尾，完成时披露全部受托决定。原先的层插件现在是 capability：
 
-`product-concept / product-map / journey-emotion / experience-map / feature-gap / feature-prune / ui-design / design-to-spec / demo-forge / product-verify / quality-checks / tune / ui-forge / translate / discovery`
+`product-concept / product-map / journey-emotion / experience-map / feature-gap / ui-design / design-to-spec / demo-forge / product-verify / quality-checks / tune / ui-forge / translate / discovery`
 
 ### superstorm / grillstorm / cross-exam
 
@@ -162,7 +162,6 @@ meta-skill 产出 → .allforai/product-map/
                   .allforai/experience-map/
                   .allforai/use-case/
                   .allforai/feature-gap/
-                  .allforai/feature-prune/
                   .allforai/design-audit/
                   .allforai/demo-forge/
                   .allforai/product-verify/

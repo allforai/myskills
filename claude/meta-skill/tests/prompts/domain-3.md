@@ -10,20 +10,20 @@
 
 | capability | artifact_path | required_fields | validation_mode |
 |------------|---------------|-----------------|-----------------|
-| translate | 源代码文件（非 .allforai/） | 每个 prune included=true 任务对应至少一个实现文件 | B2 semantic |
+| translate | 源代码文件（非 .allforai/） | 每个已确认范围的任务对应至少一个实现文件 | B2 semantic |
 | compile-verify | build artifacts (dist/, .apk, .app, binary) | exit_code=0, artifact_paths[](每模块一条) | B1 mechanical |
 
 ## 断言执行步骤
 
 **断言 A**：
-- translate：是否有 `.md` 声明"每个 prune included 任务必须对应实现文件"？
+- translate：是否有 `.md` 声明"每个已确认范围的任务必须对应实现文件"？
 - compile-verify：`exit_code=0` 和 `artifact_paths[]` 是否在 compile-verify.md 的 Output/Rules 中声明？
 
 **断言 B1（机械链路）**：
 - compile-verify：Platform-Specific Build Commands 表是否覆盖所有 7 种 module 类型（Flutter/React Native/iOS/Android/Next.js/React/Go）？每种是否有对应的 artifact 路径？
 
 **断言 B2（语义链路）**：
-- translate：prune 范围传递到 translate 实现范围的机制是否有描述？
+- translate：已确认范围传递到 translate 实现范围的机制是否有描述？
 
 ## 关键约束检查
 

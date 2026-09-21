@@ -24,7 +24,6 @@ journey dead-ends, screen state holes, and unhandled exceptions.
     {
       "task_ref": "<string — MUST match an existing tasks[].id in task-inventory.json; or null for game archetypes without task-inventory>",
       "type": "<enum: task | screen | journey | game_state>",
-      "priority": "<enum: core | important | minor>",
       "dimension": "<string — which check dimension found this gap>",
       "description": "<string>"
     }
@@ -79,7 +78,7 @@ These are TYPES of checks, not a fixed checklist:
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `.allforai/feature-gap/gap-tasks.json` | `gaps[].task_ref`, `gaps[].priority` | feature-prune | required | Prune decisions are based on gap task list and priorities |
+| `.allforai/feature-gap/gap-tasks.json` | `gaps[].task_ref`, `gaps[].type` | translate, ui-design | required | The gap list is the scope record: what is in it gets built, what the user leaves out does not |
 | `.allforai/feature-gap/gap-report.md` | — | generate-artifacts | optional | Reference gap analysis during artifact generation |
 
 ## Composition Hints

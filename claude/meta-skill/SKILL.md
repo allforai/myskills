@@ -70,7 +70,6 @@ knowledge/
 | Capability | Purpose |
 |-----------|---------|
 | feature-gap | Detect missing features by cross-referencing product artifacts |
-| feature-prune | Prioritize and scope features by frequency, value, effort |
 | ui-design | Generate UI design specifications from product artifacts |
 
 ### Implementation

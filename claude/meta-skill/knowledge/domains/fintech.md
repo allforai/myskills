@@ -59,7 +59,6 @@ Step 2.7 WebSearch 研究确定，本文件只提供检查框架。
 | user-role-definition | 标配角色：客户、合规官、风控经理、客服。合规和风控是金融特有角色 |
 | concept-crystallization | 增加业务状态机声明：交易、结算、贷款还款、KYC审核是 Category 1 状态机 |
 | security-design | 金融级安全：加密标准更高（PCI DSS / SOC2）、审计日志必须不可变 |
-| feature-prune | 合规功能不可裁剪（KYC/AML 是法律要求，不是 nice-to-have） |
 
 ---
 

@@ -90,7 +90,6 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── experience-map/          # journey-emotion-map, experience-map, interaction-gate
 ├── use-case/                # use-case-tree (JSON, machine), use-case-report (Markdown, human)
 ├── feature-gap/             # gap-tasks.json, gap-report.md
-├── feature-prune/           # prune-tasks.json, frequency-tier.json, prune-report.md
 ├── tech-spec/               # api-spec.json, db-schema.md, protocol-spec.md (from design-to-spec)
 ├── infra-design/            # infra-design.json, infra-design.md
 ├── security-design/         # security-design.json, security-design.md

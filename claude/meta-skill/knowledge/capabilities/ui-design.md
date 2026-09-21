@@ -59,7 +59,7 @@ Rules:
 - State completeness: every screen shows all state variants
 - Layout holds at both ends of the supported width range: each screen's layout states the range it supports (narrowest target device or window minimum; widest common display, at least 1920 wide for desktop targets) and what fills the screen at each end. A fixed-width centered column with no stated behavior at the wide end is not a layout spec.
 - Consumer maturity: consumer products get production-grade spec, not wireframes
-- Prune coverage: every task where `feature-prune decisions[].included = true` must have at least one corresponding screen in the spec. Load `prune-tasks.json` before designing — tasks excluded by prune (`included = false`) must NOT get screens.
+- Scope coverage: every task the user confirmed in scope must have at least one corresponding screen in the spec; a task left out of scope must NOT get screens.
 
 ## Methodology Guidance (not steps)
 

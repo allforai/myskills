@@ -454,7 +454,7 @@ Full theory reference: `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md
 
 | Artifact | Field Path | Consumer Capability | Required | Reason |
 |----------|------------|---------------------|----------|--------|
-| `product-concept.json` | `features[]`, `mvp_features[]` | feature-gap, feature-prune | required | 功能差距分析和裁剪的输入源 |
+| `product-concept.json` | `features[]`, `mvp_features[]` | feature-gap | required | 功能差距分析和裁剪的输入源 |
 | `product-concept.json` | `roles[]`, `clients[]` | ui-design, product-verify | required | UI 按角色设计，验收按角色测试 |
 | `product-concept.json` | `adaptive_systems[]` | pipeline-closure-verify | optional | 自适应状态机完整性验证 |
 | `product-concept.json` | `errc_highlights` | concept-acceptance | required | 概念验收对照 must_have 和 differentiators |

@@ -10,6 +10,10 @@
 >
 > 测试结论来自 `docs/validation/product-concept-borrowed-ideas-thought-tests.md`：9 条候选各跑实测，
 > 只对失败的拟改动，**7 条因为「现有文件已经能带出正确行为」被驳回**。
+>
+> **2026-09-21 变更**：`feature-prune` 能力已按用户决定删除（功能只有做/不做，没有优先级档位这种模糊地带），
+> 因此下表中以 feature-prune 为落点的条目（S1 的 include 理由、反向映射、复杂度守恒等）不再有落地位置。
+> 相关实测记录保留在 `docs/validation/product-concept-borrowed-ideas-thought-tests/`。
 
 ## 一、多个主题独立收敛的思路（信号最强）
 
