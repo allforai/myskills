@@ -106,7 +106,12 @@ Do not mix ledgers, verdicts, or loops.
    （`ledger.json` 存在且 `completion-report.md` 不存在）→ 问用户续接还是新开；
    续接时读旧 ledger 的 `open_threads` 作为起手牌候选。
 6. 使用 `ledger_store.py` 加锁并初始化/载入 `ledger.json`（schema 见 `$ROOT/schemas.md`），新 run 写 `ledger_version: 3`，
-   `rule_consistency: {status: "not_examined", reason: "规则来源尚未审查"}`。
+   `rule_consistency: {status: "not_examined", reason: "规则来源尚未审查"}`，以及 `judged_build`——这次评的是哪棵树。
+   新 run 在派出第一问之前跑一次 `python3 $ROOT/engine/identity.py <被测仓库根> --exclude <宿主隐藏目录>...`
+   （`.allforai` / `.claude` / `.codex` 里存在的那些，以及本 run 目录相对仓库根的路径），把输出的 `build` 连同带时区偏移的
+   `recorded_at` 和用过的 `excludes` 写进 `judged_build`。续接旧 run 不重写它：报告说的是开评时的树。
+   命令退出 1（不是 git 仓库、读不了）就不写这个键，把它的 `reason` 记进 `open_threads`——渲染器会在表头写「被评构建：未记录」，
+   读报告的一方据此知道新鲜度无从核对。不要编一个值。
 7. **作者证据入账（有则读，无则跳过）**：交付流水线（meta-skill `/run` 的 product-verify / runtime-smoke-verify /
    test-verify 等门）在目标项目 `.allforai/<gate>/evidence-entries/<node_id>.json` 留下带 `author` 标记的 ledger 形条目时，
    读进本 run：每条的证据目录复制到 `evidence/author/<node_id>/…`，条目字段**原样**入账（`author`、`build`、`build_excludes`、

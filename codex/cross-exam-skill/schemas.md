@@ -38,6 +38,8 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   "target_backend": {"kind": "real|mock|mixed", "how_known": "intake 时用户确认 + 普查官 mock_layers"},
   "baseline": "superstorm-registry|spec|readme|user|none",
   "started": "YYYY-MM-DD",
+  "judged_build": {"build": "<commit>-<snapshot 摘要前 16 位>", "recorded_at": "2026-09-22T10:00:00+08:00",
+                   "excludes": [".allforai", "docs/cross-exam/2026-09-22-demo"]},
   "examiner_is_author": false,
   "model_policy": {"observation": "sonnet", "judgment": "session",
                    "confirmed_by_user": "实测官用 sonnet 就行，普查官别省", "confirmed_at": "2026-09-07T15:10:00+08:00",
@@ -106,6 +108,11 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   ]
 }
 ```
+
+- **`judged_build`**（`ledger_version >= 3` 的 run）：intake 时由 `engine/identity.py` 算一次、原样记下的构建标识，
+  是这份报告评的那棵树。渲染器只打印不重算（续盘重渲染时此刻的树可能已经变了），打印在表头「需求基准」下一行：
+  `被评构建：<build>（intake 记录于 <recorded_at>）`；缺这个键或 `build` 不是非空字符串 → `被评构建：未记录（…）`，不拒渲。
+  它和 entry 上的 `build` 不是一回事：那是作者证据各自取证时的树，由渲染器对此刻的树重算核对。
 
 - **`ledger_version >= 2`**（新 run 写 3；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
   - `code` 介质的摘录文件至少含一个 `路径:行号`；"看过了没问题"这种 note 拒渲。
