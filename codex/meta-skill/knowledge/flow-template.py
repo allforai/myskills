@@ -1421,14 +1421,14 @@ def script_path(project_root: Path, name: str) -> Path:
 
 def execution_policy(project_root: Path) -> dict:
     path = project_root / ".allforai/codex/execution-policy.json"
-    policy = {"sandbox": "workspace-write", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300, "max_parallel_nodes": 2}
+    policy = {"sandbox": "inherit", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300, "max_parallel_nodes": 2}
     if path.exists():
         supplied = load_json(path)
         if not isinstance(supplied, dict) or set(supplied) - set(policy):
             raise ValueError("invalid execution-policy.json")
         policy.update(supplied)
-    if policy["sandbox"] not in {"read-only", "workspace-write"}:
-        raise ValueError("unsupported sandbox: permission escalation must not be automatic")
+    if policy["sandbox"] not in {"inherit", "read-only", "workspace-write", "danger-full-access"}:
+        raise ValueError("unsupported sandbox")
     for key in ("node_timeout_seconds", "helper_timeout_seconds"):
         if type(policy[key]) is not int or not 1 <= policy[key] <= 86400:
             raise ValueError(f"{key} must be an integer between 1 and 86400")
@@ -1796,12 +1796,69 @@ Requirements:
 """
 
 
+HOST_PERMISSION_FLAGS = {"--dangerously-bypass-approvals-and-sandbox"}
+HOST_PERMISSION_OPTIONS = {"-s", "--sandbox", "--add-dir", "-p", "--profile", "-c", "--config"}
+HOST_SANDBOX_SELECTORS = {"-s", "--sandbox", "--dangerously-bypass-approvals-and-sandbox"}
+
+
+def process_argv(pid: int) -> tuple[int, list[str]]:
+    """Parent pid and argv of a process; `ps` loses boundaries inside values with spaces."""
+    try:
+        raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+        argv = [part.decode(errors="replace") for part in raw.split(b"\0") if part]
+    except OSError:
+        argv = None
+    found = subprocess.run(["ps", "-o", "ppid=,args=", "-p", str(pid)],
+                           capture_output=True, text=True, check=False)
+    fields = found.stdout.split()
+    if found.returncode != 0 or not fields or not fields[0].isdigit():
+        return 0, []
+    return int(fields[0]), argv if argv is not None else fields[1:]
+
+
+def host_permission_args(start_pid: int | None = None, reader=process_argv,
+                         environ=None) -> list[str]:
+    """The Codex session that launched this driver decides what its nodes may do."""
+    env = os.environ if environ is None else environ
+    pid, seen, inherited = os.getppid() if start_pid is None else start_pid, set(), []
+    while pid > 1 and pid not in seen:
+        seen.add(pid)
+        parent, argv = reader(pid)
+        if argv and os.path.basename(argv[0]) == "codex":
+            tokens = argv[1:]
+            for index, token in enumerate(tokens):
+                name, _, value = token.partition("=") if token.startswith("--") else (token, "", "")
+                if name in HOST_PERMISSION_FLAGS:
+                    inherited.append(name)
+                elif name in HOST_PERMISSION_OPTIONS:
+                    value = value or (tokens[index + 1] if index + 1 < len(tokens) else "")
+                    if value and not value.startswith("-"):
+                        inherited += [name, value]
+            break
+        pid = parent
+    selected = bool(HOST_SANDBOX_SELECTORS & set(inherited)) or any(
+        flag in ("-c", "--config") and value.split("=", 1)[0].strip() == "sandbox_mode"
+        for flag, value in zip(inherited, inherited[1:]))
+    if not selected:
+        home = env.get("CODEX_HOME") or os.path.join(env.get("HOME", ""), ".codex")
+        try:
+            config = Path(home, "config.toml").read_text()
+        except OSError:
+            config = ""
+        selected = any(line.split("=", 1)[0].strip() == "sandbox_mode"
+                       for line in config.splitlines() if "=" in line)
+    # Bare `codex exec` is read-only, a mode no interactive host runs its own work in.
+    return inherited if selected else [*inherited, "--sandbox", "workspace-write"]
+
+
 def run_codex(project_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
     policy = execution_policy(project_root)
+    permission = (host_permission_args() if policy["sandbox"] == "inherit"
+                  else ["--sandbox", policy["sandbox"]])
     command = [
         "codex",
         "exec",
-        "--sandbox", policy["sandbox"],
+        *permission,
         "-c", 'approval_policy="never"',
         "-C",
         str(project_root),

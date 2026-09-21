@@ -252,17 +252,38 @@ def test_timeout_or_interrupt_records_failure_and_stops(tmp_path, monkeypatch, r
     assert flow.load_json(path)['transition_log'][0]['status'] == 'failed'
 
 
-def test_codex_defaults_are_bounded(tmp_path, monkeypatch):
+def test_codex_nodes_inherit_host_permissions(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(flow, 'run_bounded', lambda *args: calls.append(args))
+    monkeypatch.setattr(flow, 'host_permission_args', lambda: ['--dangerously-bypass-approvals-and-sandbox'])
     flow.run_codex(tmp_path, 'test')
     command, root, timeout = calls[0]
-    assert command[command.index('--sandbox') + 1] == 'workspace-write'
-    assert '--dangerously-bypass-approvals-and-sandbox' not in command
+    assert '--dangerously-bypass-approvals-and-sandbox' in command
+    assert '--sandbox' not in command
     assert timeout == 1800
+    write(tmp_path / '.allforai/codex/execution-policy.json', {'sandbox': 'read-only'})
+    flow.run_codex(tmp_path, 'test')
+    assert calls[1][0][calls[1][0].index('--sandbox') + 1] == 'read-only'
 
 
-@pytest.mark.parametrize('value', [{'sandbox':'danger-full-access'}, {'node_timeout_seconds':0},
+def test_host_permission_discovery(tmp_path):
+    env = {'CODEX_HOME': str(tmp_path)}
+    def chain(*host):
+        table = {30: (20, ['python3', 'flow.py']), 20: (10, ['/opt/bin/codex', *host]), 10: (1, ['zsh'])}
+        return flow.host_permission_args(30, lambda pid: table[pid], env)
+    assert chain('--sandbox=danger-full-access', '--add-dir', '/shared', '-m', 'x') == [
+        '--sandbox', 'danger-full-access', '--add-dir', '/shared']
+    assert chain('--dangerously-bypass-approvals-and-sandbox') == [
+        '--dangerously-bypass-approvals-and-sandbox']
+    assert chain('-c', 'sandbox_mode=read-only') == ['-c', 'sandbox_mode=read-only']
+    assert chain() == ['--sandbox', 'workspace-write']
+    (tmp_path / 'config.toml').write_text('sandbox_mode = "danger-full-access"\n')
+    assert chain() == []
+    assert flow.host_permission_args(30, lambda pid: (0, []), {'HOME': str(tmp_path / 'none')}) == [
+        '--sandbox', 'workspace-write']
+
+
+@pytest.mark.parametrize('value', [{'sandbox':'unrestricted'}, {'node_timeout_seconds':0},
     {'helper_timeout_seconds':True}, {'unexpected':True}, []])
 def test_invalid_policy_rejected(tmp_path, value):
     write(tmp_path / '.allforai/codex/execution-policy.json', value)
