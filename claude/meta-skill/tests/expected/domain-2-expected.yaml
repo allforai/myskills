@@ -1,15 +1,8 @@
 domain: 域-2
-capabilities: [feature-gap, feature-prune, ui-design]
+capabilities: [feature-gap, ui-design]
 
 results:
   - capability: feature-gap
-    assertion_A: PASS
-    assertion_B1: PASS
-    assertion_B2: N/A
-    b1_failures: []
-    b2_findings: []
-
-  - capability: feature-prune
     assertion_A: PASS
     assertion_B1: PASS
     assertion_B2: N/A
