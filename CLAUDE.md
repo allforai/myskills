@@ -196,7 +196,7 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 
 ## Tests
 
-`.githooks/pre-commit` runs the fast guards on every commit (seconds). `shared/suites/run_suites.sh` runs every suite in the repo from `shared/suites/suites.txt` (~9 minutes, most of it `claude/meta-skill/tests/unit`); run it by hand before a release or after a `claude/meta-skill` change. There is no CI and none is to be added — a guard that must run automatically goes in the hook. A new test directory must be added to `shared/suites/suites.txt`; `shared/suites/test_suite_coverage.py` fails until it is (ADR-0010: a check nothing invokes does not exist).
+`.githooks/pre-commit` runs the fast guards on every commit (seconds). `shared/suites/run_suites.sh` runs every suite in the repo from `shared/suites/suites.txt` (~9 minutes, most of it `claude/meta-skill/tests/unit`); run it by hand before a release or after a `claude/meta-skill` change. There is no CI and none is to be added — a guard that must run automatically goes in the hook. A new test directory must be added to `shared/suites/suites.txt`; `shared/suites/test_suite_coverage.py` fails until it is (ADR-0010: a check nothing invokes does not exist). Adding a new repo contract script (`check_*.py` / `smoke_*.py` under `shared/scripts/orchestrator/`) must invoke it from the hook or reference it from a test; `shared/suites/test_suite_coverage.py` fails until one of those is true.
 
 ## Skill Development Conventions
 

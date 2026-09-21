@@ -32,7 +32,12 @@ run_pytest shared/visual-acceptance
 run_pytest shared/keep-code-simple             # mirror contract of the shared protocol
 run_pytest pi/meta-skill/test_contract.py      # name the file: scripts/ there is a symlink and basenames collide
 run_pytest pi/cross-exam
-run_pytest shared/suites                             # every tracked test file is listed in shared/suites/suites.txt
+run_pytest shared/suites                       # every tracked test file is listed in shared/suites/suites.txt
+
+# The codex bundle contract below is a text-level guard; these two are the behaviour it stands in for (0.3 s).
+run_pytest \
+  codex/meta-skill/test_flow.py::test_codex_nodes_inherit_host_permissions \
+  codex/meta-skill/test_flow.py::test_host_permission_discovery
 
 # The named subset is deliberate: renaming one of these tests fails the hook loudly instead of quietly
 # dropping the guard. test_validate_unattended_readiness and test_check_artifacts cover the two gates
@@ -70,13 +75,19 @@ python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 python3 claude/meta-skill/scripts/orchestrator/validate_specialization_contracts.py .
 python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py
 
-# These two kept pinning the Codex sandbox policy that 3923ffd8 replaced, and sat red with nothing
-# running them. They take ~30 ms each.
+# Four scripts now: the first two kept pinning the Codex sandbox policy that 3923ffd8 replaced, and
+# sat red with nothing running them. The other two had no invoker either — smoke_codex_meta_install
+# sat red for real (the installer moved to a split entry/bundle layout and nothing noticed); it is
+# in the hook on purpose. The first three take ~30 ms each; the install smoke takes ~1.6 s.
 echo "[pre-commit] codex bundle contract"
 python3 -B shared/scripts/orchestrator/check_codex_meta_skill_parity.py >/dev/null \
   || { python3 -B shared/scripts/orchestrator/check_codex_meta_skill_parity.py; exit 1; }
 python3 -B shared/scripts/orchestrator/smoke_codex_generated_run.py >/dev/null \
   || { python3 -B shared/scripts/orchestrator/smoke_codex_generated_run.py; exit 1; }
+python3 -B shared/scripts/orchestrator/check_codex_im_specialization.py >/dev/null \
+  || { python3 -B shared/scripts/orchestrator/check_codex_im_specialization.py; exit 1; }
+python3 -B shared/scripts/orchestrator/smoke_codex_meta_install.py >/dev/null \
+  || { python3 -B shared/scripts/orchestrator/smoke_codex_meta_install.py; exit 1; }
 
 echo "[pre-commit] strict node_id invariant"
 if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|rec\.node\b' \
