@@ -92,3 +92,19 @@ def test_every_contract_script_is_invoked_by_the_hook_or_a_test():
         if s not in stems or referenced(s)
     ]
     assert stale == [], f"stale entries in EXEMPT_CONTRACT_SCRIPT_STEMS (no longer exempt-worthy): {stale}"
+
+
+def tracked_js_test_dirs():
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    listing = subprocess.run(["git", "ls-files"], cwd=ROOT, env=env,
+                             capture_output=True, text=True, check=True).stdout
+    return sorted({str(Path(f).parent) for f in listing.splitlines()
+                   if f.endswith((".test.js", ".test.mjs", ".test.ts"))
+                   and "node_modules/" not in f and not f.startswith(EXEMPT_PREFIXES)})
+
+
+def test_every_js_test_directory_is_named_in_the_hook():
+    """suites.txt is a pytest list; a node:test suite has only the hook to run it."""
+    hook = HOOK.read_text()
+    unnamed = [d for d in tracked_js_test_dirs() if d not in hook]
+    assert unnamed == [], f"the pre-commit hook runs no test in: {unnamed}"

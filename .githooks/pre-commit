@@ -52,6 +52,17 @@ run_pytest \
   claude/meta-skill/tests/unit/test_freshness_admission_corrections.py::test_declared_pending_node_without_publication_does_not_block_runner_start \
   claude/meta-skill/tests/unit/test_freshness_admission_corrections.py::test_intent_aware_node_without_source_inputs_fails_closed_until_declared_and_published
 
+# The run engine decides what /run dispatches; its node:test suite (~5 s) had no invoker at all.
+# A machine without node cannot run it — that is "not checked", said out loud, never a silent pass.
+echo "[pre-commit] run-engine (node:test)"
+if command -v node >/dev/null 2>&1; then
+  run_node() { env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX node --test "$@"; }
+  run_node 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js' >/dev/null \
+    || { run_node 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'; exit 1; }
+else
+  echo "[pre-commit] node not found — run-engine tests were NOT run (unchecked, not passed)" >&2
+fi
+
 STAGED_AFTER="$(staged_tree)"
 if [ "$STAGED_AFTER" != "$STAGED_BEFORE" ]; then
   echo "[pre-commit] the staged tree changed while the tests ran ($STAGED_BEFORE -> $STAGED_AFTER)." >&2
