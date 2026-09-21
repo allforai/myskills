@@ -19,11 +19,9 @@ function makeFakeAgent(responses) {
         on_repeated_failure: 'halt', on_needs_iteration: 'halt_with_report', on_safety_warning: 'continue'
       } }
     }
-    if (spec === undefined && label.startsWith('verify:')) {
-      spec = {
-        node_id: label.slice('verify:'.length),
-        status: 'passed',
-        blocking_findings: []
+    for (const prefix of ['verify:', 'inherit:']) {   // both are the independent gate, asked at different moments
+      if (spec === undefined && label.startsWith(prefix)) {
+        spec = { node_id: label.slice(prefix.length), status: 'passed', blocking_findings: [] }
       }
     }
     // Unknown labels may be answered by a fallback: the ledger double registers one,

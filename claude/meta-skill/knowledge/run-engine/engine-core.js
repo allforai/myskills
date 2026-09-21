@@ -675,6 +675,42 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   }
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
+  // A completion inherited from an earlier session is a claim read out of transition_log, not a
+  // measurement. Before anything is dispatched on it, the gate re-measures each inherited
+  // completion that a remaining node depends on; one that no longer passes is not done, so it
+  // runs again instead of handing its consumer a missing, stale or unusable artifact. The Codex
+  // driver measures every node the same way (ADR-0004), and the receiving side verifies (ADR-0010).
+  const nodeById = new Map((dag.nodes || []).map(n => [n.node_id, n]))
+  const measured = new Set()
+  for (let changed = true; changed;) {
+    changed = false
+    // every completion a not-yet-done node depends on, asked about once
+    const inherited = [...new Set((dag.nodes || [])
+      .filter(n => !done.has(n.node_id))
+      .flatMap(n => n.hard_blocked_by || []))]
+      .filter(id => done.has(id) && nodeById.has(id) && !measured.has(id))
+    for (const id of inherited) {
+      measured.add(id)
+      const gate = await agent(gateNodePrompt(nodeById.get(id)), {
+        schema: NODE_GATE_SCHEMA, label: `inherit:${id}`
+      })
+      if (!gate || gate.node_id !== id || gate.status !== 'passed') {
+        done.delete(id)
+        changed = true
+        log(`inherited completion of ${id} did not pass the gate; it will run again`)
+      }
+    }
+    // What was built on a completion that must rerun is suspect too: a completed node with a
+    // dependency that is no longer done is not done either. Each removal makes a node
+    // "remaining", so the next pass also asks about what that node depends on.
+    for (const n of dag.nodes || []) {
+      if (done.has(n.node_id) && (n.hard_blocked_by || []).some(dep => nodeById.has(dep) && !done.has(dep))) {
+        done.delete(n.node_id)
+        changed = true
+        log(`${n.node_id} was built on a completion that must rerun; it will run again`)
+      }
+    }
+  }
   const repair = { loops: dag.repair_loops || [], open: new Map() }
   const blockedFailures = new Map()
   // `${repair_node_id}::${qa_node_id}` -> repair dispatches already granted to that QA node.

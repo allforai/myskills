@@ -175,6 +175,98 @@ test('L2.4 a slow sibling does not cause completed work to be dispatched twice',
   assert.equal(agent.counters.C, 1) // C ran exactly once — never re-queued by a recompute
 })
 
+test('runEngine: an inherited completion that no longer passes the gate runs again before its consumer', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }
+  ], completed: ['a'] }
+  const order = []
+  const agent = makeFakeAgent({
+    'load-dag': dag,
+    'inherit:a': { node_id: 'a', status: 'repair', blocking_findings: [{ type: 'missing_artifact' }] },
+    a: () => { order.push('a'); return passed('a') },
+    b: () => { order.push('b'); return passed('b') },
+    'commit:a': {}, 'commit:b': {}
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.equal(agent.counters['inherit:a'], 1)
+  assert.deepEqual(order, ['a', 'b'])      // a ran again, and before b
+})
+
+test('runEngine: an inherited completion that still passes is not rerun', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }
+  ], completed: ['a'] }
+  const agent = makeFakeAgent({ 'load-dag': dag, b: passed('b'), 'commit:b': {} })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.equal(agent.counters['inherit:a'], 1)
+  assert.equal(agent.counters.a, undefined)
+})
+
+test('runEngine: a gate answer that is missing or names another node does not keep the completion', async () => {
+  for (const answer of [undefined, null, { node_id: 'zzz', status: 'passed', blocking_findings: [] }]) {
+    const dag = { nodes: [
+      { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+      { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }
+    ], completed: ['a'] }
+    const agent = makeFakeAgent({ 'load-dag': dag, 'inherit:a': () => answer,
+      a: passed('a'), b: passed('b'), 'commit:a': {}, 'commit:b': {} })
+    const res = await core.runEngine({ agent, pipeline })
+    assert.equal(res.status, 'complete')
+    assert.equal(agent.counters.a, 1, JSON.stringify(answer))
+  }
+})
+
+test('runEngine: what was built on a completion that must rerun reruns too, in order', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] },
+    { node_id: 'c', capability: 'x', hard_blocked_by: ['b'], exit_artifacts: [] }
+  ], completed: ['a', 'b'] }
+  const order = []
+  const ran = id => () => { order.push(id); return passed(id) }
+  // b fails, which makes b a remaining node — so a, which b depends on, is asked about next
+  // (it passes by default) and stays done
+  const agent = makeFakeAgent({ 'load-dag': dag,
+    'inherit:b': { node_id: 'b', status: 'repair', blocking_findings: [] },
+    a: ran('a'), b: ran('b'), c: ran('c'), 'commit:a': {}, 'commit:b': {}, 'commit:c': {} })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.deepEqual(order, ['b', 'c'])
+  assert.equal(agent.counters['inherit:b'], 1)
+  assert.equal(agent.counters['inherit:a'], 1)
+})
+
+test('runEngine: a failed inherited dependency takes its completed consumers with it', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] },
+    { node_id: 'c', capability: 'x', hard_blocked_by: ['a', 'b'], exit_artifacts: [] }
+  ], completed: ['a', 'b'] }
+  const order = []
+  const ran = id => () => { order.push(id); return passed(id) }
+  const agent = makeFakeAgent({ 'load-dag': dag,
+    'inherit:a': { node_id: 'a', status: 'repair', blocking_findings: [] },
+    a: ran('a'), b: ran('b'), c: ran('c'), 'commit:a': {}, 'commit:b': {}, 'commit:c': {} })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.deepEqual(order, ['a', 'b', 'c'])   // b was done and passed its own gate, but a must rerun
+})
+
+test('runEngine: a completed node nothing remaining depends on is not re-measured', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'c', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }
+  ], completed: ['a'] }
+  const agent = makeFakeAgent({ 'load-dag': dag, c: passed('c'), 'commit:c': {} })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.equal(agent.counters['inherit:a'], undefined)
+})
+
 test('L2.5 commit serialization: second commit waits for the first (fix C1)', async () => {
   // Two passing siblings; gate the first commit so we can observe the second has not started.
   const firstCommit = makeDeferred()

@@ -336,7 +336,10 @@ After each node completes or fails, append to workflow.json transition_log:
 
 On first iteration if transition_log is non-empty:
 1. Run check_artifacts.py to see current state
-2. Trust artifact existence over transition_log (files may have been deleted)
+2. Trust the gate over transition_log: a completion read from the log is a claim. The engine
+   re-measures every inherited completion that a remaining node depends on (`inherit:<node_id>`,
+   the same independent gate that follows a node's own run) and reruns one that no longer passes —
+   a deleted file, a failed validation command and a stale input all count.
 3. Continue from where things stand
 
 ## Safety (warnings, not blockers)
