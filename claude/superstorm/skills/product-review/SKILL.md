@@ -17,6 +17,7 @@ Not cross-exam. Do not read `skills/cross-exam/SKILL.md`, do not write a complet
 
 - **Interactive only.** Invoked unattended or from an autonomous pipeline: refuse and stop.
 - **Advice only.** Do not edit the product's source. The only writes are under `docs/product-review/<date>-<slug>/`.
+- **意见不是决定。** 建议「移除 / 暂缓 / 不该做」都只是意见：功能只有「做」和「不做」，做不做由用户在范围确认时定（管线里已经没有替用户裁剪的节点了）。本审查不执行移除，也不产出范围清单。
 - **No `.allforai/`.** Do not read or write that tree. Do not call meta-skill capabilities. `docs/cross-exam/` and `docs/experience-review/` are readable input.
 - **No 37 interaction types. No token/pixel spec audit.** Commercial UI/interaction is in scope; design-system compliance is not.
 - **不做第二遍完成度审计。** 「在不在」「走不走得完」是判断前提，不是本审查的产出：有完成度报告就按它的 `J`/`G` 判定采信，不重走旅程；没有报告就记成未验收前提，并说一次 `/cross-exam` 是判这件事的入口。本审查产出的是「该不该有」「商业级够不够」和同一份工作上的竞品对照。
@@ -111,6 +112,8 @@ Each item:
 - `claim`: `进展受阻` | `不够商业级` —— 这条建议主张的是哪一件事；`decoration` 与 `borrow_*` 不填
 - `depends_on` other `R` ids, cross-exam `G` or `J` ids, experience-review must-fix ids, or empty
 - `recommend`: `adopt` | `defer` for kinds observed in the product; `adopt` | `defer` | `reject` for `borrow_*`。`decoration` 的 `adopt` 含义是**移除**它；只有当本次点名的工作集覆盖了产品的主要用途、且已查明它为何存在时才可 `adopt`，否则 `defer` 并写明它可能服务未点名的工作
+
+- `reject` / `defer` / `decoration` 的 `adopt`（移除）都是写给用户看的意见：报告要写清「为什么不值得」，但不得写成「已砍掉」或「必须砍」。
 - `tradeoff` one sentence
 - `evidence` paths, URLs, or UI observations — not vibes; `code-only` when no browser
 
