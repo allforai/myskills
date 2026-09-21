@@ -9,8 +9,10 @@ the snapshot and only enters the identity this way. `exclude` names repo-relativ
 the snapshot whether tracked or not — the run directory and evidence the probe itself writes, which must
 not move the build they record. Every failure is a returned reason, never a traceback."""
 import hashlib
+import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 SHORT = 16   # hex digits of each digest kept in the build string; the full values stay in the dict
@@ -103,3 +105,24 @@ def build_reason(recorded, repo, artifacts=(), exclude=()):
     if now['build'] != recorded:
         return '构建标识不匹配：记录 %s，当前 %s' % (recorded, now['build'])
     return ''
+
+
+def _cli(argv):
+    """`identity.py <repo> [--exclude DIR]...` prints build_identity as JSON; exit 1 when it has no build.
+    For a caller that is not Python — an examiner recording which tree a run is about to judge."""
+    args, exclude = list(argv[1:]), []
+    while '--exclude' in args:
+        at = args.index('--exclude')
+        if at + 1 >= len(args):
+            raise SystemExit('--exclude needs a directory')
+        exclude.append(args[at + 1])
+        del args[at:at + 2]
+    if len(args) != 1:
+        raise SystemExit('usage: identity.py <repo> [--exclude DIR]...')
+    identity = build_identity(Path(args[0]), exclude=exclude)
+    print(json.dumps(identity, ensure_ascii=False))
+    return 0 if identity['build'] else 1
+
+
+if __name__ == '__main__':
+    sys.exit(_cli(sys.argv))

@@ -150,3 +150,36 @@ def test_repository_variables_a_git_hook_exports_do_not_redirect_the_identity(tm
     monkeypatch.setenv('GIT_INDEX_FILE', str(other / '.git/index'))
     assert build_identity(repo) == expected
     assert expected['commit'] != _git(other, 'rev-parse', 'HEAD')
+
+
+def _cli(*args):
+    import json
+    import sys
+    from pathlib import Path
+    script = Path(__file__).with_name('identity.py')
+    result = subprocess.run([sys.executable, '-B', str(script), *map(str, args)],
+                            capture_output=True, text=True)
+    return result.returncode, json.loads(result.stdout)
+
+
+def test_command_line_prints_the_same_identity_the_function_returns(repo):
+    code, printed = _cli(repo)
+    assert code == 0, printed
+    assert printed == build_identity(repo)
+    assert printed['build'].startswith(printed['commit'] + '-')
+
+
+def test_command_line_exclude_matches_the_function(repo):
+    (repo / '.allforai').mkdir()
+    (repo / '.allforai' / 'note.json').write_text('{}')
+    code, printed = _cli(repo, '--exclude', '.allforai')
+    assert code == 0, printed
+    assert printed == build_identity(repo, exclude=['.allforai'])
+    assert printed['build'] != build_identity(repo)['build']
+
+
+def test_command_line_refusal_is_exit_one_with_a_reason(tmp_path):
+    code, printed = _cli(tmp_path)
+    assert code == 1
+    assert printed['build'] == ''
+    assert printed['reason']
