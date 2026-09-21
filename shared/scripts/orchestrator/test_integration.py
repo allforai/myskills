@@ -9,10 +9,11 @@ import unittest
 
 from _module_isolation import load, module_dir
 
-_check_requires, _validate_bootstrap = load(module_dir(), "check_requires", "validate_bootstrap")
-evaluate_node = _check_requires.evaluate_node
+_validate_bootstrap = load(module_dir(), "validate_bootstrap")
 validate_node_spec = _validate_bootstrap.validate_node_spec
 validate_workflow = _validate_bootstrap.validate_workflow
+
+NODE_IDS = ("discovery", "generate")
 
 
 class TestIntegration(unittest.TestCase):
@@ -22,49 +23,10 @@ class TestIntegration(unittest.TestCase):
         self.specs_dir = os.path.join(self.bootstrap_dir, "node-specs")
         os.makedirs(self.specs_dir)
 
-        # Create a mini state machine with 2 nodes
-        self.sm = {
-            "schema_version": "1.0",
-            "nodes": [
-                {
-                    "id": "discovery",
-                    "description": "Scan project",
-                    "entry_requires": [],
-                    "exit_requires": [
-                        {"file_exists": os.path.join(self.tmpdir, "catalog.json")}
-                    ],
-                    "hints": [],
-                },
-                {
-                    "id": "generate",
-                    "description": "Generate artifacts",
-                    "entry_requires": [
-                        {"file_exists": os.path.join(self.tmpdir, "catalog.json")}
-                    ],
-                    "exit_requires": [
-                        {"file_exists": os.path.join(self.tmpdir, "tasks.json")},
-                        {"json_array_length_gte": [os.path.join(self.tmpdir, "tasks.json"), "$", 1]},
-                    ],
-                    "hints": [],
-                },
-            ],
-            "safety": {
-                "loop_detection": {"warn_threshold": 3, "stop_threshold": 5},
-                "max_global_iterations": 30,
-            },
-            "progress": {"completed_nodes": [], "iteration_count": 0},
-        }
-        self.sm_path = os.path.join(self.bootstrap_dir, "state-machine.json")
-        with open(self.sm_path, "w") as f:
-            json.dump(self.sm, f)
-
-        # workflow.json: the NEW bootstrap-product schema validate_workflow checks
-        # (id/goal/exit_artifacts). check_requires still reads the state-machine above.
         self.wf = {
             "nodes": [
-                {"id": n["id"], "goal": "Do " + n["id"],
-                 "exit_artifacts": ["artifacts/" + n["id"] + ".json"]}
-                for n in self.sm["nodes"]
+                {"id": nid, "goal": "Do " + nid, "exit_artifacts": ["artifacts/" + nid + ".json"]}
+                for nid in NODE_IDS
             ],
             "transition_log": [],
         }
@@ -72,17 +34,9 @@ class TestIntegration(unittest.TestCase):
         with open(self.wf_path, "w") as f:
             json.dump(self.wf, f)
 
-        # Create matching node-specs
-        for node in self.sm["nodes"]:
-            nid = node["id"]
-            spec_content = "---\nnode: {}\nentry_requires: {}\nexit_requires: {}\n---\n\n# Task: {}\nDo the thing.".format(
-                nid,
-                json.dumps(node["entry_requires"]),
-                json.dumps(node["exit_requires"]),
-                nid,
-            )
+        for nid in NODE_IDS:
             with open(os.path.join(self.specs_dir, f"{nid}.md"), "w") as f:
-                f.write(spec_content)
+                f.write("---\nnode: {}\n---\n\n# Task: {}\nDo the thing.".format(nid, nid))
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -95,21 +49,6 @@ class TestIntegration(unittest.TestCase):
             path = os.path.join(self.specs_dir, fname)
             errors = validate_node_spec(path)
             self.assertEqual(errors, [], f"Node-spec errors for {fname}: {errors}")
-
-    def test_check_requires_before_artifacts(self):
-        result = evaluate_node(self.sm_path, "discovery", "exit")
-        self.assertFalse(result["all_passed"])
-
-    def test_check_requires_after_artifacts(self):
-        with open(os.path.join(self.tmpdir, "catalog.json"), "w") as f:
-            json.dump({"files": ["a.py"]}, f)
-        with open(os.path.join(self.tmpdir, "tasks.json"), "w") as f:
-            json.dump([{"id": "T001", "name": "task 1"}], f)
-
-        r1 = evaluate_node(self.sm_path, "discovery", "exit")
-        self.assertTrue(r1["all_passed"])
-        r2 = evaluate_node(self.sm_path, "generate", "exit")
-        self.assertTrue(r2["all_passed"])
 
 
 if __name__ == "__main__":

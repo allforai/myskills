@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check exit_artifacts for workflow nodes. Simplified from check_requires.py.
+"""Check exit_artifacts for workflow nodes.
 
 Usage:
   python check_artifacts.py <workflow.json> [--node <node_id>] [--json]

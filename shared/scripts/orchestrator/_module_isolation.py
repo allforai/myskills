@@ -2,7 +2,7 @@
 """Load production modules from one explicit directory, leaking no top-level names.
 
 Several trees in this repo ship modules with identical basenames — `validate_bootstrap`,
-`check_artifacts`, `check_requires`, `loop_detection`, ... — with deliberately different
+`check_artifacts`, `loop_detection`, ... — with deliberately different
 contracts per host. A bare ``import validate_bootstrap`` therefore resolves to whichever
 suite was collected first, so a combined pytest run silently tests one host's module
 against another host's expectations.

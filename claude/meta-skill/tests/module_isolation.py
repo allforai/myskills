@@ -2,7 +2,7 @@
 """Isolated loading of this plugin's orchestrator modules for the unit suite.
 
 `claude/meta-skill/scripts/orchestrator/` and `shared/scripts/orchestrator/` both ship
-`validate_bootstrap`, `check_artifacts`, `check_requires` and `loop_detection` with
+`validate_bootstrap`, `check_artifacts` and `loop_detection` with
 deliberately different contracts. Importing them by bare name (after a `sys.path.insert`)
 binds whichever host's file was collected first and leaves that binding behind for every
 later suite, so a combined pytest run tests one host's module against the other's

@@ -2,7 +2,7 @@
 """Regression: shared orchestrator tests never load another host's same-named module.
 
 `shared/scripts/orchestrator/` and `claude/meta-skill/scripts/orchestrator/` both ship a
-`validate_bootstrap` (and `check_artifacts`, `check_requires`, `loop_detection`) whose
+`validate_bootstrap` (and `check_artifacts`, `loop_detection`) whose
 contracts differ on purpose. Before this suite, both trees reached their module through a
 bare top-level import, so a combined pytest run bound whichever host was collected first
 and then tested it against the other host's expectations — failing in one order and
@@ -26,7 +26,7 @@ CLAUDE = os.path.join(REPO, "claude/meta-skill/scripts/orchestrator")
 SHARED_TEST = os.path.join(SHARED, "test_validate_bootstrap.py")
 CLAUDE_TEST = os.path.join(REPO, "claude/meta-skill/tests/unit/test_validate_bootstrap.py")
 
-CONTAMINABLE = ("validate_bootstrap", "check_artifacts", "check_requires", "loop_detection")
+CONTAMINABLE = ("validate_bootstrap", "check_artifacts", "loop_detection")
 
 
 class TestSharedLoadsItsOwnModule(unittest.TestCase):
