@@ -97,4 +97,4 @@ For JSON completion reports, declare `required_fields` and `accepted_statuses` o
 files need not invent a status field; use a domain validator in `validation_commands` instead.
 Malformed JSON is always rejected. Validation commands have a 300-second per-command timeout.
 
-`state-machine.json` is not the primary contract. It may only be read for backward compatibility while older bootstrap outputs still exist.
+`state-machine.json` is a retired format. Nothing reads it; a bootstrap directory that holds only it fails validation with `retired_bootstrap_format` and must be regenerated.

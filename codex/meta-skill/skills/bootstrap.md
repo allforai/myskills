@@ -186,13 +186,11 @@ For Codex, do this instead:
 
 ### 3. Canonical Bootstrap Graph
 
-When the canonical protocol mentions `state-machine.json`, treat that as legacy wording.
-
 For Codex generation:
 
 - write `.allforai/bootstrap/workflow.json`
 - validate against `workflow.json`
-- only read `state-machine.json` for backward compatibility if older outputs exist
+- `state-machine.json` is a retired format; if a target project still has one and no `workflow.json`, regenerate — the validator refuses it (`retired_bootstrap_format`)
 
 ### 4. Project-Local Runtime Copies
 

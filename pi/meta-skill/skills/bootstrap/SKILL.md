@@ -100,7 +100,7 @@ Step 3.4 节点列表确认在 Pi 上也是临时的：审计之后对节点集�
 
 ### 5. Canonical graph and node-specs
 
-写 `.allforai/bootstrap/workflow.json`。`state-machine.json` 只在旧产物存在时为兼容而读。
+写 `.allforai/bootstrap/workflow.json`。`state-machine.json` 是已退役的格式：只剩它而没有 `workflow.json` 的目录会被校验器以 `retired_bootstrap_format` 拒绝，重跑 bootstrap 即可。
 node-specs 仍是运行时合约，并标准化为 `## Spec` / `## Design` / `## Task`。
 每个节点至少有一个位于 `.allforai/bootstrap/` 下的完成产物。`docs/bootstrap/` 不是完成面。
 

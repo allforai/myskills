@@ -36,7 +36,7 @@
 ## Contract Notes
 
 - `workflow.json` is the forward contract.
-- `state-machine.json` may only be read for backward compatibility during migration.
+- `state-machine.json` is a retired format: the validator refuses a directory that holds only it (`retired_bootstrap_format`); rerun bootstrap.
 - The generated Codex orchestrator entry is `.codex/commands/run.md`, not `.claude/commands/run.md`.
 - Shared contracts belong under `.allforai/bootstrap/`; Codex-only runtime helpers belong under `.allforai/codex/`.
 - Generated run and `flow.py` consume the current orchestrator helpers: `product_intent.py`, `evidence_freshness.py`, `repair_authorization.py`, `run_safety.py`, `validate_bootstrap.py`, `validate_unattended_readiness.py`, `check_artifacts.py`, `record_run_event.py`, `summarize_run_log.py`, and any `workflow.json.expanders`.

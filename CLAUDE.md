@@ -72,7 +72,7 @@ claude/meta-skill/
     └── bootstrap.md         # /bootstrap slash command
 ```
 
-User workflow: `/bootstrap` analyzes the target project → generates `.allforai/bootstrap/` (state-machine.json + node-specs) → `/run <goal>` executes the generated workflow.
+User workflow: `/bootstrap` analyzes the target project → generates `.allforai/bootstrap/` (workflow.json + node-specs) → `/run <goal>` executes the generated workflow.
 
 On a product route that ships a user interface, `/bootstrap` does more before it plans: it writes `experience_priority` into the profile, proposes 2–3 experience directions (体验方向) with one recommended and records the one the user selects — or, only when the user explicitly delegates the choice, the one it picks on their behalf — then plans experience-design nodes and a two-stage experience quality gate (体验质量门: design and runtime) that blocks the run from finishing. `/run` discloses every delegated decision when it completes.
 
