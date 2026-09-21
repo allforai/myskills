@@ -1,0 +1,27 @@
+# One pytest invocation per line; paths are relative to the repo root.
+# Same-named test files live in several directories (test_mirrors.py, test_render_report.py),
+# so each directory is its own run. test_suite_coverage.py beside this file fails when a tracked test file
+# is under none of these paths.
+claude/meta-skill/tests/unit
+claude/meta-skill/scripts/engine
+claude/meta-skill/scripts/visual
+claude/superstorm/scripts
+claude/superstorm/knowledge/cross-exam/engine
+claude/superstorm/knowledge/cross-exam/visual
+claude/grillstorm/skills/grillstorm/scripts
+# codex/meta-skill and pi/meta-skill hold symlinks into the Claude tree: name the files, not the dir.
+codex/meta-skill/test_flow.py codex/meta-skill/test_install.py
+codex/cross-exam-skill/scripts
+codex/cross-exam-skill/engine
+codex/cross-exam-skill/visual
+codex/grillstorm/scripts
+codex/superstorm-skill/scripts
+pi/meta-skill/test_contract.py
+pi/cross-exam
+shared/evidence-engine
+shared/visual-acceptance
+shared/keep-code-simple
+shared/scripts/orchestrator
+shared/scripts/code-replicate
+shared/scripts/product-design
+shared/suites
