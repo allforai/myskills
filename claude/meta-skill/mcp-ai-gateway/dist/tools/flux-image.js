@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { generateImageFlux } from "../fal/client.js";
-import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { checkSavePath, saveFile } from "./save-file.js";
 export const fluxImageSchema = {
     prompt: z.string().describe("Image generation prompt"),
     model: z
@@ -27,6 +25,8 @@ export const fluxImageSchema = {
 export function registerFluxImage(server) {
     server.tool("flux_generate_image", "Generate image using FLUX 2 Pro via fal.ai. Top Elo score, excellent prompt adherence and photorealism.", fluxImageSchema, async (params) => {
         try {
+            if (params.save_path)
+                checkSavePath(params.save_path);
             const results = await generateImageFlux(params.prompt, {
                 model: params.model,
                 imageSize: params.image_size,
@@ -41,13 +41,10 @@ export function registerFluxImage(server) {
                     const path = results.length === 1
                         ? params.save_path
                         : params.save_path.replace(/(\.\w+)$/, `-${i + 1}$1`);
-                    const dir = dirname(path);
-                    if (!existsSync(dir))
-                        await mkdir(dir, { recursive: true });
                     const imgRes = await fetch(imgUrl);
                     if (imgRes.ok) {
                         const buffer = Buffer.from(await imgRes.arrayBuffer());
-                        await writeFile(path, buffer);
+                        await saveFile(path, buffer);
                         saved.push(path);
                     }
                 }

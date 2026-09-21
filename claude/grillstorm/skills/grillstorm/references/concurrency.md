@@ -227,6 +227,13 @@ transfer the policy directory through private configuration sync or start a fres
 supervision pass from the retained integration ref. Supply a `max_concurrency` only when the
 launch contract selected one.
 
+Workers inherit every capability of the host session: its sandbox mode (bypass included),
+`--add-dir` roots, network access and environment. The runner adds `--sandbox workspace-write`
+only when neither the host command line nor its config selects a mode, because bare
+`codex exec` would be read-only. `--allow-env` is still accepted and no longer changes
+anything. The worker's output stays untrusted: admission, supervision and the transactional
+merge above gate everything it produces.
+
 ## Closure
 
 After the concurrent runner finishes:

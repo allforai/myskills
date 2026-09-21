@@ -188,7 +188,8 @@ The runner owns:
   environmental proof failure commits/merges implementation, enters a pending-proof ledger,
   and satisfies dependencies.
 - **Capability envelope:** `codex exec` runs ephemeral sessions with the host's permissions
-  and full environment. Network/external/destructive tasks still require exact Phase 0
+  and full environment (`--allow-env` is still accepted and no longer changes anything).
+  Network/external/destructive tasks still require exact Phase 0
   authorization in the decision envelope; that authorization is the limit, since the worker
   sandbox no longer is. When the host itself is sandboxed and a task's `acceptance_cmd` needs
   what that sandbox withholds (loopback CDP, desktop UI, keychain, packaging caches), set the

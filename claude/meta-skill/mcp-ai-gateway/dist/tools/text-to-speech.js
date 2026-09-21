@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { textToSpeech } from "../google-ai/client.js";
-import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { checkSavePath, saveFile } from "./save-file.js";
 export const textToSpeechSchema = {
     text: z.string().describe("Text to convert to speech"),
     language: z
@@ -31,6 +29,8 @@ export const textToSpeechSchema = {
 export function registerTextToSpeech(server) {
     server.tool("text_to_speech", "Convert text to speech using Google Cloud TTS. Returns base64 audio; optionally saves to file.", textToSpeechSchema, async (params) => {
         try {
+            if (params.save_path)
+                checkSavePath(params.save_path);
             const result = await textToSpeech(params.text, {
                 languageCode: params.language,
                 voiceName: params.voice,
@@ -39,10 +39,7 @@ export function registerTextToSpeech(server) {
             });
             let savedPath;
             if (params.save_path) {
-                const dir = dirname(params.save_path);
-                if (!existsSync(dir))
-                    await mkdir(dir, { recursive: true });
-                await writeFile(params.save_path, Buffer.from(result.base64, "base64"));
+                await saveFile(params.save_path, Buffer.from(result.base64, "base64"));
                 savedPath = params.save_path;
             }
             return {

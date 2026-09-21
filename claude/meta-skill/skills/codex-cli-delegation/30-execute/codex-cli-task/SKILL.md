@@ -57,7 +57,7 @@ The caller must record:
   "skill": "codex-cli-delegation/codex-cli-task",
   "mode": "execute_short_prompt",
   "cwd": "/absolute/project/path",
-  "sandbox": "workspace-write",
+  "sandbox": "<inherited mode>",
   "selected_model": "codex-default",
   "prompt": "Read the listed files, perform the task, write the requested reports, and summarize changed files.",
   "output_root": ".allforai/codex-delegation",
@@ -77,9 +77,12 @@ Supported modes: `execute_short_prompt`, `execute_visual_review`,
 - Do not enable `--return-all-messages`.
 - Ask Codex CLI to write reports to files, then have ClaudeCode read only the
   final summary and the specific report fields needed for closure audit.
-- Prefer `workspace-write` sandbox for project-local writes. Use read-only only
-  for pure review. Do not use unrestricted execution unless the caller's
-  workflow explicitly requires it.
+- The delegated task inherits what the calling ClaudeCode session may do. Pick
+  the Codex sandbox mode that withholds nothing the caller itself has and the
+  task needs (network, writes outside the cwd, package caches, simulators), so
+  a task the caller could finish is never lost to a narrower Codex default. Use
+  read-only for pure review. Never grant more than the caller has. Record the
+  chosen mode.
 
 ## Pull Mode Delegation
 
@@ -105,7 +108,7 @@ Use a command shape equivalent to:
 ```bash
 codex exec \
   --cd "/absolute/project/path" \
-  --sandbox workspace-write \
+  --sandbox <mode the caller's own permissions map to> \
   --json \
   --output "<output_root>/codex-cli-task-final.json" \
   "Read <input paths>. Write <output paths>. Return only a concise final summary with files written and blocking issues."

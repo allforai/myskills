@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { generateVideo } from "../google-ai/client.js";
-import { writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { checkSavePath, saveFile } from "./save-file.js";
 export const generateVideoSchema = {
     prompt: z.string().describe("Video generation prompt describing the desired video"),
     duration_seconds: z
@@ -25,6 +23,8 @@ export const generateVideoSchema = {
 export function registerGenerateVideo(server) {
     server.tool("generate_video", "Generate a video using Google Veo 3.1. Submits async task, polls for completion, returns video URL. Optionally downloads to file.", generateVideoSchema, async (params) => {
         try {
+            if (params.save_path)
+                checkSavePath(params.save_path);
             const result = await generateVideo(params.prompt, {
                 durationSeconds: params.duration_seconds,
                 aspectRatio: params.aspect_ratio,
@@ -32,13 +32,10 @@ export function registerGenerateVideo(server) {
             });
             let savedPath;
             if (params.save_path && result.videoUrl) {
-                const dir = dirname(params.save_path);
-                if (!existsSync(dir))
-                    await mkdir(dir, { recursive: true });
                 const videoRes = await fetch(result.videoUrl);
                 if (videoRes.ok) {
                     const buffer = Buffer.from(await videoRes.arrayBuffer());
-                    await writeFile(params.save_path, buffer);
+                    await saveFile(params.save_path, buffer);
                     savedPath = params.save_path;
                 }
             }

@@ -5,6 +5,9 @@ Serves static files from the review dashboard directory AND handles
 POST /api/action requests to write approval actions directly to
 approval-records.json — no Playwright required.
 
+An approval is an authority decision, so the server answers only the dashboard it
+serves: it listens on loopback, and a write must come from that same origin.
+
 Usage:
     python3 serve_approval.py \\
         --approval .allforai/game-design/approval-records.json \\
@@ -30,6 +33,9 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
     # ── POST /api/action ────────────────────────────────────────────────────
     def do_POST(self) -> None:
         if self.path == "/api/action":
+            if not self._same_origin():
+                self._json(403, {"ok": False, "error": "request is not from this dashboard"})
+                return
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(length)
@@ -41,23 +47,23 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(404)
 
-    def do_OPTIONS(self) -> None:
-        self.send_response(200)
-        self._cors_headers()
-        self.end_headers()
-
     # ── helpers ─────────────────────────────────────────────────────────────
-    def _cors_headers(self) -> None:
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+    def _same_origin(self) -> bool:
+        """Refuse other sites' pages (CSRF) and rebound hostnames (DNS rebinding)."""
+        port = self.server.server_address[1]
+        hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        origin = self.headers.get("Origin")
+        return (
+            self.headers.get("Host") in hosts
+            and (origin is None or origin in {f"http://{host}" for host in hosts})
+            and self.headers.get("Content-Type", "").split(";")[0].strip() == "application/json"
+        )
 
     def _json(self, code: int, data: dict) -> None:
         body = json.dumps(data, ensure_ascii=False).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self._cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
@@ -70,11 +76,14 @@ class ApprovalHandler(http.server.SimpleHTTPRequestHandler):
         candidates = self.approval_paths
         if requested_path:
             requested = Path(requested_path)
+            parts = requested.parts
             candidates = [
                 path
                 for path in self.approval_paths
-                if path == requested.resolve() or path.as_posix().endswith(requested.as_posix())
-            ] or self.approval_paths
+                if path == requested.resolve() or path.parts[-len(parts):] == parts
+            ]
+            if not candidates:
+                raise ValueError(f"approval_record_path is not served here: {requested_path}")
 
         matched_path = None
         data = None
@@ -171,7 +180,7 @@ def main() -> int:
     else:
         dashboard_path = "/review-dashboard.html"
 
-    with http.server.HTTPServer(("", args.port), Handler) as httpd:
+    with http.server.HTTPServer(("127.0.0.1", args.port), Handler) as httpd:
         url = f"http://127.0.0.1:{args.port}{dashboard_path}"
         print(f"审批看板: {url}", flush=True)
         print("请在 Chrome 中打开进行审批。按 Ctrl-C 停止。", flush=True)

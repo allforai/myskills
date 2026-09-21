@@ -67,18 +67,24 @@ It must:
 
 ### Execution policy and recovery
 
-The generated driver defaults to `workspace-write` with approvals disabled (requests requiring
-more permission fail; they are not auto-approved). It never uses the bypass flag. If a task
-needs more access, stop and ask the user to choose an appropriately isolated environment.
-Do not broaden permissions in response to a failed node.
+Nodes inherit what the Codex session that launched the driver may do. The driver reads that
+session's command line from its process ancestry and passes its sandbox mode (including
+`--dangerously-bypass-approvals-and-sandbox`), `--add-dir` roots, profile and `-c` overrides to
+every `codex exec`; the environment is inherited as it is. Only when neither that command line
+nor `config.toml` selects a sandbox mode does the driver add `--sandbox workspace-write`,
+because bare `codex exec` would otherwise be read-only. Approvals stay disabled: a headless
+node has nobody to ask, so a request the inherited mode does not allow fails. A node that fails
+for lack of access is a fact about the host session; report it rather than widening permissions
+from inside the run.
 
 Optional `.allforai/codex/execution-policy.json` accepts only:
 
 ```json
-{"sandbox": "workspace-write", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300}
+{"sandbox": "inherit", "node_timeout_seconds": 1800, "helper_timeout_seconds": 300}
 ```
 
-`sandbox` may also be `read-only`; timeouts must be integers from 1 to 86400 seconds.
+`sandbox` may instead pin `read-only`, `workspace-write` or `danger-full-access` for a project
+whose nodes must not follow the host; timeouts must be integers from 1 to 86400 seconds.
 Bootstrap should record user-selected overrides, not silently infer them. A timeout terminates
 the subprocess group on POSIX, records a failed attempt and stops the driver. Ctrl-C terminates the active group and stops as well;
 rerun the driver to revalidate existing artifacts before resuming. Validators must be repeatable
