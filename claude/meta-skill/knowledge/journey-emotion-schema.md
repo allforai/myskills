@@ -168,8 +168,26 @@ When a business flow has `type: cross_role`, it must be split by participating r
 
 **Post-split rules**:
 - Each line independently evaluates its emotion arc and Peak-End Rule
-- Lines with same `source_flow` but different `role` can be correlated back to the original cross-role flow by downstream tools
-- Emotion arcs are evaluated per-line, not across the combined flow
+- Emotion arcs are evaluated per-line. Handoffs are evaluated across lines (below) — the split cuts the flow exactly where one role's work becomes another role's, and that cut is where a cross-role product most often fails
+
+### Handoffs
+
+A handoff is every point in the source flow where consecutive nodes change `actor`. Splitting removes it from both lines: the sender's line ends on "done", the receiver's line starts on "arrived", and nobody's line contains the time in between. So the map records each one explicitly, in a top-level `handoffs` array beside `journey_lines`:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `source_flow` | string | yes | The cross-role flow this handoff belongs to |
+| `from` | object | yes | `{ "line": "JL01a", "step": 3 }` — the sender's last node before the handoff |
+| `to` | object | yes | `{ "line": "JL01b", "step": 1 }` — the receiver's first node after it |
+| `sender_sees` | string | yes | What the sender is shown once the work has left their hands, and how they learn it was picked up |
+| `receiver_learns` | string | yes | How and when the receiver finds out there is something to pick up |
+| `while_waiting` | string | yes | What every role that is waiting on this handoff sees in the meantime — including roles further upstream than the sender |
+| `if_refused` | string | yes | What happens, and what each waiting role sees, when the receiver declines |
+| `if_unclaimed` | string | yes | What happens, and what each waiting role sees, when nobody picks it up in time |
+
+These are acceptance criteria for the map, not a procedure. A field answered with "n/a" carries its reason (for example, a handoff to a system that cannot refuse). `journey_lines[].source_flow` is what makes the handoffs of one flow findable; `handoffs` is the reader that field was missing.
+
+**Downstream obligation.** `experience-map` gives every handoff a designed state on the screen of each waiting role: `while_waiting`, `if_refused` and `if_unclaimed` each land as a named state (usually a `business` state) on a screen that role actually has open. A handoff whose failure paths exist only on the receiver's screen is an open seam — the role that is waiting is the one who needs to see it.
 
 ---
 

@@ -281,8 +281,10 @@ risk:     Are there protections?         risk:     Is attack surface covered?
 | **Monitoring Closure** | How well is it running? Who watches the results? | Mark "needs observability" | Instrumentation events + alert rules + dashboard |
 | **Exception Closure** | What happens on failure? Who handles it? Recovery path? | List major exception scenarios | Exhaustive exceptions + retry strategy + degradation plan + user prompts |
 | **Lifecycle Closure** | Created things go where? Expiry/cleanup/archival? | Mark "if created, must have cleanup" | TTL + scheduled tasks + archival policy + cascade deletion |
-| **Mapping Closure** | A and B are paired; if A exists, B must exist (pain<->reliever, happy<->sad path, action<->feedback) | Mark A<->B relationships | Foreign keys/indexes + consistency checks + orphan cleanup |
+| **Mapping Closure** | A and B are paired; if A exists, B must exist (pain<->reliever, happy<->sad path, action<->feedback, hand-off<->pick-up) | Mark A<->B relationships | Foreign keys/indexes + consistency checks + orphan cleanup |
 | **Navigation Closure** | Can you get in and out? Any dead ends? | Mark reachability | Route guards + 404 handling + fallback strategy + deep linking |
+
+**Closures cross seams.** The cycles most often left open are the ones that leave a single role, device, session, or system: work handed to another role, a request sent to an external system, an action taken offline, a task continued on another device. For each, the pairing to check is hand-off<->pick-up, and it has a visibility half that the other pairings do not: after responsibility leaves one side, both sides can see who holds it now — including when the other side refuses, fails, or never answers. "It was sent" is not closure; "everyone waiting on it can see where it is" is.
 
 ---
 

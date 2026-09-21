@@ -332,6 +332,7 @@ Describes **intra-screen view transitions** -- how the same page changes structu
 | **App ownership** | Every screen must have `app` field. In cross-role flows, screen app is derived from **node role**, not operation line's main role | merchant and admin are different deployable apps even if both desktop-web |
 | **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array | Functional completeness |
 | **Business flow continuity** | Adjacent tasks in a business flow must have navigable paths between their screens (via `flow_context`) | Flow reachability |
+| **Handoff states** | Every entry of `journey-emotion-map.json` `handoffs[]` lands as named states on a screen each waiting role actually has open: what they see while waiting, when the receiver refuses, and when nobody picks it up. A failure path shown only on the receiver's screen does not count | In a cross-role flow `flow_context` stops at the app boundary; the wait between two roles is on nobody's line unless a screen is made to hold it (journey-emotion-schema.md §Handoffs) |
 
 ---
 
