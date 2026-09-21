@@ -29,6 +29,10 @@ run_pytest claude/superstorm/scripts          # the two test_render_report.py co
 run_pytest codex/cross-exam-skill/scripts
 run_pytest shared/evidence-engine
 run_pytest shared/visual-acceptance
+run_pytest shared/keep-code-simple             # mirror contract of the shared protocol
+run_pytest pi/meta-skill/test_contract.py      # name the file: scripts/ there is a symlink and basenames collide
+run_pytest pi/cross-exam
+run_pytest shared/suites                             # every tracked test file is listed in shared/suites/suites.txt
 
 # The named subset is deliberate: renaming one of these tests fails the hook loudly instead of quietly
 # dropping the guard. test_validate_unattended_readiness and test_check_artifacts cover the two gates
@@ -66,6 +70,14 @@ python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 python3 claude/meta-skill/scripts/orchestrator/validate_specialization_contracts.py .
 python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py
 
+# These two kept pinning the Codex sandbox policy that 3923ffd8 replaced, and sat red with nothing
+# running them. They take ~30 ms each.
+echo "[pre-commit] codex bundle contract"
+python3 -B shared/scripts/orchestrator/check_codex_meta_skill_parity.py >/dev/null \
+  || { python3 -B shared/scripts/orchestrator/check_codex_meta_skill_parity.py; exit 1; }
+python3 -B shared/scripts/orchestrator/smoke_codex_generated_run.py >/dev/null \
+  || { python3 -B shared/scripts/orchestrator/smoke_codex_generated_run.py; exit 1; }
+
 echo "[pre-commit] strict node_id invariant"
 if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|rec\.node\b' \
   claude/meta-skill/scripts/orchestrator \
@@ -74,4 +86,4 @@ if rg -n 'node\.get\("id"|record\.get\("node"|item\.get\("node"|r\.get\("node"|r
   exit 1
 fi
 
-echo "[pre-commit] ok — meta-skill 就绪/新鲜度子集已跑，全量单测需要时: python3 -m pytest -q claude/meta-skill/tests/unit"
+echo "[pre-commit] ok — 快速子集已跑；全部套件（含 ~7 分钟的 meta-skill 全量单测）发版前手动跑: shared/suites/run_suites.sh"
