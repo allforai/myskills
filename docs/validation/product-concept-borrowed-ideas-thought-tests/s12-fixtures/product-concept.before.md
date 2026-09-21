@@ -140,15 +140,6 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
    something she accepts without redoing it" is the job — it is what the person would
    still want if this product did not exist, and other things could satisfy it.
 5. **Producer-side closure check**: if someone consumes, who produces? who operates?
-   The person who operates is not yet a client. Before declaring a surface for an
-   operations-side role, settle the mode and record what it rests on: an agent interface
-   (a tool/API surface an agent calls), a tool the team already uses, or a human-facing
-   screen. A screen is the exception and needs a named step somebody must look at —
-   visual judgement, an irreversible decision its operator answers for, or an operator
-   who will not work through an agent. Volume, "it is CRUD", or "many fields" are not
-   reasons for a screen; that is the work an agent does. With no such basis, declare no
-   client for that role and leave the choice as an open question for the user instead of
-   reaching for a console.
 6. **Multi-client declaration**: for each role, identify ALL client platforms they use.
    A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
    For each role, declare:
@@ -179,10 +170,6 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
    | `obsidian-plugin` | Obsidian | Obsidian community plugin |
    | `github-action` | GitHub CI | GitHub Actions custom action |
    | `cli` | Terminal | Command-line tool |
-
-   An operations-side role that resolves to an agent interface declares no `clients[]`
-   entry — the surface is a tool contract, not an app. `cli` is a person at a terminal,
-   which is a stand-in for a screen, not an agent surface.
 
    - `feature_parity`: one of four modes:
      - `full`: all clients implement same features (e.g., iOS vs Android)
