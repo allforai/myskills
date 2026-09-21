@@ -1628,3 +1628,21 @@ def test_experience_gate_malformed_inputs_return_empty(tmp_path, workflow):
     (bdir / "bootstrap-profile.json").write_text("{not json")
     assert experience_gate_flow_findings(str(bdir)) == []
     assert validate_experience_gate_flow(str(bdir)) == []
+
+
+RETIRED_FORMAT_ERROR = ("retired_bootstrap_format: state-machine.json is no longer supported; "
+                        "rerun /bootstrap to generate workflow.json")
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_main_refuses_a_directory_that_holds_only_the_retired_format(tmp_path, host):
+    """"Could not check" is not "passed": the old format used to skip validation and exit 0."""
+    bdir = tmp_path / "bootstrap"
+    bdir.mkdir()
+    (bdir / "state-machine.json").write_text("{}")
+
+    returncode, report = _main_report(host, bdir)
+
+    assert returncode == 1, report
+    assert report["passed"] is False, report
+    assert RETIRED_FORMAT_ERROR in report["errors"], report

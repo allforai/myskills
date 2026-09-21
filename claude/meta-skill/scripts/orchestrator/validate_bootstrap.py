@@ -2574,9 +2574,11 @@ def main():
             errors.extend(validate_effect_stage_ownership(bdir))
             errors.extend(validate_coverage_gate_loop(bdir))
     else:
-        sm_path = os.path.join(bdir, "state-machine.json")
-        if os.path.exists(sm_path):
-            pass  # backward compat: old format, skip validation
+        if os.path.exists(os.path.join(bdir, "state-machine.json")):
+            # The retired format used to skip validation and pass. Nothing generates or executes it
+            # any more, and "could not check" is not "passed" (ADR-0010).
+            errors.append("retired_bootstrap_format: state-machine.json is no longer supported; "
+                          "rerun /bootstrap to generate workflow.json")
         else:
             errors.append("workflow.json not found")
 

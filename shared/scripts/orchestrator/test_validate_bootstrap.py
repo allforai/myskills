@@ -175,5 +175,37 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
 
 
+RETIRED_FORMAT_ERROR = ("retired_bootstrap_format: state-machine.json is no longer supported; "
+                        "rerun /bootstrap to generate workflow.json")
+
+
+class TestRetiredFormat(unittest.TestCase):
+    """A directory that holds only the retired format is refused, never waved through."""
+
+    def setUp(self):
+        self._dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self._dir)
+
+    def _run(self):
+        script = os.path.join(module_dir(), "validate_bootstrap.py")
+        result = subprocess.run([sys.executable, "-B", script, self._dir],
+                                capture_output=True, text=True)
+        return result.returncode, json.loads(result.stdout)
+
+    def test_state_machine_only_is_refused_by_name(self):
+        _write_json(os.path.join(self._dir, "state-machine.json"), {})
+        code, report = self._run()
+        self.assertEqual(code, 1, report)
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["errors"], [RETIRED_FORMAT_ERROR])
+
+    def test_empty_directory_still_reports_the_missing_workflow(self):
+        code, report = self._run()
+        self.assertEqual(code, 1, report)
+        self.assertEqual(report["errors"], ["workflow.json not found"])
+
+
 if __name__ == "__main__":
     unittest.main()
