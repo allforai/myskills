@@ -49,3 +49,29 @@ Interleaved so that a plan's review overlaps another plan's implementation:
 - **Navigation** (no dead ends): A's error says rerun `/bootstrap`; B4's "新鲜度未核" keeps the existing pointer to rerun `/cross-exam`; C1's message names the missing tool.
 - **Config**: `HOOK` and `EXEMPT_PREFIXES` exist in `shared/suites/test_suite_coverage.py`; `sync.py --check` exists; both product-review anchors occur exactly once in each file; a v3 fixture renders today in both renderer suites.
 - **Left open on purpose**: Pi's and Codex's own `orchestrator-template.md` keep their Session Resume prose (Codex measures in code; Pi's loop re-reads `check_artifacts.py` each iteration). A visible "pending sync" state for offline actions in the product-design philosophy was not improved by the last thought test.
+
+## Outcome (2026-09-22)
+
+All nine tasks landed on `main`, each with its own task review, then one whole-batch review (Opus) and one fix wave with a scoped re-review.
+
+| Task | Commit | Note |
+|---|---|---|
+| A1 | `475acd7b` | both validators refuse a directory that holds only the retired format |
+| A2 | `95dd8bef` | four files deleted, 1101 lines |
+| A3 | `bb7410f5` | five documents |
+| B1 | `88ac5bf5` | plan defect found in execution: the entry function had to be private (`_cli`) |
+| B2 | `8148a9fe` | both renderers; frozen v2 golden unchanged |
+| B3 | `131eb028` | intake text, Claude + Codex |
+| B4 | `36b77397` | on top of merged upstream `5f605f69`; thought test passed first try |
+| C1 | `bd91761c` | hook measured at 38 s with the node suite |
+| C2 | `dde23c9b` | 149/149; repair-loop and budget interaction reviewed: no deadlock, no re-grant |
+| fix wave | `89b6baf0` | engine comment no longer claims parity with the Codex driver; hook requires Node >= 21; upgrade note |
+
+### Follow-ups left open on purpose
+
+1. **Terminal-node parity (ADR-0004).** The engine re-measures only inherited completions that a remaining node depends on; the Codex driver measures every node on every pass. A completed terminal node whose artifact was deleted is incomplete on Codex and `complete` on Claude. Closing it costs one gate run (with its validation commands) per completed node on every resume — an owner decision.
+2. **Behaviour change to know about.** A QA node whose repair budget was fully spent in an earlier session can now be un-completed and rerun on resume; if it fails again the run ends `needs_diagnosis` where it used to end `complete`.
+3. `judged_build.excludes` is recorded but `/product-review`'s prescribed `git status` does not use it; the error direction is toward "stale", never toward "fresh".
+4. `identity.py` usage errors exit 1 with plain text, not the JSON `reason` shape the intake text describes.
+5. An un-completed node is announced only through `log()`; `transition_log` will show it completed twice with no recorded reason.
+6. One test message uses `JSON.stringify(answer)`, which cannot tell `undefined` from `null`.
