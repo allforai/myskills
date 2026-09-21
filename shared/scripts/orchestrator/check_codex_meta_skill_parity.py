@@ -179,12 +179,20 @@ def main() -> int:
     if ".allforai/codex/flow.py" not in skill_text + agents_text + playbook_text + bootstrap_text + flow_template_text:
         errors.append("Codex non-stop flow driver contract is not fully documented")
 
-    if "--dangerously-bypass-approvals-and-sandbox" in flow_template_text:
-        errors.append("flow template must not automatically bypass approvals and sandbox")
+    # Nodes inherit the host session's permissions (3923ffd8). The driver may recognise the bypass flag
+    # on the host command line and pass it on; it may never add the flag itself.
+    bypass_lines = [line.strip() for line in flow_template_text.splitlines()
+                    if "--dangerously-bypass-approvals-and-sandbox" in line]
+    if any(not line.startswith(("HOST_PERMISSION_FLAGS =", "HOST_SANDBOX_SELECTORS ="))
+           for line in bypass_lines):
+        errors.append("flow template must not add the approvals-and-sandbox bypass itself")
     if '"--sandbox", policy["sandbox"]' not in flow_template_text:
         errors.append("flow template does not pass its explicit sandbox policy to Codex")
-    if 'policy["sandbox"] not in {"read-only", "workspace-write"}' not in flow_template_text:
+    if ('policy["sandbox"] not in {"inherit", "read-only", "workspace-write", "danger-full-access"}'
+            not in flow_template_text):
         errors.append("flow template does not reject unsupported sandbox escalation")
+    if 'host_permission_args() if policy["sandbox"] == "inherit"' not in flow_template_text:
+        errors.append("flow template does not read the host session for the inherit sandbox policy")
     if "MAX_CONSECUTIVE_FAILURES_PER_NODE = 3" not in flow_template_text:
         errors.append("flow template does not enforce a repeated-failure threshold")
     if "MAX_STAGNANT_ITERATIONS = 5" not in flow_template_text:

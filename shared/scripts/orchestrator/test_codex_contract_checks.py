@@ -40,21 +40,27 @@ def test_current_bundle_contract_passes(snapshot, script):
     assert report["errors"] == []
 
 
+ACCEPTED_POLICIES = 'policy["sandbox"] not in {"inherit", "read-only", "workspace-write", "danger-full-access"}'
+
+
 @pytest.mark.parametrize("script", [PARITY, SMOKE])
-@pytest.mark.parametrize("damage", ["bypass", "missing_policy", "unrestricted_policy"])
+@pytest.mark.parametrize("damage", ["bypass", "missing_policy", "unrestricted_policy", "inherit_dropped"])
 def test_execution_policy_regressions_are_rejected(snapshot, tmp_path, script, damage):
     root = tmp_path / "repo"
     shutil.copytree(snapshot, root, symlinks=True)
     path = root / "codex/meta-skill/knowledge/flow-template.py"
     text = path.read_text()
     if damage == "bypass":
+        # The driver adds the bypass itself instead of only recognising it on the host command line.
         text = text.replace('"--sandbox", policy["sandbox"]',
                             '"--dangerously-bypass-approvals-and-sandbox"')
     elif damage == "missing_policy":
         text = text.replace('"--sandbox", policy["sandbox"]', '"--quiet"')
+    elif damage == "unrestricted_policy":
+        text = text.replace(ACCEPTED_POLICIES, ACCEPTED_POLICIES[:-1] + ', "unrestricted"}')
     else:
-        text = text.replace('policy["sandbox"] not in {"read-only", "workspace-write"}',
-                            'policy["sandbox"] not in {"read-only", "workspace-write", "danger-full-access"}')
+        text = text.replace('host_permission_args() if policy["sandbox"] == "inherit"',
+                            '[] if policy["sandbox"] == "inherit"')
     assert text != path.read_text(), "fixture mutation did not apply"
     path.write_text(text)
     code, report = run_check(root, script)
