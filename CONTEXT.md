@@ -56,6 +56,14 @@ _Avoid_: successful repair, QA acceptance
 A run-wide prohibition on new task dispatch after a safety condition requires stopping. Work already in flight is not exempt from subsequent safety and acceptance checks.
 _Avoid_: ordinary QA failure, branch-only pause
 
+**Seam**:
+A boundary where work, data, or responsibility passes from one party to another: node to node, bootstrap to run, orchestrator to worker, skill to skill, source to mirror, session to session, human to model. The receiving side guards it (ADR-0010).
+_Avoid_: interface, integration point, handoff (a handoff is one kind of seam)
+
+**Unchecked**:
+The outcome of a receiver that could not complete its verification of what crossed a seam. It is neither a pass nor a fail nor an empty finding, and nothing downstream may treat it as one.
+_Avoid_: passed by default, no findings, skipped
+
 **Suppress rule**:
 A detection-triggered prohibition on emitting a class of nodes (for example library-sdk omits demo-forge). Breaking it is a planning error, not a style choice.
 _Avoid_: skip, omit, optional
