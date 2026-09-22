@@ -69,7 +69,7 @@ P1 在旧文本下主判据全中，但它在复核环节写的是「仅当宿�
 - 全部 5 个场景在两轮间的重复采样稳定性，以及 `cross-exam` 视觉/截图路径与 `meta-skill` 长流程上的连锁影响。
 - 契约测试（`shared/keep-code-simple` 14 项、`pi/cross-exam` 7 项、`pi/meta-skill` 8 项）只证明文本边界在，不证明模型会照做；本轮思维测试补的正是这一层，但仍是模拟决策，不代替真机验收。
 
-## 真机验收：未做
+## 真机验收：未做（2026-09-17 时的状态；2026-09-22 已做，见下一节）
 
 这份记录里的全部证据是冻结的文案契约测试 + 6 个模拟场景 + 宿主侧机制核查；**没有在真实 Pi 会话里跑过一次 `/skill:keep-code-simple`**。这一步没做，原因不是技术上不可行，而是该技能 user-invoked only——模型不能自行启动它，只能由用户敲：
 
@@ -91,3 +91,18 @@ cd /tmp/kcs-acceptance
 - 报告「派发」节的 requested/resolved 是 inherited/receipt 型号或 unknown，没有「跨模型复核」。
 
 在真机验收完成前，本问题的状态是**已改完、未验收**：能说的是三处授权已变成禁令、契约测试全绿、安装目录与仓库逐字节一致；不能说的是“真机上再也不会出现 codex”。
+
+## 真机验收：已做（2026-09-22）
+
+靶子从 `/tmp/kcs-acceptance` 复制到 `~/workspace/kcs-acceptance-keep/kcs-acceptance`（同一 commit `b01763e`），注册进 Orca，通过 Orca 在该目录起一个真实 Pi 会话（pi 0.86.1；安装目录 `~/.pi/agent/git/github.com/allforai/myskills` 在 `933dfdab`，无未提交改动），发送 `/skill:keep-code-simple`。判据按上一节运行前写下的那份，逐条按宿主轨迹与产出核对，不采信受测者自报：
+
+| 判据 | 证据 | 结论 |
+|---|---|---|
+| 只派原生 agent，0 个外部 CLI | 轨迹里的角色只有 `scout` / `reviewer` / `oracle`；`codex-exec` / `claude-code` / `cursor-agent` 一次未出现 | 过 |
+| 不换 provider / 模型家族 | 三个子代理全是 `grok-4.6`，与 `~/.pi/agent/settings.json` 的 `defaultModel: grok-4.6` 一致；差别只在思考等级（scout low，reviewer / oracle high） | 过 |
+| 单顶层 workflow、并发 | `async workflow: 4ac21fb4`，3 active，后台运行 | 过 |
+| 只写 `docs/keep-code-simple/<日期>-<slug>/`，不碰源码 | 靶子里唯一变化是新增 `docs/keep-code-simple/2026-09-22-csv-exporters/recommendations.md`（65 行）；`apps/`、`packages/`、`README.md` 无 diff | 过 |
+| 协议的「先查复用」被触发 | 产出找到 `packages/tabular/csv_writer.py`，推荐「保留手写与共享 writer」，并拒绝「删共享 writer」（README 承诺另有消费者，本树无调用 ≠ 全局无人用） | 过 |
+
+至此本问题的状态从「已改完、未验收」变为「已验收」：真机上没有出现 codex，也没有换路由。验收后终端已关闭、产出已删除、靶子已从 Orca 注销；本节是唯一留存的证据。
+
