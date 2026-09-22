@@ -62,6 +62,9 @@ class _ReadEvaluation:
         self.memo = {}
         self.expansions = {}
         self.tree = None
+        # Resolved before the gate opens: asking Git what the project ignores is a
+        # subprocess, and nothing may execute inside a read-only evaluation.
+        self.paths = None
 
     def content(self, path):
         # Keep the unresolved path too: replacing a symlink must invalidate reads.
@@ -103,6 +106,7 @@ def _read_only_gate(function):
                 raise ValueError('Freshness evaluation cannot cross project roots')
             return function(root, *args, **kwargs)
         context = _ReadEvaluation(root)
+        context.paths = _ignore_aware_paths(root)
         token = _READ_EVALUATION.set(context)
         try:
             result = function(root, *args, **kwargs)
@@ -849,19 +853,51 @@ def source_tree(root):
     return context.tree
 
 
+def _ignore_aware_paths(root):
+    """What the project itself carries: tracked files plus untracked ones it does not ignore.
+
+    A project's ignore rules are its own statement about what it generates. A
+    prebuilt native tree, a vendored dependency directory or a build output is not
+    product source, and fingerprinting it into every record makes every gate slower
+    the more the build produces — an Expo `ios/` tree alone reaches tens of
+    thousands of files, which is a recorded snapshot per node of the same size.
+    Returns None when Git cannot answer, so a project outside version control keeps
+    the directory walk and its fixed exclusions.
+    """
+    # An ambient GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE would point the question at
+    # whatever repository the caller is standing in, so the listing is taken with the
+    # project as the only repository in view.
+    env = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
+    try:
+        listed = subprocess.run(['git', '-C', str(root), 'ls-files', '--cached', '--others',
+                                 '--exclude-standard', '-z'],
+                                capture_output=True, timeout=120, env=env)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if listed.returncode != 0:
+        return None
+    return [p for p in listed.stdout.decode('utf-8', 'surrogateescape').split('\0') if p]
+
+
 def _source_tree(root):
     """Every project file outside the flow's own working directories.
 
     Workflow-independent on purpose: a verification must not appear to move the
     source merely because the plan around it changed.
     """
+    context = _READ_EVALUATION.get()
+    paths = context.paths if context is not None else _ignore_aware_paths(root)
+    if paths is None:
+        paths = []
+        for directory, dirs, files in os.walk(root):
+            dirs[:] = sorted(d for d in dirs if d not in SOURCE_TREE_EXCLUDED_DIRS)
+            paths.extend((Path(directory) / name).relative_to(root).as_posix() for name in sorted(files))
     result = {}
-    for directory, dirs, files in os.walk(root):
-        dirs[:] = sorted(d for d in dirs if d not in SOURCE_TREE_EXCLUDED_DIRS)
-        for name in sorted(files):
-            path = (Path(directory) / name).relative_to(root).as_posix()
-            if name != '.git':
-                result[path] = fingerprint(root, path)
+    for path in sorted(set(paths)):
+        # `ls-files --cached` still names a tracked file that was deleted on disk.
+        if Path(path).name == '.git' or not source_path_included(path) or not (root / path).is_file():
+            continue
+        result[path] = fingerprint(root, path)
     return result
 
 

@@ -30,7 +30,12 @@ previously recorded input declaration cannot downgrade verification to legacy.
 Reopening historical work requires a declaration.
 
 The source inventory excludes `.allforai`, generated host configuration, Git
-metadata, dependency/cache directories and explicitly declared outputs. Inputs
+metadata, dependency/cache directories, explicitly declared outputs, and whatever
+the project's own ignore rules exclude: a build output or a prebuilt native tree
+is the project stating that it generates those files, and fingerprinting them into
+every record grows the recorded state — and the cost of every gate that reads it —
+with the size of the build rather than the size of the product. A project outside
+version control keeps the fixed exclusions. Inputs
 inside those directories still participate when explicitly consumed. Selected
 requirement content and baseline scope are fingerprinted independently of
 unrelated decisions; the observed baseline version is retained as provenance.

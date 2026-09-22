@@ -220,7 +220,13 @@ def test_snapshot_scope_does_not_cross_real_document_verification(tmp_path, monk
     monkeypatch.setattr(module.subprocess, 'run', run)
     result = module.session(tmp_path, {'operation': 'publish', 'observation': observed['observation'],
         'verification_command': [sys.executable, '-c', 'pass']})
-    assert len(calls) == 2  # Actual main verification followed by actual document verification.
+    # Actual main verification followed by actual document verification. The engine also
+    # asks Git what the project ignores; that listing is not a verification, and the
+    # assertions above already prove it never runs inside a read-only evaluation.
+    assert [c for c in calls if 'ls-files' not in c] == [
+        [sys.executable, '-c', 'pass'],
+        [sys.executable, '-c', "from pathlib import Path; Path('orders.py').write_text('changed in document verifier')"],
+    ]
     assert result['status'] == 'stale'
     assert 'document verification' in result['reason']
     assert module._READ_EVALUATION.get() is None

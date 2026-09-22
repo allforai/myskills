@@ -16,6 +16,7 @@ import sys
 from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, REF, REQUIREMENTS, confirm_plan, project,
                                    publish_contract, write)
 from .test_freshness_admission_corrections import _artifacts, _bootstrap, NODE, WORKFLOW
+from ..module_isolation import load
 
 DOWNSTREAM = "ship-export"
 # The engine meets plans the planner refuses: a workflow written before that refusal
@@ -110,3 +111,21 @@ def test_a_plan_that_reads_what_nobody_writes_downstream_is_accepted(tmp_path):
 
     assert not [e for e in errors if e.startswith("inverted_source_inputs:")], errors
     assert code in (0, 1)  # unrelated fixture errors stay this test's business only if they name us
+
+
+def test_the_inventory_leaves_out_what_the_project_ignores(tmp_path):
+    """A build output is the project saying it generates the file, not product source."""
+    import subprocess
+
+    project(tmp_path, confirmed=True)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / ".gitignore").write_text("ios/\n", encoding="utf-8")
+    generated = tmp_path / "ios" / "Pods"
+    generated.mkdir(parents=True)
+    (generated / "Generated.xcconfig").write_text("BUILT=1\n", encoding="utf-8")
+
+    freshness = load("evidence_freshness")
+    tree = freshness.source_tree(tmp_path)
+
+    assert "orders.py" in tree
+    assert not [p for p in tree if p.startswith("ios/")], sorted(tree)
