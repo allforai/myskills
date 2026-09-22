@@ -53,6 +53,7 @@ Game mapping rules:
 
 App mapping rules:
 - app-design roles/personas -> `role-profiles.json.roles[]`.
+- product-concept `roles[].surface` -> `role-profiles.json.roles[].surface` (verbatim; `experience-map.json` reads it to decide which roles get screens and which tasks go to `non_screen_tasks[]`).
 - app-design features/interactions -> `task-inventory.json.tasks[]`.
 - app-design user flows -> `business-flows.json.flows[]`.
 - app-design screens/components/states -> `experience-map.json.screens[]`.
@@ -125,7 +126,8 @@ Write the counts you produced and why they are complete for this input; numbers 
       "id": "<string — unique identifier. Referenced by task-inventory.tasks[].role_ref>",
       "name": "<string>",
       "permissions": ["<string>"],
-      "audience_type": "<enum: consumer | admin | operator | system>"
+      "audience_type": "<enum: consumer | admin | operator | system>",
+      "surface": "<object — copied verbatim from product-concept.json roles[].surface when the input path is 'from concept' or the concept baseline is present; { mode, basis, open_question? }. A role with no surface here is an upstream defect the map producer returns, not a role that gets screens by default>"
     }
   ]
 }

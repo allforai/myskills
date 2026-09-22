@@ -59,11 +59,18 @@ replace the frozen extension or introduce unapproved product choices.
     {
       "id": "R1",
       "name": "role name",
+      "surface": { "mode": "screen", "basis": "copied verbatim from product-concept.json roles[].surface" },
       "app": "website",
       "client_type": "mobile-ios",
       "screen_granularity": "single_task_focus",
       "high_frequency_tasks": ["task1", "task2", "task3"],
       "design_principle": "single-task focus, minimize page transitions"
+    },
+    {
+      "id": "R2",
+      "name": "operations role with no client",
+      "surface": { "mode": "agent_interface", "basis": "copied verbatim" },
+      "high_frequency_tasks": ["task4", "task5"]
     }
   ],
   "governance_styles": [
@@ -87,6 +94,8 @@ replace the frozen extension or introduce unapproved product choices.
   }
 }
 ```
+
+`roles[].surface` is copied from `product-concept.json` unchanged. `app`, `client_type`, `screen_granularity` and `design_principle` exist only for a role whose `surface.mode` is `screen`; a role in any other mode carries none of them, and a baseline that gives such a role an `app` has invented a client the concept did not decide. A role with no `surface` at all is an extraction defect: the baseline is regenerated, not patched downstream.
 
 #### Generation Timing and Location
 
@@ -173,7 +182,8 @@ Fields frequently used by multiple downstream phases. **Fields already in baseli
 | Field | Source | Baseline? | Downstream Users | Usage |
 |-------|--------|:---------:|-------------------|-------|
 | `mission` | product-concept.json | [B] | all phases | product positioning baseline, prevents feature drift |
-| `roles[].app` | role-value-map.json | [B] | all phases | which sub-project code/screens belong to |
+| `roles[].surface` | product-concept.json | [B] | all phases | whether this role has screens at all (`mode: screen`), works through an agent interface or an existing tool, or is still the user's open question |
+| `roles[].app` | role-value-map.json | [B] | all phases | which sub-project code/screens belong to — present only when `surface.mode` is `screen` |
 | `roles[].screen_granularity` | role-value-map.json | [B] | experience-map, ui-design | screen splitting strategy |
 | `governance_styles[].style` | product-mechanisms.json | [B] | experience-map, use-case, translate | presence of review screens/use cases/code. Note: "translate" = the meta-skill capability for implementation (formerly called "dev-forge") |
 | `governance_styles[].system_boundary` | product-mechanisms.json | [B] | experience-map, use-case, translate | which features only write integration interfaces |
