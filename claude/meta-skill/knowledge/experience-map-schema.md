@@ -331,10 +331,10 @@ Describes **intra-screen view transitions** -- how the same page changes structu
 
 | Constraint | Rule | Rationale |
 |-----------|------|-----------|
-| **Platform** | For a role that declares `clients[]`: consumer role -> `mobile-ios` single-column layout; professional role -> `desktop-web` sidebar layout | Physical device differences |
+| **Platform** | For a role whose `surface.mode` is `screen`: consumer role -> `mobile-ios` single-column layout; professional role -> `desktop-web` sidebar layout | Physical device differences |
 | **Roles without a client** | A role's `surface.mode` (in `role-profiles.json`, copied from the concept) decides this: `screen` gets screens; `agent_interface`, `existing_tool` and `undecided` get no screen, no `app` and no operation line, and their tasks are listed in top-level `non_screen_tasks[]` (`task_id`, `role`, `reason` — the role's `surface.basis`, and its `open_question` when `undecided`, quoted, never composed here). A role with no `surface` at all is missing upstream data, not a decision: stop and return it as an upstream defect rather than exempting its tasks or drawing it a console. Human roles that wait on such a role still get their Handoff states. A console drawn for a non-`screen` role is a defect, not a default | product-concept decides who is a client (Sub-Phase 5) and records it in `surface`; a node that gives every professional role a desktop console overrides that decision, and a node that exempts a role because a key is absent invents one |
 | **App ownership** | Every screen must have `app` field. In cross-role flows, screen app is derived from **node role**, not operation line's main role | merchant and admin are different deployable apps even if both desktop-web |
-| **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array, or in `non_screen_tasks[]` when its role declares no client | Functional completeness |
+| **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array, or in `non_screen_tasks[]` when its role's `surface.mode` is not `screen` | Functional completeness |
 | **Business flow continuity** | Adjacent tasks in a business flow must have navigable paths between their screens (via `flow_context`) | Flow reachability |
 | **Handoff states** | Every entry of `journey-emotion-map.json` `handoffs[]` lands as named states on a screen each waiting role actually has open: what they see while waiting, when the receiver refuses, and when nobody picks it up. A failure path shown only on the receiver's screen does not count | In a cross-role flow `flow_context` stops at the app boundary; the wait between two roles is on nobody's line unless a screen is made to hold it (journey-emotion-schema.md §Handoffs) |
 
@@ -407,7 +407,7 @@ LLM loads journey-emotion-map.json alongside experience-map.json and checks:
 1. **Emotion intent landed?** -- design_hint reflected in emotion_design and interaction_pattern
 2. **High-risk nodes protected?** -- error prevention, confirmation, reversibility present
 3. **Emotion arc coherent?** -- interface sequence shows progressive experience
-4. **Journey lines complete?** -- every journey_line has a corresponding operation_line, except journey_lines whose role is clientless (Hard Constraints, "Roles without a client"): those are accounted for in `non_screen_tasks[]`, and saying so is part of this check
+4. **Journey lines complete?** -- every journey_line has a corresponding operation_line, except journey_lines whose role's `surface.mode` is not `screen` (Hard Constraints, "Roles without a client"): those are accounted for in `non_screen_tasks[]`, and saying so is part of this check
 
 ---
 
