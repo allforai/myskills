@@ -152,3 +152,16 @@ def test_a_path_the_project_starts_ignoring_is_reclassified_not_changed(tmp_path
     (tmp_path / "notes.txt").unlink()
     _, checked = freshness_invoke(tmp_path, "check")
     assert "notes.txt" in checked["uncertain_inputs"], checked["uncertain_inputs"]
+
+
+def test_a_hosts_generated_entry_points_are_not_product_source(tmp_path):
+    """`.pi/skills/run/SKILL.md` is the flow writing down how to run itself."""
+    project(tmp_path, confirmed=True)
+    for host in (".claude/commands", ".codex/commands", ".pi/skills/run"):
+        (tmp_path / host).mkdir(parents=True)
+        (tmp_path / host / "run.md").write_text("generated entry point\n", encoding="utf-8")
+
+    tree = load("evidence_freshness").source_tree(tmp_path)
+
+    assert "orders.py" in tree
+    assert not [p for p in tree if p.startswith((".claude/", ".codex/", ".pi/"))], sorted(tree)

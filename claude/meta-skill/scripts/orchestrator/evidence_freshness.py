@@ -914,7 +914,10 @@ def _source_tree(root):
     return result
 
 
-SOURCE_TREE_EXCLUDED_DIRS = {'.git', '.allforai', '.claude', '.codex', '.local',
+# `.claude`, `.codex` and `.pi` hold each host's generated entry points and task
+# bookkeeping — `.pi/skills/run/SKILL.md` is the Pi twin of `.claude/commands/run.md`.
+# They are the flow writing down how to run itself, never the product it delivers.
+SOURCE_TREE_EXCLUDED_DIRS = {'.git', '.allforai', '.claude', '.codex', '.pi', '.local',
                              '__pycache__', '.pytest_cache', 'node_modules', '.venv', '.expo'}
 
 
