@@ -604,6 +604,18 @@ def owned_inputs(root, workflow, state):
     return owned
 
 
+def reclassified(root, path, current):
+    """A recorded path the inventory no longer carries although the file is still there.
+
+    What counts as product source is the project's own statement, and that statement
+    can change — an ignore rule added, or a build tree the inventory now recognises as
+    generated. A file that left the inventory without leaving the disk was reclassified,
+    not edited, so it is not a product change waiting for anyone's decision. A recorded
+    path that is gone from disk as well is an ordinary removal and still reported.
+    """
+    return path not in current and (root / path).is_file()
+
+
 def unmapped_changes(root, workflow, state):
     """Source that changed outside every declared input, and the nodes it reaches.
 
@@ -617,7 +629,8 @@ def unmapped_changes(root, workflow, state):
     for node_id, record in state['nodes'].items():
         previous = record.get('source_snapshot', {})
         unknown = {p for p in set(previous) | set(current)
-                   if source_path_included(p) and previous.get(p) != current.get(p)} - owned
+                   if source_path_included(p) and not reclassified(root, p, current)
+                   and previous.get(p) != current.get(p)} - owned
         if not unknown:
             continue
         tasks.add(node_id)
@@ -967,7 +980,8 @@ def evaluate(root):
         if record:
             previous = record.get('source_snapshot', {})
             unknown = {p for p in set(previous) | set(current)
-                       if source_path_included(p) and previous.get(p) != current.get(p)} - owned
+                       if source_path_included(p) and not reclassified(root, p, current)
+                       and previous.get(p) != current.get(p)} - owned
             uncertain_inputs.update(unknown)
             if unknown and valid:
                 result[node['node_id']] = {'status': 'uncertain', 'readiness_status': 'uncertain',

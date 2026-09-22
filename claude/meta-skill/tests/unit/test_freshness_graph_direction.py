@@ -16,6 +16,7 @@ import sys
 from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, REF, REQUIREMENTS, confirm_plan, project,
                                    publish_contract, write)
 from .test_freshness_admission_corrections import _artifacts, _bootstrap, NODE, WORKFLOW
+from .test_evidence_freshness import invoke as freshness_invoke
 from ..module_isolation import load
 
 DOWNSTREAM = "ship-export"
@@ -129,3 +130,25 @@ def test_the_inventory_leaves_out_what_the_project_ignores(tmp_path):
 
     assert "orders.py" in tree
     assert not [p for p in tree if p.startswith("ios/")], sorted(tree)
+
+
+def test_a_path_the_project_starts_ignoring_is_reclassified_not_changed(tmp_path):
+    """Recorded state outlives a change in what the project calls product source."""
+    import subprocess
+
+    project(tmp_path, confirmed=True)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "build").mkdir()
+    (tmp_path / "build" / "out.txt").write_text("built\n", encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("kept\n", encoding="utf-8")
+    publish_contract(tmp_path, verification_command=LEGACY_CHECK)
+
+    (tmp_path / ".gitignore").write_text("build/\n", encoding="utf-8")
+    _, checked = freshness_invoke(tmp_path, "check")
+    # .gitignore itself is a new undeclared file and is reported; what left the
+    # inventory without leaving the disk is not a change anyone has to decide.
+    assert "build/out.txt" not in checked["uncertain_inputs"], checked["uncertain_inputs"]
+
+    (tmp_path / "notes.txt").unlink()
+    _, checked = freshness_invoke(tmp_path, "check")
+    assert "notes.txt" in checked["uncertain_inputs"], checked["uncertain_inputs"]
