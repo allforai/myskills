@@ -127,7 +127,7 @@ Write the counts you produced and why they are complete for this input; numbers 
       "name": "<string>",
       "permissions": ["<string>"],
       "audience_type": "<enum: consumer | admin | operator | system>",
-      "surface": "<object — copied verbatim from product-concept.json roles[].surface when the input path is 'from concept' or the concept baseline is present; { mode, basis, open_question? }. A role with no surface here is an upstream defect the map producer returns, not a role that gets screens by default>"
+      "surface": "<object — copied verbatim from product-concept.json roles[].surface when the input path is 'from concept' or the concept baseline is present; { mode, basis, open_question? }. On a run that has a concept, a role with no surface here is an upstream defect the map producer returns, not a role that gets screens by default; on a game or from-code run there is no concept to copy it from, the field is absent for every role, and experience-map does not require it>"
     }
   ]
 }

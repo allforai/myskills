@@ -153,7 +153,7 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
    A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
    For each role, declare:
    - `clients[]`: array of client apps, each with `app` name, `client_type`, `platform`
-   - `surface`: the decision step 5 reached, as data — `{ "mode": "screen | agent_interface | existing_tool | undecided", "basis": "<one sentence: what the mode rests on, quoted from this concept's evidence>", "open_question": "<only when mode is undecided>" }`. `screen` is the only mode under which `clients[]` is non-empty and the only one that gets screens downstream; `agent_interface` and `existing_tool` declare no `clients[]`; `undecided` declares no `clients[]` and carries the question left for the user. Every role carries `surface` — a role without it is an upstream defect for every consumer, not a default to a screen.
+   - `surface`: the decision step 5 reached, as data — `{ "mode": "screen | agent_interface | existing_tool | undecided", "basis": "<one sentence: what the mode rests on, quoted from this concept's evidence>", "open_question": "<only when mode is undecided>" }`. `screen` is the only mode under which `clients[]` is non-empty and the only one that gets screens downstream; `agent_interface` and `existing_tool` declare no `clients[]`; `undecided` declares no `clients[]` and carries the question left for the user. Every role in a concept carries `surface` — a role without it is an upstream defect for every consumer of that concept, not a default to a screen.
 
    **Valid `client_type` values:**
 

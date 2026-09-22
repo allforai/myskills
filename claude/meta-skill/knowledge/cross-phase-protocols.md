@@ -95,7 +95,7 @@ replace the frozen extension or introduce unapproved product choices.
 }
 ```
 
-`roles[].surface` is copied from `product-concept.json` unchanged. `app`, `client_type`, `screen_granularity` and `design_principle` exist only for a role whose `surface.mode` is `screen`; a role in any other mode carries none of them, and a baseline that gives such a role an `app` has invented a client the concept did not decide. A role with no `surface` at all is an extraction defect: the baseline is regenerated, not patched downstream.
+`roles[].surface` is copied from `product-concept.json` unchanged. `app`, `client_type`, `screen_granularity` and `design_principle` exist only for a role whose `surface.mode` is `screen`; a role in any other mode carries none of them, and a baseline that gives such a role an `app` has invented a client the concept did not decide. A role with no `surface` at all is an extraction defect: the baseline is regenerated, not patched downstream. (A game or from-code run has no baseline at all, so nothing there is owed `surface`.)
 
 #### Generation Timing and Location
 
