@@ -13,6 +13,8 @@ its own inputs, and an undeclared write scope exempts nothing.
 import json
 import sys
 
+import pytest
+
 from .test_bootstrap_scope import (ATTENTION_CONTRACT_BODY, REF, REQUIREMENTS, confirm_plan, project,
                                    publish_contract, write)
 from .test_freshness_admission_corrections import _artifacts, _bootstrap, NODE, WORKFLOW
@@ -165,3 +167,22 @@ def test_a_hosts_generated_entry_points_are_not_product_source(tmp_path):
 
     assert "orders.py" in tree
     assert not [p for p in tree if p.startswith((".claude/", ".codex/", ".pi/"))], sorted(tree)
+
+
+def test_a_repository_git_cannot_read_is_undeterminable_not_a_bare_walk(tmp_path, monkeypatch):
+    """Losing Git must not silently swap in a different idea of what product source is."""
+    import subprocess
+
+    project(tmp_path, confirmed=True)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / ".gitignore").write_text("ios/\n", encoding="utf-8")
+    (tmp_path / "ios").mkdir()
+    (tmp_path / "ios" / "Pods.xcconfig").write_text("BUILT=1\n", encoding="utf-8")
+    module = load("evidence_freshness")
+    assert not [p for p in module.source_tree(tmp_path) if p.startswith("ios/")]
+
+    monkeypatch.setattr(module.subprocess, "run",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("git: command not found")))
+
+    with pytest.raises(ValueError, match="undeterminable"):
+        module.source_tree(tmp_path)

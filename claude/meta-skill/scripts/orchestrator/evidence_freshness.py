@@ -900,6 +900,16 @@ def _source_tree(root):
     """
     context = _READ_EVALUATION.get()
     paths = context.paths if context is not None else _ignore_aware_paths(root)
+    if paths is None and (root / '.git').exists():
+        # The project is under version control, so its ignore rules are the basis the
+        # recorded inventory was built against. Walking the tree instead would quietly
+        # swap in a different one — a prebuilt native tree reappearing as tens of
+        # thousands of product files and every delivery drifting at once — and an
+        # undeterminable comparison is never read as a clear one.
+        raise ValueError(
+            'Source inventory undeterminable: the project is a Git repository but `git ls-files` '
+            'could not answer, so what the project treats as generated cannot be read. Restore Git '
+            '(on macOS an unaccepted Xcode licence disables it: `sudo xcodebuild -license`) and rerun.')
     if paths is None:
         paths = []
         for directory, dirs, files in os.walk(root):
