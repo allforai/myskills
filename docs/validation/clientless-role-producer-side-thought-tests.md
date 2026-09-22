@@ -321,3 +321,433 @@ the repository, or this task — no leak in either run. The after-edit subject's
 surface "直接对应 capability 文件里给出的示例场景" refers to the example block it just read
 inside the packet's `product-concept.md` (which is in scope — it was told to read that file
 in full), not to any external plan or prior run.
+
+## Pipeline test (role-profiles.json only)
+
+Task: "The receiving side keys off the field, and the real-pipeline test passes"
+(`.superpowers/sdd/2026-09-22-clientless-role-producer-side-plan/task-3-brief.md`).
+
+Unlike the two producer-side runs above (which fed `product-concept.md` as method to a
+role-definition subject), this test feeds the artifact the real experience-map node actually
+receives: the edited `experience-map-schema.md` (post Step 1 of this task), the current
+`journey-emotion-schema.md`, and a `role-profiles.json` written for this test in the shape
+Task 2's schema defines — `id`, `name`, `permissions`, `audience_type`, `surface`. The subject
+is never given `product-concept.json`; the point of the test is that `role-profiles.json`
+alone carries the decision downstream. Two isolated `sonnet` subject runs, read-only, each
+packet built outside the repository (`mktemp -d` under `$TMPDIR`), prompt naming only the
+packet files (never the repository, this plan, clients, consoles, surfaces, seams, or what is
+being tested). The two packets are identical except for `role-profiles.json`: Run 1 gives R2 a
+full `surface` object (`mode: "undecided"`); Run 2 (control) removes `surface` from R2 entirely.
+
+### Packet `role-profiles.json` — Run 1 (pipeline test)
+
+```json
+{
+  "roles": [
+    {
+      "id": "R1",
+      "name": "采购员（门店下单的人）",
+      "permissions": ["按门店提交补货单", "确认到货并登记差异"],
+      "audience_type": "operator",
+      "surface": {
+        "mode": "screen",
+        "basis": "店长凭经验报数，需要逐步填单并核对到货，用 store-order（react-native，mobile）客户端操作"
+      }
+    },
+    {
+      "id": "R2",
+      "name": "供应商对账专员（总部，3人）",
+      "permissions": ["核对供应商对账单", "处理到货差异争议", "月末出具结算单", "冻结异常供应商"],
+      "audience_type": "operator",
+      "surface": {
+        "mode": "undecided",
+        "basis": "总部已在用一套财务系统做付款与对账归档",
+        "open_question": "对账与差异处理是接进现有财务系统，还是另开界面？"
+      }
+    }
+  ]
+}
+```
+
+### Packet `role-profiles.json` — Run 2 (control, no `surface` on R2)
+
+```json
+{
+  "roles": [
+    {
+      "id": "R1",
+      "name": "采购员（门店下单的人）",
+      "permissions": ["按门店提交补货单", "确认到货并登记差异"],
+      "audience_type": "operator",
+      "surface": {
+        "mode": "screen",
+        "basis": "店长凭经验报数，需要逐步填单并核对到货，用 store-order（react-native，mobile）客户端操作"
+      }
+    },
+    {
+      "id": "R2",
+      "name": "供应商对账专员（总部，3人）",
+      "permissions": ["核对供应商对账单", "处理到货差异争议", "月末出具结算单", "冻结异常供应商"],
+      "audience_type": "operator"
+    }
+  ]
+}
+```
+
+### Prompt (identical for both runs; only the packaged `role-profiles.json` changes)
+
+> Read these files in full, and read NOTHING else — do not list directories, do not search,
+> do not open any other file, do not use a shell:
+> - \<packet\>/experience-map-schema.md
+> - \<packet\>/journey-emotion-schema.md
+> - \<packet\>/role-profiles.json
+>
+> Follow the first two files as your method. The third file is your role data for this run.
+>
+> `task-inventory.json` (excerpt): T1 R1 按门店补货下单 · T2 R1 确认到货并登记差异 · T3 R2 核对供应商对账单 · T4 R2 处理到货差异争议 · T5 R2 月末出具结算单 · T6 R2 冻结异常供应商
+> One business flow: F1 (cross_role): R1 确认到货并登记差异 → R2 处理到货差异争议 → R1 看到处理结果
+>
+> Task: produce the experience-map for this product as you would ship it — operation_lines, the screens with `id`, `app`, `platform`, `tasks`, `states`, and any top-level fields you need — then the findings of your own verification loop. No commentary outside those two parts. Keep screens compact (id, name, app, platform, tasks, states, flow_context only).
+
+Packet: `claude/meta-skill/knowledge/experience-map-schema.md` (edited, this task's Step 1) +
+`claude/meta-skill/knowledge/journey-emotion-schema.md` (unedited) + the `role-profiles.json`
+above, copied into a fresh `$TMPDIR` directory outside the repository (a separate fresh packet
+per run).
+
+### Run 1 output (verbatim) — role-profiles.json carries R2's `surface`
+
+```json
+{
+  "operation_lines": [
+    {
+      "id": "OL001",
+      "name": "门店补货下单",
+      "source_journey": "JL01",
+      "role": "R1",
+      "nodes": [
+        {
+          "seq": 1,
+          "id": "N001",
+          "action": "按门店提交补货单",
+          "screens": [
+            {
+              "id": "S001",
+              "name": "补货下单",
+              "app": "store-order",
+              "platform": "mobile-ios",
+              "tasks": ["T1"],
+              "states": {
+                "empty": "尚无本轮补货记录时显示引导插画与「新建补货单」按钮",
+                "loading": "门店历史订货基线加载中，显示表单骨架屏",
+                "error": "提交失败（网络中断或库存服务异常）时显示具体错误原因、重试按钮与「保存草稿」选项",
+                "success": "提交成功后显示确认吐司，并跳转到差异登记入口待用",
+                "draft_saved": "草稿保存中/已保存，允许稍后继续编辑再提交"
+              },
+              "flow_context": {
+                "prev": null,
+                "next": "S002",
+                "entry_points": [],
+                "exit_points": ["S002"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OL002",
+      "name": "到货确认与差异处理跟进（含总部处理等待）",
+      "source_journey": "JL02",
+      "role": "R1",
+      "nodes": [
+        {
+          "seq": 1,
+          "id": "N002",
+          "action": "确认到货并登记差异",
+          "screens": [
+            {
+              "id": "S002",
+              "name": "到货确认与差异登记",
+              "app": "store-order",
+              "platform": "mobile-ios",
+              "tasks": ["T2"],
+              "states": {
+                "empty": "尚未扫码/录入到货清单时显示「开始核对到货」引导",
+                "loading": "到货清单逐行比对中，显示骨架屏进度",
+                "error": "数量/条码校验失败时定位到具体行并给出更正提示",
+                "success": "登记完成后显示差异摘要卡片与「提交至总部」反馈",
+                "discrepancy_flagged": "已标记数量/质量差异，等待用户确认提交"
+              },
+              "flow_context": {
+                "prev": "S001",
+                "next": "S003",
+                "entry_points": ["S001"],
+                "exit_points": ["S003"]
+              }
+            }
+          ]
+        },
+        {
+          "seq": 2,
+          "id": "N003",
+          "action": "提交后跟进差异处理进度，查看总部处理结果",
+          "screens": [
+            {
+              "id": "S003",
+              "name": "差异处理进度",
+              "app": "store-order",
+              "platform": "mobile-ios",
+              "tasks": ["T2"],
+              "states": {
+                "empty": "无待跟进差异时显示「暂无差异案例」占位说明",
+                "loading": "处理状态刷新中，显示进度条骨架",
+                "error": "状态同步失败时显示重试按钮与最近一次已知状态（离线缓存）",
+                "success": "案例关闭时显示裁定结果与门店确认按钮",
+                "pending_review": "已提交，等待总部对账专员处理——显示「审核中」标签与预计处理时限（对应 while_waiting）",
+                "disputed_returned": "总部对账专员驳回差异认定、要求补充凭证——显示驳回原因与重新提交入口（对应 if_refused）",
+                "unclaimed_timeout": "超过约定时限（如48小时）无人认领——显示升级提醒与「催办」按钮（对应 if_unclaimed）",
+                "resolved": "差异已裁定——显示裁定结果、涉及金额/数量调整明细"
+              },
+              "flow_context": {
+                "prev": "S002",
+                "next": null,
+                "entry_points": ["S002"],
+                "exit_points": []
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "non_screen_tasks": [
+    {
+      "task_id": "T3",
+      "role": "R2",
+      "reason": "总部已在用一套财务系统做付款与对账归档 — 对账与差异处理是接进现有财务系统，还是另开界面？"
+    },
+    {
+      "task_id": "T4",
+      "role": "R2",
+      "reason": "总部已在用一套财务系统做付款与对账归档 — 对账与差异处理是接进现有财务系统，还是另开界面？"
+    },
+    {
+      "task_id": "T5",
+      "role": "R2",
+      "reason": "总部已在用一套财务系统做付款与对账归档 — 对账与差异处理是接进现有财务系统，还是另开界面？"
+    },
+    {
+      "task_id": "T6",
+      "role": "R2",
+      "reason": "总部已在用一套财务系统做付款与对账归档 — 对账与差异处理是接进现有财务系统，还是另开界面？"
+    }
+  ]
+}
+```
+
+Verification Loop Findings (verbatim):
+
+> 1. **Platform constraint (schema Hard Constraints §Platform)** — R1 declares a client explicitly in `surface.basis` ("store-order（react-native，mobile）客户端"), so S001–S003 are `mobile-ios` / `app: "store-order"`. R2's `surface.mode` is `undecided` (not `screen`), so it correctly gets **no screens, no app, no operation line** — pass.
+> 2. **Judgment call flagged, not silently resolved** — R1's `audience_type` is `"operator"`, which under a literal reading of "professional role → desktop-web" could suggest a backend console. I overrode that with the `surface.basis` text, which is the authoritative signal (product-concept already decided the client) — the rule's rationale is explicit that `audience_type`/role labels must not override a recorded `surface` decision. Flagging this as a judgment call rather than a silent default.
+> 3. **App ownership** — All three screens carry `app: "store-order"`, derived from node role R1 in both operation lines (no cross-role screen exists to test the "node role, not operation-line role" branch, since R2 never gets a screen) — pass.
+> 4. **Task coverage** — T1→S001, T2→S002+S003, T3/T4/T5/T6→`non_screen_tasks[]`. All 6 task-inventory IDs accounted for exactly once or via non-screen exemption — pass.
+> 5. **Business flow continuity (F1: R1→R2→R1)** — R1's own leg (submit differences → check outcome) is navigable via `flow_context` S002→S003. The R2 leg intentionally has no `flow_context`/screen, since R2 is clientless — this is the correct outcome per the schema, not a broken link.
+> 6. **Handoff states** — Modeled the F1 handoff (R1 hands a discrepancy to R2, then R1 sees the result) entirely on **S003**, the screen the waiting role (R1) actually has open: `pending_review` = while_waiting, `disputed_returned` = if_refused, `unclaimed_timeout` = if_unclaimed, `resolved`/`success` = the return leg. No console was drawn for R2 to hold these instead — pass.
+> 7. **Journey-line completeness** — R2's implied journey lines (T3–T6) have no operation_line; this is exactly the exemption the schema allows, and it is recorded in `non_screen_tasks[]` together with the unresolved `open_question` about whether to build inside the existing finance system — pass, but **this is a real open decision, not a resolved one**: T3–T6 have no interface design at all until a human answers it.
+> 8. **Gap I'm disclosing rather than papering over**: no actual `journey-emotion-map.json` was provided (only its schema, as method) — I could not run the schema's four-point emotion-arc validation, and I did not fabricate emotion data to fill it. `source_journey` values (`JL01`, `JL02`) are therefore provisional placeholders, not references to a real upstream artifact.
+> 9. **Risk/reversibility check** — T2's discrepancy submission is a dispute over goods/money between two orgs, plausibly `risk=high`; S003 gives it explicit protection (retry on sync failure, reversible via `disputed_returned` re-submission path, escalation via `unclaimed_timeout`) even without a formal risk annotation to validate against.
+
+### Verdict: PASS
+
+The brief's PASS criteria: *"PASS only if: no screen has R2's app or is a console for R2;
+T3–T6 are in `non_screen_tasks[]` with `reason` quoting the `basis` and the `open_question`;
+R1's waiting/refused/unclaimed states for the R2 step exist on an R1 screen."*
+
+- **No screen has R2's app or is a console for R2**: all three screens (`S001`, `S002`, `S003`)
+  carry `"app": "store-order"` and sit under role-R1 operation lines; the subject's own finding
+  1 states R2 "correctly gets **no screens, no app, no operation line**".
+- **T3–T6 in `non_screen_tasks[]` with `reason` quoting `basis` and `open_question`**: all four
+  entries carry
+  `"reason": "总部已在用一套财务系统做付款与对账归档 — 对账与差异处理是接进现有财务系统，还是
+  另开界面？"` — the first clause is `role-profiles.json`'s R2 `surface.basis` verbatim, the
+  second is R2 `surface.open_question` verbatim.
+- **R1's waiting/refused/unclaimed states for the R2 step exist on an R1 screen**: `S003`
+  (app `store-order`, role R1) carries `"pending_review"` (labelled "对应 while_waiting"),
+  `"disputed_returned"` ("对应 if_refused"), and `"unclaimed_timeout"` ("对应 if_unclaimed"),
+  confirmed by finding 6: *"Modeled the F1 handoff ... entirely on **S003**, the screen the
+  waiting role (R1) actually has open ... No console was drawn for R2 to hold these instead."*
+
+All three clauses hold. **PASS.** No rerun needed.
+
+### Run 2 output (verbatim) — control, R2 has no `surface` at all
+
+```json
+{
+  "operation_lines": [
+    {
+      "id": "OL001",
+      "name": "门店补货下单",
+      "source_journey": "JL00",
+      "role": "R1",
+      "nodes": [
+        {
+          "seq": 1,
+          "id": "N001",
+          "action": "选择门店与商品并提交补货单",
+          "screens": [
+            {
+              "id": "S001",
+              "name": "补货下单",
+              "app": "store-order",
+              "platform": "mobile-ios",
+              "tasks": ["T1"],
+              "states": {
+                "empty": "尚无补货草稿，显示空白单据插画 + “新建补货单”入口",
+                "loading": "商品与门店库存列表骨架屏加载",
+                "error": "提交失败提示网络异常，保留已填数量并可重试",
+                "success": "提交成功 toast，返回单据列表并高亮新单",
+                "draft_saved": "本地暂存草稿，可关闭 App 后继续编辑"
+              },
+              "flow_context": {
+                "prev": null,
+                "next": null,
+                "entry_points": [],
+                "exit_points": ["S003"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OL002",
+      "name": "到货确认与差异跟踪（F1・R1 侧）",
+      "source_journey": "JL01a",
+      "role": "R1",
+      "nodes": [
+        {
+          "seq": 1,
+          "id": "N001",
+          "action": "确认到货并登记差异",
+          "screens": [
+            {
+              "id": "S003",
+              "name": "到货确认登记",
+              "app": "store-order",
+              "platform": "mobile-ios",
+              "tasks": ["T2"],
+              "states": {
+                "empty": "无待确认到货记录，显示“暂无到货”插画并可返回补货单查看进度",
+                "loading": "到货单据骨架屏加载",
+                "error": "提交失败提示网络重试，保留已登记差异数量",
+                "success": "提交成功 toast，跳转至差异处理结果页",
+                "submitted_to_hq": "差异已提交总部对账专员，展示流水号与预计处理时限"
+              },
+              "flow_context": {
+                "prev": "S001",
+                "next": "S004",
+                "entry_points": ["S001"],
+                "exit_points": ["S004"]
+              }
+            }
+          ]
+        },
+        {
+          "seq": 2,
+          "id": "N002",
+          "action": "查看差异处理结果",
+          "screens": [
+            {
+              "id": "S004",
+              "name": "差异处理结果",
+              "app": "store-order",
+              "platform": "mobile-ios",
+              "tasks": ["T2"],
+              "states": {
+                "empty": "尚无处理记录，显示“等待总部处理”提示",
+                "loading": "结果详情骨架屏加载",
+                "error": "结果加载失败，提供重试",
+                "success": "处理结果明细展示（调整后到货数量、差异原因核定）",
+                "processing": "总部专员处理中：展示预计时限与“催办”按钮（handoff while_waiting，等待 R2）",
+                "resolved": "差异已按总部核定结果调整，展示明细与确认按钮",
+                "rejected": "总部驳回本次登记，展示驳回理由与再次申诉入口（handoff if_refused）",
+                "escalated_unclaimed": "超时未处理，自动升级提醒门店并展示升级状态（handoff if_unclaimed）"
+              },
+              "flow_context": {
+                "prev": "S003",
+                "next": null,
+                "entry_points": ["S003"],
+                "exit_points": []
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+No screens are produced for T3（核对供应商对账单）、T4（处理到货差异争议）、T5（月末出具结算单）、
+T6（冻结异常供应商），and no `non_screen_tasks[]` entry is written for them either.
+
+Verification Loop Findings (verbatim):
+
+> 1. **Blocking defect, not a design decision — R2 has no `surface` field at all.**
+>    `role-profiles.json` gives R1 a full `surface` object (`mode: "screen"`, `basis`: the
+>    store-order mobile client), but R2's entry stops at `audience_type` — no `surface` key at
+>    all. Per the schema's Hard Constraints table: *"A role with no `surface` at all is missing
+>    upstream data, not a decision: stop and return it as an upstream defect rather than
+>    exempting its tasks or drawing it a console."* I followed that literally: I did not
+>    default R2 to a desktop-web admin console (the common backend-role default), and I did
+>    not fold T3–T6 into `non_screen_tasks[]` (that array is defined only for roles whose
+>    `surface.mode` is a resolved `agent_interface | existing_tool | undecided`, which R2 is
+>    not — R2's mode is simply absent). Both moves would have invented a decision that belongs
+>    upstream in product-concept.
+> 2. **Task coverage constraint is knowingly violated, not silently patched.** T3, T4, T5, T6
+>    appear in no screen's `tasks[]` and in no `non_screen_tasks[]` entry. This fails the
+>    schema's Task Coverage constraint by design — flagging the gap is the correct behavior
+>    here, closing it without upstream data would not be.
+> 3. **F1 is only half-built.** ... The R2 half (`JL01b`, task T4) can't be designed at all.
+> 4. **Emotion validation loop couldn't run.** No `journey-emotion-map.json` content was
+>    provided (only its schema) — I left `emotion_design` off every screen rather than
+>    inventing emotions, intensities, or risk levels.
+> 5. **Business flow continuity.** Within R1's own screens the chain is intact and navigable:
+>    S001 → S003 → S004.
+> 6. **Platform.** R1's `surface.basis` names a `react-native, mobile` client (`store-order`),
+>    mapped to `mobile-ios` directly from the stated client, not from `audience_type`.
+> 7. **Compact-screen instruction, not an omission.** `layout_type`, `components`,
+>    `data_fields` etc. were deliberately left out per the "keep screens compact" instruction.
+>
+> **Net: this experience-map is not shippable as-is.** It's complete and internally consistent
+> for R1 (T1, T2, and the R1-visible half of F1's handoffs), but T3/T4/T5/T6 and R2's entire
+> surface are an open upstream defect — role-profiles.json needs a `surface` object for R2
+> (mode + basis, à la R1's) before OL002 can be finished and before OL003+ ... can be designed
+> at all.
+
+### Verdict: PASS
+
+The brief's PASS criteria for the control run: *"PASS only if it returns an upstream defect
+and neither draws a console nor exempts."*
+
+- **Returns an upstream defect**: quoting the subject's own finding 1, *"R2 has no `surface`
+  field at all ... stop and return it as an upstream defect"*, and its closing line, *"this
+  experience-map is not shippable as-is ... T3/T4/T5/T6 and R2's entire surface are an open
+  upstream defect"*.
+- **Does not draw a console**: quoting the same finding, *"I did not default R2 to a
+  desktop-web admin console (the common backend-role default)"* — and indeed no R2 screen,
+  app, or operation line appears anywhere in the output.
+- **Does not exempt**: quoting the same finding, *"I did not fold T3–T6 into
+  `non_screen_tasks[]`"* — and indeed `non_screen_tasks[]` is entirely absent from the output;
+  T3–T6 appear in no screen and no exemption list, an openly flagged Task Coverage failure
+  (finding 2) rather than a silently accepted gap.
+
+All clauses hold. **PASS.** No rerun needed.
+
+### Leak check
+
+Neither subject's output mentions a plan, a test, a fixture, "the project's recent direction,"
+the repository, or this task. Run 1's finding 2 ("judgment call flagged, not silently
+resolved") and Run 2's closing summary both read as the subject's own verification-loop
+reasoning against the packaged schema text, not as knowledge of an external plan or prior run.
+No leak in either run.

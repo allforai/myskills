@@ -134,7 +134,9 @@ Auto-fix for multi-client gaps:
   require different build/test tools)
 
 **Backward compatibility**: if a role has only `client_type` (single client, legacy format),
-skip Level 3 for that role — Level 1 and 2 are sufficient.
+skip Level 3 for that role — Level 1 and 2 are sufficient. A role whose `surface.mode` is not
+`screen` has no clients and no client nodes to check: skip Level 3 for it, and flag any
+implementation node that targets it as a client as a planning error.
 
 Example gap detection:
 ```

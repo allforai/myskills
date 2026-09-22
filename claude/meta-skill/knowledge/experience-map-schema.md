@@ -118,7 +118,7 @@ Each operation_line has at least one node. Each node has at least one screen. Sc
     "S001": "// complete screen object duplicate, keyed by screen ID for fast lookup"
   },
   "non_screen_tasks": [
-    {"task_id": "T7", "role": "R2", "reason": "// upstream ground, quoted — only for roles that are clientless per Hard Constraints"}
+    {"task_id": "T7", "role": "R2", "reason": "// the role's surface.basis (and open_question when undecided), quoted — only for roles whose surface.mode is not screen"}
   ]
 }
 ```
@@ -332,7 +332,7 @@ Describes **intra-screen view transitions** -- how the same page changes structu
 | Constraint | Rule | Rationale |
 |-----------|------|-----------|
 | **Platform** | For a role that declares `clients[]`: consumer role -> `mobile-ios` single-column layout; professional role -> `desktop-web` sidebar layout | Physical device differences |
-| **Roles without a client** | A role is clientless only when product-concept says so: its `roles[]` entry declares no `clients[]` AND the concept records the ground — the settled mode and what it rests on (an agent interface, or a tool the team already uses), or an open question that names that role. Such a role gets no screen, no `app` and no operation line; its tasks are exempt from Task coverage and are listed in top-level `non_screen_tasks[]` (`task_id`, `role`, `reason` — the upstream ground quoted, never composed here). A role with no `clients[]` and no such ground is missing upstream data, not a decision: stop and return it as an upstream defect rather than exempting its tasks or drawing it a console. Human roles that wait on a clientless role still get their Handoff states. A console drawn for it is a defect, not a default | product-concept decides who is a client (Sub-Phase 5, producer-side closure check). A node that gives every professional role a desktop console overrides that decision without anyone having made it; a node that exempts a role because a key is absent invents a decision nobody made |
+| **Roles without a client** | A role's `surface.mode` (in `role-profiles.json`, copied from the concept) decides this: `screen` gets screens; `agent_interface`, `existing_tool` and `undecided` get no screen, no `app` and no operation line, and their tasks are listed in top-level `non_screen_tasks[]` (`task_id`, `role`, `reason` — the role's `surface.basis`, and its `open_question` when `undecided`, quoted, never composed here). A role with no `surface` at all is missing upstream data, not a decision: stop and return it as an upstream defect rather than exempting its tasks or drawing it a console. Human roles that wait on such a role still get their Handoff states. A console drawn for a non-`screen` role is a defect, not a default | product-concept decides who is a client (Sub-Phase 5) and records it in `surface`; a node that gives every professional role a desktop console overrides that decision, and a node that exempts a role because a key is absent invents one |
 | **App ownership** | Every screen must have `app` field. In cross-role flows, screen app is derived from **node role**, not operation line's main role | merchant and admin are different deployable apps even if both desktop-web |
 | **Task coverage** | Every task from task-inventory.json must appear in at least one screen's `tasks` array, or in `non_screen_tasks[]` when its role declares no client | Functional completeness |
 | **Business flow continuity** | Adjacent tasks in a business flow must have navigable paths between their screens (via `flow_context`) | Flow reachability |
