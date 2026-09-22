@@ -153,6 +153,7 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
    A single role may have multiple clients (e.g., consumer: iOS app + Android app + web + H5).
    For each role, declare:
    - `clients[]`: array of client apps, each with `app` name, `client_type`, `platform`
+   - `surface`: the decision step 5 reached, as data — `{ "mode": "screen | agent_interface | existing_tool | undecided", "basis": "<one sentence: what the mode rests on, quoted from this concept's evidence>", "open_question": "<only when mode is undecided>" }`. `screen` is the only mode under which `clients[]` is non-empty and the only one that gets screens downstream; `agent_interface` and `existing_tool` declare no `clients[]`; `undecided` declares no `clients[]` and carries the question left for the user. Every role carries `surface` — a role without it is an upstream defect for every consumer, not a default to a screen.
 
    **Valid `client_type` values:**
 
@@ -205,7 +206,23 @@ This variant is invoked by launch-prep capability's Phase 1 (Competitive Researc
        { "app": "buyer-web", "client_type": "next-js", "platform": "desktop-web" }
      ],
      "feature_parity": "partial",
-     "parity_exceptions": ["推送通知仅限移动端", "AR 试穿仅限 iOS"]
+     "parity_exceptions": ["推送通知仅限移动端", "AR 试穿仅限 iOS"],
+     "surface": { "mode": "screen", "basis": "消费者自己挑选、比价、下单，每一步都要看" }
+   }
+
+   // an operations-side role that resolves to an agent interface — no clients[]
+   {
+     "id": "R3", "name": "运营（2 名兼职）",
+     "surface": { "mode": "agent_interface",
+                  "basis": "每天十几二十条下架/核实/发积分事务，没有一步需要人眼判断；团队 2 人兼职" }
+   }
+
+   // an operations-side role whose channel is still the user's call — no clients[]
+   {
+     "id": "R2", "name": "供应商对账专员（总部）",
+     "surface": { "mode": "undecided",
+                  "basis": "总部已在用一套财务系统做付款与对账归档",
+                  "open_question": "对账与差异处理是接进现有财务系统，还是另开界面？" }
    }
 
    // explicit mode — for modality-limited clients
@@ -469,6 +486,7 @@ Full theory reference: `${CLAUDE_PLUGIN_ROOT}/knowledge/product-design-theory.md
 |----------|------------|---------------------|----------|--------|
 | `product-concept.json` | `features[]`, `mvp_features[]` | feature-gap | required | 功能差距分析和裁剪的输入源 |
 | `product-concept.json` | `roles[]`, `clients[]` | ui-design, product-verify | required | UI 按角色设计，验收按角色测试 |
+| `product-concept.json` | `roles[].surface` | product-analysis, experience-map, ui-design, product-verify | required | 谁有屏幕、谁走 agent 接口、谁还没定，是概念阶段的决定；下游读这个字段，不从 clients[] 有没有去猜 |
 | `product-concept.json` | `adaptive_systems[]` | pipeline-closure-verify | optional | 自适应状态机完整性验证 |
 | `product-concept.json` | `errc_highlights` | concept-acceptance | required | 概念验收对照 must_have 和 differentiators |
 | `concept-baseline.json` | `mission`, `roles[].high_frequency_tasks`, `errc_highlights` | product-analysis, experience-map, translate | required | ALL downstream phases auto-load concept-baseline for cross-phase consistency. Bootstrap MUST include a `generate-concept-baseline` step in the node-spec for any product-concept node (forward-design); or the last product-concept sub-phase node must produce concept-baseline.json as an exit artifact. Schema: cross-phase-protocols.md §A.1 |
