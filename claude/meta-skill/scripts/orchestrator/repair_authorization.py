@@ -529,7 +529,10 @@ def initialize(root: Path, run_id: str) -> dict:
             raise blocked(f'{WORKFLOW} already shows execution '
                           f'({json.dumps(observed, sort_keys=True)}); this run has a '
                           'history, and a missing ledger is not proof that it spent no '
-                          'repair budget. Recover it with "adopt_history"',
+                          'repair budget. Recover it with "adopt_history" (legacy '
+                          'repair_routes), or with evidence {"absence_of": '
+                          '"repair_history", "complete": true} when no declared repair '
+                          'node ever ran',
                           untrusted='prior_execution', observed=observed)
         binding = loop_binding(workflow)
         proof = {'kind': 'verified_untouched_workflow', 'source_path': WORKFLOW,
@@ -597,6 +600,8 @@ def adopt_history(root: Path, run_id: str, evidence: Any) -> dict:
         raise blocked('Historical evidence is not asserted complete; absence of records '
                       'is not proof of unused budget',
                       untrusted='incomplete_history', source_path=str(target.name))
+    if text(evidence.get('absence_of')) == 'repair_history':
+        return adopt_absence(root, run_id, evidence, target, source_digest)
     records = evidence.get('authorizations')
     if not isinstance(records, list):
         raise invalid('evidence.authorizations must be a list')
@@ -662,6 +667,74 @@ def adopt_history(root: Path, run_id: str, evidence: Any) -> dict:
                                      if entry['state'] in UNRESOLVED)}
 
 
+def declared_repair_nodes(root: Path, workflow: dict) -> list[str]:
+    """Every repair node the plan declares, from the workflow and the readiness spec."""
+    names: set[str] = set()
+    for source in (workflow.get('required_repair_loops') or workflow.get('repair_loops') or []):
+        if isinstance(source, dict) and text(source.get('repair_node_id')):
+            names.add(text(source['repair_node_id']))
+    spec_path = root / READINESS_SPEC
+    if spec_path.exists():
+        try:
+            spec = json.loads(spec_path.read_text())
+        except (ValueError, OSError):
+            spec = None
+        for loop in (spec.get('required_repair_loops') if isinstance(spec, dict) else None) or []:
+            if isinstance(loop, dict) and text(loop.get('repair_node_id')):
+                names.add(text(loop['repair_node_id']))
+    return sorted(names)
+
+
+def adopt_absence(root: Path, run_id: str, evidence: dict, target: Path,
+                  source_digest: str) -> dict:
+    """Zero spend for a run that executed but never dispatched a repair.
+
+    This is the recovery for a ledger that was not initialized before the first node:
+    ``initialize`` rightly refuses a workflow that shows execution, and an empty legacy
+    ``repair_routes`` reconstructs nothing. What can still be verified is the absence —
+    the caller asserts the transition log complete, and the helper checks that log and
+    ``repair_routes`` against the declared repair nodes. Any trace of a repair makes the
+    history ambiguous, and an ambiguous history is not zero (ADR 0007).
+    """
+    document = load_source(target)
+    observed = execution_traces(document)
+    repair_nodes = declared_repair_nodes(root, document)
+    routes = document.get('repair_routes')
+    if isinstance(routes, list) and routes:
+        raise blocked(f'{WORKFLOW} records {len(routes)} repair_routes charges; a run '
+                      'that charged repair budget has a history to reconstruct, not an '
+                      'absence to adopt', untrusted='ambiguous_history', observed=observed)
+    transitions = document.get('transition_log')
+    ran = sorted({text(entry.get('node') or entry.get('node_id'))
+                  for entry in (transitions if isinstance(transitions, list) else [])
+                  if isinstance(entry, dict)} & set(repair_nodes))
+    if ran:
+        raise blocked(f'{WORKFLOW} transition_log shows declared repair nodes {ran} '
+                      'ran; their spend must be reconstructed, not declared absent',
+                      untrusted='ambiguous_history', repair_nodes_ran=ran,
+                      observed=observed)
+    with ledger_lock(root):
+        if (root / LEDGER).exists():
+            existing = read_ledger(root)
+            raise blocked(f'Ledger already records run {existing["run_id"]}; adopting '
+                          'history over live accounting would rewrite it',
+                          untrusted='existing_run', existing_run_id=existing['run_id'])
+        workflow, _ = read_workflow(root)
+        proof = {'kind': 'verified_absence_of_repair_history',
+                 'source_path': evidence['source_path'], 'source_digest': source_digest,
+                 'declared_repair_nodes': repair_nodes, 'observed': observed,
+                 'verified_at': now_iso()}
+        write_json(root / LEDGER, {
+            'ledger_version': LEDGER_VERSION, 'run_id': run_id,
+            'origin': {'kind': 'adopted_absence', 'proof': proof,
+                       'binding': loop_binding(workflow), 'recorded_at': now_iso()},
+            'authorizations': []})
+        return {'status': 'ok',
+                'reason': 'Workflow shows execution but no repair; verified zero spend adopted',
+                'run_id': run_id, 'origin': 'adopted_absence', 'adopted': 0,
+                'proof': proof, 'unresolved': []}
+
+
 def load_source(target: Path) -> dict:
     """The verified evidence document, parsed once for every reference resolved in it."""
     try:
@@ -695,7 +768,10 @@ def legacy_routes(document: dict) -> list[dict]:
         raise blocked('The legacy repair_routes ledger is empty, so there is no history '
                       'to reconstruct and no evidence that none was spent. A run that '
                       'provably never executed is recorded with "initialize", which '
-                      'verifies that claim against the workflow',
+                      'verifies that claim against the workflow; one that executed but '
+                      'never dispatched a declared repair node adopts evidence '
+                      '{"absence_of": "repair_history", "complete": true}, verified '
+                      'against the transition log',
                       untrusted='incomplete_history')
     for index, route in enumerate(routes):
         if (not isinstance(route, dict) or not text(route.get('repair_node_id'))

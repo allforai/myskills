@@ -55,6 +55,15 @@ If the readiness command exits non-zero or `.allforai/bootstrap/unattended-run-r
 Missing scripts, missing/invalid readiness reports, and failed expanders also block execution.
 Before stopping, record `preflight_blocked` with `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
+Then record the repair-ledger origin, still before the first node — this is the only moment `initialize` can prove zero spend, because it refuses a workflow that already shows execution:
+
+```bash
+printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run-id)" \
+  | python3 .allforai/bootstrap/scripts/repair_authorization.py .
+```
+
+A `replayed: true` answer on a resumed run is the same statement, not a reset. If the step was skipped and the workflow already ran nodes but never dispatched a declared repair node, recover with `adopt_history` and evidence `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>", "absence_of": "repair_history", "complete": true}`; the helper verifies the absence against the transition log. Any other history stays blocked until reconstructed.
+
 ## Run Policy — once before the first node
 
 Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.

@@ -646,6 +646,56 @@ def test_missing_historical_ledger(root):
     assert origin['observed']['repair_routes'] == 1
 
 
+def no_repair_history(root, log):
+    """A run that executed nodes but never dispatched a repair: the complete transition
+    log is the evidence, and the helper verifies the absence against it."""
+    write_workflow(root, transition_log=log)
+    return {'source_path': WORKFLOW, 'source_digest': ra.file_digest(root / WORKFLOW),
+            'absence_of': 'repair_history', 'complete': True,
+            'basis': 'the complete transition log records no run of any declared repair node'}
+
+
+def test_a_run_that_executed_without_repairing_adopts_a_verified_zero_spend(root):
+    # The driver forgot `initialize` before the first node. The workflow now shows
+    # execution, so `initialize` is rightly refused — but the run still has a
+    # verifiable answer: no repair route and no transition of a declared repair node.
+    plan(root, *DEFAULT_PLAN)
+    evidence = no_repair_history(root, [{'node': 'build', 'status': 'completed'},
+                                        {'node': 'qa-a', 'status': 'failed'}])
+    assert refusal(ra.initialize, root, 'run-1')['untrusted'] == 'prior_execution'
+    verdict = ra.adopt_history(root, 'run-1', evidence)
+    assert verdict['status'] == 'ok' and verdict['origin'] == 'adopted_absence'
+    assert verdict['adopted'] == 0
+    ledger = json.loads((root / LEDGER).read_text())
+    assert ledger['origin']['kind'] == 'adopted_absence'
+    assert 'fix' in ledger['origin']['proof']['declared_repair_nodes']
+    assert grant_succeeds(root, 'a1', ['qa-a'], {'qa-a': 3})
+
+
+@pytest.mark.parametrize('fields', [
+    {'transition_log': [{'node': 'fix', 'status': 'completed'}]},
+    {'transition_log': [{'node': 'fix', 'status': 'failed'}]},
+    {'transition_log': [], 'repair_routes': [{'repair_node_id': 'fix', 'qa_node_id': 'qa-a',
+                                               'attempt': 1}]},
+])
+def test_absence_of_repair_history_is_refused_when_the_workflow_shows_a_repair(root, fields):
+    plan(root, *DEFAULT_PLAN)
+    evidence = no_repair_history(root, [])
+    write_workflow(root, **fields)
+    evidence['source_digest'] = ra.file_digest(root / WORKFLOW)
+    verdict = refusal(ra.adopt_history, root, 'run-1', evidence)
+    assert verdict['status'] == 'blocked' and verdict['untrusted'] == 'ambiguous_history'
+    assert not (root / LEDGER).exists()
+
+
+def test_absence_of_repair_history_must_be_asserted_complete(root):
+    plan(root, *DEFAULT_PLAN)
+    evidence = no_repair_history(root, [{'node': 'build', 'status': 'completed'}])
+    evidence.pop('complete')
+    verdict = refusal(ra.adopt_history, root, 'run-1', evidence)
+    assert verdict['untrusted'] == 'incomplete_history'
+
+
 def test_a_missing_ledger_is_not_zero_consumption(root):
     write_workflow(root)
     assert refusal(grant, root, 'a1', ['qa-a'],
