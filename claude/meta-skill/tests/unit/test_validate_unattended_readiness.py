@@ -610,21 +610,39 @@ def test_user_steps_that_name_no_entry_are_refused_with_a_reason(tmp_path, user_
 
 
 def test_a_workflow_that_plans_verification_but_forgets_its_user_steps_is_not_ready(tmp_path):
-    # a verify node means there is a product to examine afterwards; the steps the user takes then
-    # are part of the workflow, and only an empty list says "nothing to examine"
+    # a verify node means there is a delivery to examine afterwards; the steps the user takes
+    # then are part of the workflow, and silence is not an exemption
     verify = {**_design_node(), "node_id": "pv", "capability": "product-verify",
               "exit_artifacts": [{"path": ".allforai/product-verify/verify-report.json"}]}
     _with_workflow(tmp_path, {"nodes": [_design_node(), verify]})
     report = validate_unattended_readiness(tmp_path)
     blocker = next(b for b in report["blockers"] if b["code"] == "missing_user_steps")
-    assert "user_steps" in blocker["message"] and "[]" in blocker["message"]
-    _with_workflow(tmp_path, {"nodes": [_design_node(), verify], "user_steps": []})
-    assert not [b for b in validate_unattended_readiness(tmp_path)["blockers"] if b["code"] == "missing_user_steps"]
+    assert "user_steps" in blocker["message"] and '["/cross-exam"]' in blocker["message"]
     # a design-only workflow is warned, not blocked
     _with_workflow(tmp_path, {"nodes": [_design_node()]})
     report = validate_unattended_readiness(tmp_path)
     assert not [b for b in report["blockers"] if b["code"] == "missing_user_steps"]
     assert any(w["code"] == "missing_user_steps" for w in report.get("warnings", []))
+
+
+@pytest.mark.parametrize("user_steps", [[], ["/product-review"]])
+def test_no_project_is_exempt_from_cross_exam(tmp_path, user_steps):
+    # a CLI or library-sdk drops only /product-review; an empty list is no longer an exemption
+    verify = {**_design_node(), "node_id": "pv", "capability": "product-verify",
+              "exit_artifacts": [{"path": ".allforai/product-verify/verify-report.json"}]}
+    _with_workflow(tmp_path, {"nodes": [_design_node(), verify], "user_steps": user_steps})
+    report = validate_unattended_readiness(tmp_path)
+    blocker = next(b for b in report["blockers"] if b["code"] == "missing_cross_exam_step")
+    assert '["/cross-exam"]' in blocker["message"], blocker
+    _with_workflow(tmp_path, {"nodes": [_design_node(), verify], "user_steps": ["/cross-exam"]})
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"]
+                if b["code"] in ("missing_user_steps", "missing_cross_exam_step")], report
+    # a design-only workflow is warned, not blocked
+    _with_workflow(tmp_path, {"nodes": [_design_node()], "user_steps": user_steps})
+    report = validate_unattended_readiness(tmp_path)
+    assert not [b for b in report["blockers"] if b["code"] == "missing_cross_exam_step"]
+    assert any(w["code"] == "missing_cross_exam_step" for w in report.get("warnings", []))
 
 
 def _gate_node():

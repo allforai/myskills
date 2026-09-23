@@ -665,7 +665,7 @@ When writing each node into `workflow.json`, add:
 
 At the top level of `workflow.json`, add:
 - `expanders`: the list of project-local expander scripts that apply (e.g. `["expand_game_2d_production.py"]`), promoting today's hardcoded invocation to a declared list.
-- `user_steps`: the entries the user types after the pipeline, in order — `["/cross-exam", "/product-review"]` on every workflow the suppress rules do not exempt (`bootstrap-planning.md` §After the pipeline). Never nodes: no engine dispatches them, and a node named after either is refused at the run boundary (`verdict_entry_planned_as_node`).
+- `user_steps`: the entries the user types after the pipeline, in order — `["/cross-exam", "/product-review"]`; a CLI or library-sdk drops only `/product-review` (`["/cross-exam"]`), and no workflow drops `/cross-exam` (`bootstrap-planning.md` §After the pipeline, `missing_cross_exam_step`). Never nodes: no engine dispatches them, and a node named after either is refused at the run boundary (`verdict_entry_planned_as_node`).
 
 **`human_gate` is not a runtime concept.** Direction decisions are Phase A
 `decision_inputs` artifacts. See `docs/adr/0001-bootstrap-free-planning.md`.
@@ -710,7 +710,7 @@ Bootstrap 完成。
   {list each node id + goal}
 
 流水线之后由你手动执行（不是节点，/run 不会调度）：
-  {workflow.json.user_steps in order, e.g. /cross-exam → /product-review；被 suppress 规则豁免时写"无"并说明原因}
+  {workflow.json.user_steps in order, e.g. /cross-exam → /product-review；CLI / library-sdk 只列 /cross-exam，并写 已省略 /product-review：{reason}}
 
 确认正确吗？
 ```

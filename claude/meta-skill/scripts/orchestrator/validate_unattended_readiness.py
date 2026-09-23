@@ -497,29 +497,38 @@ def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[di
                  f"workflow.json user_steps.", node_id=_node_id(node))
     if not isinstance(workflow, dict):
         return
+    # a workflow that plans verification has a delivery to examine afterwards; the steps the
+    # user takes then are part of the workflow. No project is exempt from /cross-exam: a CLI or
+    # library-sdk drops only /product-review, having no UI to critique (suppress-rules.md).
+    plans_verify = any(isinstance(n, dict) and isinstance(n.get("capability"), str)
+                       and (n["capability"].endswith("-verify") or n["capability"] == "concept-acceptance")
+                       for n in nodes)
+    omitted = ("user_steps: [\"/cross-exam\", \"/product-review\"]; a project with no product to "
+               "critique (cli, library-sdk) drops only /product-review, user_steps: "
+               "[\"/cross-exam\"]. A delivery is always examined, so no list may leave out "
+               "/cross-exam.")
     if "user_steps" not in workflow:
-        # a workflow that plans verification has a product to examine afterwards; the steps the
-        # user takes then are part of the workflow, and only an empty list says "nothing to examine"
-        plans_verify = any(isinstance(n, dict) and isinstance(n.get("capability"), str)
-                           and (n["capability"].endswith("-verify") or n["capability"] == "concept-acceptance")
-                           for n in nodes)
-        message = ("workflow.json has no user_steps: the steps the user takes after the run "
-                   "(/cross-exam, then /product-review) are part of the workflow. A project with no "
-                   "product to critique (cli, library-sdk) keeps /cross-exam and drops "
-                   "/product-review, user_steps: [\"/cross-exam\"]; only an explicit list, down "
-                   "to user_steps: [], is an exemption; silence is not.")
-        if plans_verify:
-            _add(blockers, "missing_user_steps", message)
-        elif warnings is not None:
-            _add(warnings, "missing_user_steps", message)
-        return
-    steps = workflow.get("user_steps")
-    if (not isinstance(steps, list)
-            or not all(isinstance(step, str) and step.strip() for step in steps)):
-        _add(blockers, "invalid_user_steps",
-             f"workflow.json user_steps must be a list of entry names such as "
-             f"[\"/cross-exam\", \"/product-review\"], got {steps!r}; a step the user "
-             f"cannot read is not one they can take after the run.")
+        code, message = "missing_user_steps", (
+            "workflow.json has no user_steps: the steps the user takes after the run "
+            "(/cross-exam, then /product-review) are part of the workflow, and silence is not "
+            "an exemption. Write " + omitted)
+    else:
+        steps = workflow.get("user_steps")
+        if (not isinstance(steps, list)
+                or not all(isinstance(step, str) and step.strip() for step in steps)):
+            _add(blockers, "invalid_user_steps",
+                 f"workflow.json user_steps must be a list of entry names such as "
+                 f"[\"/cross-exam\", \"/product-review\"], got {steps!r}; a step the user "
+                 f"cannot read is not one they can take after the run.")
+            return
+        if "/cross-exam" in [step.strip() for step in steps]:
+            return
+        code, message = "missing_cross_exam_step", (
+            f"workflow.json user_steps {steps!r} leaves out /cross-exam. Write " + omitted)
+    if plans_verify:
+        _add(blockers, code, message)
+    elif warnings is not None:
+        _add(warnings, code, message)
 
 
 def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dict],

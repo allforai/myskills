@@ -449,7 +449,8 @@ On the first iteration, if `transition_log` is non-empty:
 - All required exit artifacts are ready: report success. End the report with
   `workflow.json.user_steps` in order (`cross-exam`, then `product-review`) as the skills the
   user invokes next; they are never dispatched, never started by a node, and never
-  reported as done (ADR-0008). An empty list means the project was exempted at bootstrap.
+  reported as done (ADR-0008). A list without `product-review` means bootstrap suppressed it
+  (CLI, library-sdk: no UI to critique); `cross-exam` is never dropped.
   Before those user steps, run
   `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations` and print every
   returned entry under the heading `Decisions you delegated to the model`: its id, the
