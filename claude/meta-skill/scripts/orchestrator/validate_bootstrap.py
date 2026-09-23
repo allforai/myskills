@@ -1577,6 +1577,51 @@ def _completed_node_ids(workflow: dict) -> set:
     return {node_id for node_id, status in latest.items() if status == "completed"}
 
 
+def validate_transition_log_preserved(bdir: str) -> list:
+    """A node with published evidence must still have its transitions on record.
+
+    Re-bootstrap rewrites workflow.json from the template, and the template's
+    `"transition_log": []` is the easiest line to copy verbatim. The freshness state
+    survives that rewrite, so evidence published by a node the log no longer mentions
+    is a wiped history, not a run that never happened.
+    """
+    wf_path = os.path.join(bdir, "workflow.json")
+    state_path = os.path.join(bdir, "evidence-freshness.json")
+    if not os.path.exists(wf_path) or not os.path.exists(state_path):
+        return []
+    try:
+        workflow = _load_json(wf_path)
+        state = _load_json(state_path)
+    except Exception:
+        return []
+    delivered = state.get("nodes") if isinstance(state, dict) else None
+    if not isinstance(delivered, dict) or not delivered:
+        return []
+    # Only a rewritten plan can have wiped a log: a replanned baseline (version > 1)
+    # or a reconciled re-bootstrap. A first plan with published evidence and no
+    # transition yet is a driver mid-step, not a lost history.
+    baseline = workflow.get("product_baseline")
+    version = baseline.get("version") if isinstance(baseline, dict) else None
+    reconciled = workflow.get("reconciliation_applied")
+    replanned = (isinstance(version, int) and version > 1) or (isinstance(reconciled, list) and reconciled)
+    if not replanned:
+        return []
+    history = workflow.get("transition_log")
+    logged = set()
+    for event in history if isinstance(history, list) else []:
+        if isinstance(event, dict):
+            node_id = event.get("node_id") or event.get("node")
+            if _text(node_id):
+                logged.add(node_id)
+    planned = {n.get("node_id") for n in workflow.get("nodes", []) if isinstance(n, dict)}
+    missing = sorted(node_id for node_id in delivered if node_id in planned and node_id not in logged)
+    if not missing:
+        return []
+    return [f"transition_log_missing_for_delivered_nodes: {', '.join(missing)} published "
+            "evidence but have no transition_log entry; re-bootstrap must carry the "
+            "existing transition_log over verbatim, never re-emit the template's empty list"]
+
+
 def _plan_shape(nodes) -> dict:
     """The plan a user can actually confirm: node ids plus their hard_blocked_by edges."""
     shape = {}
@@ -2673,6 +2718,7 @@ def main():
             errors.extend(validate_repair_loop_declaration(bdir))
             errors.extend(validate_effect_stage_ownership(bdir))
             errors.extend(validate_coverage_gate_loop(bdir))
+            errors.extend(validate_transition_log_preserved(bdir))
     else:
         if os.path.exists(os.path.join(bdir, "state-machine.json")):
             # The retired format used to skip validation and pass. Nothing generates or executes it
@@ -2698,6 +2744,7 @@ def main():
 # Also export for testing
 __all__ = [
     "validate_workflow",
+    "validate_transition_log_preserved",
     "validate_node_spec",
     "validate_node_spec_coverage",
     "validate_node_spec_contracts",

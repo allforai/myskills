@@ -609,6 +609,8 @@ If total nodes > 30, offer phased `/bootstrap` → `/run` cycles in Step 3.4.
 }
 ```
 
+The empty `transition_log` above is for a fresh bootstrap only. A re-bootstrap or replan copies the existing `transition_log[]` over verbatim — it is the run's history, and `validate_bootstrap` fails with `transition_log_missing_for_delivered_nodes` when a node that already published evidence is missing from it.
+
 **Node fields:**
 - `node_id`: Project-specific. NOT from a fixed vocabulary. `id` is forbidden in workflow nodes.
 - `capability`: Which capability this node is based on. Matches a file in

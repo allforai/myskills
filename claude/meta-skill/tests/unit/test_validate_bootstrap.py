@@ -109,6 +109,41 @@ def test_mixed_artifacts_passes(tmp_path):
     assert errors == []
 
 
+def _freshness_state(bdir, delivered):
+    """Published evidence for the given node ids, as the engine records it."""
+    state = {"nodes": {node_id: {"kind": "evidence"} for node_id in delivered}, "contracts": {}}
+    (Path(bdir) / "evidence-freshness.json").write_text(json.dumps(state))
+
+
+def test_a_replan_that_drops_the_transition_log_of_delivered_nodes_fails(tmp_path):
+    # Replan re-emitted the workflow template with "transition_log": [] while the
+    # freshness state still holds the evidence those nodes published: the run's
+    # history was wiped, not never made.
+    wf = {"nodes": [_base_node(node_id="design")], "transition_log": [],
+          "product_baseline": {"version": 2}}
+    (tmp_path / "workflow.json").write_text(json.dumps(wf))
+    _freshness_state(tmp_path, ["design"])
+    errors = _validate_bootstrap.validate_transition_log_preserved(str(tmp_path))
+    assert errors and errors[0].startswith("transition_log_missing_for_delivered_nodes:")
+    assert "design" in errors[0]
+
+
+def test_a_transition_log_that_records_every_delivered_node_passes(tmp_path):
+    wf = {"nodes": [_base_node(node_id="design")], "product_baseline": {"version": 2},
+          "transition_log": [{"node": "design", "status": "completed"}]}
+    (tmp_path / "workflow.json").write_text(json.dumps(wf))
+    _freshness_state(tmp_path, ["design"])
+    assert _validate_bootstrap.validate_transition_log_preserved(str(tmp_path)) == []
+
+
+def test_a_first_plan_mid_step_is_not_a_wiped_history(tmp_path):
+    # Evidence published before the driver records the transition, on a baseline
+    # that was never replanned: nothing could have erased a log here.
+    _write_workflow(tmp_path, [_base_node(node_id="design")])
+    _freshness_state(tmp_path, ["design"])
+    assert _validate_bootstrap.validate_transition_log_preserved(str(tmp_path)) == []
+
+
 def test_dependency_reference_to_missing_node_fails(tmp_path):
     path = _write_workflow(
         tmp_path,
