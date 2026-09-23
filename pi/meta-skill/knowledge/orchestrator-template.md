@@ -552,7 +552,18 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Post-Completion
 
-1. Run `python3 .allforai/bootstrap/scripts/summarize_run_log.py . --write-report` when that script exists
+1. Record this invocation's terminal outcome with `record_run_event.py` before
+   summarizing. After the final artifact gate and bootstrap validation pass with
+   no required work pending, run
+   `python3 .allforai/bootstrap/scripts/record_run_event.py . --event run_completed --status completed --message "All required workflow nodes verified; final gates passed"`.
+   If execution stopped early, record `--event run_blocked --status blocked`
+   with the concrete `--blocking-reason` and `--message` instead (or keep the
+   terminal failure event already recorded for this stop). An accepted gap or
+   unreadable gate is not completion. Append the outcome; never rewrite earlier
+   failures or repair spend. If recording fails, disclose that the run log could
+   not be finalized rather than presenting the old summary as current.
+   Then run `python3 .allforai/bootstrap/scripts/summarize_run_log.py . --write-report`
+   when that script exists. Summarizing existing events does not record an outcome.
 2. Run `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations` and disclose the
    delegated product decisions as the success report does, `No delegated decisions.` when the
    list is empty. Run it whether the run succeeded or stopped early; it asks nothing and blocks nothing
