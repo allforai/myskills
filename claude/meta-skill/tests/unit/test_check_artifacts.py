@@ -157,6 +157,18 @@ def test_existence_only_quality_status_is_not_complete(tmp_path):
     assert result["artifacts"][0]["status_error"]["field"] == "quality_status"
 
 
+@pytest.mark.parametrize("field", ["quality_gaps", "effect_gaps", "experience_gaps",
+                                   "visual_quality_gaps", "perceptual_gaps"])
+def test_a_bare_finding_id_in_a_quality_gate_still_blocks(tmp_path, field):
+    # The template says a non-empty quality gate blocks completion; the gate must not
+    # depend on the entry happening to contain placeholder/fallback wording.
+    f = tmp_path / "report.json"
+    f.write_text('{"status":"passed","' + field + '":[{"id":"experience-002"}]}')
+    result = check_node_artifacts(_make_node([str(f)]))
+    assert result["all_exist"] is False
+    assert result["artifacts"][0]["status_error"]["field"] == field
+
+
 def test_quality_gaps_are_not_complete(tmp_path):
     f = tmp_path / "qa.json"
     f.write_text('{"status":"passed","quality_gaps":[{"notes":"structure only; does not match concept"}]}')

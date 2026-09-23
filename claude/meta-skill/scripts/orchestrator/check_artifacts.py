@@ -426,6 +426,14 @@ def _production_gap_error(data: dict) -> dict | None:
             "remaining_gaps",
             "test_gaps",
             "unresolved_findings",
+            # The Quality Acceptance gates of the node-spec template: a non-empty list
+            # is the verdict "not good enough yet", whatever words the entries use. A
+            # bare finding id must not slip past the placeholder/fallback wording test.
+            "quality_gaps",
+            "effect_gaps",
+            "experience_gaps",
+            "visual_quality_gaps",
+            "perceptual_gaps",
         }:
             return {
                 "field": field,
