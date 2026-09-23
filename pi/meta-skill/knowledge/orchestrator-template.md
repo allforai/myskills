@@ -62,7 +62,7 @@ printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run
   | python3 .allforai/bootstrap/scripts/repair_authorization.py .
 ```
 
-A `replayed: true` answer on a resumed run is the same statement, not a reset. If the step was skipped and the workflow already ran nodes but never dispatched a declared repair node, recover with `adopt_history` and evidence `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>", "absence_of": "repair_history", "complete": true}`; the helper verifies the absence against the transition log. Any other history stays blocked until reconstructed.
+A `replayed: true` answer on a resumed run is the same statement, not a reset. If the step was skipped and the workflow already ran nodes but never dispatched a declared repair node, recover with `adopt_history` and evidence `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>", "absence_of": "repair_history", "complete": true}`; the helper verifies the absence against the transition log. If declared repair nodes did run, the same `adopt_history` takes `{"reconstruct_from": "transition_log", "complete": true}` and rebuilds one settled attempt per repair transition, bounded by the declared loops. Any other history stays blocked until reconstructed.
 
 ## Run Policy — once before the first node
 

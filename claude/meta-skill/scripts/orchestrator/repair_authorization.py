@@ -57,7 +57,7 @@ DETERMINATIONS = ('executed', 'not_executed')
 # A source record's status that ends an attempt, and the outcome it evidences.
 TERMINAL_STATUS = {'completed': 'delivered', 'failed': 'failed'}
 # Where a source record carries its own time, in the orders these documents use.
-TIME_FIELDS = ('at', 'timestamp', 'recorded_at', 'dispatched_at', 'settled_at')
+TIME_FIELDS = ('at', 'timestamp', 'recorded_at', 'dispatched_at', 'settled_at', 'completed_at', 'started_at')
 # The one log that records what this run executed. Absence is only evidence against it:
 # any other list in the same document is a list of something else, and a record shape
 # that cannot name a node is trivially "absent" of every attempt that ever ran.
@@ -530,7 +530,9 @@ def initialize(root: Path, run_id: str) -> dict:
                           f'({json.dumps(observed, sort_keys=True)}); this run has a '
                           'history, and a missing ledger is not proof that it spent no '
                           'repair budget. Recover it with "adopt_history" (legacy '
-                          'repair_routes), or with evidence {"absence_of": '
+                          'repair_routes), with evidence {"reconstruct_from": '
+                          '"transition_log", "complete": true} when the transition log '
+                          'records the repair attempts, or with {"absence_of": '
                           '"repair_history", "complete": true} when no declared repair '
                           'node ever ran',
                           untrusted='prior_execution', observed=observed)
@@ -602,6 +604,8 @@ def adopt_history(root: Path, run_id: str, evidence: Any) -> dict:
                       untrusted='incomplete_history', source_path=str(target.name))
     if text(evidence.get('absence_of')) == 'repair_history':
         return adopt_absence(root, run_id, evidence, target, source_digest)
+    if text(evidence.get('reconstruct_from')) == 'transition_log':
+        return adopt_transitions(root, run_id, evidence, target, source_digest)
     records = evidence.get('authorizations')
     if not isinstance(records, list):
         raise invalid('evidence.authorizations must be a list')
@@ -735,6 +739,102 @@ def adopt_absence(root: Path, run_id: str, evidence: dict, target: Path,
                 'proof': proof, 'unresolved': []}
 
 
+def adopt_transitions(root: Path, run_id: str, evidence: dict, target: Path,
+                      source_digest: str) -> dict:
+    """Reconstruct the spend of a run that dispatched repairs without a ledger.
+
+    The transition log is the run's own record of what it did: every entry naming a
+    declared repair node is one attempt that was charged against that loop's QA
+    obligations, and its terminal status is how the attempt ended. That is more than a
+    legacy ``repair_routes`` ledger records, so it reconstructs fully settled entries.
+    What it cannot show — an undated record, a status that does not end an attempt, a
+    repair node the plan never declared — leaves the history ambiguous and the run
+    blocked, exactly as an under-count would (ADR 0007). A workflow that also carries a
+    ``repair_routes`` ledger is that ledger's business, never counted twice.
+    """
+    document = load_source(target)
+    observed = execution_traces(document)
+    routes = document.get('repair_routes')
+    if isinstance(routes, list) and routes:
+        raise blocked(f'{WORKFLOW} carries {len(routes)} repair_routes charges as well as '
+                      'a transition log; reconstruct from the legacy ledger, or the same '
+                      'attempt would be counted twice', untrusted='ambiguous_history',
+                      observed=observed)
+    bounds = declared_bounds(root)
+    loops: dict[str, list[str]] = {}
+    for (repair_node_id, qa_node_id) in bounds:
+        loops.setdefault(repair_node_id, []).append(qa_node_id)
+    declared = set(declared_repair_nodes(root, document))
+    transitions = document.get('transition_log')
+    if not isinstance(transitions, list):
+        raise blocked(f'{WORKFLOW} holds no readable transition_log to reconstruct from',
+                      untrusted='unverifiable_evidence')
+    source = f'{evidence["source_path"]}@{source_digest}'
+    adopted: list[dict] = []
+    for index, record in enumerate(transitions):
+        if not isinstance(record, dict):
+            continue
+        node_id = text(record.get('node') or record.get('node_id'))
+        if node_id not in declared:
+            continue
+        reference = f'transition_log[{index}]'
+        if node_id not in loops:
+            raise blocked(f'{reference} records repair node {node_id}, which the readiness '
+                          'spec declares no loop for; its attempts cannot be bounded',
+                          untrusted='undeclared_repair_plan', repair_node_id=node_id)
+        status = text(record.get('status'))
+        if status not in TERMINAL_STATUS:
+            raise blocked(f'{reference} has status {status or "none"}, which does not end '
+                          f'an attempt of {node_id}; whether it was spent is ambiguous',
+                          untrusted='ambiguous_history')
+        moment = record_time(record)
+        if not moment:
+            raise blocked(f'{reference} carries no time, so the attempt of {node_id} it '
+                          'records cannot be placed in the run',
+                          untrusted='ambiguous_history')
+        obligations = sorted(loops[node_id])
+        started_at = text(record.get('started_at')) or moment
+        entry = {'authorization_id': f'adopted-{reference}',
+                 'repair_node_id': node_id, 'obligations': obligations,
+                 'charged': {o: 1 for o in obligations},
+                 'budgets': {o: bounds[(node_id, o)] for o in obligations},
+                 'state': 'settled', 'outcome': TERMINAL_STATUS[status],
+                 'granted_at': started_at, 'started_at': started_at, 'settled_at': moment,
+                 'request_digest': None,
+                 'provenance': {'adopted_from': reference, 'source': source,
+                                'route': None,
+                                'execution': {'kind': 'transition_record',
+                                              'settlement_ref': reference,
+                                              'status': status, 'record': record},
+                                'adopted_at': now_iso()}}
+        try:
+            check_entry(entry, set())
+        except Refusal as refusal:
+            raise blocked(f'{reference} is not attributable: {refusal.verdict["reason"]}',
+                          untrusted='ambiguous_history')
+        adopted.append(entry)
+    with ledger_lock(root):
+        if (root / LEDGER).exists():
+            existing = read_ledger(root)
+            raise blocked(f'Ledger already records run {existing["run_id"]}; adopting '
+                          'history over live accounting would rewrite it',
+                          untrusted='existing_run', existing_run_id=existing['run_id'])
+        workflow, _ = read_workflow(root)
+        proof = {'kind': 'verified_transition_log', 'source_path': evidence['source_path'],
+                 'source_digest': source_digest, 'records': len(adopted),
+                 'declared_repair_nodes': sorted(declared), 'observed': observed,
+                 'verified_at': now_iso()}
+        write_json(root / LEDGER, {
+            'ledger_version': LEDGER_VERSION, 'run_id': run_id,
+            'origin': {'kind': 'adopted_transitions', 'proof': proof,
+                       'binding': loop_binding(workflow), 'recorded_at': now_iso()},
+            'authorizations': adopted})
+        return {'status': 'ok',
+                'reason': 'Repair attempts reconstructed from the transition log with their provenance',
+                'run_id': run_id, 'origin': 'adopted_transitions', 'adopted': len(adopted),
+                'proof': proof, 'unresolved': []}
+
+
 def load_source(target: Path) -> dict:
     """The verified evidence document, parsed once for every reference resolved in it."""
     try:
@@ -770,8 +870,10 @@ def legacy_routes(document: dict) -> list[dict]:
                       'provably never executed is recorded with "initialize", which '
                       'verifies that claim against the workflow; one that executed but '
                       'never dispatched a declared repair node adopts evidence '
-                      '{"absence_of": "repair_history", "complete": true}, verified '
-                      'against the transition log',
+                      '{"absence_of": "repair_history", "complete": true}, and one whose '
+                      'transition log records its repair attempts adopts '
+                      '{"reconstruct_from": "transition_log", "complete": true}; both '
+                      'are verified against the transition log',
                       untrusted='incomplete_history')
     for index, route in enumerate(routes):
         if (not isinstance(route, dict) or not text(route.get('repair_node_id'))

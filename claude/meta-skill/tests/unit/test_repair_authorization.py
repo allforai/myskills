@@ -688,6 +688,68 @@ def test_absence_of_repair_history_is_refused_when_the_workflow_shows_a_repair(r
     assert not (root / LEDGER).exists()
 
 
+def from_transitions(root, log):
+    """A run that dispatched repairs without a ledger: the complete transition log is
+    the record of every attempt, and the helper reconstructs the spend from it."""
+    write_workflow(root, transition_log=log)
+    return {'source_path': WORKFLOW, 'source_digest': ra.file_digest(root / WORKFLOW),
+            'reconstruct_from': 'transition_log', 'complete': True,
+            'basis': 'each transition of a declared repair node is one charged attempt'}
+
+
+def _t(node, status, when):
+    return {'node': node, 'status': status, 'started_at': when, 'completed_at': when}
+
+
+def test_repair_attempts_in_the_transition_log_are_adopted_as_spend(root):
+    plan(root, ('fix', ['qa-a', 'qa-b'], 3))
+    evidence = from_transitions(root, [
+        _t('build', 'completed', '2099-01-01T00:00:00Z'),
+        _t('fix', 'failed', '2099-01-01T01:00:00Z'),
+        _t('fix', 'completed', '2099-01-01T02:00:00Z')])
+    verdict = ra.adopt_history(root, 'run-1', evidence)
+    assert verdict['status'] == 'ok' and verdict['origin'] == 'adopted_transitions'
+    assert verdict['adopted'] == 2 and verdict['unresolved'] == []
+    assert spend_by_obligation(root) == {'qa-a': 2, 'qa-b': 2}
+    ledger = json.loads((root / LEDGER).read_text())
+    adopted = ledger['authorizations']
+    assert [a['outcome'] for a in adopted] == ['failed', 'delivered']
+    assert [a['provenance']['adopted_from'] for a in adopted] == ['transition_log[1]', 'transition_log[2]']
+    # The reconstructed spend bounds what the run may still do.
+    assert grant_succeeds(root, 'a3', ['qa-a'], {'qa-a': 3})
+    assert not grant_succeeds(root, 'a4', ['qa-a'], {'qa-a': 3})
+
+
+def test_an_undated_repair_transition_cannot_be_adopted(root):
+    plan(root, ('fix', ['qa-a'], 3))
+    evidence = from_transitions(root, [{'node': 'fix', 'status': 'completed'}])
+    verdict = refusal(ra.adopt_history, root, 'run-1', evidence)
+    assert verdict['untrusted'] == 'ambiguous_history'
+    assert not (root / LEDGER).exists()
+
+
+def test_a_repair_transition_outside_the_declared_plan_cannot_be_adopted(root):
+    plan(root, ('fix', ['qa-a'], 3))
+    workflow_loops = [{'repair_node_id': 'fix', 'qa_node_ids': ['qa-a']},
+                      {'repair_node_id': 'other-fix', 'qa_node_ids': ['qa-z']}]
+    write_workflow(root, required_repair_loops=workflow_loops,
+                   transition_log=[_t('other-fix', 'completed', '2099-01-01T00:00:00Z')])
+    evidence = {'source_path': WORKFLOW, 'source_digest': ra.file_digest(root / WORKFLOW),
+                'reconstruct_from': 'transition_log', 'complete': True}
+    verdict = refusal(ra.adopt_history, root, 'run-1', evidence)
+    assert verdict['untrusted'] == 'undeclared_repair_plan'
+
+
+def test_transition_reconstruction_defers_to_a_legacy_routes_ledger(root):
+    plan(root, ('fix', ['qa-a'], 3))
+    write_workflow(root, repair_routes=[{'repair_node_id': 'fix', 'qa_node_id': 'qa-a', 'attempt': 1}],
+                   transition_log=[_t('fix', 'completed', '2099-01-01T00:00:00Z')])
+    evidence = {'source_path': WORKFLOW, 'source_digest': ra.file_digest(root / WORKFLOW),
+                'reconstruct_from': 'transition_log', 'complete': True}
+    verdict = refusal(ra.adopt_history, root, 'run-1', evidence)
+    assert verdict['untrusted'] == 'ambiguous_history'
+
+
 def test_absence_of_repair_history_must_be_asserted_complete(root):
     plan(root, *DEFAULT_PLAN)
     evidence = no_repair_history(root, [{'node': 'build', 'status': 'completed'}])
