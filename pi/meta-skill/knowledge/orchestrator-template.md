@@ -46,6 +46,7 @@ Project docs under `docs/bootstrap/` may be updated, but they should not be the 
 
 Before executing any workflow node:
 
+<!-- snippet:preflight-readiness -->
 ```bash
 python3 .allforai/bootstrap/scripts/record_run_event.py . --event run_started --status started --message "pi run skill invoked"
 python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
@@ -57,6 +58,7 @@ Before stopping, record `preflight_blocked` with `record_run_event.py`, then run
 
 Then record the repair-ledger origin, still before the first node — this is the only moment `initialize` can prove zero spend, because it refuses a workflow that already shows execution:
 
+<!-- snippet:repair-ledger-initialize -->
 ```bash
 printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run-id)" \
   | python3 .allforai/bootstrap/scripts/repair_authorization.py .
@@ -86,8 +88,11 @@ Before every execution wave, run every idempotent expander declared by `workflow
 
 The main session is the orchestrator. It owns `workflow.json`, `transition_log`,
 `check_artifacts.py`, `repair_authorization.py`, `run_safety.py`, readiness
-re-runs, and the final report. Node workers return observations and the files
-they were asked to produce; they do not record completion or edit the ledger.
+re-runs, and the final report. Node workers return observations, the files they were asked to produce, and
+`acceptance_argv` — the JSON argv of the command that accepts their work and exits
+non-zero when it is not accepted (the node's acceptance check, or its exit artifacts'
+`validation_commands`; a no-op is not acceptance). They do not record completion,
+publish freshness or edit the ledger.
 
 - Skill discovery is not subagent capability. Use only already-loaded tools.
   Do not install extensions or start another harness.
@@ -143,35 +148,46 @@ they were asked to produce; they do not record completion or edit the ledger.
 4. Decide the next node:
    - prefer nodes whose `hard_blocked_by` nodes are complete
    - prefer nodes whose upstream artifacts already exist
-   - parallelize only when exit artifacts do not overlap
+   - parallelize only when write sets are disjoint (the predicate in Pi Dispatch)
    - skip a node only when the same independent artifact gate passes on current project state
    - re-run a failed node only after addressing the cause
    - a failed QA node with a declared repair loop routes to that repair node first
      (see Declared cross-node repair loop below), then re-runs
 5. Read `.allforai/bootstrap/node-specs/<node-id>.md`
 6. Dispatch execution using that node-spec as the task contract (see Pi Dispatch)
-7. After the node reports success, independently run:
+7. When the node reports success, publish its freshness — contract, then evidence —
+   with the `acceptance_argv` the worker returned (Pi Dispatch). The helper runs that
+   command itself, so publication is the orchestrator re-verifying the worker, not
+   taking its word. A worker that returned no `acceptance_argv` has not finished:
+   record a failed transition. `check_artifacts.py --json` cannot serve as the argv:
+   it always exits 0 and carries its verdict in the JSON.
+
+   <!-- snippet:freshness-publish -->
+   ```bash
+   (
+     set -o pipefail
+     acceptance='<acceptance_argv_json>'
+     for kind in contract evidence; do
+       token=$(printf '{"operation":"observe","node_id":"%s","kind":"%s"}' '<node_id>' "$kind" \
+         | python3 .allforai/bootstrap/scripts/evidence_freshness.py . \
+         | python3 -c 'import json,sys; print(json.load(sys.stdin)["observation"])') || exit 1
+       printf '{"operation":"publish","observation":"%s","verification_command":%s}' "$token" "$acceptance" \
+         | python3 .allforai/bootstrap/scripts/evidence_freshness.py . \
+         | python3 -c 'import json,sys; r=json.load(sys.stdin); print(json.dumps(r)); sys.exit(r.get("status") != "valid")' \
+         || exit 1
+     done
+   )
+   ```
+
+   A non-zero exit — any `status` other than `valid` — is a failed transition, not
+   something to record around.
+8. Then independently run the artifact gate, which reads the freshness just published:
    `python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --node <node_id> --json`
    Non-empty production gaps, blocking status values, or `all_exist != true` cannot be recorded as complete.
    Missing checker, nonzero exit, empty/invalid JSON, mismatched node identity or non-boolean success are failures, never implicit passes. Final bootstrap validation must also succeed before reporting the workflow complete.
-8. On success, publish the node's freshness through the copied helper — contract
-   first, then evidence, each as an observe → publish pair (the token returned by
-   `observe` is what `publish` takes; the verification command is the node's own
-   check, e.g. `check_artifacts.py --node <node_id>`):
-
-   ```bash
-   for kind in contract evidence; do
-     token=$(echo "{\"operation\":\"observe\",\"node_id\":\"<node_id>\",\"kind\":\"$kind\"}" \
-       | python3 .allforai/bootstrap/scripts/evidence_freshness.py . | python3 -c 'import json,sys; print(json.load(sys.stdin)["observation"])')
-     echo "{\"operation\":\"publish\",\"observation\":\"$token\",\"verification_command\":[\"python3\",\".allforai/bootstrap/scripts/check_artifacts.py\",\".allforai/bootstrap/workflow.json\",\"--node\",\"<node_id>\",\"--json\"]}" \
-       | python3 .allforai/bootstrap/scripts/evidence_freshness.py .
-   done
-   ```
-
-   A `status` other than `valid` is a failure of this step, not something to record
-   around. Then append a completed transition entry to `workflow.json`.
-9. On failure: append a failed transition entry, then read `.allforai/bootstrap/protocols/diagnosis.md`
-10. Repeat
+9. On success: append a completed transition entry to `workflow.json`
+10. On failure: append a failed transition entry, then read `.allforai/bootstrap/protocols/diagnosis.md`
+11. Repeat
 
 ## Declared cross-node repair loop
 
@@ -390,6 +406,7 @@ observation away from it:
    `parallel_write_scopes`.
 2. Observe and publish the node once through the generated helper:
 
+   <!-- illustrative: request shape only; the argv is the QA node's own acceptance command (input-freshness.md) -->
    ```bash
    echo '{"operation":"observe","node_id":"<qa-node>","kind":"contract"}' \
      | python3 .allforai/bootstrap/scripts/evidence_freshness.py .

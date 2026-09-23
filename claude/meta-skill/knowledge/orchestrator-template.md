@@ -49,6 +49,7 @@ turn ends unless a persistent supervised runner actually exists.
 
 Before executing any workflow node, run unattended readiness:
 
+<!-- snippet:preflight-readiness -->
 ```bash
 python3 .allforai/bootstrap/scripts/record_run_event.py . --event run_started --status started --message "run command invoked"
 python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
@@ -65,6 +66,7 @@ Then record the repair-ledger origin, still before the first node — this is th
 only moment `initialize` can prove zero spend, because it refuses a workflow that
 already shows execution:
 
+<!-- snippet:repair-ledger-initialize -->
 ```bash
 printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run-id)" \
   | python3 .allforai/bootstrap/scripts/repair_authorization.py .

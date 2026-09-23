@@ -65,6 +65,7 @@ turn ends unless a persistent supervised runner actually exists.
 
 Before executing any workflow node:
 
+<!-- snippet:preflight-readiness -->
 ```bash
 python3 .allforai/bootstrap/scripts/record_run_event.py . --event run_started --status started --message "codex run command invoked"
 python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
@@ -377,6 +378,7 @@ observation away from it:
    `parallel_write_scopes`.
 2. Observe and publish the node once through the generated helper:
 
+   <!-- illustrative: request shape only; the argv is the QA node's own acceptance command (input-freshness.md) -->
    ```bash
    echo '{"operation":"observe","node_id":"<qa-node>","kind":"contract"}' \
      | python3 .allforai/bootstrap/scripts/evidence_freshness.py .
