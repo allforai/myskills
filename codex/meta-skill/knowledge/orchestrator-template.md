@@ -284,6 +284,16 @@ this loop apply it:
   because the work it authorized may already be in the tree. A route that opens and is
   interrupted before any dispatch costs nothing, on either host.
 
+  The native driver calls `initialize` itself, before the first dispatch, so a fresh run
+  never needs it by hand. A run that executes before any ledger exists — repair loops
+  declared only by a replan, or a deleted ledger — stays blocked, and the driver never
+  vouches for its own history. The operator recovers it with `adopt_history`: legacy
+  `repair_routes`, or, when no declared repair node ever ran, evidence
+  `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>",
+  "absence_of": "repair_history", "complete": true}`, which the helper verifies against
+  the transition log and `repair_routes`. Any other history stays blocked until
+  reconstructed.
+
   Opening the route is not the charge. The QA node's failed `transition_log` entry records
   that this QA node failed; it is the QA node's history, never the budget. The ledger is
   durable, so a restarted driver resumes the spent budget instead of handing the same
