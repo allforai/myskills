@@ -65,6 +65,22 @@ def test_declared_downstream_write_scope_does_not_stale_its_planner(tmp_path):
     assert "files" not in checked["freshness"]["diff"], checked["freshness"]["diff"]
 
 
+def test_new_files_inside_a_declared_downstream_scope_are_not_unmapped_input(tmp_path):
+    """A delivery that creates product source nobody declared as an input is still
+    inside the scope its consumer declared, so the planner's whole-tree snapshot must
+    not report it as an unmapped change and downgrade the planner to uncertain."""
+    project(tmp_path, confirmed=True)
+    (tmp_path / "src").mkdir()
+    _consumer(tmp_path, write_scopes=["src/**"])
+    publish_contract(tmp_path, verification_command=LEGACY_CHECK)
+
+    (tmp_path / "src" / "scheduler.py").write_text("def due():\n    return []\n", encoding="utf-8")
+
+    checked = _artifacts(tmp_path, NODE)
+    assert checked["freshness"]["status"] != "uncertain", checked["freshness"]
+    assert "src/scheduler.py" not in checked["freshness"].get("diff", {}).get("files", {}), checked["freshness"]
+
+
 def test_undeclared_write_scope_exempts_nothing(tmp_path):
     project(tmp_path, confirmed=True)
     _consumer(tmp_path, write_scopes=None)

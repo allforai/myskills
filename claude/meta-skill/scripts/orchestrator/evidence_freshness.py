@@ -631,6 +631,7 @@ def unmapped_changes(root, workflow, state):
         unknown = {p for p in set(previous) | set(current)
                    if source_path_included(p) and not reclassified(root, p, current)
                    and previous.get(p) != current.get(p)} - owned
+        unknown -= downstream_write_scope(root, node_id, workflow)
         if not unknown:
             continue
         tasks.add(node_id)
@@ -992,9 +993,12 @@ def evaluate(root):
             result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers, external)
         if record:
             previous = record.get('source_snapshot', {})
+            # The whole-tree snapshot follows the same graph rule as declared inputs:
+            # what a consumer declares it writes is this node's output, not its input.
             unknown = {p for p in set(previous) | set(current)
                        if source_path_included(p) and not reclassified(root, p, current)
                        and previous.get(p) != current.get(p)} - owned
+            unknown -= downstream_write_scope(root, node['node_id'], workflow)
             uncertain_inputs.update(unknown)
             if unknown and valid:
                 result[node['node_id']] = {'status': 'uncertain', 'readiness_status': 'uncertain',
