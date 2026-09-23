@@ -144,6 +144,24 @@ def test_a_first_plan_mid_step_is_not_a_wiped_history(tmp_path):
     assert _validate_bootstrap.validate_transition_log_preserved(str(tmp_path)) == []
 
 
+def test_a_cli_project_is_not_held_to_the_visual_acceptance_gate(tmp_path):
+    # A terminal product's review spec says "no screenshots" and a transition note
+    # repeats it: the substring must not conscript the project into visual QA.
+    _write_workflow(tmp_path, [_base_node(node_id="review-runtime", capability="verify")])
+    _write_node_spec(tmp_path, "review-runtime",
+                     "Terminal product: no image screenshot evidence; judge the game-free CLI output")
+    (tmp_path / "bootstrap-profile.json").write_text(json.dumps({"architecture_pattern": "cli"}))
+    assert _validate_bootstrap.validate_game_visual_acceptance_standard_flow(str(tmp_path)) == []
+
+
+def test_runtime_notes_in_the_transition_log_do_not_make_a_workflow_visual(tmp_path):
+    wf = {"nodes": [_base_node(node_id="verify", capability="verify")],
+          "transition_log": [{"node": "verify", "status": "completed",
+                              "note": "no screenshot for a game-free terminal product; rendering skipped"}]}
+    (tmp_path / "workflow.json").write_text(json.dumps(wf))
+    assert _validate_bootstrap.validate_game_visual_acceptance_standard_flow(str(tmp_path)) == []
+
+
 def test_dependency_reference_to_missing_node_fails(tmp_path):
     path = _write_workflow(
         tmp_path,

@@ -831,7 +831,12 @@ def _read_text_if_exists(path: str) -> str:
 
 def _workflow_and_specs_blob(bdir: str, workflow: dict) -> str:
     specs_dir = os.path.join(bdir, "node-specs")
-    parts = [_lower_blob(workflow)]
+    # The plan is what these gates classify; runtime notes are not the plan. A
+    # transition that says "no screenshot for a terminal product" must not read as
+    # a screenshot requirement.
+    plan_only = {k: v for k, v in workflow.items()
+                 if k not in ("transition_log", "diagnosis_history", "corrections_applied")}
+    parts = [_lower_blob(plan_only)]
     for name in (
         "bootstrap-profile.json",
         "canvas2d-game-client-profile.json",
@@ -1143,6 +1148,17 @@ def validate_game_visual_acceptance_standard_flow(bdir: str) -> list:
         workflow = _load_json(workflow_path)
     except Exception:
         return errors
+
+    # A product with no visible surface has nothing to screenshot; the words a CLI's
+    # specs use to say so are not a visual QA plan.
+    profile_path = os.path.join(bdir, "bootstrap-profile.json")
+    if os.path.exists(profile_path):
+        try:
+            profile = _load_json(profile_path)
+        except Exception:
+            profile = {}
+        if isinstance(profile, dict) and profile.get("architecture_pattern") in ("cli", "library-sdk"):
+            return errors
 
     blob = _workflow_and_specs_blob(bdir, workflow)
     has_visible_game = _contains_any(blob, VISIBLE_GAME_RUNTIME_TERMS) and (
