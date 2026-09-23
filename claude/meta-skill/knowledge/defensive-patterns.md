@@ -323,3 +323,37 @@ A client node must talk to a backend service. The contract specifies `Authorizat
 | Sync service URL | `operator` | `deploy-env` — never rendered on an end-user surface |
 | Daily reminder time | `end-user` | none — genuine end-user preference on the settings screen |
 | Self-hosted server URL | `end-user` | exception, `requirement_ref: REQ-012` (confirmed self-hosting requirement) |
+
+## Pattern K: Unhit Defense Deferral
+
+**Trigger condition**: A design or implementation node is about to add a mechanism **for a scenario it imagines** — a rate limit or quota, a retry with backoff, a degradation or fallback path, a cache or batch sized for load, a compatibility branch with no caller, a recovery flow for a "just in case", an abstraction layer that only pays off at a hypothetical scale — and the failure it defends against has **no instance in this system**.
+
+**Not in scope: correctness.** Handling a failure the contract you call says can happen — an error return, a timeout, a cancellation, a reconnect — is not defensive work, it is writing that call correctly. An `if err != nil` branch that has never fired in production is not a candidate here. The test is not "has this branch executed", it is "does the normal path still hold if this is absent". If removing it leaves undefined behaviour on a documented failure mode, this pattern does not apply.
+
+**Protocol**:
+
+1. **Classify the failure it prevents.** If it is abuse, cost, data loss or corruption, money, permissions, or a compliance obligation, this pattern does not apply — build it, and build it before it is hit. Those are not recoverable degradations and frequency does not discount them.
+2. **Establish that "no instance" is a finding, not a blind spot.** Say where you looked — incidents, tickets, alerts, metrics, logs — and over what period. If the path has no observability at all, what you have is *not visible*, not *did not happen*; record it as unknown and stop. Absence of evidence counts only where evidence would have been recorded.
+3. **Otherwise, do not build it.** A failure that has never occurred and whose consequence is a recoverable degradation does not get defended in advance. Low frequency and low risk together mean the defense costs more than the event.
+4. **Record it as deferred**, with the trigger that would bring it back: the real occurrence, not a forecast. "When a call actually saturates the relay" is a trigger; "when we reach 10k users" is a forecast and does not count.
+5. **Never size an unhit defense from proxies.** If the threshold cannot be read off an observed measurement or an external contract, deriving one from adjacent constants (participant caps, buffer sizes, capture targets, raw frame arithmetic) produces a number nobody can check. That number does not stay alone: it grows the tests that prove it does not clip normal use, the config keys that carry it, the documentation of where it came from, and later the fixes for how it interacts with the checks around it.
+6. **When the defense already exists and does not work** — an always-true limit, a retry that never fires, a switch nothing reads, a default that disables the predicate — there are two repairs, not one. Ask steps 1-3 *before* asking how to make it fire. "Make the guard real" is the reflex answer and it is the expensive one: making an unhit defense real requires inventing the threshold step 5 forbids.
+
+**Key principles**:
+
+- A documented reason is not the same as a justified one. When the commit or comment that introduced the mechanism admits its own premise is unmeasured — "no real sender on this route yet", "a tight value is not derivable", "tighten once we measure" — that is evidence the work was speculative, not evidence it was warranted.
+- The effort spent justifying a threshold is a signal about the threshold. Paragraphs of derivation for two constants means the number was not available to be read off anything.
+- Deleting unhit defensive work is not a coverage trade-off, because there was no coverage: the branch has never executed on a real input.
+- This pattern removes work; it never removes a guard on data, money, security, permissions, or compliance. If unsure which side a mechanism is on, it is on the protected side.
+- **Knowing why it exists comes first.** If you cannot establish what a mechanism protects, you cannot establish that it is low-risk, and this pattern does not apply. It requires "investigated, and found to be speculative" — never "could not find a reason, so removed".
+
+**Example**:
+
+| Mechanism | Prevents | Instance found | Verdict |
+|---|---|---|---|
+| Rate limit on OTP send | Spam, SMS bill, account enumeration | none needed | Build — cost and abuse, step 1 exits |
+| Idempotency key on payment callback | Double charge | none in 18 months | Build — money, step 1 exits |
+| Per-call media throughput cap | Degraded call quality under a runaway sender | none; route has no client yet | Defer — record "a call actually saturates the relay" as the trigger |
+| Auto-resume for a monthly export | Re-running a report | none; re-export is cheap | Defer — recoverable, re-run costs one click |
+| `if err != nil` on a network write | Undefined behaviour on a documented failure | branch never fired | Build — correctness, out of scope (see Trigger condition) |
+| Retry on a queue whose delivery path has no metrics | Lost job | cannot tell — nothing is recorded | Unknown, not deferred — step 2 stops here |
