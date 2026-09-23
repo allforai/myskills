@@ -1252,6 +1252,17 @@ def session(root, request):
     # recorded session, or a legacy hand-projected local file awaiting recovery.
     concept_path = ((LOCAL if profile.get("intent_session_path") == LOCAL else CONCEPT)
                     if operation in ("draft", "admit") else _session_path(root, profile))
+    # A local session can still have to correct a product-level intent — a frozen
+    # acceptance the run proved wrong. The session marker is the default, not a
+    # cage: an explicit target names the product concept, and everything below then
+    # reads and freezes that document, with its own baseline and journal.
+    target = request.get("target")
+    if target is not None:
+        if target != "product-concept":
+            raise ValueError("target may only name product-concept")
+        if operation in ("draft", "admit"):
+            raise ValueError("draft and admit name their own route; target applies to session operations")
+        concept_path = CONCEPT
     concept = _read(root, concept_path, {})
     _validate_question_ids(concept)
     if operation == "admit":

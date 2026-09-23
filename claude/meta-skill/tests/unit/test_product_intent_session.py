@@ -35,6 +35,36 @@ def decide(root, actions, batch="user-1"):
                          "user_reference": "user turn " + batch, "actions": actions})
 
 
+def test_a_local_session_reaches_the_product_concept_only_by_explicit_target(tmp_path):
+    # A run proved a frozen product acceptance wrong while the session marker points at
+    # local-requirements.json. Without a target the CLI stays in the local file; with
+    # target=product-concept the same decide edits the concept and its journal.
+    project(tmp_path, host="claude")
+    assert invoke(tmp_path, draft()).returncode == 0
+    actions = [{"operation": "confirm", "id": t, "reason": "Chosen direction"} for t in TOPICS]
+    actions.append({"operation": "answer", "id": "conflict", "answer": "Exclude archived", "reason": "Scope"})
+    assert decide(tmp_path, actions).returncode == 0
+    profile_path = tmp_path / ".allforai/bootstrap/bootstrap-profile.json"
+    profile = json.loads(profile_path.read_text())
+    profile["intent_session_path"] = ".allforai/bootstrap/local-requirements.json"
+    profile_path.write_text(json.dumps(profile))
+    write(tmp_path, ".allforai/bootstrap/local-requirements.json", {"requirements": [], "intent_questions": []})
+    before = (tmp_path / CONCEPT).read_text()
+    adjust = [{"operation": "adjust", "id": "tradeoffs", "changes": {"goal": "Privacy before reach"},
+               "reason": "The run proved the frozen acceptance wrong"}]
+    assert decide(tmp_path, adjust, batch="user-2").returncode != 0
+    assert (tmp_path / CONCEPT).read_text() == before
+    targeted = invoke(tmp_path, {"operation": "decide", "batch_id": "user-3", "topic": "Product direction",
+                                 "user_reference": "user turn 3", "target": "product-concept",
+                                 "actions": adjust})
+    assert targeted.returncode == 0, targeted.stdout + targeted.stderr
+    concept = json.loads((tmp_path / CONCEPT).read_text())
+    tradeoffs = [i for i in concept["requirements"] if i["id"] == "tradeoffs"]
+    assert tradeoffs[-1]["goal"] == "Privacy before reach" and tradeoffs[-1]["revision"] == 2
+    assert any(b["batch_id"] == "user-3" for b in json.loads((tmp_path / JOURNAL).read_text())["batches"])
+    assert json.loads((tmp_path / ".allforai/bootstrap/local-requirements.json").read_text())["requirements"] == []
+
+
 @pytest.mark.parametrize("host", ["claude", "codex"])
 @pytest.mark.parametrize("new", [False, True])
 def test_revised_baseline_generates_full_applicable_plan_and_gates_reject_drift(tmp_path, host, new):
