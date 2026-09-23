@@ -112,11 +112,16 @@ Write the counts you produced and why they are complete for this input; numbers 
       "role_ref": "<string — MUST match a roles[].id in role-profiles.json>",
       "inputs": ["<string>"],
       "outputs": ["<string>"],
-      "constraints": ["<string>"]
+      "constraints": ["<string>"],
+      "frequency": "<enum: 高 | 中 | 低 | 未知 — how often the owning role runs it>",
+      "risk_level": "<enum: 高 | 中 | 低 | 未知 — what a wrong or unauthorized run costs>",
+      "rating_basis": "<string — evidence for both ratings (concept high_frequency_tasks, usage data, code path, domain) or the inference they rest on>"
     }
   ]
 }
 ```
+
+`frequency` and `risk_level` are the same fields `shared/scripts/product-design` reads. Risk is 高 whenever a wrong or unauthorized run touches permissions (a payment back office, admin actions), money, irreversible writes or dirty data, security, privacy or compliance — however rarely it runs.
 
 **role-profiles.json field schema (minimum required fields):**
 ```json
@@ -163,6 +168,8 @@ Every capability that references a task or role MUST use these IDs.
 
 - `experience_priority.mode` read from `bootstrap-profile.json` and carried unchanged (never reclassified)
 - Every task has inputs, outputs, and at least one constraint
+- Every task carries `frequency` and `risk_level` with a `rating_basis`; 未知 is allowed and stays 未知, it is never read as 低
+- Every 高-risk task has use cases for denied permission and for failure after a partial write, whatever its frequency
 - Every screen has state variants (empty/loading/error/success minimum)
 - Every flow has a defined end state
 - Consumer products: evaluated against consumer maturity patterns, not just "feature exists"
@@ -171,6 +178,7 @@ Every capability that references a task or role MUST use these IDs.
 
 LLM should apply these principles in whatever order and combination works:
 
+- **Two axes, frequency × risk**: they answer different questions. Frequency says where experience and efficiency pay back (entry depth, speed, polish); risk says where guarding pays back (permission checks, confirmation, idempotency, audit trail). A rare payment-admin action needs full guarding and little polish; a daily low-risk action needs polish and no speculative guarding; rare × low-risk work gets the minimum until real use asks for more.
 - **Closure thinking**: If there's a "create", infer "read/update/delete". If there's a "buy", infer "refund"
 - **Product language**: Artifacts speak in business terms, not technical terms
 - **Exception mapping**: Every operation has on_failure, validation_rules, exception_flows
