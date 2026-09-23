@@ -129,6 +129,15 @@ copies of the same protocol, and the copy goes stale when the protocol moves).
 The executor reads the anchored section when the sentences are not enough and
 notes that it did.
 
+A node whose capability delegates to child skills (the `Node → child skills` table
+in the capability file, e.g. `app-design.md` for the four app-design specs) also
+lists each child skill's `SKILL.md` path here —
+`${CLAUDE_PLUGIN_ROOT}/skills/app-design/<phase>/<child>/SKILL.md`, resolved to the
+canonical root on Pi — because the exit-artifact list above says *what* the node
+produces and only the child skill says the shape and the method. A worker handed
+the artifact names without these paths has to guess the schema or go looking for
+the plugin tree; neither is the contract.
+
 A node that implements or changes an end-user-visible surface additionally anchors
 `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-i` and
 `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-j`, each with its own

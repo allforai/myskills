@@ -107,6 +107,14 @@ they were asked to produce; they do not record completion or edit the ledger.
 - Prefer worktree isolation when the tool provides it. In the shared project
   cwd, two lanes whose write sets overlap — or a lane whose writes are
   undeclared — are the "two writers in one cwd" case: run them one at a time.
+- Give every lane a deadline sized to its node. pi-subagents falls back to a
+  30-minute `timeoutMs` for a single-agent run, and an implement or verify node
+  that installs, builds and tests routinely needs more: set `timeoutMs` (alias
+  `maxRuntimeMs`) on the `subagent` request or on each `runs.run` / `runs.all`
+  item — 90 minutes is a sane floor for implement nodes, 45 for verify — and add
+  `checkpointBeforeDeadlineMs` so a lane that runs out checkpoints its work
+  instead of losing it. A lane that still expires is a failed transition to
+  diagnose (usually: split the node), never a semantic verdict on the delivery.
 - Every child keeps the current session model: do not pass another provider
   or model family, and do not start an external CLI to change models. Control
   cost and capability with thinking level only: omit it to inherit the agent
@@ -146,7 +154,22 @@ they were asked to produce; they do not record completion or edit the ledger.
    `python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --node <node_id> --json`
    Non-empty production gaps, blocking status values, or `all_exist != true` cannot be recorded as complete.
    Missing checker, nonzero exit, empty/invalid JSON, mismatched node identity or non-boolean success are failures, never implicit passes. Final bootstrap validation must also succeed before reporting the workflow complete.
-8. On success: append a completed transition entry to `workflow.json`
+8. On success, publish the node's freshness through the copied helper — contract
+   first, then evidence, each as an observe → publish pair (the token returned by
+   `observe` is what `publish` takes; the verification command is the node's own
+   check, e.g. `check_artifacts.py --node <node_id>`):
+
+   ```bash
+   for kind in contract evidence; do
+     token=$(echo "{\"operation\":\"observe\",\"node_id\":\"<node_id>\",\"kind\":\"$kind\"}" \
+       | python3 .allforai/bootstrap/scripts/evidence_freshness.py . | python3 -c 'import json,sys; print(json.load(sys.stdin)["observation"])')
+     echo "{\"operation\":\"publish\",\"observation\":\"$token\",\"verification_command\":[\"python3\",\".allforai/bootstrap/scripts/check_artifacts.py\",\".allforai/bootstrap/workflow.json\",\"--node\",\"<node_id>\",\"--json\"]}" \
+       | python3 .allforai/bootstrap/scripts/evidence_freshness.py .
+   done
+   ```
+
+   A `status` other than `valid` is a failure of this step, not something to record
+   around. Then append a completed transition entry to `workflow.json`.
 9. On failure: append a failed transition entry, then read `.allforai/bootstrap/protocols/diagnosis.md`
 10. Repeat
 
