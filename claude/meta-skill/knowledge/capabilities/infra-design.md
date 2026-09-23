@@ -61,7 +61,7 @@ infrastructure architecture document that implementation nodes consume.
 ## Methodology Guidance (not steps)
 
 - **Start from product requirements**: Read product-concept features that imply infra needs (realtime, notifications, file handling, search)
-- **Right-size**: Don't recommend Kafka for a project that sends 10 messages/day. Match infra to expected scale.
+- **Right-size**: Don't recommend Kafka for a project that sends 10 messages/day. Match infra to expected scale. When the scale is not known but *estimated*, the estimate sizes nothing defensive: see defensive-patterns.md#pattern-k. Capacity work for load with no observed instance is deferred, not sized from a forecast.
 - **12-Factor App principles**: Config in environment, stateless processes, disposable instances
 - **CAP theorem awareness**: For distributed components, make explicit tradeoff (consistency vs availability)
 - **Dev parity**: Infrastructure should be reproducible locally (Docker Compose, local emulators)
@@ -70,7 +70,7 @@ infrastructure architecture document that implementation nodes consume.
 
 ### Phase-Specific:
 - cross-phase-protocols.md §Maximum-Realism: use real services when credentials exist
-- defensive-patterns.md: fallback strategies when infra components are unavailable
+- defensive-patterns.md: fallback strategies when infra components are unavailable; **#pattern-k (Unhit Defense Deferral)** — capacity work sized for load that has never been observed (caches, queues, batching, degradation paths) is deferred with its unblocking measurement, not shipped with a proxy-derived default
 
 ## Downstream Consumers
 

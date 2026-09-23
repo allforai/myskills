@@ -28,7 +28,7 @@ that implementation and verification nodes consume.
 | Transport encryption | TLS (one-way, client verifies server) / mTLS (mutual, both sides present certs — standard for gRPC service-to-service) | Always (HTTPS minimum). For gRPC microservices: evaluate mTLS for inter-service communication; requires CA setup, certificate provisioning per service, and rotation policy. |
 | End-to-end encryption | Signal Protocol / MLS / custom | Product handles sensitive private communication |
 | Data-at-rest encryption | DB-level / application-level / KMS-managed | Product stores PII or financial data |
-| Rate limiting | Token bucket / sliding window / per-user / per-IP | Product has public API or user-facing endpoints |
+| Rate limiting | Token bucket / sliding window / per-user / per-IP | **Split by what the limit protects — the two halves have opposite admission rules.** *Abuse and cost surfaces* (login, OTP/SMS/email send, password reset, signup, paid third-party calls): always, no incident required — the failure is account takeover, spam, or a bill, and none of those is a recoverable degradation. *Capacity and throughput shaping* (media relay, internal fan-out, bulk read endpoints): only after a real overload has been observed on that route, or an external contract fixes the ceiling. Absent either, record it as deferred and name the measurement that would unblock it. A ceiling derived from proxies instead of from traffic is not a limit, it is a guess — and it does not stay one line: it grows the tests that prove the guessed default does not clip normal use, the config keys that carry it, and the fixes for how it interacts with everything else. See defensive-patterns.md#pattern-k. |
 | Input validation | Schema validation / sanitization / parameterized queries | Always (OWASP Top 10) |
 | Key management | Environment vars / HashiCorp Vault / cloud KMS / **macOS Keychain (required for macOS/iOS native apps)** / Android Keystore | Product uses API keys, encryption keys, or secrets. For macOS/iOS: Keychain is the REQUIRED storage — UserDefaults is plaintext and env vars are unavailable in sandboxed bundles. |
 | Regulatory / Compliance | GDPR (EU user data) / COPPA (under-13 users) / PCI-DSS (payment card data) / HIPAA (health data) / App Store guidelines | Product collects personal data, handles payments, or targets minors |
@@ -44,6 +44,7 @@ that implementation and verification nodes consume.
 - Every authentication flow has a defined token lifecycle (issue, refresh, revoke)
 - Sensitive data paths are identified (PII, credentials, payment data) with protection measures
 - OWASP Top 10 mitigations are addressed for the project's tech stack
+- **No defensive mechanism enters the design on the strength of a hypothetical.** For each limit, quota, retry, fallback or degradation path selected, the design names either (a) the abuse/cost/data/money/permission failure it prevents, or (b) an observed incident or external contract that requires it. If it is neither — the failure it prevents is a recoverable degradation that has never been observed in this system — it is recorded as deferred together with the measurement that would unblock it, not shipped with a proxy-derived default. Defensive work that is both low-frequency and low-risk is not designed in advance; it is designed the first time it is actually hit. See defensive-patterns.md#pattern-k.
 - **HarmonyOS/ArkTS apps**: HUKS (Harmony Unified Key Store `@ohos.security.huks`) is the required secure key storage. Do NOT use `@ohos.data.preferences` (plaintext key-value) for secrets. Configure HUKS key policy with: `HuksKeyPurpose.ENCRYPT_DECRYPT`, restricted algorithm, and unlock-required access control equivalent. All system resource permissions (camera, mic, location) MUST be declared in `module.json5` `requestPermissions[]`.
 - **macOS/iOS apps**: Keychain access group configuration is documented with STRIDE analysis (Elevation of Privilege: wrong access group allows cross-app secret reads; Tampering: unrestricted Keychain items survive app uninstall and are accessible to reinstalled apps). Key items: `kSecAttrAccessible` value should be `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for most secrets (not `kSecAttrAccessibleAlways`).
 
@@ -75,7 +76,7 @@ that implementation and verification nodes consume.
 
 ### Phase-Specific:
 - cross-phase-protocols.md §Safety: security-related safety rules
-- defensive-patterns.md: fallback and error handling that doesn't leak information
+- defensive-patterns.md: fallback and error handling that doesn't leak information; **#pattern-k (Unhit Defense Deferral)** — the admission rule for any limit, quota, retry or fallback whose failure has no instance in this system, and the split between abuse/cost surfaces (build now) and capacity shaping (defer until observed)
 
 ## Downstream Consumers
 
@@ -87,7 +88,7 @@ that implementation and verification nodes consume.
 | `security-design.json` | auth scheme, token lifecycle | translate (implement nodes) | required | 实现需要知道用什么认证方案（JWT/OAuth/Passkeys） |
 | `security-design.json` | authorization model | translate (implement nodes) | required | 实现需要知道权限模型（RBAC/ABAC）来写 middleware |
 | `security-design.json` | all decisions | security-verify | required | security-verify 逐项对照安全决策与实现 |
-| `security-design.json` | rate limiting config | translate (implement nodes) | optional | 缺失时按默认限流策略继续 |
+| `security-design.json` | rate limiting config | translate (implement nodes) | optional | 缺失即不限流，照常实现；**不得自行补一个默认阈值** —— 见 Design Dimensions 的 Rate limiting 行 |
 
 ## Composition Hints
 
