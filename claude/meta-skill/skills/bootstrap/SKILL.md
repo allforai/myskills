@@ -663,6 +663,7 @@ When writing each node into `workflow.json`, add:
 - `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
 - `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
 
+<!-- clause:user-steps-cross-exam-kept@918988ee -->
 At the top level of `workflow.json`, add:
 - `expanders`: the list of project-local expander scripts that apply (e.g. `["expand_game_2d_production.py"]`), promoting today's hardcoded invocation to a declared list.
 - `user_steps`: the entries the user types after the pipeline, in order — `["/cross-exam", "/product-review"]`; a CLI or library-sdk drops only `/product-review` (`["/cross-exam"]`), and no workflow drops `/cross-exam` (`bootstrap-planning.md` §After the pipeline, `missing_cross_exam_step`). Never nodes: no engine dispatches them, and a node named after either is refused at the run boundary (`verdict_entry_planned_as_node`).

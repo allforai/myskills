@@ -2,6 +2,7 @@
 
 Apply after Step 1 classification. A match means do not emit that node class.
 
+<!-- clause:user-steps-cross-exam-kept@918988ee -->
 | When | Suppress | Keep / instead |
 |---|---|---|
 | `architecture_pattern = library-sdk` | `demo-forge` | language-native tests only |

@@ -1,4 +1,86 @@
 {
   "scan_roots": ["claude", "codex", "pi", "shared"],
-  "clauses": []
+  "clauses": [
+    {
+      "id": "run-preflight-readiness",
+      "rule": "Every /run checks unattended readiness before the first node and records preflight_blocked when it stops.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["validate_unattended_readiness.py . --write-report"]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["validate_unattended_readiness.py . --write-report", "preflight_blocked"]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["validate_unattended_readiness.py . --write-report", "preflight_blocked"]}
+      ]
+    },
+    {
+      "id": "run-repair-ledger-origin",
+      "rule": "The repair ledger is initialized before the first node; a run that executed first recovers only through verified adopt_history — the zero-spend absence form, or reconstruction from the transition log.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["\"operation\":\"initialize\"",
+                                "\"absence_of\": \"repair_history\", \"complete\": true",
+                                "\"reconstruct_from\": \"transition_log\", \"complete\": true"]},
+      "copies": [
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["\"operation\":\"initialize\"",
+                     "\"absence_of\": \"repair_history\", \"complete\": true",
+                     "\"reconstruct_from\": \"transition_log\", \"complete\": true"]},
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["The native driver calls `initialize` itself",
+                     "\"absence_of\": \"repair_history\", \"complete\": true",
+                     "\"reconstruct_from\": \"transition_log\", \"complete\": true"]}
+      ]
+    },
+    {
+      "id": "run-freshness-publish",
+      "rule": "Freshness is published with the node's own acceptance command — one that can fail — before the artifact gate reads it.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["input-freshness.md", "publish evidence with its actual acceptance command"]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["input-freshness.md", "verification_command"]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["acceptance_argv", "always exits 0", "which reads the freshness just published"]}
+      ],
+      "forbid": ["parallelize only when exit artifacts do not overlap"]
+    },
+    {
+      "id": "run-termination-user-steps",
+      "rule": "Completion ends with workflow.json.user_steps in order; /cross-exam is never dropped.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["user_steps", "is never dropped"]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md", "require": ["user_steps", "is never dropped"]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md", "require": ["user_steps", "is never dropped"]}
+      ],
+      "forbid": ["An empty list means the project was exempted"]
+    },
+    {
+      "id": "run-delegations-disclosure",
+      "rule": "Completion discloses every decision the user delegated to the model.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["product_intent.py . --delegations", "No delegated decisions."]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["product_intent.py . --delegations", "No delegated decisions."]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["product_intent.py . --delegations", "No delegated decisions."]}
+      ]
+    },
+    {
+      "id": "user-steps-cross-exam-kept",
+      "rule": "A CLI or library-sdk project drops only /product-review; no workflow drops /cross-exam.",
+      "authority": {"path": "claude/meta-skill/knowledge/bootstrap-planning.md",
+                    "require": ["[\"/cross-exam\"]", "is never dropped"]},
+      "copies": [
+        {"path": "claude/meta-skill/knowledge/suppress-rules.md", "require": ["user_steps: [\"/cross-exam\"]"]},
+        {"path": "claude/meta-skill/skills/bootstrap/SKILL.md", "require": ["[\"/cross-exam\"]"]},
+        {"path": "codex/meta-skill/skills/bootstrap.md", "require": ["[\"/cross-exam\"]"]},
+        {"path": "pi/meta-skill/skills/bootstrap/SKILL.md", "require": ["[\"/cross-exam\"]"]},
+        {"path": "claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+         "require": ["missing_cross_exam_step"]}
+      ],
+      "forbid": ["no product to examine", "user_steps` is `[]`", "被 suppress 时为 `[]`", "无后续用户步骤"]
+    }
+  ]
 }

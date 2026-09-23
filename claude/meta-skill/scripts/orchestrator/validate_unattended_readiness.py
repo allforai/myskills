@@ -507,6 +507,7 @@ def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[di
                "critique (cli, library-sdk) drops only /product-review, user_steps: "
                "[\"/cross-exam\"]. A delivery is always examined, so no list may leave out "
                "/cross-exam.")
+    # clause:user-steps-cross-exam-kept@918988ee
     if "user_steps" not in workflow:
         code, message = "missing_user_steps", (
             "workflow.json has no user_steps: the steps the user takes after the run "

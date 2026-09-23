@@ -315,6 +315,7 @@ When the canonical protocol tells the user to run `/run [goal]`, adapt the instr
 - invoke it through Codex's command mechanism in the target project
 - prefer keeping the main task goal fixed at bootstrap time instead of introducing it only during run time
 
+<!-- clause:user-steps-cross-exam-kept@918988ee -->
 The canonical user steps after the pipeline (`knowledge/bootstrap-planning.md` §After the
 pipeline, ADR-0008) apply unchanged: `workflow.json.user_steps` is
 `["/cross-exam", "/product-review"]` on every workflow the suppress rules do not exempt

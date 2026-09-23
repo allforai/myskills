@@ -52,6 +52,7 @@ python3 .allforai/bootstrap/scripts/record_run_event.py . --event run_started --
 python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
 ```
 
+<!-- clause:run-preflight-readiness@b7f3faa3 -->
 If the readiness command exits non-zero or `.allforai/bootstrap/unattended-run-readiness.json` has `status != "ready"`, stop immediately. Do not start partial execution and do not silently weaken validation. Report the blockers from `.allforai/bootstrap/unattended-run-readiness.md`.
 Missing scripts, missing/invalid readiness reports, and failed expanders also block execution.
 Before stopping, record `preflight_blocked` with `record_run_event.py`, then run `summarize_run_log.py --write-report`.
@@ -64,6 +65,7 @@ printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run
   | python3 .allforai/bootstrap/scripts/repair_authorization.py .
 ```
 
+<!-- clause:run-repair-ledger-origin@dac30f1c -->
 A `replayed: true` answer on a resumed run is the same statement, not a reset. If the step was skipped and the workflow already ran nodes but never dispatched a declared repair node, recover with `adopt_history` and evidence `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>", "absence_of": "repair_history", "complete": true}`; the helper verifies the absence against the transition log. If declared repair nodes did run, the same `adopt_history` takes `{"reconstruct_from": "transition_log", "complete": true}` and rebuilds one settled attempt per repair transition, bounded by the declared loops. Any other history stays blocked until reconstructed.
 
 ## Run Policy — once before the first node
@@ -86,6 +88,7 @@ Before every execution wave, run every idempotent expander declared by `workflow
 
 ## Pi Dispatch
 
+<!-- clause:run-freshness-publish@79fab02b -->
 The main session is the orchestrator. It owns `workflow.json`, `transition_log`,
 `check_artifacts.py`, `repair_authorization.py`, `run_safety.py`, readiness
 re-runs, and the final report. Node workers return observations, the files they were asked to produce, and
@@ -486,6 +489,8 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Termination
 
+<!-- clause:run-delegations-disclosure@2b42d156 -->
+<!-- clause:run-termination-user-steps@d32ba725 -->
 - All required exit artifacts are ready: report success. End the report with
   `workflow.json.user_steps` in order (`cross-exam`, then `product-review`) as the skills the
   user invokes next; they are never dispatched, never started by a node, and never

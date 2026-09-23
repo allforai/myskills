@@ -38,11 +38,13 @@ carries, after its last node, the two entries the user types next:
 - The order is fixed and is the one CLAUDE.md's "Which entry for which situation" table
   gives: first "is it done", then "is it good". The planning summary and the completion
   text print the two steps and point at that table for the reason; they never restate it.
+  <!-- clause-begin:user-steps-cross-exam-kept -->
 - The only exemption is a suppress rule (`suppress-rules.md`): a CLI or library-sdk
   project has no UI to critique, so it drops `/product-review` — `user_steps` is
   `["/cross-exam"]` and the summary says why. `/cross-exam` is never dropped: whatever was
   shipped is a delivery whose completion is examined. Any other project gets both steps;
   a goal that is "just implement" is not a reason to drop them.
+  <!-- clause-end:user-steps-cross-exam-kept -->
 
 For reconstruction and new-product routes, execute `product-intent-confirmation.md`
 at interactive bootstrap/resume. Its journal-backed baseline, generated projection

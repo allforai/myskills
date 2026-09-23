@@ -28,6 +28,7 @@ Trust project-local artifacts over conversation history.
 If `.allforai/bootstrap/product-summary.json` exists, treat it as provisional inference;
 recorded user decision_inputs remain the product authority.
 
+<!-- clause:run-freshness-publish@79fab02b -->
 Treat `.allforai/bootstrap/*` artifacts as the canonical completion surface for workflow nodes.
 Every scoped node declares `source_inputs` (the project-relative product source it reads to produce
 its own work, never what a node depending on it writes later; explicit `[]` only when none applies),
@@ -71,6 +72,7 @@ python3 .allforai/bootstrap/scripts/record_run_event.py . --event run_started --
 python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
 ```
 
+<!-- clause:run-preflight-readiness@b7f3faa3 -->
 If the readiness command exits non-zero or `.allforai/bootstrap/unattended-run-readiness.json` has `status != "ready"`, stop immediately. Do not start partial execution and do not silently weaken validation. Report the blockers from `.allforai/bootstrap/unattended-run-readiness.md`.
 Missing scripts, missing/invalid readiness reports, and failed expanders also block execution.
 The native driver records failed helper commands in `.allforai/bootstrap/preflight-result.json`,
@@ -285,6 +287,7 @@ this loop apply it:
   because the work it authorized may already be in the tree. A route that opens and is
   interrupted before any dispatch costs nothing, on either host.
 
+  <!-- clause:run-repair-ledger-origin@dac30f1c -->
   The native driver calls `initialize` itself, before the first dispatch, so a fresh run
   never needs it by hand. A run that executes before any ledger exists — repair loops
   declared only by a replan, or a deleted ledger — stays blocked, and the driver never
@@ -292,8 +295,10 @@ this loop apply it:
   `repair_routes`, or, when no declared repair node ever ran, evidence
   `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>",
   "absence_of": "repair_history", "complete": true}`, which the helper verifies against
-  the transition log and `repair_routes`. Any other history stays blocked until
-  reconstructed.
+  the transition log and `repair_routes`. If declared repair nodes did run, the same
+  `adopt_history` takes `{"reconstruct_from": "transition_log", "complete": true}` and
+  rebuilds one settled attempt per repair transition, bounded by the declared loops. Any
+  other history stays blocked until reconstructed.
 
   Opening the route is not the charge. The QA node's failed `transition_log` entry records
   that this QA node failed; it is the QA node's history, never the budget. The ledger is
@@ -458,6 +463,8 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Termination
 
+<!-- clause:run-delegations-disclosure@2b42d156 -->
+<!-- clause:run-termination-user-steps@d32ba725 -->
 - All required exit artifacts are ready: report success. End the report with
   `workflow.json.user_steps` in order (`cross-exam`, then `product-review`) as the skills the
   user invokes next; they are never dispatched, never started by a node, and never

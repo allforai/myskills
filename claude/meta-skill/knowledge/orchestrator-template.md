@@ -47,6 +47,7 @@ turn ends unless a persistent supervised runner actually exists.
 
 ## Preflight Gate
 
+<!-- clause-begin:run-preflight-readiness -->
 Before executing any workflow node, run unattended readiness:
 
 <!-- snippet:preflight-readiness -->
@@ -61,7 +62,9 @@ not ask the user mid-run, and do not silently weaken validation. Report the
 blockers from `.allforai/bootstrap/unattended-run-readiness.md` and ask the user
 to resolve them through `/setup check`, `/bootstrap`, or the approval dashboard
 before re-running `/run`.
+<!-- clause-end:run-preflight-readiness -->
 
+<!-- clause-begin:run-repair-ledger-origin -->
 Then record the repair-ledger origin, still before the first node — this is the
 only moment `initialize` can prove zero spend, because it refuses a workflow that
 already shows execution:
@@ -81,6 +84,7 @@ against the transition log. If declared repair nodes did run, the same `adopt_hi
 takes `{"reconstruct_from": "transition_log", "complete": true}` and rebuilds one settled
 attempt per repair transition, bounded by the declared loops. Any other history stays
 blocked until reconstructed.
+<!-- clause-end:run-repair-ledger-origin -->
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
@@ -121,12 +125,14 @@ is not `ready`.
 
 ### Generic QA repair loop
 
+<!-- clause-begin:run-freshness-publish -->
 Every node follows `.allforai/bootstrap/protocols/input-freshness.md`: after its
 implementation settles, observe current inputs, track newly consumed files with
 the public `read` operation, refresh required documents and publish evidence with
 its actual acceptance command. A stale publication requires re-observation and
 reverification, never a success transition. Contract-only freshness permits work
 but does not prove completion. The independent artifact gate consumes this state.
+<!-- clause-end:run-freshness-publish -->
 A withheld completion carries `freshness.diff` and `freshness.repair`: repair at
 the named `owner` (the node, a stale producer, or `interactive-bootstrap` for a
 pending or unreplanned product decision), then re-observe and republish. A
@@ -376,11 +382,13 @@ On first iteration if transition_log is non-empty:
 
 ## Termination
 
+  <!-- clause-begin:run-termination-user-steps -->
 - All nodes' exit_artifacts are ready → success report. The report ends with
   `workflow.json.user_steps` in order (`/cross-exam`, then `/product-review`) as the steps
   the user types next; they are never dispatched, never started by a node, and never
   reported as done (ADR-0008). A list without `/product-review` means bootstrap suppressed it
   (CLI, library-sdk: no UI to critique); `/cross-exam` is never dropped.
+  <!-- clause-end:run-termination-user-steps -->
 - concept-acceptance names missing behaviour mappings (`acceptance-report.json.missing_mappings`
   non-empty; the node result carries the list verbatim) → apply
   `run-policy.json.on_needs_iteration`. An empty list is the gate passing: proceed, ask nothing.
@@ -413,10 +421,12 @@ On first iteration if transition_log is non-empty:
    and `.allforai/bootstrap/run-summary.md` as the auditable production trace.
 
 0b. **Disclose delegated decisions:**
+   <!-- clause-begin:run-delegations-disclosure -->
    Run `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations`.
    In the completion text, under the heading `Decisions you delegated to the model`,
    print every returned entry: its id, the proposal title, the user turn that handed
    the decision over, and the reason. If the list is empty, print `No delegated decisions.`
+   <!-- clause-end:run-delegations-disclosure -->
    The user must be able to see which product decisions the model made for them without
    opening a file. Do not ask the user anything here.
 
