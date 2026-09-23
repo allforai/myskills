@@ -30,6 +30,7 @@ run_pytest codex/cross-exam-skill/scripts
 run_pytest shared/evidence-engine
 run_pytest shared/visual-acceptance
 run_pytest shared/keep-code-simple             # mirror contract of the shared protocol
+run_pytest shared/seam-contracts               # a rule's copies are revisited when it changes (ADR-0010)
 run_pytest pi/meta-skill/test_contract.py      # name the file: scripts/ there is a symlink and basenames collide
 run_pytest pi/cross-exam
 run_pytest shared/suites                       # every tracked test file is listed in shared/suites/suites.txt

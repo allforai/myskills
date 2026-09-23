@@ -21,6 +21,7 @@ pi/cross-exam
 shared/evidence-engine
 shared/visual-acceptance
 shared/keep-code-simple
+shared/seam-contracts
 shared/scripts/orchestrator
 shared/scripts/code-replicate
 shared/scripts/product-design
