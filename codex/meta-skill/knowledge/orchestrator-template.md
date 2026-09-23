@@ -28,7 +28,6 @@ Trust project-local artifacts over conversation history.
 If `.allforai/bootstrap/product-summary.json` exists, treat it as provisional inference;
 recorded user decision_inputs remain the product authority.
 
-<!-- clause:run-freshness-publish@79fab02b -->
 Treat `.allforai/bootstrap/*` artifacts as the canonical completion surface for workflow nodes.
 Every scoped node declares `source_inputs` (the project-relative product source it reads to produce
 its own work, never what a node depending on it writes later; explicit `[]` only when none applies),
@@ -128,6 +127,7 @@ Before every execution wave, run every idempotent expander declared by `workflow
      there to another draft's inputs also invalidate that later draft.
    - the Codex driver defaults to 2 parallel nodes (`max_parallel_nodes` in
      `.allforai/codex/execution-policy.json`, integer 1–8; 1 disables parallelism)
+   <!-- clause:run-freshness-publish@79fab02b -->
    - parallel workers implement in private filesystem copies. Import only declared
      file changes after checking input drift; never import worker control-plane state.
      In the main workspace, publish fresh observations and independently verify each

@@ -38,7 +38,9 @@
                     "require": ["input-freshness.md", "publish evidence with its actual acceptance command"]},
       "copies": [
         {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["input-freshness.md", "verification_command"]},
+         "require": ["publish fresh observations and independently verify each"]},
+        {"path": "codex/meta-skill/knowledge/flow-template.py",
+         "require": ["publish the evidence observation with the actual acceptance command"]},
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
          "require": ["acceptance_argv", "always exits 0", "which reads the freshness just published"]}
       ],

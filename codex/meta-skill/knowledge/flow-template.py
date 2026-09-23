@@ -1748,6 +1748,7 @@ def runtime_verification_reason(result):
     return ""
 
 
+# clause:run-freshness-publish@79fab02b
 def build_prompt(node_id: str, goal: str, finalize_evidence: bool = False) -> str:
     if finalize_evidence:
         return f"""Continue the generated workflow autonomously.

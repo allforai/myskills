@@ -29,12 +29,13 @@ NODE = 'deliver-export'
 PASSING = json.dumps([sys.executable, '-c', 'pass'])
 FAILING = json.dumps([sys.executable, '-c', 'raise SystemExit(3)'])
 MARKER = re.compile(r'<!-- (snippet:([a-z0-9-]+)|illustrative:(.*?)) -->')
+SHELL_FENCE = r'```[ \t]*(?:bash|sh|shell|zsh)\b[^\n]*'
 
 
 def snippet(template, name):
     """The fenced bash block right after `<!-- snippet:<name> -->`, list indentation removed."""
     text = template.read_text(encoding='utf-8')
-    match = re.search(r'<!-- snippet:' + re.escape(name) + r' -->[ \t]*\n([ \t]*)```bash\n(.*?)\n[ \t]*```',
+    match = re.search(r'<!-- snippet:' + re.escape(name) + r' -->[ \t]*\n([ \t]*)' + SHELL_FENCE + r'\n(.*?)\n[ \t]*```',
                       text, re.S)
     assert match, f'{template.name} has no snippet:{name} marker followed by a bash block'
     indent = match.group(1)
@@ -42,9 +43,12 @@ def snippet(template, name):
                      for line in match.group(2).splitlines())
 
 
-def publish_script(acceptance):
+def publish_script(acceptance, root):
+    # The orchestrator writes the worker's argv with its file tool, outside the project tree.
+    argv_file = root.parent / f'{root.name}-acceptance-argv.json'
+    argv_file.write_text(acceptance, encoding='utf-8')
     script = snippet(TEMPLATES['pi'], 'freshness-publish')
-    script = script.replace('<node_id>', NODE).replace('<acceptance_argv_json>', acceptance)
+    script = script.replace('<node_id>', NODE).replace('<acceptance_argv_file>', str(argv_file))
     assert not re.search(r'<[a-z_]+>', script), f'unfilled placeholder left in:\n{script}'
     return script
 
@@ -67,21 +71,34 @@ def test_snippet_extraction_names_a_missing_marker(tmp_path):
         snippet(template, 'freshness-publish')
 
 
-@pytest.mark.parametrize('host', sorted(TEMPLATES))
-def test_every_bash_block_in_the_run_templates_is_classified(host):
-    lines = TEMPLATES[host].read_text(encoding='utf-8').splitlines()
+def unclassified(template):
+    """Every shell block in the template that is neither executed here nor declared illustrative."""
+    lines = template.read_text(encoding='utf-8').splitlines()
     problems = []
     for number, line in enumerate(lines):
-        if line.strip() != '```bash':
+        if not re.fullmatch(SHELL_FENCE, line.strip()):
             continue
         previous = next((l.strip() for l in reversed(lines[:number]) if l.strip()), '')
         marker = MARKER.fullmatch(previous)
         if not marker:
-            problems.append(f'line {number + 1}: bash block with no snippet:/illustrative: marker')
+            problems.append(f'line {number + 1}: shell block with no snippet:/illustrative: marker')
         elif marker.group(2) and marker.group(2) not in EXECUTED:
             problems.append(f'line {number + 1}: snippet:{marker.group(2)} is executed by no test')
         elif marker.group(3) is not None and not marker.group(3).strip():
             problems.append(f'line {number + 1}: illustrative block with no reason')
+    return problems
+
+
+@pytest.mark.parametrize('fence', ['```sh', '```shell', '```zsh', '```bash title="run"', '``` bash'])
+def test_a_shell_block_under_any_fence_spelling_must_be_classified(tmp_path, fence):
+    template = tmp_path / 'template.md'
+    template.write_text(f'Run this:\n\n{fence}\npython3 x.py\n```\n', encoding='utf-8')
+    assert unclassified(template) == ['line 3: shell block with no snippet:/illustrative: marker']
+
+
+@pytest.mark.parametrize('host', sorted(TEMPLATES))
+def test_every_bash_block_in_the_run_templates_is_classified(host):
+    problems = unclassified(TEMPLATES[host])
     assert problems == [], f'{TEMPLATES[host]}:\n' + '\n'.join(problems)
 
 
@@ -116,7 +133,7 @@ def test_pi_publish_then_gate_completes_an_accepted_node(tmp_path):
     # Core Loop must publish first and gate second.
     setup(tmp_path, 'claude')
     assert gate(tmp_path) is False
-    result = run(tmp_path, publish_script(PASSING))
+    result = run(tmp_path, publish_script(PASSING, tmp_path))
     assert result.returncode == 0, result.stdout + result.stderr
     _, checked = invoke(tmp_path, 'check')
     assert checked['nodes'][NODE]['status'] == 'valid', checked
@@ -134,7 +151,7 @@ def test_pi_freshness_publish_snippet_refuses_when_acceptance_fails(tmp_path):
     # check_artifacts.py --json exits 0 whatever it finds; the snippet's verification must be a
     # command that can fail, or a rejected delivery publishes as verified.
     setup(tmp_path, 'claude')
-    result = run(tmp_path, publish_script(FAILING))
+    result = run(tmp_path, publish_script(FAILING, tmp_path))
     assert result.returncode != 0, result.stdout
     assert 'failed_verification' in result.stdout, result.stdout
     _, checked = invoke(tmp_path, 'check')
@@ -144,5 +161,15 @@ def test_pi_freshness_publish_snippet_refuses_when_acceptance_fails(tmp_path):
 
 def test_pi_freshness_publish_snippet_fails_without_killing_the_callers_shell(tmp_path):
     setup(tmp_path, 'claude')
-    result = run(tmp_path, publish_script(FAILING) + '\necho "caller survived: $?"')
+    result = run(tmp_path, publish_script(FAILING, tmp_path) + '\necho "caller survived: $?"')
     assert 'caller survived: 1' in result.stdout, result.stdout + result.stderr
+
+
+def test_an_acceptance_argv_with_quotes_runs_verbatim(tmp_path):
+    # Shell quoting must not rewrite the worker's argv: stripped quotes can turn a failing
+    # check into a passing one (grep -q 'a b' f -> grep -q a b f).
+    setup(tmp_path, 'claude')
+    quoted = json.dumps([sys.executable, '-c', "import sys; sys.exit(0 if len('x y') == 3 else 1)"])
+    result = run(tmp_path, publish_script(quoted, tmp_path))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert gate(tmp_path) is True

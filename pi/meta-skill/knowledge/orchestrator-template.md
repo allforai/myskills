@@ -160,16 +160,21 @@ publish freshness or edit the ledger.
 6. Dispatch execution using that node-spec as the task contract (see Pi Dispatch)
 7. When the node reports success, publish its freshness — contract, then evidence —
    with the `acceptance_argv` the worker returned (Pi Dispatch). The helper runs that
-   command itself, so publication is the orchestrator re-verifying the worker, not
-   taking its word. A worker that returned no `acceptance_argv` has not finished:
+   command itself, so the worker's check is rerun, not reported — but it is still the
+   check the worker chose. The independent verification is the artifact gate in step 8,
+   which applies the completion checks `workflow.json` declares. A worker that returned
+   no `acceptance_argv` has not finished:
    record a failed transition. `check_artifacts.py --json` cannot serve as the argv:
    it always exits 0 and carries its verdict in the JSON.
+   Write the returned `acceptance_argv` JSON verbatim with the file-write tool — not
+   through the shell, whose quoting rewrites it — to a file outside the project (for
+   example under `$TMPDIR`), and put that path in place of `<acceptance_argv_file>`.
 
    <!-- snippet:freshness-publish -->
    ```bash
    (
      set -o pipefail
-     acceptance='<acceptance_argv_json>'
+     acceptance=$(cat '<acceptance_argv_file>') || exit 1
      for kind in contract evidence; do
        token=$(printf '{"operation":"observe","node_id":"%s","kind":"%s"}' '<node_id>' "$kind" \
          | python3 .allforai/bootstrap/scripts/evidence_freshness.py . \
