@@ -38,7 +38,7 @@ Pi 没有 `AskUserQuestion`。阻塞性信息用纯文本问；不要发明答�
 
 改为：
 
-<!-- clause:run-entry-rendered@a611047f -->
+<!-- clause:run-entry-rendered@deabda51 -->
 - 读 `<package-root>/knowledge/orchestrator-template.md`（Pi 模板，不是 Claude/Codex 那份）
 - 写目标项目 `.pi/skills/run/SKILL.md`
 - `mkdir -p .pi/skills/run`

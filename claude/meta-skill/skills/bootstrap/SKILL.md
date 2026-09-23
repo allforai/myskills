@@ -751,12 +751,16 @@ Render the template into the target project with the script — never re-type it
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_run_entry.py \
-  ${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md .claude/commands/run.md
+  ${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md .claude/commands/run.md \
+  --plugin-root ${CLAUDE_PLUGIN_ROOT}
 ```
 
 The entry is the template's body byte for byte. The template's shell snippets are executed
 by tests and its shared rules are stamped against the Codex and Pi entries; a hand-typed copy
 can paraphrase any of that away with nothing to notice. Step 5 checks the entry with `--check`.
+The body names only project-local copies (Step 6.2 puts them there); `--plugin-root` resolves
+any `${CLAUDE_PLUGIN_ROOT}` a future body might still carry, since nothing expands it in a
+project command.
 <!-- clause-end:run-entry-rendered -->
 
 No customization needed beyond what the template provides — the orchestrator
@@ -775,7 +779,8 @@ Run:
 ```bash
 python3 .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_run_entry.py \
-  ${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md .claude/commands/run.md --check
+  ${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md .claude/commands/run.md --check \
+  --plugin-root ${CLAUDE_PLUGIN_ROOT}
 ```
 
 If errors: fix and re-validate (max 3 attempts). A run entry that differs from its template is
@@ -841,6 +846,13 @@ cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/summarize_run_log.py .allforai/boo
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/learning-protocol.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/feedback-protocol.md .allforai/bootstrap/protocols/
+# Phase B/C of the run entry: the engine, completeness and cascade reset
+mkdir -p .allforai/bootstrap/run-engine .allforai/bootstrap/scripts/engine
+cp ${CLAUDE_PLUGIN_ROOT}/knowledge/run-engine/run-engine.workflow.js .allforai/bootstrap/run-engine/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/compute_completeness.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/check_evidence.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/compute_reset_closure.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/engine/evidence.py ${CLAUDE_PLUGIN_ROOT}/scripts/engine/identity.py .allforai/bootstrap/scripts/engine/
 ```
 
 > **Why copy?** The meta-skill plugin is installed in Claude's plugin cache.

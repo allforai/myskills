@@ -181,7 +181,7 @@ When the canonical protocol says:
 
 For Codex, do this instead:
 
-<!-- clause:run-entry-rendered@a611047f -->
+<!-- clause:run-entry-rendered@deabda51 -->
 - read `../knowledge/orchestrator-template.md` as the Codex-native generation template
 - write the generated run entry to `.codex/commands/run.md` in the target project by rendering
   it with this adapter's `scripts/orchestrator/render_run_entry.py <that template> .codex/commands/run.md`

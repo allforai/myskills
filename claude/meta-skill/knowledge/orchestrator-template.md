@@ -299,7 +299,7 @@ never waive, downgrade, or hide a gap.
 `/run` is fully autonomous after the Run Policy section — no further questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
-   `${CLAUDE_PLUGIN_ROOT}/knowledge/run-engine/run-engine.workflow.js`.
+   `.allforai/bootstrap/run-engine/run-engine.workflow.js`.
    It reads `workflow.json` plus `unattended-run-readiness-spec.json.required_repair_loops`,
    schedules ready nodes (alignment_refs run in parallel),
    self-heals soft failures, commits each node immediately, and returns one of:
@@ -308,7 +308,7 @@ never waive, downgrade, or hide a gap.
 
 2. On `complete`: run the learning-protocol extraction, then produce the Phase C report:
    a. **Evidence-anchored completeness (verification honesty).** Run
-      `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compute_completeness.py <base>` — it derives each
+      `python3 .allforai/bootstrap/scripts/compute_completeness.py <base>` — it derives each
       node's TRUE state from its recorded `verification` evidence and writes
       `.allforai/bootstrap/completeness-report.json`. **Report the two-column result as the
       headline: VERIFIED (真验过) % vs unverified (只生成没验) %.** Never present "completed
@@ -316,7 +316,7 @@ never waive, downgrade, or hide a gap.
       An entry served through a mock layer or answering with a canned fixture is refused in
       cross-exam's words (`refused[]` in the report) and read as `unverified`; whether a green
       feature is hollow beyond that is `/cross-exam`'s to judge, after the pipeline (ADR-0008).
-   b. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_evidence.py <base>` to list any
+   b. Run `python3 .allforai/bootstrap/scripts/check_evidence.py <base>` to list any
       false "verified" claims (evidence missing / self-graded) — these are downgraded.
    c. **Launch gate:** if `completeness-report.json.critical_unverified` is non-empty, the product
       is NOT launch-ready regardless of node count — surface those critical flows as needing real
@@ -328,13 +328,13 @@ never waive, downgrade, or hide a gap.
       finding) + `workflow.json` `diagnosis_history`.
    b. GLOBAL cap (fix L1): if total entries in `diagnosis_history` ≥ 5, mark UNRESOLVED and
       stop — this catches oscillating root causes the per-cause cap misses.
-   c. Run `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md`: locate the root-cause node
+   c. Run `.allforai/bootstrap/protocols/diagnosis.md`: locate the root-cause node
       (use `suspected_root_node` when present). This is autonomous — never ask the user.
    d. Per-cause cap (the policy unit-tested as engine-core `convergenceCheck`): if the same root
       cause already appears ≥2 times in `diagnosis_history`, mark it UNRESOLVED, write best-effort
       output + TODO, and stop.
    e. Otherwise apply the repair plan WITH CASCADE (fix C2):
-      `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json <root_id...>`
+      `python3 .allforai/bootstrap/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json <root_id...>`
       → remove the returned closure (root + transitive downstream) from the `transition_log`
       completed set, then RESUME the engine
       (same session: resumeFromRunId; cross-session: re-invoke — workflow.json idempotency
