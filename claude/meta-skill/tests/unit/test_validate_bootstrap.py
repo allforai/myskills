@@ -162,6 +162,25 @@ def test_runtime_notes_in_the_transition_log_do_not_make_a_workflow_visual(tmp_p
     assert _validate_bootstrap.validate_game_visual_acceptance_standard_flow(str(tmp_path)) == []
 
 
+def test_a_write_scope_covering_another_nodes_exit_artifact_fails(tmp_path):
+    design = _base_node(node_id="design", exit_artifacts=["docs/design.md"])
+    implement = _base_node(node_id="implement", capability="implement", hard_blocked_by=["design"],
+                           exit_artifacts=[".allforai/bootstrap/implement.json"],
+                           parallel_write_scopes=["src/**", "docs/**"])
+    errors = validate_workflow(_write_workflow(tmp_path, [design, implement]))
+    owned = [e for e in errors if e.startswith("write_scope_owns_foreign_artifact:")]
+    assert owned and "docs/design.md" in owned[0] and "'design'" in owned[0], errors
+
+
+def test_a_write_scope_over_its_own_and_unowned_paths_passes(tmp_path):
+    design = _base_node(node_id="design", exit_artifacts=["docs/design.md"])
+    implement = _base_node(node_id="implement", capability="implement", hard_blocked_by=["design"],
+                           exit_artifacts=[".allforai/bootstrap/implement.json", "src/cli.ts"],
+                           parallel_write_scopes=["src/**"])
+    errors = validate_workflow(_write_workflow(tmp_path, [design, implement]))
+    assert not [e for e in errors if e.startswith("write_scope_owns_foreign_artifact:")], errors
+
+
 def test_dependency_reference_to_missing_node_fails(tmp_path):
     path = _write_workflow(
         tmp_path,

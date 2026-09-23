@@ -653,6 +653,39 @@ def _inverted_source_inputs(raw_nodes: list) -> list:
     return errors
 
 
+def _write_scope_ownership(raw_nodes: list) -> list:
+    """Refuse a plan in which one node's write scope covers another node's delivery.
+
+    An exit artifact has one owner: the node that publishes evidence for it. A second
+    node declaring it inside `parallel_write_scopes` is not exempted from staling the
+    owner — it is a second writer the plan never reconciled, and the conflict surfaces
+    at run time as an owner that can no longer publish. Re-own the artifact (supersede)
+    or narrow the scope at planning, where it is cheap.
+    """
+    nodes = [n for n in raw_nodes if isinstance(n, dict) and _addressable_id(n.get("node_id"))]
+    errors = []
+    for node in nodes:
+        scopes = _string_list(node.get("parallel_write_scopes"))
+        if not scopes:
+            continue
+        for other in nodes:
+            if other is node:
+                continue
+            for item in other.get("exit_artifacts") or []:
+                artifact = item.get("path") if isinstance(item, dict) else item
+                if not isinstance(artifact, str) or not artifact:
+                    continue
+                scope = next((s for s in scopes if _declarations_overlap(artifact, s)), None)
+                if scope:
+                    errors.append(
+                        f"write_scope_owns_foreign_artifact: workflow.json: {node['node_id']} "
+                        f"parallel_write_scope '{scope}' covers '{artifact}', an exit artifact "
+                        f"of '{other['node_id']}'; one delivery has one owner. Supersede the "
+                        f"ownership or narrow the scope before the run"
+                    )
+    return errors
+
+
 def validate_workflow(wf_path: str) -> list:
     """Validate workflow.json schema."""
     errors = []
@@ -750,6 +783,7 @@ def validate_workflow(wf_path: str) -> list:
                     )
 
     errors.extend(_inverted_source_inputs(wf["nodes"]))
+    errors.extend(_write_scope_ownership(wf["nodes"]))
 
     return errors
 
