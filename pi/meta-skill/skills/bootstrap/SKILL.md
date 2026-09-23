@@ -38,9 +38,11 @@ Pi 没有 `AskUserQuestion`。阻塞性信息用纯文本问；不要发明答�
 
 改为：
 
+<!-- clause:run-entry-rendered@a611047f -->
 - 读 `<package-root>/knowledge/orchestrator-template.md`（Pi 模板，不是 Claude/Codex 那份）
 - 写目标项目 `.pi/skills/run/SKILL.md`
 - `mkdir -p .pi/skills/run`
+- 用脚本渲染，不要手抄：`python3 <package-root>/scripts/orchestrator/render_run_entry.py <package-root>/knowledge/orchestrator-template.md .pi/skills/run/SKILL.md`。入口就是模板正文逐字节的副本；模板里的命令片段和共享规则在 myskills 里有测试守着，手抄的副本会把这些悄悄改掉
 
 不要写 `.claude/commands/run.md`、`.codex/commands/run.md` 或 `.allforai/codex/flow.py`。
 不要调用 Claude Workflow JS。共享合约仍是 `.allforai/bootstrap/workflow.json` 和复制过去的 orchestrator 脚本。
@@ -146,6 +148,7 @@ canonical 这部分在 Pi 上照常执行，只有提问方式不同。
 - `.allforai/bootstrap/workflow.json` 存在
 - `.allforai/bootstrap/node-specs/*.md` 存在
 - `.pi/skills/run/SKILL.md` 存在，且 frontmatter `name: run`
+- `render_run_entry.py <模板> .pi/skills/run/SKILL.md --check` 通过（不一致就重新渲染，不要手改）
 - `.allforai/bootstrap/scripts/` 与 `protocols/` 已复制
 - 没有新写 `.claude/commands/run.md`、`.codex/commands/run.md` 或 `.allforai/codex/flow.py`
 - `workflow.json` 里每个节点都有至少一个根在 `.allforai/bootstrap/` 的 `exit_artifact`

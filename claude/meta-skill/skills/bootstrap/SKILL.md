@@ -746,8 +746,18 @@ and the node-spec audit passes.
 
 ## Step 4: Generate run.md
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md` for the template.
-Write the result to `.claude/commands/run.md` in the target project.
+<!-- clause-begin:run-entry-rendered -->
+Render the template into the target project with the script — never re-type it:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_run_entry.py \
+  ${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md .claude/commands/run.md
+```
+
+The entry is the template's body byte for byte. The template's shell snippets are executed
+by tests and its shared rules are stamped against the Codex and Pi entries; a hand-typed copy
+can paraphrase any of that away with nothing to notice. Step 5 checks the entry with `--check`.
+<!-- clause-end:run-entry-rendered -->
 
 No customization needed beyond what the template provides — the orchestrator
 reads workflow.json at runtime, which already contains all project-specific information.
@@ -764,9 +774,12 @@ updates; validation failure never authorizes replacing them with empty defaults.
 Run:
 ```bash
 python3 .allforai/bootstrap/scripts/validate_bootstrap.py .allforai/bootstrap/
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/render_run_entry.py \
+  ${CLAUDE_PLUGIN_ROOT}/knowledge/orchestrator-template.md .claude/commands/run.md --check
 ```
 
-If errors: fix and re-validate (max 3 attempts).
+If errors: fix and re-validate (max 3 attempts). A run entry that differs from its template is
+re-rendered, never edited to match.
 
 ---
 

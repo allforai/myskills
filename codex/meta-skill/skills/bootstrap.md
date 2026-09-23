@@ -181,8 +181,12 @@ When the canonical protocol says:
 
 For Codex, do this instead:
 
+<!-- clause:run-entry-rendered@a611047f -->
 - read `../knowledge/orchestrator-template.md` as the Codex-native generation template
-- write the generated run entry to `.codex/commands/run.md` in the target project
+- write the generated run entry to `.codex/commands/run.md` in the target project by rendering
+  it with this adapter's `scripts/orchestrator/render_run_entry.py <that template> .codex/commands/run.md`
+  (run in the target project) — never re-type it: the entry is the template body byte for byte,
+  whose snippets and shared rules are tested in myskills, and a hand-typed copy loses that
 
 ### 3. Canonical Bootstrap Graph
 
@@ -503,7 +507,7 @@ After generation, verify all of the following:
 - `.allforai/bootstrap/bootstrap-profile.json` exists
 - `.allforai/bootstrap/workflow.json` exists
 - `.allforai/bootstrap/node-specs/*.md` exist
-- `.codex/commands/run.md` exists
+- `.codex/commands/run.md` exists and `render_run_entry.py <template> .codex/commands/run.md --check` passes (re-render on a difference, never hand-edit)
 - project-local helper copies exist under `.allforai/bootstrap/`
 - `.allforai/codex/flow.py` exists for Codex targets
 - every node in `workflow.json` has at least one `exit_artifact` rooted under `.allforai/bootstrap/`

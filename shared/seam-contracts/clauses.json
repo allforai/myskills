@@ -83,6 +83,38 @@
          "require": ["missing_cross_exam_step"]}
       ],
       "forbid": ["no product to examine", "user_steps` is `[]`", "被 suppress 时为 `[]`", "无后续用户步骤"]
+    },
+    {
+      "id": "run-entry-rendered",
+      "rule": "Bootstrap writes the run entry with render_run_entry.py and checks it with --check; no model re-types the template.",
+      "authority": {
+        "path": "claude/meta-skill/skills/bootstrap/SKILL.md",
+        "require": [
+          "render_run_entry.py",
+          "never re-type it"
+        ]
+      },
+      "copies": [
+        {
+          "path": "codex/meta-skill/skills/bootstrap.md",
+          "require": [
+            "render_run_entry.py",
+            "never re-type it",
+            "--check"
+          ]
+        },
+        {
+          "path": "pi/meta-skill/skills/bootstrap/SKILL.md",
+          "require": [
+            "render_run_entry.py",
+            "不要手抄",
+            "--check"
+          ]
+        }
+      ],
+      "forbid": [
+        "Write the result to `.claude/commands/run.md` in the target project"
+      ]
     }
   ]
 }
