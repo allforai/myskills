@@ -721,6 +721,17 @@ def _reuse_legacy_choice(root, item):
         item["pending_reason"] = "Legacy intent needs user verification"
 
 
+def _projected(values):
+    """The comparable content of a projected list, or None for a malformed one.
+
+    None never equals the expected projection, so a node that lost the list shape is
+    still reported rather than compared away.
+    """
+    if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
+        return None
+    return sorted(values)
+
+
 def _retained_nodes(workflow, refs):
     """Consume reconciled history, folding both native formats in log order."""
     last_status = {event.get("node_id", event.get("node")): event.get("status")
@@ -877,8 +888,13 @@ def _intent_drift(root, workflow, concept, refs, frozen, *, label, path, retaine
         if any(ref["id"] in drifted for ref in node_refs):
             continue
         expected = [latest[r["id"]] for r in node_refs]
-        if (node.get("product_goals") != [i["goal"] for i in expected]
-                or node.get("acceptance") != [a for i in expected for a in i["acceptance"]]):
+        # A projection is the set of obligations a node carries, not a sequence. Replanning
+        # reorders `requirement_refs` whenever the baseline re-sorts, without changing a
+        # single goal or acceptance line; reporting that as intent drift is a false
+        # statement that sends a whole confirmed plan back to be rewritten by hand.
+        if (_projected(node.get("product_goals")) != _projected([i["goal"] for i in expected])
+                or _projected(node.get("acceptance")) != _projected([a for i in expected
+                                                                     for a in i["acceptance"]])):
             _scoped(blockers, "stale_requirement", f"{label} goals and acceptance differ from confirmed intent", [node_id])
     return blockers
 

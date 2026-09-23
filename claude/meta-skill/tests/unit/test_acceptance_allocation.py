@@ -168,3 +168,26 @@ def test_a_deferral_to_a_node_outside_the_plan_is_refused(tmp_path, host):
         "---\n" + json.dumps(node) + "\n---\n" + body)
     refused = gate(tmp_path, "validate_bootstrap.py")
     assert refused.returncode == 1 and "unowned_effect_stage" in refused.stdout, refused.stdout
+
+
+@pytest.mark.parametrize("host", ["claude", "codex"])
+def test_reordering_a_projection_is_not_intent_drift(tmp_path, host):
+    """A replan that re-sorts refs changes no obligation, so the plan is not sent back.
+
+    The baseline re-sorts `requirement_refs`; a node's projected goals and acceptance are
+    the same lines in a different order. Reporting that as "goals and acceptance differ
+    from confirmed intent" is a false statement, and it costs a hand rewrite of every node.
+    """
+    workflow = accepted_plan(tmp_path, host)
+    node = next(n for n in workflow["nodes"] if n["node_id"] == "operator-documentation")
+    assert len(node["acceptance"]) > 1, node["acceptance"]
+    body = spec(tmp_path, "operator-documentation")
+    node["acceptance"] = list(reversed(node["acceptance"]))
+    node["product_goals"] = list(reversed(node["product_goals"]))
+    write(tmp_path, WORKFLOW, workflow)
+    (tmp_path / SPECS / "operator-documentation.md").write_text(
+        "---\n" + json.dumps(node) + "\n---\n" + body.split("\n---\n", 1)[1])
+
+    for name in ("validate_bootstrap.py", "check_decision_inputs.py"):
+        checked = gate(tmp_path, name)
+        assert "stale_requirement" not in checked.stdout, (name, checked.stdout)
