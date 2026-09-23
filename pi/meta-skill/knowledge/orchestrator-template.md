@@ -97,14 +97,16 @@ they were asked to produce; they do not record completion or edit the ledger.
   harness and another model, not this session's, and they are not managed by
   this host. `runner.available === true` only means the command is on PATH; it
   is neither a use case nor login/launch proof.
-- Independent pending nodes whose exit artifacts do not overlap may run in
-  **one** top-level `subagent` call with `workflowScript`, `async:true`,
-  explicit `cwd`, and `runs.all`. Sequence dependent work with `runs.run`.
-  Honor `globalConcurrencyLimit`. `runs.all` returns an ordered array, not a
-  key map.
-- Prefer worktree isolation when the tool provides it and the nodes do not
-  share files. Otherwise run in the shared project cwd. Do not let two
-  writers share a cwd.
+- Independent pending nodes may run in **one** top-level `subagent` call with
+  `workflowScript`, `async:true`, explicit `cwd`, and `runs.all` when their
+  write sets are disjoint: exit artifacts do not overlap, and their declared
+  `parallel_write_scopes` do not overlap each other or another lane's exit
+  artifacts. That one predicate decides; a shared cwd is fine when it holds.
+  Sequence the rest with `runs.run`. Honor `globalConcurrencyLimit`.
+  `runs.all` returns an ordered array, not a key map.
+- Prefer worktree isolation when the tool provides it. In the shared project
+  cwd, two lanes whose write sets overlap — or a lane whose writes are
+  undeclared — are the "two writers in one cwd" case: run them one at a time.
 - Every child keeps the current session model: do not pass another provider
   or model family, and do not start an external CLI to change models. Control
   cost and capability with thinking level only: omit it to inherit the agent
