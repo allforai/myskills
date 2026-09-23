@@ -52,7 +52,7 @@ Pi 没有 `AskUserQuestion`。阻塞性信息用纯文本问；不要发明答�
 完成摘要里把这条命令写清楚。
 
 canonical 的后续用户步骤不变：`workflow.json.user_steps` 仍是
-`["/cross-exam", "/product-review"]`（CLI / library-sdk 被 suppress 时为 `[]`）。
+`["/cross-exam", "/product-review"]`（CLI / library-sdk 被 suppress 时为 `["/cross-exam"]`：没有 UI 可评，但交付仍要审完成度）。
 它们不是节点，也不要派发。摘要里按列表打印。`/cross-exam` 在已安装 `myskills-cross-exam` 时对应 `/skill:cross-exam`（没有独立子代理则该项会拒跑）。`/product-review` 尚未移植到 Pi，说明要在 Claude/Codex 上调用。不要假装已经跑过。
 
 ### 3. Plugin-root runtime copies

@@ -505,8 +505,9 @@ def _verdict_entry_blockers(workflow: dict, nodes: list[dict], blockers: list[di
                            for n in nodes)
         message = ("workflow.json has no user_steps: the steps the user takes after the run "
                    "(/cross-exam, then /product-review) are part of the workflow. A project with no "
-                   "product to examine (cli, library-sdk) says so with user_steps: []; silence is "
-                   "not an exemption.")
+                   "product to critique (cli, library-sdk) keeps /cross-exam and drops "
+                   "/product-review, user_steps: [\"/cross-exam\"]; only an explicit list, down "
+                   "to user_steps: [], is an exemption; silence is not.")
         if plans_verify:
             _add(blockers, "missing_user_steps", message)
         elif warnings is not None:

@@ -902,7 +902,7 @@ Bootstrap 完成。
 ```
 
 Print the two user steps exactly as `workflow.json.user_steps` lists them. When the
-suppress rules exempt the project (CLI, library-sdk: no UI, no product to examine), print
-`无后续用户步骤：{reason}` in their place instead of dropping the block silently.
+suppress rules drop `/product-review` (CLI, library-sdk: no UI to critique; `/cross-exam` stays, a delivery is still examined), print
+`/cross-exam` and then `已省略 /product-review：{reason}` instead of dropping the step silently.
 
 ---
