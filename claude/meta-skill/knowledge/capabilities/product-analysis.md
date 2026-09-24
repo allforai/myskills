@@ -121,7 +121,7 @@ Write the counts you produced and why they are complete for this input; numbers 
 }
 ```
 
-`frequency` and `risk_level` are the same fields `shared/scripts/product-design` reads. Risk is 高 whenever a wrong or unauthorized run touches permissions (a payment back office, admin actions), money, irreversible writes or dirty data, security, privacy or compliance — however rarely it runs.
+`frequency` and `risk_level` are the same fields `shared/scripts/product-design` reads. Risk rates the damage a wrong or unauthorized run leaves behind, however rarely it runs. 高: the acting role cannot undo it by redoing the action — money moved, a permission boundary crossed (a payment back office, admin actions), bad data already spread to other records or consumers, security, privacy or compliance exposure. 中: others see or act on the wrong result before it is corrected, but the role can correct it itself. 低: the role sees the mistake and fixes it itself. "It writes data" alone is not 高; say which of these the damage is.
 
 **role-profiles.json field schema (minimum required fields):**
 ```json

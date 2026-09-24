@@ -55,7 +55,7 @@ These are TYPES of checks, not a fixed checklist:
 
 - Every gap becomes an actionable task in gap-tasks.json
 - Gaps scored: severity (core/important/minor) × effort (low/medium/high)
-- Severity follows the referenced task's `frequency` × `risk_level`: a gap in guarding a 高-risk task (permission, money, dirty data, irreversible write) is core however rarely the task runs; a gap in a 高-frequency task's flow or states is at least important; a guard or convenience for a 低 × 低 task is minor, and a speculative guard there (retry, rate limit, fallback for a case never seen) is not a gap at all
+- Severity follows the referenced task's `frequency` × `risk_level` (a task that arrives without them is rated here, with a basis; a missing rating is never read as 低. Risk 高 = damage the acting role cannot undo by redoing the action: money moved, a permission boundary crossed, bad data spread to other records or consumers, security/privacy/compliance exposure): a gap in guarding a 高-risk task (permission, money, dirty data, irreversible write) is core however rarely the task runs; a gap in a 高-frequency task's flow or states is at least important; a guard or convenience for a 低 × 低 task is minor, and a speculative guard there (retry, rate limit, fallback for a case never seen) is not a gap at all
 - No core-severity gaps left unaddressed in the plan
 
 ## Methodology Guidance (not steps)
