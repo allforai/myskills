@@ -20,6 +20,13 @@ entry、kind（screen/component/overlay）、states、适用平台与环境分�
 `TARGETED_DEVICE_FAMILY` / manifest / 平台本身决定的目标形态）。某个面被代码本身限制在一段宽度里（按 innerWidth
 的路由守卫、仅桌面的路由、尺寸类门槛）时，在该 `ui_surfaces[]` 条目上加 `width_range: {min, max, basis}`；代码
 没限制的面不加。阈值是覆盖法读样式与尺寸分支得到的，不是猜的；读不到的类别写 could_not。
+高度同样会挤布局：返回 height_range（`{min, max, basis}`：窗口最小高度——原生窗口最小尺寸、`minHeight` 选项、
+`min-height` 根样式；读不到的一端写 `null`，不编数）和 scroll_regions（随窗口高度封顶、超出就在框内滚动的区域：
+`max-height` / `height` 用 `vh`·`dvh`·`calc(100vh - …)`·`%` 封顶并配 `overflow: auto|scroll` 的元素，`field-sizing: content`
+或自增高 textarea 外层的封顶容器，原生 `ScrollView` 加 `.frame(maxHeight:)` / `maxHeight` 约束一类；每条
+`{id, ui_surface, selector, cap, basis: path:line}`，`ui_surface` 写它所在的 `ui_surfaces[].id`）。一个页面里两个这样的
+区域上下相邻（列表在上、随内容长高的输入区在下）时两条都列：窗口矮、内容长时它们各自出滚动条、互相挤，这是宽度
+阈值看不见的。
 再返回 locales（产品实际打包的语言：i18n 配置的 locales / `locales/*` 目录 / `.xcstrings`·`.lproj` /
 `values-xx/`·`resConfigs`，含 default、回落链、RTL 语言，带出处）和 translation_keys（以默认语言的 key 全集为
 点名册，逐语言列缺失 key 与多余 key，带资源文件路径）——缺 key 运行时静默回落成默认语言，界面混语，代码
@@ -57,6 +64,9 @@ dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色
  "layout_thresholds": [{"width": 1024, "unit": "px|pt|dp|rem|em", "basis": "path:line"}],
  "form_factor": {"value": "desktop", "basis": "path:line 或 平台本身"},
  "width_range": {"min": 900, "max": 1920, "basis": "path:line 或 设备家族/显示器依据"},
+ "height_range": {"min": 600, "max": null, "basis": "path:line（窗口最小高度；读不到的一端写 null）"},
+ "scroll_regions": [{"id": "composer", "ui_surface": "U3", "selector": "#pane-video .composer", "cap": "50vh",
+                     "basis": "app.css:297 max-height:50vh; overflow-y:auto"}],
  "locales": {"supported": ["zh-CN", "en", "ar"], "default": "zh-CN", "fallback": ["en"], "rtl": ["ar"], "basis": "path:line"},
  "translation_keys": {"total": 133, "basis": "public/locales/zh-CN/*.json",
                       "missing": {"ar": ["billing.invoice.title", "..."]}, "extra": {"en": ["..."]}},
@@ -69,5 +79,5 @@ dark_variant_gaps：支持深色时没有深色变体的资源与硬编码颜色
  "could_not": ["没枚举到的类别 + 原因（无则空数组）"]}
 ```
 
-`ui_surfaces` / `layout_thresholds` / `width_range` / `form_factor` / `locales` / `translation_keys` / `axis_support` / `dark_variant_gaps` 仅 UI 目标返回；没有 i18n
+`ui_surfaces` / `layout_thresholds` / `width_range` / `height_range` / `scroll_regions` / `form_factor` / `locales` / `translation_keys` / `axis_support` / `dark_variant_gaps` 仅 UI 目标返回；没有 i18n
 资源的产品 `locales` 写 `{"supported": [<源码硬编码的那一种>], "basis": "..."}`，不空着。

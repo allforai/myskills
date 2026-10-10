@@ -496,3 +496,49 @@ def test_declining_a_pointer_value_keeps_it_out_of_the_matrix():
     rows = expand([{'id': 'home', 'axes': {**axes, 'pointer': ['mouse']}, 'scrollable': False}],
                   axis_support=support, platform='ios')
     assert [c['pointer'] for c in rows] == ['mouse']
+
+
+HEIGHT = {'min': 600, 'basis': 'MainWindowController.swift:32 contentMinSize 900x600'}
+
+
+def test_device_axis_must_reach_the_shortest_window():
+    # a height-capped composer (max-height: 50vh) only overflows in a short window; 900x800 never shows it
+    with pytest.raises(ValueError, match='misses the shortest window 600'):
+        expand([{'id': 'video', 'axes': _axes(['900x800@2', '1920x1080@1'])}], height_range=HEIGHT)
+    ok = expand([{'id': 'video', 'axes': _axes(['900x600@2', '1920x1080@1'])}], height_range=HEIGHT)
+    assert len(ok) == 2
+    with pytest.raises(ValueError, match='shorter than height_range.min 600'):
+        expand([{'id': 'video', 'axes': _axes(['900x500@2', '900x600@2'])}], height_range=HEIGHT)
+    with pytest.raises(ValueError, match='invalid height_range'):
+        expand([{'id': 'video', 'axes': _axes(['900x600@2'])}], height_range={'min': 600})
+
+
+def test_orientation_changes_effective_height():
+    # iPhone 390x844: landscape leaves 390 of height, portrait 844
+    expand([{'id': 'home', 'axes': _axes(['390x844@3'], ('portrait', 'landscape'))}],
+           height_range={'min': 390, 'basis': 'iPhone landscape'})
+    with pytest.raises(ValueError, match='misses the shortest window 390'):
+        expand([{'id': 'home', 'axes': _axes(['390x844@3'], ('portrait',))}],
+               height_range={'min': 390, 'basis': 'iPhone landscape'})
+
+
+REGIONS = [{'id': 'composer', 'surfaces': ['video'], 'cap': '50vh',
+            'basis': 'app.css:297 #pane-video .image-composer max-height:50vh overflow-y:auto'}]
+
+
+def test_scroll_region_needs_an_overflow_state_on_each_surface():
+    # an inner scroller that never overflows in any capture hides what it cuts off
+    with pytest.raises(ValueError, match='overflow-composer'):
+        expand([{'id': 'video', 'axes': _axes(['900x600@2'])}], scroll_regions=REGIONS)
+    axes = {**_axes(['900x600@2']), 'state': ['default', 'overflow-composer']}
+    assert len(expand([{'id': 'video', 'axes': axes}], scroll_regions=REGIONS)) == 2
+    with pytest.raises(ValueError, match='unknown surface'):
+        expand([{'id': 'music', 'axes': axes}], scroll_regions=REGIONS)
+    with pytest.raises(ValueError, match='invalid scroll region'):
+        expand([{'id': 'video', 'axes': axes}], scroll_regions=[{'id': 'composer', 'surfaces': ['video']}])
+
+
+def test_height_rules_do_not_change_case_ids():
+    plain = expand([{'id': 'chat', 'axes': _axes(['900x600@2'])}])[0]
+    ruled = expand([{'id': 'chat', 'axes': _axes(['900x600@2'])}], height_range=HEIGHT)[0]
+    assert plain['id'] == ruled['id']

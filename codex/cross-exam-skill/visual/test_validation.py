@@ -996,7 +996,7 @@ def test_hidden_width_is_refused_even_when_layout_category_has_no_rules(sample):
 
 
 def _census_reason(sample, census, platform='ios', form_factor=None, thresholds=None,
-                   width_range='global', surfaces=None, readback_width='auto', bind='file'):
+                   width_range='global', surfaces=None, readback_width='auto', bind='file', inventory_extra=None):
     """Freeze an inventory against the census's width facts: digest-bound file (`file`), ledger top-level
     keys only as an old run wrote them (`ledger`), or the file plus a verbatim ledger copy (`both`)."""
     root, write, cfg, case, report, entry, ledger = sample
@@ -1010,6 +1010,9 @@ def _census_reason(sample, census, platform='ios', form_factor=None, thresholds=
     inventory['platform'] = platform
     inventory.pop('form_factor', None)               # calls within one test must not inherit each other's keys
     inventory.pop('layout_thresholds', None)
+    for key in ('height_range', 'scroll_regions'):
+        inventory.pop(key, None)
+    inventory.update(inventory_extra or {})
     if form_factor is not None:
         inventory['form_factor'] = form_factor
     if thresholds is not None:
@@ -1327,3 +1330,46 @@ def test_copy_paths_in_inspected_images_are_refused(sample):
     write('evidence/q1/review.json', {**report, 'inspected_images': ['q1/image.png', 'q1/view/image.overview.jpg'],
                                        'viewed_via': {'q1/image.png': ['q1/view/image.overview.jpg']}})
     assert '副本混进' in visual_reason(entry, ledger, root)
+
+
+CENSUS_HEIGHT = {'min': 768, 'max': None, 'basis': 'MainWindowController.swift:32 contentMinSize'}
+CENSUS_REGIONS = [{'id': 'composer', 'ui_surface': 'home', 'cap': '50vh',
+                   'basis': 'app.css:297 max-height:50vh overflow-y:auto'}]
+
+
+def _home(states=('default', 'resize-drag')):
+    return [{'id': 'home', 'axes': {**{a: ['default'] for a in AXES}, 'state': list(states)}}]
+
+
+def test_inventory_cannot_drop_the_census_shortest_window(sample):
+    reason = _census_reason(sample, {'height_range': CENSUS_HEIGHT}, surfaces=_home())
+    assert reason and 'height_range' in reason and '768' in reason
+    taller = {'height_range': {'min': 800, 'basis': 'user: 800 is enough'}}
+    reason = _census_reason(sample, {'height_range': CENSUS_HEIGHT}, surfaces=_home(), inventory_extra=taller)
+    assert reason and '800' in reason          # refused by the replay or the census check, whichever runs first
+    kept = {'height_range': {'min': 768, 'basis': 'contentMinSize'}}
+    assert _census_reason(sample, {'height_range': CENSUS_HEIGHT}, surfaces=_home(), inventory_extra=kept) is None
+
+
+def test_census_height_range_without_a_minimum_binds_nothing(sample):
+    unread = {'min': None, 'max': None, 'basis': 'no minimum window height in code'}
+    assert _census_reason(sample, {'height_range': unread}, surfaces=_home()) is None
+
+
+def test_inventory_cannot_drop_a_census_scroll_region(sample):
+    reason = _census_reason(sample, {'scroll_regions': CENSUS_REGIONS}, surfaces=_home())
+    assert reason and 'composer' in reason
+    region = [{'id': 'composer', 'surfaces': ['home'], 'cap': '50vh', 'basis': 'app.css:297'}]
+    ok = _census_reason(sample, {'scroll_regions': CENSUS_REGIONS},
+                        surfaces=_home(('default', 'resize-drag', 'overflow-composer')),
+                        inventory_extra={'scroll_regions': region})
+    assert ok is None
+
+
+def test_ui_target_without_visual_acceptance_says_so():
+    # a UI target whose run never opened visual acceptance must not render as if layout had been checked
+    ledger = {'ui_surfaces': [{'id': 'U1'}, {'id': 'U2'}],
+              'scroll_regions': [{'id': 'composer', 'ui_surface': 'U2', 'cap': '50vh', 'basis': 'app.css:297'}]}
+    out = '\n'.join(visual_section(ledger, []))
+    assert '未做视觉验收' in out and '2 个界面面' in out and 'composer' in out
+    assert visual_section({'surfaces': [{'id': 'S1'}]}, []) == []      # not a UI target: nothing to declare

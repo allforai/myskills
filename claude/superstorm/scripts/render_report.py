@@ -378,6 +378,19 @@ def _git_author_overlap(run_dir):
         return ""
 
 
+def _pair_label(entry):
+    """A short name for one entry in the timing line. A sweep q is a multi-line template, and two of them in
+    full per pair bury the line: a q longer than one short line is named by its evidence dir and its first
+    line cut at 40 characters."""
+    q = str(entry.get("q", "?"))
+    if "\n" not in q and len(q) <= 40:
+        return q
+    head = q.splitlines()[0][:40] + "…"
+    ev = entry.get("evidence") if isinstance(entry.get("evidence"), dict) else {}
+    name = Path(str(ev.get("dir") or "").rstrip("/")).name
+    return f"{name}（{head}）" if name else head
+
+
 def _timing_lines(admitted):
     """v2 的 probed_at：打印取证跨度，相邻 runtime 问间隔不足 60 秒逐对点名——不是证据，是让人看一眼的线索。"""
     stamped = [(e, _parse_time(e.get("probed_at"))) for e in admitted]
@@ -390,7 +403,7 @@ def _timing_lines(admitted):
     fast = []
     for (a, ta), (b, tb) in zip(stamped, stamped[1:]):
         if a.get("medium") == "runtime" and b.get("medium") == "runtime" and abs((tb - ta).total_seconds()) < 60:
-            fast.append(f"{a.get('q', '?')} → {b.get('q', '?')}（{int(abs((tb - ta).total_seconds()))} 秒）")
+            fast.append(f"{_pair_label(a)} → {_pair_label(b)}（{int(abs((tb - ta).total_seconds()))} 秒）")
     if fast:
         out.append("相邻 runtime 问间隔不足 60 秒，请核对是否真实取证：" + "；".join(fast))
     return out

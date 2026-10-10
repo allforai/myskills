@@ -1135,6 +1135,14 @@ class TestSmallHonestyFixes(unittest.TestCase):
             report = render(run)
             self.assertIn("相邻 runtime 问间隔不足 60 秒", report)
             self.assertIn("q-a → q-b（20 秒）", report)
+            # a sweep q is a multi-line template: the pair is named by evidence dir and the q's first line, cut short
+            template = "调用 S44「Create chat session」（入口 POST /api/sessions）后实际发生了什么：调用前的相关状态\n调用后的相关状态各是什么；"
+            ledger["entries"][0]["q"] = template; ledger["entries"][1]["q"] = template.replace("S44", "S45")
+            (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+            line = next(l for l in render(run).splitlines() if "间隔不足 60 秒" in l)
+            self.assertIn("q1（调用 S44「Create chat session」", line)
+            self.assertIn("q2（调用 S45", line)
+            self.assertNotIn("调用后的相关状态", line)
             ledger["entries"][0].pop("probed_at")
             (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
             self.assertIn("缺 probed_at", render(run))

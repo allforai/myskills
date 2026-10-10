@@ -153,7 +153,7 @@ Do not mix ledgers, verdicts, or loops.
    是最省的播种法。不要即兴写普查 prompt：措辞变了，覆盖面就变了。**普查官返回后把 `surfaces`
    原样写进 ledger 顶层 `surfaces[]`**（`dead_contracts` 也各作一行，`entry` 用它的 `defined_at`），
    不改名、不合并、不删：这是操作面的分母，渲染器据此算"操作面 K 个，裁决触及 T 个，未触及逐个
-   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。UI 目标的 `form_factor`、`width_range`、`layout_thresholds`、
+   点名"。分母不入账，覆盖就没有数，只剩盘问官一句"盘过了"。UI 目标的 `form_factor`、`width_range`、`height_range`、`scroll_regions`、`layout_thresholds`、
    `ui_surfaces`、`locales`、`axis_support`、`translation_keys`、`dark_variant_gaps` 同样原样入账（顶层同名键），**并把普查官的整份返回原样另存为 run 下
    `visual/census.json`，`visual_acceptance.census_ref` / `census_digest` 按摘要绑定它**——校验器从这个文件读原件比对
    inventory，顶层同名键只是副本，与文件不一致或删了键都关不掉检查；宽度与支持值只许放宽不许收窄，见 visual-acceptance.md）：`translation_keys.missing` 或 `dark_variant_gaps` 非空时按
@@ -210,6 +210,13 @@ Do not mix ledgers, verdicts, or loops.
    情形"，把**决定成败的维度**写进 circumstance——哪些维度决定成败由这份工作自己说了算，技能不给
    清单，也不假设一定是体量。一个点也可以，但要知道它是一个点：**circumstance 覆盖几个点，这条
    旅程的 `done` 就只覆盖几个点**，渲染器按它渲作用域，不许渲成无条件的"走通"。
+   **界面旅程默认多一个挤压点。** 目标有 UI、旅程要在界面上填内容时，用户确认的典型处境之外，再起草一条
+   同 `who`/`progress`/oracle 的姊妹旅程（id 加 `-squeezed`），circumstance 写死两项：窗口取普查官的
+   `width_range.min` × `height_range.min`（读不到的一端问用户真实用过的最小窗口，写数），每个自由文本输入取
+   这份工作在真实使用里会出现的**最长**内容（问用户一次"最长会填多长"，写字数或行数，不写"较长"）；普查官
+   列了 `scroll_regions` 的页面另在 `preconditions` 里写"作业进行中时截一张整页图"。典型点答"平常走不走得通"，
+   挤压点答"窗口小、内容长时走不走得通"——界面被挤坏（输入区在框内滚走、结果被挡、出两条滚动条）只在后者出现，
+   而探针自己永远不会往那里走。用户不要挤压点就按原话记进 `journey_candidates[]`，不静默省掉。
    **约束情形不破期望隔离**——`circumstance` 与 `preconditions` 约束的是**处境**，oracle 与
    waypoints 约束的是**结果**；处境可以进探针输入，结果绝不能。
 4. **落盘**：确认的旅程写入 `journeys[]`，`status: not_examined`，带 `risk`（这份工作的分量 + 若真走
@@ -247,6 +254,10 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   这是旅程版的期望隔离。waypoints 是给你事后对 `steps[]` 查的：探针若被告知必经点就会主动绕过去
   经过它，产品允许跳过该点这件事就永远测不出来。
 - **收证据**：把 `steps[]` 和终态截图给用户看（截图给路径；你自己要看时按看图预算取副本，终态整页图先看 overview）。
+  **裁决只对 oracle，但 oracle 之外看到的界面毛病不许随 done 蒸发**：逐步读 `steps[].observed` 与
+  `incidental_observations`，凡是写了元素被挡、内容被截、区域重叠、第二条滚动条、要滚动才露出结果、同一状态
+  多处重复的，每条进 `open_threads`（q 写成可实测的问题，leak_point 写原话加步号），选了视觉验收时另作为
+  对应页面的 state 候选摆给用户。这一步不看旅程裁决是什么：旅程走通了，第 8 步"控制条被下方表单挡住"照样是一条线。
 - **裁决**（对着 `journeys[].oracle`）：
   `done` = `done_looks_like` 全部命中、`stuck_looks_like` 无一命中、每个 waypoint 都在某步
   `observed` 或截图里出现过；

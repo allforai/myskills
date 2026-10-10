@@ -279,7 +279,7 @@ def _census_surface(surface, read):
 
 
 CENSUS_KEYS = ('form_factor', 'width_range', 'layout_thresholds', 'ui_surfaces',
-               'locales', 'axis_support', 'translation_keys')
+               'locales', 'axis_support', 'translation_keys', 'height_range', 'scroll_regions')
 LOGICAL_UNIT = {'web': 'px', 'ios': 'pt', 'macos': 'pt', 'android': 'dp'}   # the inventory's threshold unit
 THRESHOLD_UNITS = {'px', 'pt', 'dp', 'rem', 'em'}
 
@@ -304,6 +304,35 @@ def census(ledger, run):
 
 def _ui_target(inventory):
     return bool(inventory.get('surfaces')) and any(inventory.get(k) for k in ('width_range', 'locales', 'axis_support'))
+
+
+def census_height_reason(read, inventory):
+    """The census's shortest window and its height-capped inner scrollers; the inventory may make the window
+    shorter (the user may run it in a smaller one) but never taller, and may not drop a region, or the squeezed
+    layout leaves the matrix on the interrogator's say-so. A minimum the census could not read binds nothing.
+    Returns '' or the refusal reason."""
+    read_range = read.get('height_range')
+    if read_range is not None:
+        got = _census_range(read_range)
+        if got is None:
+            return '普查官的 height_range 形状无效'
+        if got[0] is not None:
+            mine = inventory.get('height_range')
+            low = mine.get('min') if isinstance(mine, dict) else None
+            if not isinstance(low, int) or isinstance(low, bool):
+                return 'inventory 未声明 height_range，普查官读出最矮窗口 %d' % got[0]
+            if low > got[0]:
+                return 'inventory 的 height_range.min %d 高于普查官读出的 %d' % (low, got[0])
+    read_regions = read.get('scroll_regions')
+    if read_regions is not None:
+        if not isinstance(read_regions, list) or any(not isinstance(r, dict) or not isinstance(r.get('id'), str)
+                                                     for r in read_regions):
+            return '普查官的 scroll_regions 形状无效'
+        kept = {r.get('id') for r in inventory.get('scroll_regions') or [] if isinstance(r, dict)}
+        dropped = sorted({r['id'] for r in read_regions} - kept)
+        if dropped:
+            return 'inventory 删掉了普查官读出的内部滚动区: ' + ', '.join(dropped)
+    return ''
 
 
 def census_width_reason(read, inventory):
@@ -489,6 +518,9 @@ def visual_reason(entry, ledger, run):
         problem = census_width_reason(census_obj, inventory)
         if problem:
             raise ValueError(problem)
+        problem = census_height_reason(census_obj, inventory)
+        if problem:
+            raise ValueError(problem)
         reference_images, docs = baseline(run, config)
         # the interaction baseline's layout category holds gesture distances, not window widths
         problem = pinned_layout_reason(docs['baseline'], inventory)
@@ -646,10 +678,27 @@ def unmodeled_axes(census_obj):
             for axis, spec in sorted(support.items()) if axis not in AXES}
 
 
+def _visual_not_run(ledger):
+    """A UI target whose run never opened visual acceptance. Journey screenshots are taken wherever the probe
+    happened to stand, in whatever window it happened to have; they are not a layout check, and a report that
+    says nothing about layout reads as if it had passed."""
+    ui = [s for s in ledger.get('ui_surfaces') or [] if isinstance(s, dict)]
+    if not ui:
+        return []
+    out = ['', '## 视觉基线与矩阵覆盖', '',
+           f'本 run 未做视觉验收：普查官列出 {len(ui)} 个界面面，布局、遮挡、截断、窗口宽高两端都没有经过矩阵截图与'
+           '独立视觉评审。旅程与实测截图只证明探针站的那一个点，不计为视觉验收。']
+    regions = [r for r in ledger.get('scroll_regions') or [] if isinstance(r, dict)]
+    if regions:
+        out.append('普查官读出的内部滚动区（窗口矮、内容长时才露出问题，未经任何截图）：' + '；'.join(
+            f"{r.get('id')}（{r.get('cap', '?')}，{r.get('basis', '?')}）" for r in regions))
+    return out
+
+
 def visual_section(ledger, admitted, run=None):
     config = ledger.get('visual_acceptance')
     if not config:
-        return []
+        return _visual_not_run(ledger)
     out = ['', '## 视觉基线与矩阵覆盖', '',
            f"基线：{config.get('baseline_status')} · {config.get('baseline_ref')} · {config.get('interaction_ref')}",
            f"审查模式：{config.get('review_mode')}；文件校验不代替实际看图。",

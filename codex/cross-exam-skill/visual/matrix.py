@@ -134,6 +134,58 @@ def check_widths(surface, thresholds, width_range, devices):
     return rng
 
 
+def effective_height(device, orientation, devices=None):
+    """Height the page actually gets: the long side in portrait, the short side in landscape (a fixed-width
+    multitasking window keeps its declared height)."""
+    w, h = device_dims(device, devices)
+    if (devices or {}).get(device, {}).get('fixed_width') is True:
+        return h
+    if 'portrait' in orientation:
+        return max(w, h)
+    if 'landscape' in orientation:
+        return min(w, h)
+    return h
+
+
+def check_heights(surface, height_range, devices):
+    """A window is squeezed vertically as well as horizontally. Anything capped against the window height
+    (max-height: 50vh, an inner scroller sharing the window with a composer that grows with its text) only
+    shows what it cuts off in a short window, so the device axis must reach the shortest window the app
+    allows and go no shorter. Only the short end binds: a tall window gives every region room."""
+    if not isinstance(height_range, dict) or not isinstance(height_range.get('min'), int) \
+            or isinstance(height_range.get('min'), bool) or height_range['min'] <= 0 \
+            or not isinstance(height_range.get('basis'), str) or not height_range['basis']:
+        raise ValueError('invalid height_range (needs int min and basis)')
+    sid = surface['id']
+    axes = surface['axes']
+    heights = {effective_height(d, o, devices) for d in axes['device'] for o in axes['orientation']}
+    low = height_range['min']
+    if min(heights) < low:
+        raise ValueError('device axis shorter than height_range.min %d: %s' % (low, sid))
+    if min(heights) != low:
+        raise ValueError('device axis misses the shortest window %d: %s' % (low, sid))
+
+
+def check_scroll_regions(regions, surfaces):
+    """Every height-capped inner scroller the census read from the code must be captured overflowing on
+    each surface it sits on: a state named overflow-<region id> (content longer than the cap, e.g. the
+    longest input the field accepts). A region that never overflows in any capture is never seen cutting
+    its content off at a hard edge, or stacking a second scrollbar beside the page's."""
+    by_id = {s['id']: s for s in surfaces}
+    for region in regions or []:
+        if not isinstance(region, dict) or not isinstance(region.get('id'), str) or not region['id'] \
+                or not isinstance(region.get('basis'), str) or not region['basis'] \
+                or not isinstance(region.get('surfaces'), list) or not region['surfaces']:
+            raise ValueError('invalid scroll region (needs id, surfaces and basis): ' + str(region))
+        state = 'overflow-' + region['id']
+        for sid in region['surfaces']:
+            surface = by_id.get(sid)
+            if surface is None:
+                raise ValueError('scroll region %s names unknown surface %s' % (region['id'], sid))
+            if state not in (surface['axes'].get('state') or []):
+                raise ValueError('surface %s has scroll region %s but no %s state' % (sid, region['id'], state))
+
+
 value_tokens = engine.value_tokens   # compound axis values ("浏览器 zh-CN + 站点 en") are the engine's to split
 locale_tokens = value_tokens         # kept for callers written against the locale-only version
 
@@ -263,7 +315,7 @@ def _abstracted_by(row, plan, anchors):
 
 
 def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, locales=None, axis_support=None,
-           abstractions=None, anchor=None, platform=None, form_factor=None):
+           abstractions=None, anchor=None, platform=None, form_factor=None, height_range=None, scroll_regions=None):
     if platform is not None and platform not in PLATFORMS:
         raise ValueError('unknown platform %r (web|ios|android|macos)' % (platform,))
     ff = effective_form_factor(platform, form_factor)
@@ -302,6 +354,8 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
                     isinstance(st, str) and st.startswith('resize-') for st in axes['state']):
                 raise ValueError('resizable desktop surface without a resize- state (the reflow while dragging '
                                  'is not in any static capture): ' + sid)
+        if height_range is not None:
+            check_heights(surface, height_range, devices)
         for axis, spec in merged_support(axis_support, locales).items():
             check_axis_support(surface, axis, spec)
         plan, anchors = _abstraction_plan(surface, abstractions, anchor)
@@ -319,6 +373,7 @@ def expand(surfaces, layout_thresholds=None, width_range=None, devices=None, loc
             if plan:
                 case['abstracted_by'] = _abstracted_by(row, plan, anchors)
             cases.append(case)
+    check_scroll_regions(scroll_regions, surfaces)
     if not reached_max:
         raise ValueError('no surface reaches width_range.max %d: every surface narrowed its range, so the wide '
                          'end is untested' % width_range['max'])

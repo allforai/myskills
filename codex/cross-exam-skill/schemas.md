@@ -7,7 +7,7 @@
 evidence_manifest、review_reports、review_mode、reconciliation_ref、degradation_ref、
 visual_failure_ref。visual_acceptance 里引用与摘要成对：baseline_ref / baseline_digest、interaction_ref /
 interaction_digest、inventory_ref / inventory_digest、matrix_ref / matrix_digest、census_ref / census_digest
-（普查官返回原样保存的文件，run 下 visual/census.json；顶层的 form_factor 等原件键只是它的副本）。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
+（普查官返回原样保存的文件，run 下 visual/census.json；顶层的 form_factor 等原件键只是它的副本）。普查官的 `height_range`（窗口最小高度，读不到的一端 null）与 `scroll_regions`（随窗口高度封顶的内部滚动区 `{id, ui_surface, selector, cap, basis}`）同样原样进顶层；inventory 照抄为 `height_range: {min, basis}` 与 `scroll_regions: [{id, surfaces, cap, basis}]`，矩阵与校验器的要求见 visual-acceptance.md。UI 目标没有 `visual_acceptance` 时，渲染器在视觉节声明本 run 未做视觉验收并列出这些滚动区。旧 ledger 无需这些字段。所有视觉 facet 必须登记 facet_ids，
 防止遗漏 visual_case_ids 绕过证据校验。基线引用相对 run，其余视觉文件引用相对
 run/evidence；现有 evidence.dir 仍遵循原合同。
 
