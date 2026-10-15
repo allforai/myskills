@@ -173,4 +173,29 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 
 ## 探针结论
 
-（实现计划第一个任务完成后填写。）
+2026-10-16 实测。
+
+**P1 真实调用 — 通过。** `Authorization: Bearer $OPENROUTER_API_KEY` 可用；HTTP 200，0.55 秒。
+响应信封：`model`（实测 `typesafe/jev-1.14-20261014`）、`answers`、`usage`（`input_tokens`、`output_tokens`、`cost`）、`id`、`provider`。
+393 输入 token 花费 $0.000016506 → 每百万输入 token $0.042，与默认值一致。choice 的 `confidence`（0.76）
+与选中项的概率（0.88）不是同一个数：选模型按选中项概率判阈值，批量按 `confidence` 分桶，两者都照 spec 原样。
+score 答案另带 `legend`。
+
+**P2 本轮降档 — 不通过。** 插件 skill 的 frontmatter 写 `model: haiku` 或 `model: claude-haiku-5-5`，在 `claude -p --model opus`
+会话中调用后，同一轮后续 assistant 消息仍全部是 `claude-opus-5-5`（`modelUsage` 也只有 opus）。
+transcript 形状与假设一致：Skill 调用是 `tool_use`，`name == "Skill"`，`input.skill == "jevprobe:probe-tier"`；
+随后是 tool_result（`Launching skill: …`）和一条 `isMeta: true` 的 user 消息（skill 正文）。
+子 agent 的 transcript 不在主 transcript 里，而在 `<项目目录>/<session_id>/subagents/agent-*.jsonl`。
+
+**按用户事先的决定改用降级方案**，对需求的影响：
+- R-07：不发布 tier skill。动作改为 `additionalContext` 提示：本题被 Jev 判为某档，若能独立交出去，就用 Agent 工具
+  派一个 `model` 为该档别名的子 agent 去做，核对结果后交给用户；需要主会话上下文或判断时自己做。`systemMessage` 照旧。
+  主会话模型不会被降档改变，"会话模型被降档污染"的问题随之消失：会话模型 = 主 transcript 最后一条真实 assistant 消息的模型；
+  用户自己 `/model` 切换后照常计入。"降错了 Haiku 硬做"的退路改为：主会话（原模型）核对子 agent 的结果后才交给用户。
+- R-09a：照做记录改为 `PostToolUse`（matcher `Agent|Task`）：本项目开关打开、且 Agent 调用的 `model` 是某个档位别名时，
+  记一行 `delegated`。`status` 显示"建议降档 N 次 / 委派 M 次"。
+- R-09b：token 汇总改为按"主会话 / 子 agent"× 模型，子 agent 数据取自 `subagents/` 下的 transcript。
+
+**P3 区分手打 prompt — 无可区分字段。** 手打与后台任务通知的 hook 输入键完全相同
+（`cwd`、`hook_event_name`、`permission_mode`、`prompt`、`prompt_id`、`session_id`、`transcript_path`）；
+通知的 `prompt` 以 `<task-notification>` 开头。按标签规则判断。
