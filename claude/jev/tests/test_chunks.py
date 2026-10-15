@@ -85,3 +85,7 @@ def test_main_by_hunk(repo, tmp_path):
 def test_main_refuses_root_outside_allowlist(git_repo, tmp_path):
     assert K.main(["--root", str(git_repo), "--by", "file", "--out", str(tmp_path / "o.jsonl")]) == 3
     assert not (tmp_path / "o.jsonl").exists()
+
+
+def test_by_window_terminates_when_overlap_reaches_window():
+    assert K.by_window("a\nb\nc\nd\ne\n", lines=3, overlap=3) == [(1, 3), (2, 4), (3, 5)]

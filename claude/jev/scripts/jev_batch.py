@@ -82,7 +82,16 @@ def load_questions(path):
     for qid, q in questions.items():
         if not isinstance(q, dict) or q.get("type") not in TYPES:
             raise Refused(f"{path}: 题目 {qid} 的 type 必须是 {'/'.join(TYPES)}")
-    return questions, spec.get("thresholds") or {}
+    thresholds = spec.get("thresholds") or {}
+    if not isinstance(thresholds, dict):
+        raise Refused(f"{path}: thresholds 必须是对象")
+    for qid, t in thresholds.items():
+        number = isinstance(t, (int, float)) and not isinstance(t, bool)
+        band = (isinstance(t, dict) and questions.get(qid, {}).get("type") == "noul" and set(t) <= {"hi", "lo"}
+                and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in t.values()))
+        if qid not in questions or not (number or band):
+            raise Refused(f"{path}: thresholds.{qid} 必须对应一道题，值是数字（noul 也可以是 {{\"hi\", \"lo\"}} 数字）")
+    return questions, thresholds
 
 
 def question_hash(questions, model):
@@ -127,10 +136,14 @@ def read_results(out):
     path = Path(out)
     results = {}
     if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
                 rec = json.loads(line)
                 results[rec["id"]] = rec  # last line per id wins
+            except (ValueError, KeyError, TypeError):
+                raise Refused(f"{path}:{n}: 不是完整的结果行（多半是上次运行中途被打断）；删掉这一行后重跑") from None
     return results
 
 
@@ -146,7 +159,7 @@ def read_resolutions(out):
             if d.get("answers"):
                 m["answers"].update(d["answers"])
                 m["by"] = d["by"]
-            if d.get("verdict"):
+            if d.get("verdict") and d.get("rule"):
                 m["verdicts"][d["rule"]] = d["verdict"]
     return merged
 
@@ -254,8 +267,9 @@ def run(input_path, questions_path, out_path, *, cfg, source=None, sample=None, 
                     bucket, reasons = bucket_for(res["answers"], questions, thresholds, bc)
                     rec = {"id": row["id"], "qhash": qhash, "bucket": bucket, "reasons": reasons,
                            "answers": res["answers"], "usage": res["usage"], "model": res["model"]}
-                except JevError as e:
-                    rec = {"id": row["id"], "qhash": qhash, "bucket": "failed", "reasons": [str(e)],
+                except Exception as e:  # never lose a row silently: anything unexpected is a failed record
+                    reason = str(e) if isinstance(e, JevError) else f"{type(e).__name__}: {e}"
+                    rec = {"id": row["id"], "qhash": qhash, "bucket": "failed", "reasons": [reason],
                            "answers": {}, "usage": {}, "model": None}
                 if _state_bytes(row["state"]) > bc["long_context_bytes"]:
                     rec["long_context"] = True
@@ -269,8 +283,10 @@ def run(input_path, questions_path, out_path, *, cfg, source=None, sample=None, 
         calibrations = C.read_json(C.calibrations_path(), {})
         calibrations[qhash] = {"sampled": len(targets), "sampled_at": _now()}  # a new sample voids an old approval
         C.write_json(C.calibrations_path(), calibrations)
-    return _refresh_summary(out_path, questions, thresholds, cfg, rows_total=len(rows), sample=bool(sample),
-                            skip_calibration=skip_calibration)
+    fixed = {"rows_total": len(rows), "sample": bool(sample)}
+    if skip_calibration:  # a later run without the flag must not erase the recorded reason
+        fixed["skip_calibration"] = skip_calibration
+    return _refresh_summary(out_path, questions, thresholds, cfg, **fixed)
 
 
 def approve(out_path, questions_path, cfg, *, disagree, notes, accept_reason=None):
@@ -312,6 +328,23 @@ def rebucket(out_path, questions_path, cfg):
     return _refresh_summary(out_path, questions, thresholds, cfg)
 
 
+def _validate_decision(d, questions, where):
+    if d.get("by") not in ("claude", "user"):
+        raise Refused(f"{where} by 必须是 claude 或 user")
+    answers = d.get("answers")
+    if answers is not None:
+        if not isinstance(answers, dict) or not answers:
+            raise Refused(f"{where} answers 必须是非空对象")
+        unknown = sorted(set(answers) - set(questions))
+        if unknown:
+            raise Refused(f"{where} answers 里有不存在的题目 id：{', '.join(unknown)}")
+    if "verdict" in d or "rule" in d:
+        if d.get("verdict") not in ("confirmed", "false_positive") or d.get("rule") not in questions:
+            raise Refused(f"{where} rule（题目 id）与 verdict（confirmed / false_positive）必须成对出现且有效")
+    elif answers is None:
+        raise Refused(f"{where} 需要 answers，或 rule（题目 id）+ verdict（confirmed / false_positive）")
+
+
 def resolve(out_path, decisions_path, questions_path, cfg):
     questions, thresholds = load_questions(questions_path)
     results = read_results(out_path)
@@ -328,12 +361,7 @@ def resolve(out_path, decisions_path, questions_path, cfg):
             raise Refused(f"{where} 不是合法 JSON") from None
         if not isinstance(d, dict) or str(d.get("id")) not in results:
             raise Refused(f"{where} 结果里没有这个 id")
-        if d.get("by") not in ("claude", "user"):
-            raise Refused(f"{where} by 必须是 claude 或 user")
-        has_answers = isinstance(d.get("answers"), dict) and bool(d["answers"])
-        has_verdict = d.get("verdict") in ("confirmed", "false_positive") and d.get("rule") in questions
-        if not (has_answers or has_verdict):
-            raise Refused(f"{where} 需要 answers，或 rule（题目 id）+ verdict（confirmed / false_positive）")
+        _validate_decision(d, questions, where)
         accepted.append({**d, "id": str(d["id"]), "at": _now()})
     with open(_resolutions_path(out_path), "a", encoding="utf-8") as f:
         for d in accepted:

@@ -56,13 +56,15 @@ def _log_entries(root, since):
     return out
 
 
-def transcript_usage(root, since):
-    """{(kind, model): [input incl. cache, output]} with kind "main" or "subagent"."""
+def transcript_usage(roots, since):
+    """{(kind, model): [input incl. cache, output]} with kind "main" or "subagent".
+    Claude Code names transcript dirs after the launch cwd, so a project spans every cwd it was used from."""
     usage, seen = {}, set()
-    folder = C.transcript_dir(root)
-    if not folder.is_dir():
-        return usage
-    files = [("main", p) for p in folder.glob("*.jsonl")] + [("subagent", p) for p in folder.glob("*/subagents/*.jsonl")]
+    files = []
+    for folder in {C.transcript_dir(r) for r in roots}:
+        if folder.is_dir():
+            files += [("main", p) for p in folder.glob("*.jsonl")]
+            files += [("subagent", p) for p in folder.glob("*/subagents/*.jsonl")]
     for kind, path in files:
         try:
             if datetime.fromtimestamp(path.stat().st_mtime, timezone.utc) < since:
@@ -90,7 +92,7 @@ def _fmt_usage(usage, kind):
     return "；".join(items) or "无"
 
 
-def cmd_status(root, now=None):
+def cmd_status(root, now=None, cwd=None):
     now = now or datetime.now(timezone.utc)
     since = now - timedelta(days=WINDOW_DAYS)
     entries = _log_entries(root, since)
@@ -103,7 +105,8 @@ def cmd_status(root, now=None):
     timeouts = sum(1 for e in errors if "Timeout" in (e.get("error") or ""))
     latencies = [e["latency_ms"] for e in sent if isinstance(e.get("latency_ms"), (int, float))]
     cost = sum(e.get("cost") or 0 for e in sent)
-    usage = transcript_usage(root, since)
+    cwds = {e["cwd"] for e in entries if isinstance(e.get("cwd"), str)}
+    usage = transcript_usage({root, *cwds, *([cwd] if cwd else [])}, since)
     enabled = C.route_projects()
     fmt = lambda c: "、".join(f"{k} {v}" for k, v in sorted(c.items())) or "无"
     return "\n".join([
@@ -131,7 +134,10 @@ def main(argv):
         return 2
     root = C.project_root(args.cwd)
     try:
-        print({"on": cmd_on, "off": cmd_off, "status": cmd_status}[args.action](root))
+        if args.action == "status":
+            print(cmd_status(root, cwd=os.path.abspath(args.cwd)))
+        else:
+            print({"on": cmd_on, "off": cmd_off}[args.action](root))
     except C.ConfigError as e:
         print(f"配置文件有问题：{e}")
         return 1

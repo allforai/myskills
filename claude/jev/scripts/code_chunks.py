@@ -48,7 +48,7 @@ def by_window(text, lines, overlap):
         ranges.append((start, end))
         if end == n:
             break
-        start = end - overlap + 1
+        start = max(end - overlap + 1, start + 1)  # overlap >= lines must still advance
     return ranges
 
 

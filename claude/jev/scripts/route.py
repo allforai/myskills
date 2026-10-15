@@ -142,7 +142,8 @@ def main(stdin=sys.stdin, stdout=sys.stdout):
             stdout.write(json.dumps(out, ensure_ascii=False))
         try:
             C.append_route_log({"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"), "event": "route",
-                                "session_id": hook_input.get("session_id"), "project": root, **log})
+                                "session_id": hook_input.get("session_id"), "project": root,
+                                "cwd": hook_input.get("cwd"), **log})
         except OSError:
             pass
     except Exception:  # the hook must never get in the user's way

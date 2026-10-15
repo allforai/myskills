@@ -82,3 +82,12 @@ def test_status_without_transcripts_says_none(tmp_path):
 
 def test_main_rejects_unknown_action():
     assert jev_ctl.main(["bogus"]) == 2
+
+
+def test_status_counts_transcripts_of_sessions_started_in_a_subdirectory(tmp_path):
+    a = str(tmp_path / "a")
+    sub = str(tmp_path / "a" / "pkg")
+    ts = (NOW - timedelta(hours=1)).isoformat()
+    log(ts=ts, event="route", project=a, cwd=sub, sent=False, reason="too_long")
+    write_jsonl(C.transcript_dir(sub) / "s9.jsonl", [reply("claude-opus-5-5", "m9", 1, 2, ts)])
+    assert "主会话：claude-opus-5-5 输入 101 / 输出 2" in jev_ctl.cmd_status(a, now=NOW)

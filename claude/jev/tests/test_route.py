@@ -186,6 +186,7 @@ def test_switch_on_routes_and_log_has_no_prompt_text(fake_jev, git_repo, tmp_pat
     assert "SECRET-PHRASE" not in log
     entry = json.loads(log.splitlines()[-1])
     assert entry["event"] == "route" and entry["session_id"] == "s1"
+    assert entry["cwd"] == str(sub)
     assert entry["project"] == C.project_root(str(git_repo))
 
 

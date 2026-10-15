@@ -318,3 +318,53 @@ def test_save_set_requires_approve_then_writes(fake_jev, data):
     saved = json.loads(dest.read_text())
     assert dest == C.question_sets_dir() / "comments.json"
     assert saved["questions"] == NOUL_Q["questions"] and saved["calibration"]["disagree"] == 0
+
+
+# ---- final-review fixes ----
+
+def test_resolve_refuses_verdict_without_rule(fake_jev, data):
+    go(data, n=2)
+    out, q = paths(data)
+    dec = decisions(data, [{"id": "r0", "by": "claude", "answers": {"kind": "praise"}, "verdict": "confirmed"}])
+    with pytest.raises(B.Refused, match="rule"):
+        B.resolve(out, dec, q, C.load_config())
+    assert not (data / "out.jsonl.resolutions.jsonl").exists()
+
+
+def test_resolve_refuses_unknown_question_ids(fake_jev, data):
+    go(data, n=2)
+    out, q = paths(data)
+    dec = decisions(data, [{"id": "r0", "by": "user", "answers": {"knd": "praise"}}])
+    with pytest.raises(B.Refused, match="knd"):
+        B.resolve(out, dec, q, C.load_config())
+
+
+def test_bad_threshold_refused_before_any_request(fake_jev, data):
+    with pytest.raises(B.Refused, match="thresholds"):
+        go(data, n=3, spec=dict(NOUL_Q, thresholds={"kind": "0.8"}))
+    with pytest.raises(B.Refused, match="thresholds"):
+        go(data, n=3, spec=dict(NOUL_Q, thresholds={"spam": {"hi": "x"}}))
+    assert fake_jev.requests == []
+
+
+def test_unexpected_worker_error_is_recorded_as_failed(data):
+    def boom_factory(cfg, timeout):
+        def ask(state, questions):
+            raise RuntimeError("boom")
+        return ask
+    s = go(data, n=3, ask_factory=boom_factory)
+    assert s["buckets"] == {"failed": 3}
+    assert all("boom" in r["reasons"][0] for r in B.read_results(data / "out.jsonl").values())
+
+
+def test_truncated_last_line_is_reported_with_line_number(fake_jev, data):
+    go(data, n=2)
+    with open(data / "out.jsonl", "a") as f:
+        f.write('{"id": "r9", "qha')
+    with pytest.raises(B.Refused, match=":3:"):
+        go(data, n=2)
+
+
+def test_skip_calibration_reason_survives_resume(fake_jev, data):
+    go(data, n=10, skip_calibration="用户说：直接跑")
+    assert go(data, n=10)["skip_calibration"] == "用户说：直接跑"
