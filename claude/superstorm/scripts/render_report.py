@@ -69,7 +69,7 @@ def _by_path(name, path):
 
 
 _visual = _by_path("cross_exam_visual_validation", _KNOWLEDGE / "visual/validation.py")
-visual_reason, visual_section = _visual.visual_reason, _visual.visual_section
+visual_reason, visual_section, gap_findings = _visual.visual_reason, _visual.visual_section, _visual.gap_findings
 _rules = _by_path("cross_exam_rule_consistency", _KNOWLEDGE / "rule_consistency.py")
 # The evidence engine (ADR-0008) owns what an entry must carry before it is read: probed_at, the evidence
 # directory, the content gate per medium, served_by, the probe window. This renderer keeps the names its
@@ -392,8 +392,9 @@ def _pair_label(entry):
 
 
 def _timing_lines(admitted):
-    """v2 的 probed_at：打印取证跨度，相邻 runtime 问间隔不足 60 秒逐对点名——不是证据，是让人看一眼的线索。"""
-    stamped = [(e, _parse_time(e.get("probed_at"))) for e in admitted]
+    """v2 的 probed_at：打印取证跨度，相邻 runtime 问间隔不足 60 秒逐对点名——不是证据，是让人看一眼的线索。
+    视觉验收 entry 不参与配对：一批截图拆成的 gap/done 两行同一刻写入，不是两次实测。"""
+    stamped = [(e, _parse_time(e.get("probed_at"))) for e in admitted if not e.get("visual_case_ids")]
     stamped = [(e, t) for e, t in stamped if t]
     if not stamped:
         return []
@@ -759,7 +760,9 @@ def render(run_dir):
     out.append("")
     out.append("## 缺口清单（按严重度）")
     if gaps:
-        out.extend(f"- **{e.get('severity', '?')}** {_entry_line(e)[2:]}" for e in gaps)
+        for e in gaps:
+            out.append(f"- **{e.get('severity', '?')}** {_entry_line(e)[2:]}")
+            out.extend(f"  - {line}" for line in gap_findings(e, run_dir))
     else:
         out.append("（无）")
 

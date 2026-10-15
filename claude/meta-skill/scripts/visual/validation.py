@@ -678,6 +678,37 @@ def unmodeled_axes(census_obj):
             for axis, spec in sorted(support.items()) if axis not in AXES}
 
 
+def _first_sentence(text, limit=80):
+    head = re.split(r'(?<=[。；!?！？])', str(text).strip(), maxsplit=1)[0]
+    return head if len(head) <= limit else head[:limit] + '…'
+
+
+def gap_findings(entry, run):
+    """What a visual gap is: each review's high/medium findings that point at this entry's own captures, one
+    line apiece. The gap line itself only counts cases; without these the reader opens the evidence to learn
+    what is wrong. An unreadable manifest or report contributes nothing; the entry's admission already checked them."""
+    if entry.get('verdict') not in ('gap', 'drift') or not entry.get('visual_case_ids') or run is None:
+        return []
+    evidence = Path(run) / 'evidence'
+    try:
+        captures = read(evidence, entry.get('evidence_manifest')).get('captures', [])
+    except (OSError, ValueError, TypeError, AttributeError):
+        return []
+    ids = set(entry['visual_case_ids'])
+    images = {i for c in captures if c.get('case_id') in ids for i in c.get('images', [])}
+    out = []
+    for ref in entry.get('review_reports', []):
+        try:
+            report = read(evidence, ref)
+        except (OSError, ValueError, TypeError):
+            continue
+        for f in report.get('findings', []):
+            if f.get('severity') in ('high', 'medium') and set(f.get('images', [])) & images:
+                out.append(f"{report.get('platform', '?')} {f.get('id', '?')} [{f['severity']}] "
+                           f"{_first_sentence(f.get('observation', ''))}")
+    return out
+
+
 def _visual_not_run(ledger):
     """A UI target whose run never opened visual acceptance. Journey screenshots are taken wherever the probe
     happened to stand, in whatever window it happened to have; they are not a layout check, and a report that

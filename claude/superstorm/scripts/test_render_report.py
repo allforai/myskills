@@ -1120,6 +1120,14 @@ class TestSmallHonestyFixes(unittest.TestCase):
             (run / "ledger.json").write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
             self.assertIn("缺 probed_at", render(run))
 
+    def test_visual_entries_are_not_timed_as_separate_questions(self):
+        # one capture batch is written as a gap line and a done line at the same instant: not a fast prober
+        t = datetime.fromisoformat("2026-09-07T10:00:00+08:00")
+        vis = lambda q: {"q": q, "medium": "runtime", "probed_at": t.isoformat(), "visual_case_ids": ["V-1"]}
+        lines = render_report._timing_lines([vis("视觉验收 v05 A · gap"), vis("视觉验收 v05 A · done"),
+                                             {"q": "q-x", "medium": "runtime", "probed_at": t.isoformat()}])
+        self.assertFalse(any("间隔不足 60 秒" in l for l in lines))
+
     def test_mock_backend_is_declared_in_overview(self):
         with tempfile.TemporaryDirectory() as tmp:
             run = _mk_run(tmp, self.FACETS[:1], [_entry("q1")])

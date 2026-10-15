@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 import pytest
-from validation import AXES, CATEGORIES, visual_reason, visual_section
+from validation import AXES, CATEGORIES, gap_findings, visual_reason, visual_section
 from matrix import expand
 from PIL import Image
 
@@ -1373,3 +1373,20 @@ def test_ui_target_without_visual_acceptance_says_so():
     out = '\n'.join(visual_section(ledger, []))
     assert '未做视觉验收' in out and '2 个界面面' in out and 'composer' in out
     assert visual_section({'surfaces': [{'id': 'S1'}]}, []) == []      # not a UI target: nothing to declare
+
+
+def test_gap_findings_name_what_the_reviewer_saw(sample):
+    # a visual gap line that says only "N 例" sends the reader into the evidence to learn what is wrong
+    root, write, _, _, report, entry, _ = sample
+    report.update(status='findings', findings=[
+        {'id': 'F1', 'severity': 'high', 'rule': 'layout #5', 'images': ['q1/image.png'],
+         'observation': '输入区顶部被滚出视野，「生成方式」一行看不到。另一条容器滑块在右缘。'},
+        {'id': 'F2', 'severity': 'low', 'rule': 'spacing', 'images': ['q1/image.png'], 'observation': '间距略紧。'},
+        {'id': 'F3', 'severity': 'medium', 'rule': 'color', 'images': ['q2/other.png'], 'observation': '别的用例。'}])
+    write('evidence/q1/review.json', report)
+    entry['verdict'] = 'gap'
+    assert gap_findings(entry, root) == ['codex F1 [high] 输入区顶部被滚出视野，「生成方式」一行看不到。']
+    assert gap_findings({**entry, 'verdict': 'done'}, root) == []
+    assert gap_findings({'verdict': 'gap', 'q': 'not visual'}, root) == []
+    assert gap_findings({**entry, 'review_reports': ['q1/missing.json']}, root) == []
+
