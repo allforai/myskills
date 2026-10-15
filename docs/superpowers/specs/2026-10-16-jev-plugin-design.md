@@ -123,6 +123,8 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 - **R-16 外发放行。** `allow.json` 列出允许外发的路径前缀。输入文件不在任何前缀之下时，脚本不发任何请求、
   以退出码 3 结束并说明原因；SKILL.md 规定此时 Claude 去问用户，用户同意后由用户（或经用户同意由 Claude）
   把路径加进 `allow.json` 再跑。SKILL.md 同时规定：不得绕过脚本直接用 curl 等方式把数据发给 Jev。
+  放行检查的对象是 `--source`（数据的原始来源，缺省为输入文件本身）：输入文件是由别的数据转换出来的
+  （如 Claude 把 CSV 转成 JSONL、代码扫描的切块文件），`--source` 必须写原始数据或代码目录的路径。
 - **R-17 题目复用。** 校准通过（已 `approve`）的题目用 `save-set` 存到 `question-sets/<名字>.json`，未 approve 的拒存；
   SKILL.md 规定处理同类数据时先查这里。
 - **R-17a review 的裁决要落地。** `resolve` 逐条记录 review（或任意）行的最终结论与判定人（`claude` / `user`），

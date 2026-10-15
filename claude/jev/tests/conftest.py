@@ -65,7 +65,7 @@ def _handler(fake):
 def fake_jev(monkeypatch):
     fake = FakeJev()
     server = ThreadingHTTPServer(("127.0.0.1", 0), _handler(fake))
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True).start()
     fake.url = f"http://127.0.0.1:{server.server_port}"
     monkeypatch.setenv("JEV_BASE_URL", fake.url)
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test-secret")
