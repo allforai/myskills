@@ -9,6 +9,7 @@ claude/superstorm/scripts
 claude/superstorm/knowledge/cross-exam/engine
 claude/superstorm/knowledge/cross-exam/visual
 claude/grillstorm/skills/grillstorm/scripts
+claude/jev/tests
 # codex/meta-skill and pi/meta-skill hold symlinks into the Claude tree: name the files, not the dir.
 codex/meta-skill/test_flow.py codex/meta-skill/test_install.py
 codex/cross-exam-skill/scripts

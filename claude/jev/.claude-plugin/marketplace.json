@@ -1,0 +1,14 @@
+{
+  "name": "jev",
+  "owner": {
+    "name": "dv"
+  },
+  "plugins": [
+    {
+      "name": "jev",
+      "version": "0.1.0",
+      "source": "./",
+      "description": "Per-project model routing, batch classification and code scanning with Jev via OpenRouter."
+    }
+  ]
+}
