@@ -54,3 +54,10 @@ def test_classify_skill_states_its_contract():
     for needle in ["--sample", "approve", "rebucket", "resolve", "save-set", "--source", "review",
                    "allow.json", "jev_batch.py", "curl"]:
         assert needle in text, needle
+
+
+def test_code_scan_skill_states_its_contract():
+    text = (PLUGIN / "skills/code-scan/SKILL.md").read_text(encoding="utf-8")
+    for needle in ["code_chunks.py", "hits", "resolve", "false_positive", "save-set", "--source", "误报",
+                   "allow.json", "curl"]:
+        assert needle in text, needle
