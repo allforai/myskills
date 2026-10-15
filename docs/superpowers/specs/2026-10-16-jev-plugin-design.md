@@ -35,6 +35,8 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
   响应信封（`answers`、`usage`、`usage.cost` 是否存在）、实测延迟与单次花费。
 - **P2 本轮降档**：装一个 frontmatter `model: haiku` 的 skill，让会话在 Opus/Fable 下调用它，
   从 transcript 中后续 assistant 消息的 `message.model` 确认本轮确实换了模型、下一轮恢复原模型。
+  同时记下 transcript 里 Skill 调用（`tool_use` 的 `name` 与 `input` 键）和 skill 正文注入（是否是一条带 `isMeta`
+  的 user 消息）的确切形状——R-07 判断"轮"的边界依赖它。
   **P2 不通过时**：R-07 的注入改为"建议"文案（告诉 Claude 本题判为简单、可委派给低档子 agent），
   tier skill 不发布；先告诉用户再改，不默默降级。
 - **P3 区分用户手打的 prompt**：在 hook 里落盘几种来源（手打、后台任务通知、子 agent 回报）的原始输入，
@@ -73,16 +75,27 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 - **R-07 怎么降。** 只往下降，不升档：
   - 选中档的概率 ≥ `route.threshold`（默认 0.8）才动作，否则什么都不做。
   - `light` → 档位模型 `haiku`；`standard` → `sonnet`；`heavy` → 不动作。档位到模型别名的映射在配置里可改。
-  - 从 `transcript_path` 读最近一条 assistant 消息的 `message.model` 作为当前会话模型；目标档不低于当前模型
-    （或读不出当前模型）时不动作。
+  - **会话模型不得被降档本身污染。** 从 `transcript_path` 读会话模型时，跳过"已调用 `jev:tier-*` 的那一轮"里
+    调用之后的 assistant 消息——否则降过一次档，之后每句都会把会话误认成低档而不再降，或在用户改用 `/model`
+    切低后误判成升档。轮的边界是用户真正发出的一条消息（不含 tool_result、不含 Claude Code 注入的元消息；
+    skill 正文注入成什么形状由 P2 确认）。用户自己用 `/model` 切换后的回复照常计入。
+  - 目标档不低于会话模型、或读不出会话模型时不动作。新会话的第一句之前没有任何回复、读不出会话模型：
+    `route.assume_model`（默认不设）设了就按它算，不设则第一句不降，并在文档写明。
   - 动作 = 输出 `additionalContext`：注明来自 Jev、判定档位与概率，要求先调用对应的 tier skill
     （`jev:tier-light` / `jev:tier-standard`，frontmatter `model` 分别为 `haiku` / `sonnet`）再处理请求；
     同时输出 `systemMessage` 一行（如 `Jev → haiku (0.93)`）让用户看见这次降档。
-  - tier skill 的描述写明"只在 Jev 路由注记要求时调用"；正文只有一句：继续处理用户的原请求。
+  - tier skill 的描述写明"只在 Jev 路由注记要求时调用"。正文：继续处理用户的原请求；做的过程中发现超出
+    低档模型能稳妥处理的范围时，停下并告诉用户这一轮被降了档、建议重发（下一轮自动恢复原模型）——降错的代价
+    限定在这一轮，且用户看得见。
 - **R-08 绝不挡路。** 开关关闭、没有 key、调用失败、超过 `route.timeout_s`（默认 3 秒）、响应格式不对——
   一律零输出、退出码 0，prompt 照常进入。hooks.json 里该 hook 的 `timeout` 设为 5 秒（大于客户端超时）。
 - **R-09 日志。** 每次被触发都追加一行 `route-log.jsonl`：时间、session_id、是否发送及不发送的原因、
   档位、概率、动作、延迟、花费。**不记 prompt 原文**，只记长度。
+- **R-09a 建议有没有被照做要可见。** 注入只是建议，Claude 可以不调用 tier skill。一个 `PostToolUse`（matcher
+  `Skill`）hook 在 `jev:tier-*` 真被调用时记一行日志；`status` 分开显示"建议降档 N 次 / 照做 M 次"。
+- **R-09b 省没省钱要可量。** `status` 从本项目最近 7 天的 transcript（`${CLAUDE_CONFIG_DIR:-~/.claude}/projects/`
+  下按项目路径命名的目录）按"降档轮 / 其他轮"× 模型汇总实际 token（输入含缓存、输出分列，按 `message.id` 去重），
+  不写死任何价格。这是开关对比的依据。
 
 ### 功能 2：批量分类与打分
 
@@ -98,9 +111,11 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 - **R-12 分桶规则。** 一行所有题都过阈值才进 `auto`；任一题不过进 `review`；重试用尽仍失败进 `failed`。
   choice / score 看 `confidence`；noul 看是否 ≥ 上阈值或 ≤ 下阈值（默认 0.9 / 0.1），落在中间就不过。
   `review` 不得并入 `auto`，脚本不提供这种开关。
-- **R-13 先校准再全量。** 超过 50 行的数据，脚本要求同一题目哈希下已有一次 `--sample N`（默认 20）的试跑记录，
-  否则拒绝全量运行；`--skip-calibration "<理由>"` 可越过，理由写进 summary。
-  SKILL.md 规定试跑后由 Claude 逐条看样本结果、发现偏差就改题目或阈值并重新试跑，直到样本里的判断它认可为止。
+- **R-13 先校准再全量，校准要留下审查记录。** 超过 50 行的数据，全量运行要求同一题目哈希下已有
+  **经过 `approve` 的** `--sample N`（默认 20）试跑；只跑过样本不算。`approve` 必须给出样本里不同意的条数与要点；
+  不同意数大于 0 时必须改题目重新试跑，或带 `--accept-reason "<理由>"` 接受。审查记录（样本数、不同意数、要点、
+  接受理由）进 summary 与交付说明——它就是这批结果准确率的粗估。`--skip-calibration "<理由>"` 可越过，理由写进 summary。
+- **R-13a 调阈值不重新花钱。** 题目哈希只覆盖题目与模型，不含阈值；`rebucket` 用已有答案按新阈值重新分桶，不发请求。
 - **R-14 花费上限。** 全量运行前按字符数估算输入 token 与花费并打印；超过 `batch.cost_cap_usd`（默认 1 美元）
   需要 `--confirm-cost`。
 - **R-15 断点续跑与并发。** 输出文件里已有的 id 跳过，不重复调用；并发数可配（默认 8）。
@@ -108,9 +123,12 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 - **R-16 外发放行。** `allow.json` 列出允许外发的路径前缀。输入文件不在任何前缀之下时，脚本不发任何请求、
   以退出码 3 结束并说明原因；SKILL.md 规定此时 Claude 去问用户，用户同意后由用户（或经用户同意由 Claude）
   把路径加进 `allow.json` 再跑。SKILL.md 同时规定：不得绕过脚本直接用 curl 等方式把数据发给 Jev。
-- **R-17 题目复用。** 校准通过的题目可存到 `question-sets/<名字>.json`；SKILL.md 规定处理同类数据时先查这里。
-- **R-18 交付披露。** 交出结果时必须说明：哪些结论来自 Jev、各桶条数、阈值、`review` 桶最后怎么处理的
-  （Claude 判了哪些、交给用户哪些）、花费。
+- **R-17 题目复用。** 校准通过（已 `approve`）的题目用 `save-set` 存到 `question-sets/<名字>.json`，未 approve 的拒存；
+  SKILL.md 规定处理同类数据时先查这里。
+- **R-17a review 的裁决要落地。** `resolve` 逐条记录 review（或任意）行的最终结论与判定人（`claude` / `user`），
+  存在结果文件旁；`export` 的 CSV 带"最终结论"与"判定人"列（auto 行的判定人是 `jev`）；summary 报告仍未裁决的 review 条数。
+- **R-18 交付披露。** 交出结果时必须说明：哪些结论来自 Jev、各桶条数、阈值、校准审查记录、`review` 桶最后怎么处理的
+  （Claude 判了哪些、交给用户哪些、还剩几条未裁决）、花费。
 
 ### 功能 3：代码扫描
 
@@ -125,6 +143,8 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 - **R-21 规则与结果。** 规则文件是一组 `noul` 题（可附 `criteria`）。跑 `jev_batch.py`（R-12 到 R-16 全部适用，
   外发放行要求代码目录在 `allow.json` 里）。命中上阈值的块列为待查；SKILL.md 规定 Claude 逐条打开源码确认，
   报告里只有确认过的才算问题，Jev 命中但 Claude 否定的单独列为"Jev 误报"并计数。
+  确认 / 误报用 `resolve` 按"行 + 规则"记录；summary 按规则给出命中、确认、误报数。某条规则已核实 ≥ 4 次且误报过半时，
+  `save-set` 拒存，必须先改这条规则——误报率反馈回规则本身。
 
 ## 测试
 
@@ -132,7 +152,8 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
   开关开 / 关；在项目 A 打开后项目 B 仍是关、项目子目录里算项目 A；没 key、超时、5xx、坏响应都零输出且退出码 0；降档只往下；长 prompt 与非手打 prompt 不发；
   日志不含 prompt 原文；分桶规则（含 noul 上下阈值）；`review` 不进 `auto`；未校准拒绝全量；花费上限；
   断点续跑不重复请求；不在放行清单里时零请求、退出码 3；四种切块方式的 id 与范围。
-- 目录加进 `shared/suites/suites.txt`（`test_suite_coverage.py` 会检查）。
+- 目录加进 `shared/suites/suites.txt`（`test_suite_coverage.py` 会检查），并加进 `.githooks/pre-commit`
+  的快速子集（几秒钟），每次提交自动跑。
 - 实测一次（用户的真 key）：P1–P3，外加一个 30 条左右的真实分类样例，结论记进本文件。
 
 ## 文档
@@ -140,6 +161,7 @@ OpenRouter 上的 `typesafe/jev-router` 是在 OpenRouter 自己的模型池里�
 - 根 `CLAUDE.md` 的安装段加 `claude/jev` → `jev@jev`；"External Service Keys" 表里 OpenRouter 一行的
   "Used By" 加上 jev。
 - 版本从 `0.1.0` 起。
+- 交付时给出本机安装与改版后更新的确切命令（以 `claude plugin --help` 当时列出的子命令为准），安装由用户确认后执行。
 
 ## 不做
 
