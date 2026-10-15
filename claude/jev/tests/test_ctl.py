@@ -37,7 +37,15 @@ def test_status_counts_recent_entries_of_this_project(tmp_path):
     assert "判断 3 句" in out and "未发送 1 句" in out
     assert "建议降档 1 次，委派 1 次" in out
     assert "超时 1" in out
-    assert "$0.0020" in out
+    assert "$0.002000" in out
+
+
+def test_status_shows_sub_cent_jev_cost(tmp_path):
+    a = str(tmp_path / "a")
+    ts = (NOW - timedelta(hours=1)).isoformat()
+    for _ in range(2):
+        log(ts=ts, event="route", project=a, sent=True, reason="routed", tier="light", target="haiku", cost=1.9488e-05)
+    assert "Jev 花费：$0.000039" in jev_ctl.cmd_status(a, now=NOW)
 
 
 def write_jsonl(path, entries):

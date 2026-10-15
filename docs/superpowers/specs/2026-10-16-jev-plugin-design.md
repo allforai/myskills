@@ -201,3 +201,24 @@ transcript 形状与假设一致：Skill 调用是 `tool_use`，`name == "Skill"
 **P3 区分手打 prompt — 无可区分字段。** 手打与后台任务通知的 hook 输入键完全相同
 （`cwd`、`hook_event_name`、`permission_mode`、`prompt`、`prompt_id`、`session_id`、`transcript_path`）；
 通知的 `prompt` 以 `<task-notification>` 开头。按标签规则判断。
+
+### 验收（2026-10-16，真实 key，`claude -p --plugin-dir`）
+
+**选模型（降级方案）。** 同一会话 4 轮，主模型 opus：
+- 第 1 轮 "Say hello"：`unknown_model`，未发送（新会话第一句，符合 R-07）。
+- 第 2 轮 "列出文件"、第 3 轮 "读 b.txt"：Jev 判 light（0.99 / 1.0），注入建议委派 haiku 子 agent，延迟约 350 ms，每次 $0.0000195。
+  **Opus 两次都没有委派**，自己直接做了——对这种一步就完成的事，委派本身更贵。
+- 第 4 轮显式要求用 haiku 子 agent：`delegated` 记录生效，`status` 显示"建议降档 3 次，委派 1 次"，
+  子 agent token 单列（haiku 输入 46,904 / 输出 123，主会话 opus 输入 248,096 / 输出 797）。
+  子 agent 结束时的任务通知 prompt 被识别为非手打（`not_typed`），未发送。
+- 结论：hook、判档、日志、委派记录、token 统计都按设计工作；但在降级方案下，**小任务上 Claude 通常不采纳委派建议，
+  且一次委派的 haiku 子 agent 光启动就用了约 4.7 万输入 token**，选模型目前省不到钱。`status` 的数据足以让用户自己判断开不开。
+- 验收中发现并修正：`status` 的 Jev 花费按 4 位小数显示成 `$0.0000`，改为 6 位（测试 `test_status_shows_sub_cent_jev_cost`）。
+
+**批量样例（本仓库最近 30 条提交信息，按 feature / fix / docs / chore 分类）。**
+- 第一版题目试跑 10 条：auto 6、review 4；auto 里有 1 条不同意（`01440ce9`，无前缀的规则变更被判 chore 0.83）。
+- 按闭环改题目（补充无前缀消息的判定说明），新题目试跑 10 条：该条落入 review，auto 6 条全部认可 → `approve --disagree 0`。
+- 全量 30 条：auto 17（全部认可）、review 13（逐条裁决后 `resolve`），`unresolved_review` 0；CSV 每行都有 `final_kind` 与 `decided_by`
+  （jev 17 / claude 13）；`save-set` 成功。总花费 $0.000546（两次试跑另计 $0.000338）。
+- 观察：中英混排、带 `feat(...)` 前缀的消息也可能只有 0.55 的置信度——阈值分流把它们正确地交给了 review。
+- 验收产生的配置目录已移出 `~/.config/jev`（存档在会话 scratchpad），用户配置恢复原状。

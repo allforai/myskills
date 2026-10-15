@@ -114,7 +114,7 @@ def cmd_status(root, now=None):
         f"建议降档 {suggested} 次，委派 {delegated} 次",
         f"失败 {len(errors) - timeouts}，超时 {timeouts}",
         f"平均延迟：{round(sum(latencies) / len(latencies)) if latencies else '-'} ms",
-        f"Jev 花费：${cost:.4f}",
+        f"Jev 花费：${cost:.6f}",
         "实际 token（来自本项目 transcript，输入含缓存）：",
         f"  主会话：{_fmt_usage(usage, 'main')}",
         f"  子 agent：{_fmt_usage(usage, 'subagent')}",

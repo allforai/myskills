@@ -16,7 +16,8 @@ myskills/
 │   │   ├── skills/           # bootstrap/SKILL.md (project analysis + generation)
 │   │   └── knowledge/        # Capability templates, orchestrator, protocols
 │   ├── superstorm/
-│   └── grillstorm/
+│   ├── grillstorm/
+│   └── jev/                  # Jev (TypeSafe decision model via OpenRouter): model routing, batch classify, code scan
 │
 ├── codex/                    # Codex platform (fully native)
 │   ├── meta-skill/           # AGENTS.md + SKILL.md adapter
@@ -135,6 +136,7 @@ claude plugin install superstorm@superstorm
 ```
 
 Optional: `claude/grillstorm` → `grillstorm@grillstorm`. Restart `claude` after install.
+Optional: `claude/jev` → `jev@jev` (needs `OPENROUTER_API_KEY`). `/jev on|off|status` toggles per-project model routing (off by default; Jev judges each typed prompt and, when it is easy, suggests delegating it to a cheaper-model subagent; status shows suggested vs delegated and tokens per model); `classify` and `code-scan` are model-invoked skills. Config and state live in `${XDG_CONFIG_HOME:-~/.config}/jev/`; outbound data must be listed in `allow.json` there.
 Grillstorm requires official Matt Pocock skills (`grilling`, `to-spec`, `to-tickets`, `tdd`, `code-review`, …). If they are missing, it asks once and can install them via `scripts/install_official_skills.py`. It never calls official `implement`.
 
 **Codex** — discover `SKILL.md` folders from `$CODEX_HOME/skills` (default `~/.codex/skills`):
@@ -178,7 +180,7 @@ Four optional API keys enhance plugin capabilities. Configure all at once with `
 
 | Service | Env Variable | Used By | Purpose |
 |---------|-------------|---------|---------|
-| OpenRouter | `OPENROUTER_API_KEY` | meta-skill capabilities | Cross-model XV + image generation (GPT-5 Image) |
+| OpenRouter | `OPENROUTER_API_KEY` | meta-skill capabilities, jev | Cross-model XV + image generation (GPT-5 Image); Jev decisions |
 | Brave Search | `BRAVE_API_KEY` | demo-forge capability | Media search (images/videos) |
 | Google AI | `GOOGLE_API_KEY` | demo-forge capability | Imagen 4 (image) + Veo 3.1 (video) + TTS |
 | fal.ai | `FAL_KEY` | demo-forge capability | FLUX 2 Pro (image) + Kling (video) |
