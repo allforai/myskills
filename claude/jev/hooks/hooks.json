@@ -1,0 +1,28 @@
+{
+  "description": "Model routing: when /jev is on for this project, ask Jev how hard each typed prompt is and suggest delegating cheap work to a cheaper-model subagent; record when Claude does. Silent on any failure.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}\"/scripts/route.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}\"/scripts/delegate_seen.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

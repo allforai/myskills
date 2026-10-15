@@ -1,0 +1,11 @@
+{
+  "tier": {
+    "type": "choice",
+    "instructions": "This is one message a developer typed to an AI coding agent. How much model capability does handling it need?",
+    "criteria": {
+      "light": "A single lookup or mechanical step with no design judgment: find where a file or symbol is, show a function's parameters, convert text to a given format, rename something, answer a short factual question about the code.",
+      "standard": "A routine change or explanation within a known scope: implement a small, clearly specified edit, write a test for given behavior, explain how a piece of code works, fix an obvious error with a clear message.",
+      "heavy": "Needs design or deep reasoning: plan a feature, debug an unclear failure, change many files, weigh trade-offs, review a design, or anything ambiguous or open-ended."
+    }
+  }
+}
