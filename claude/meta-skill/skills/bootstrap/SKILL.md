@@ -422,26 +422,14 @@ Invalidated items name a `diff` and `repair_owner`: resolve `interactive-bootstr
 items here (answer the pending decision, or refreeze and replan the recorded
 change), and leave node-owned items for `/run` to repair and republish.
 
-At the same boundary, send `{"operation":"external-changes"}` to verify code changed
-outside the delivery flow. This operation is the only one that executes the project's
-recorded acceptance; the gates detect drift but never run it, so they report
-`unverified_external_change` until this has established what the change means. It
-always verifies afresh, so re-run it whenever something it cannot observe — an
-installed dependency, a service — may have moved under an earlier verdict. Verify the
-scoped drift first and let the result decide whether a product question exists at all;
-never open a product interview on unverified drift, and never widen one beyond the
-deliveries the change reaches. A change whose recorded acceptance still passes is an
-implementation fact: resynchronize its documents and republish. A failing one,
-or changed source no node declares, is a conflict reported to the user, never a new
-requirement. Record the user's `accept` (with the explicit desired intent it
-establishes), `reject` (baseline kept, scoped implementation repair) or `defer`
-through `product_intent.py`'s `external-change` operation with an actual user
-reference and reason. A deferred or interrupted decision keeps the conflict and
-blocks only the work that depends on it; unrelated valid records are preserved.
-A Run Policy `accept` is a run choice and never accepts a product behavior change.
-The freshness, artifact, reconciliation and readiness gates run the same
-comparison themselves, so an interrupted boundary still routes the conflict to
-the interactive decision instead of reporting it as node-owned repair.
+At the same boundary, send `{"operation":"external-changes"}` to `evidence_freshness.py` before asking the user
+anything: drift becomes a question only after its recorded acceptance has been re-run
+(`${CLAUDE_PLUGIN_ROOT}/knowledge/input-freshness.md` § Source changed outside the delivery
+flow). A change that still passes is an implementation fact — resynchronize its documents
+and republish. One that fails, or changed source no node declares, is a conflict the user
+decides (`accept` / `reject` / `defer` through `product_intent.py`'s `external-change`
+operation, with their words) — never a new requirement, never an interview wider than the
+deliveries the change reaches.
 
 > This section only applies when `has_concept_drift` is true AND an existing
 > `workflow.json` exists. Otherwise, skip to 3.1 for full planning.
