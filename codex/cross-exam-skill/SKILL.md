@@ -107,21 +107,12 @@ Do not mix ledgers, verdicts, or loops.
    续接时读旧 ledger 的 `open_threads` 作为起手牌候选。
 6. 使用 `ledger_store.py` 加锁并初始化/载入 `ledger.json`（schema 见 `$ROOT/schemas.md`），新 run 写 `ledger_version: 3`，
    `rule_consistency: {status: "not_examined", reason: "规则来源尚未审查"}`，以及 `judged_build`——这次评的是哪棵树。
-   新 run 在派出第一问之前跑一次 `python3 $ROOT/engine/identity.py <被测仓库根> --exclude <宿主隐藏目录>...`
-   （`.allforai` / `.claude` / `.codex` 里存在的那些，以及本 run 目录相对仓库根的路径），把输出的 `build` 连同带时区偏移的
-   `recorded_at` 和用过的 `excludes` 写进 `judged_build`。续接旧 run 不重写它：报告说的是开评时的树。
-   命令退出 1（不是 git 仓库、读不了）就不写这个键，把它的 `reason` 记进 `open_threads`——渲染器会在表头写「被评构建：未记录」，
-   读报告的一方据此知道新鲜度无从核对。不要编一个值。
-7. **作者证据入账（有则读，无则跳过）**：交付流水线（meta-skill `/run` 的 product-verify / runtime-smoke-verify /
-   test-verify 等门）在目标项目 `.allforai/<gate>/evidence-entries/<node_id>.json` 留下带 `author` 标记的 ledger 形条目时，
-   读进本 run：每条的证据目录复制到 `evidence/author/<node_id>/…`，条目字段**原样**入账（`author`、`build`、`build_excludes`、
-   `build_artifacts`、`probed_at`、`medium`、`verdict`、`served_by`、`readback`、`images`、`image_digests` 一个都不改——改了
-   引擎就核不过），只把 `evidence.dir` 改指副本，并由你补 `q` 与 `facet`（定面后归到它触及的面）。采信规则写死在渲染器
-   （见 schemas.md 的 `author`）：**机械介质**（`build` / `test` / `contract`）经引擎核过 build、摘要、readback 后作**门**——
-   报告标"作者证据"，bias-guard 对每条生效；**`runtime` 等其它介质永远不采信**，只作上下文摆给你看，对应的问题照派独立
-   实测官；**没有实测官 entry 的问题按无法自证入账**——作者写的任何东西都关不掉一个裁决。核不过的（build 不是此刻的树、
-   摘要过期、缺 readback、probed_at 无偏移、标记不全）按引擎的理由拒渲点名。读作者证据是为了少重跑构建与测试、知道作者
-   看过哪些运行时问题，不是为了少派实测官。
+   新 run 派第一问之前用 `$ROOT/engine/identity.py` 记下被评的树（用法见 schemas.md `judged_build`）；续接不重写。
+   读不出就不写这个键、把原因记进 `open_threads`，不编值。
+7. **作者证据（有则读）**：交付流水线留下的 `.allforai/<gate>/evidence-entries/<node_id>.json` 原样入账
+   （字段一个不改，只把 `evidence.dir` 指向复制到本 run 的副本、定面后补 `q` 与 `facet`；规则见 schemas.md `author`）。
+   只有引擎核过的机械介质（build / test / contract）能当门；runtime 等永远只是上下文——作者写的任何东西
+   都关不掉一个裁决，对应问题照派独立实测官。
 
 ## 0c. 规则一致性（定靶后必做，先于基线冻结）
 

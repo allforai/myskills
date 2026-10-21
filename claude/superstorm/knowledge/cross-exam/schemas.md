@@ -110,6 +110,10 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   是这份报告评的那棵树。渲染器只打印不重算（续盘重渲染时此刻的树可能已经变了），打印在表头「需求基准」下一行：
   `被评构建：<build>（intake 记录于 <recorded_at>）`；缺这个键或 `build` 不是非空字符串 → `被评构建：未记录（…）`，不拒渲。
   它和 entry 上的 `build` 不是一回事：那是作者证据各自取证时的树，由渲染器对此刻的树重算核对。
+  用法：新 run 派第一问之前跑一次 `python3 engine/identity.py <被测仓库根> --exclude <宿主隐藏目录>...`，排除被测仓库里
+  存在的 `.allforai` / `.claude` / `.codex` 以及本 run 目录相对仓库根的路径；把输出的 `build` 连同带时区偏移的
+  `recorded_at` 和用过的 `excludes` 原样写进来。续接旧 run 不重写：报告说的是开评时的树。命令退出 1（不是 git 仓库、
+  读不了）就不写这个键，把输出的 `reason` 记进 `open_threads`，不编一个值。
 
 - **`ledger_version >= 2`**（新 run 写 3；旧 ledger 缺此键按 1 渲染，不受下列门槛影响）。v2 的证据内容门写死在渲染器里：
   - `code` 介质的摘录文件至少含一个 `路径:行号`；"看过了没问题"这种 note 拒渲。
@@ -160,6 +164,10 @@ visual/validation.py 校验逐类确认、SHA-256、运行介质、图像签名�
   提交的作者之一而 ledger 未标，总览照样点明"按作者自审处理"——自审是事实，不是申报项。
 - `entries[].author`（可选；交付流水线写的条目才有）：`{"pipeline", "node_id", "capability"}` 三键非空字符串，是作者标记——
   meta-skill `/run` 的 `capture_evidence.py entry` 写入的就是这个字段。带此标记的 entry 走另一条采信路，写死在渲染器：
+  - **入账**（0b 第 7 步）：每条的证据目录复制到 `evidence/author/<node_id>/…`；条目字段**原样**入账——`author`、`build`、
+    `build_excludes`、`build_artifacts`、`probed_at`、`medium`、`verdict`、`served_by`、`readback`、`images`、`image_digests`
+    一个都不改（改了引擎就核不过），只把 `evidence.dir` 改指副本，并由盘问官补 `q` 与 `facet`（定面后归到它触及的面）。
+    读作者证据是为了少重跑构建与测试、知道作者看过哪些运行时问题，不是为了少派实测官。
   - 先过引擎的条目形状（`entry_reason`：介质、裁决、`build`、带偏移的 `probed_at`、run 下非空证据目录、介质内容门、
     `served_by`、`readback` 形状、`images` / `image_digests` 摘要），再核三条作者独有的：标记齐全；runtime 介质的 `readback` 非空
     （应用读回它被施加的环境；build / test / contract 门是套件或编译器的一次运行，没有可读回的环境，不要求）；`build` 是 run 目录所在仓库
