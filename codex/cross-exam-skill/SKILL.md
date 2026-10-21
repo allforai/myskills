@@ -123,6 +123,7 @@ Do not mix ledgers, verdicts, or loops.
 不同版本/平台/角色、明确例外不直接判冲突；范围排除与依赖该范围的条件规则必须对账。
 未审、候选待澄清或确认冲突但未解决，都不能冻结受影响的验收依据；renderer 拒收相关 done，
 不会把规则候选当作运行 bug。用户可以暂缓，报告如实列出；无规则来源也必须按协议声明，不能记“通过”。
+之后任何一步新增或改写的规则来源（视觉基线、旅程 oracle、用户补充）都回到这里重审，审完才冻结。
 
 ## 1. 定面（facet map）
 
@@ -130,8 +131,7 @@ Do not mix ledgers, verdicts, or loops.
 `$ROOT/visual/visual-acceptance.md`，执行实图采集、逐类基线确认、全矩阵和独立视觉评审。
 该模式的视觉裁决必须通过 renderer 的视觉证据校验；不能降级为源码通过。
 用户未选择则记录未验收。SwiftUI 规则内置，按需读取，无需另装 Skill。
-视觉/交互候选基线新增或修改规则时，先将用户确认原话加入 §0c 来源并重审，再冻结两份基线；
-未澄清的主题范围不能被直接丢出矩阵来绕过规则审查。
+未澄清的主题范围不能直接丢出矩阵来绕过 §0c。
 
 **先独立 census 播种，再由你摆面——别让"你想到要盘什么"成为覆盖上限。** facet 表最危险的
 盲区是"你根本没想到要盘的那块"：盘问官持怀疑但也带盲区，只凭 hunch + 读代码摆面，交付里整类
@@ -176,13 +176,10 @@ Do not mix ledgers, verdicts, or loops.
 
 1. **整理候选**：把 census 的操作面按"入口 → 能推进到的终态"归成候选旅程，加上需求基准里的任务
    （registry、spec、README；`.allforai/product-map/task-inventory.json` 存在也读，它只是可选数据源）。
-   同一地位的可选数据源还有两处，存在就读、不存在不算缺：`.allforai/product-concept/product-concept.json`
-   的 `requirements[]` 里 `topic == "experience-direction"`、`status == "confirmed"` 的条目（同 id 取最新
-   `revision`）——用户确认过的体验方向；条目带 `who`/`circumstance` 就直接作三元组前两元，不带就从
-   `goal`/`scope` 起草，`progress` 从它的 `acceptance` 起草。以及
-   `.allforai/app-design/concept/job-story-spec.json` 的 job stories（`audience_ref` → who，
-   `situation`/`trigger`/`frequency` → circumstance，`desired_outcome` → progress）。条目
-   `auto_decided: true` 的，候选在摆给用户时句末标注"（此方向由模型受托选定）"。
+   同一地位的可选来源，存在就读、不存在不算缺：用户确认过的体验方向（`.allforai/product-concept/product-concept.json`
+   `requirements[]` 中 `topic == "experience-direction"`、`status == "confirmed"`，同 id 取最新 `revision`）与
+   job stories（`.allforai/app-design/concept/job-story-spec.json`）。模型受托选定（`auto_decided: true`）的候选
+   摆给用户时句末标注"（此方向由模型受托选定）"。
    每条候选写成三元组草稿。**不另派 agent 读代码，也不凭印象读代码定候选**——census 已经用覆盖法
    列过入口了。census 失败（ledger 顶层 `census: "failed"`）时，候选只来自需求基准与用户补充，
    并在报告里声明旅程候选未经 census 播种。
@@ -191,7 +188,6 @@ Do not mix ledgers, verdicts, or loops.
 3. **改写读回**：每条选中的旅程改写成三元组加 oracle（`done_looks_like` + `stuck_looks_like`），读
    回用户确认。一轮改写后仍无 `who` 或 `progress` 的不是旅程——说明缺哪部分，用户补一次，仍缺就
    不收。`stuck_looks_like` 空的同样退回补一次："没报错"不是 oracle，要写出卡死长什么样。
-   新增/改写的 oracle 先作为来源回到 §0c 审查，再冻结；不可把相互冲突的期望同时交给后续裁决。
 
    **`circumstance` 是实例槽位，不是"能跑起来的最小情形"。** 探针自选路径：凡是没被 circumstance
    约束的维度，它一律取**最便宜的那个值**——最短的输入、最空的库、只跑一遍、点第一个、全新状态、
@@ -245,10 +241,8 @@ sweep）**：并行扇出覆盖式实测官把整个 surface 扫一遍（每个�
   这是旅程版的期望隔离。waypoints 是给你事后对 `steps[]` 查的：探针若被告知必经点就会主动绕过去
   经过它，产品允许跳过该点这件事就永远测不出来。
 - **收证据**：把 `steps[]` 和终态截图给用户看（截图给路径；你自己要看时按看图预算取副本，终态整页图先看 overview）。
-  **裁决只对 oracle，但 oracle 之外看到的界面毛病不许随 done 蒸发**：逐步读 `steps[].observed` 与
-  `incidental_observations`，凡是写了元素被挡、内容被截、区域重叠、第二条滚动条、要滚动才露出结果、同一状态
-  多处重复的，每条进 `open_threads`（q 写成可实测的问题，leak_point 写原话加步号），选了视觉验收时另作为
-  对应页面的 state 候选摆给用户。这一步不看旅程裁决是什么：旅程走通了，第 8 步"控制条被下方表单挡住"照样是一条线。
+  oracle 之外看到的毛病（`steps[].observed` 与 `incidental_observations`）同普通问一样进 `open_threads`
+  （leak_point 写原话加步号），不随裁决蒸发；选了视觉验收时另作对应页面的 state 候选。
 - **裁决**（对着 `journeys[].oracle`）：
   `done` = `done_looks_like` 全部命中、`stuck_looks_like` 无一命中、每个 waypoint 都在某步
   `observed` 或截图里出现过；
