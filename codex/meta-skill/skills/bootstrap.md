@@ -107,7 +107,8 @@ Record `experience_priority` exactly as canonical Step 1.6 defines it:
   `experience_priority` as `{"mode": "consumer | admin | mixed | none", "reason": "<one sentence>"}`
 - bootstrap is the sole producer of that field on Codex too; downstream nodes read
   `experience_priority.mode` and never reclassify or rewrite it
-- judge by who the product serves, not by the tech stack; `reason` is mandatory and is one sentence
+- judge by who the product serves, never by the tech stack; `none` only when no end user ever sees
+  an interface; `reason` is one sentence
 - the `local-change` route may omit the whole field
 
 On a product route (`task_route` is `new-product` or `product-reconstruction`) whose

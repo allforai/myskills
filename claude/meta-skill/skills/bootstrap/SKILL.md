@@ -343,15 +343,11 @@ Write to `.allforai/bootstrap/bootstrap-profile.json`:
 }
 ```
 
-**experience_priority** — bootstrap is the sole producer of this field. Every downstream node
-reads `bootstrap-profile.json` `experience_priority.mode` and never reclassifies or rewrites it.
-Criteria: `consumer` = end users choose to use the product and can leave at any time;
-`admin` = internal/operations/back-office tooling used because the job requires it;
-`mixed` = both audiences coexist (for example a consumer app plus a merchant back office);
-`none` = there is no end-user interface. Use `none` only when `architecture_pattern` is
-`cli`, `library-sdk` or `embedded-firmware`, or the project is pure backend/API.
-Judge by who the product serves, not by the tech stack; games are always `consumer`.
-`reason` is mandatory and is one sentence. The `local-change` route may omit the whole field.
+**experience_priority** — bootstrap is the sole producer; downstream nodes read
+`bootstrap-profile.json` `experience_priority.mode` and never reclassify it. Judge by who the
+product serves, never by the tech stack: `consumer` when end users choose it and can leave,
+`admin` when the job requires it, `mixed` when both audiences exist, `none` only when no end
+user ever sees an interface. `reason` is one sentence. The `local-change` route may omit the field.
 
 > **bootstrap-profile.json vs discovery source-summary.json — no conflict:**
 > bootstrap-profile.json is produced during /bootstrap phase and lives in `.allforai/bootstrap/`.
@@ -597,8 +593,6 @@ If total nodes > 30, offer phased `/bootstrap` → `/run` cycles in Step 3.4.
 }
 ```
 
-The empty `transition_log` above is for a fresh bootstrap only. A re-bootstrap or replan copies the existing `transition_log[]` over verbatim — it is the run's history, and `validate_bootstrap` fails with `transition_log_missing_for_delivered_nodes` when a node that already published evidence is missing from it.
-
 **Node fields:**
 - `node_id`: Project-specific. NOT from a fixed vocabulary. `id` is forbidden in workflow nodes.
 - `capability`: Which capability this node is based on. Matches a file in
@@ -794,7 +788,8 @@ If `.allforai/bootstrap/` already exists (previous run):
 - **Preserve**: `repair-authorizations.json` and `safety-quarantine.json` when
   present. Re-bootstrap is not a new run or permission to reset spent repair
   budgets, replay uncertain execution, or clear a safety halt.
-- **Preserve for audit**: `transition_log[]`, `run-log.jsonl`,
+- **Preserve for audit**, verbatim: `transition_log[]` (`validate_bootstrap` reports
+  `transition_log_missing_for_delivered_nodes` when a delivered node is missing), `run-log.jsonl`,
   `workflow-state-index.json`, `workflow-reconciliation-plan.json`, and
   `workflow-reconciliation-plan.md`
 - **Reconcile before overwrite**: run `reconcile_bootstrap_workflow.py --write`
