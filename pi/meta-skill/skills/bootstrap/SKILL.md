@@ -101,6 +101,8 @@ Step 3.4 节点列表确认在 Pi 上也是临时的：审计之后对节点集�
 `.allforai/bootstrap/plan-confirmation.json`，决定记入
 `.allforai/bootstrap/plan-confirmation-journal.json`。计划或运行选择不要写入产品决策 journal。
 
+canonical A0（`knowledge/bootstrap-audits.md`）的概念角度和逐节点决策预演，各自在独立于规划者的上下文里跑：已安装 `pi-subagents` 时用它；裸 Pi 就在当前上下文串行跑，在 `decision-coverage.json` 的 provenance 里记 `independent: false` 和 `disclosure`，并告诉用户。readiness 会把它报出来，绝不当成独立。预演找到的问题和其他决策一样进 Phase A。
+
 ### 5. Canonical graph and node-specs
 
 写 `.allforai/bootstrap/workflow.json`。`state-machine.json` 是已退役的格式：只剩它而没有 `workflow.json` 的目录会被校验器以 `retired_bootstrap_format` 拒绝，重跑 bootstrap 即可。

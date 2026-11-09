@@ -12,7 +12,8 @@ import sys
 
 import pytest
 
-from .test_bootstrap_scope import confirm_plan, project as shared_project, gate, write, SCRIPTS
+from .test_bootstrap_scope import (confirm_plan, project as shared_project, gate, record_decision_coverage,
+                                   write, SCRIPTS)
 from .test_product_intent_session import invoke, draft, decide, CONCEPT, JOURNAL
 from .test_product_intent_session import TOPICS as SHARED_TOPICS
 from .test_validate_bootstrap import ATTENTION_CONTRACT_BODY
@@ -38,6 +39,7 @@ def publish(root, node_id):
     def freshness(request):
         return subprocess.run([sys.executable, str(root / ".allforai/bootstrap/scripts/evidence_freshness.py"), str(root)],
                               input=json.dumps(request), text=True, capture_output=True, cwd=root)
+    record_decision_coverage(root)
     observed = freshness({"operation": "observe", "node_id": node_id, "kind": "contract"})
     assert observed.returncode == 0, (observed.stdout, observed.stderr)
     published = freshness({"operation": "publish", "observation": json.loads(observed.stdout)["observation"],

@@ -115,6 +115,18 @@
       "forbid": [
         "Write the result to `.claude/commands/run.md` in the target project"
       ]
+    },
+    {
+      "id": "run-product-decision-gap",
+      "rule": "A structured unresolved product decision parks only its own subgraph; the run ends needs_product_decision and sends the user to interactive bootstrap, never diagnosis or a policy choice.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision"]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision", "exit 7"]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision"]}
+      ]
     }
   ]
 }

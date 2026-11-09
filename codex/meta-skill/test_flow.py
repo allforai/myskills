@@ -2765,3 +2765,58 @@ def test_delegation_disclosure_failure_never_blocks_completion(tmp_path, monkeyp
         assert payload['delegations'] == 'unavailable', f'{name}: {payload.get("delegations")!r}'
         assert payload['done'] is True and payload['passed'] is True, \
             f'{name}: disclosure is a notice, not a gate: {payload}'
+
+
+# ADR-0011 D, the same contract scenario the Claude engine's product-decision.test.js runs:
+# a structured product-decision gap on one branch blocks that branch alone, the unrelated
+# branch is still dispatched, and the run ends asking for the decision (exit 7).
+GAP = {'node_id': 'design', 'decisions': [{
+    'decision_id': 'scope-a-b', 'needed_decision': 'Shared across instances or per instance?',
+    'options': ['shared', 'per-instance'], 'recommended': 'per-instance', 'blocking_intent_ids': []}]}
+
+
+def decision_gap_project(tmp_path, monkeypatch, gap=GAP, done=()):
+    nodes = [{'node_id': 'design', 'hard_blocked_by': []},
+             {'node_id': 'build', 'hard_blocked_by': ['design']},
+             {'node_id': 'other', 'hard_blocked_by': []}]
+    log = [{'node_id': 'design', 'status': 'failed', 'error': 'unresolved product decision'}]
+    workflow = {'nodes': nodes, 'transition_log': log}
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    if gap is not None:
+        write(tmp_path / '.allforai/bootstrap/product-decision-gaps/design.json', gap)
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda root, node_id: node_id in done)
+    return workflow
+
+
+def test_a_product_decision_gap_blocks_its_branch_and_not_the_other(tmp_path, monkeypatch):
+    workflow = decision_gap_project(tmp_path, monkeypatch)
+    node, blocked = flow._pending_state(tmp_path, workflow)
+    assert node['node_id'] == 'other'
+    assert set(blocked) == {'design', 'build'}
+    assert flow.pending_product_decisions(tmp_path, workflow)[0]['decision_id'] == 'scope-a-b'
+
+
+@pytest.mark.parametrize('gap', [None, {'node_id': 'design', 'decisions': [
+    {'decision_id': 'x', 'needed_decision': 'Which?', 'options': ['only one']}]}])
+def test_an_unstructured_or_absent_gap_is_an_ordinary_failure(tmp_path, monkeypatch, gap):
+    workflow = decision_gap_project(tmp_path, monkeypatch, gap=gap)
+    node, _ = flow._pending_state(tmp_path, workflow)
+    assert node['node_id'] == 'design'   # retried / diagnosed as before, never parked
+    assert flow.pending_product_decisions(tmp_path, workflow) == []
+
+
+def test_the_run_ends_asking_for_the_decision(tmp_path, monkeypatch, capsys):
+    decision_gap_project(tmp_path, monkeypatch, done=('other',))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py', 'goal', '2'])
+    monkeypatch.setattr(flow, 'run_codex', lambda *a: pytest.fail('nothing may be dispatched'))
+    monkeypatch.setattr(flow, 'run_preflight', lambda *a: 0)
+    monkeypatch.setattr(flow, 'policy_action', lambda *a: 'ready')
+    monkeypatch.setattr(flow, 'run_expanders', lambda *a: True)
+    monkeypatch.setattr(flow, 'safety_halted', lambda *a: False)
+    monkeypatch.setattr(flow, 'read_safety_warnings', lambda *a: [])
+    monkeypatch.setattr(flow, 'safety_halt_required', lambda *a: False)
+    assert flow.main() == 7
+    payload = json.loads(capsys.readouterr().err)
+    assert payload['status'] == 'needs_product_decision'
+    assert [d['decision_id'] for d in payload['pending_product_decisions']] == ['scope-a-b']

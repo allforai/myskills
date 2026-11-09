@@ -1,6 +1,6 @@
 [
   {
-    "operation": "draft",
+    "operation": "draft", "dimensions": [], "stateful": [],
     "route": "new-product",
     "goal": "Ship a consumer language-learning app people reach for in spare minutes",
     "facts": [],

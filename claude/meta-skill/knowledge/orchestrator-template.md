@@ -305,6 +305,7 @@ never waive, downgrade, or hide a gap.
    self-heals soft failures, commits each node immediately, and returns one of:
    - `{ status: "complete" }`
    - `{ status: "needs_diagnosis", hardFailures: [...] }`
+   - `{ status: "needs_product_decision", decisions: [...] }`
 
 2. On `complete`: run the learning-protocol extraction, then produce the Phase C report:
    a. **Evidence-anchored completeness (verification honesty).** Run
@@ -340,7 +341,18 @@ never waive, downgrade, or hide a gap.
       (same session: resumeFromRunId; cross-session: re-invoke — workflow.json idempotency
       skips already-completed nodes).
 
-4. Repeat until `complete` or an UNRESOLVED stop.
+3b. On `needs_product_decision`:
+   <!-- clause-begin:run-product-decision-gap -->
+   A node met a user-visible rule the frozen intent does not settle and recorded it in
+   `.allforai/bootstrap/product-decision-gaps/<node_id>.json`. Only that node and its
+   successors waited; unrelated branches ran to the end. This is not a defect to diagnose
+   and no policy chooses it for the user (ADR-0011). Record `run_halted` with status
+   `needs_product_decision`, then list every decision in the report — node, question,
+   options, recommendation — and tell the user to answer them at interactive `/bootstrap`,
+   which asks them in Phase A and clears each record once it is wired. Never ask here.
+   <!-- clause-end:run-product-decision-gap -->
+
+4. Repeat until `complete`, `needs_product_decision` or an UNRESOLVED stop.
 
 This template is CC-only. Codex keeps its existing markdown loop (frozen).
 

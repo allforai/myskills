@@ -508,6 +508,15 @@ On the first iteration, if `transition_log` is non-empty:
   list prints `No delegated decisions.` The user must be able to see which product
   decisions the model made for them without opening a file. This disclosure informs; it
   never blocks the report, never changes the outcome, and asks the user nothing.
+<!-- clause:run-product-decision-gap@9dc76afb -->
+- The run ends `needs_product_decision` (a node failed with a
+  structured `unresolved_product_decision`): a node met a user-visible rule the frozen intent does not settle and
+  recorded it in `.allforai/bootstrap/product-decision-gaps/<node_id>.json`. Only that
+  node and its successors waited; unrelated branches ran to the end. This is not a defect
+  to diagnose and no policy chooses it for the user (ADR-0011). Record `run_halted` with
+  status `needs_product_decision`, then list every decision — node, question, options,
+  recommendation — and tell the user to answer them at interactive bootstrap, which asks
+  them in Phase A and clears each record once it is wired. Never ask here.
 - `concept-acceptance` names missing behaviour mappings
   (`acceptance-report.json.missing_mappings` non-empty): read `--policy-event
   on_needs_iteration`. An empty list is the gate passing — proceed, ask nothing. A report

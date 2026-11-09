@@ -27,7 +27,8 @@ def draft():
                        "uncertainty": "Implementation cannot establish desired direction"} for topic in TOPICS],
             "facts": [{"path": "orders.py", "quote": "def list_orders"}],
             "questions": [{"id": "conflict", "topic": "tradeoffs", "question": "Should exports include archived orders?",
-                           "kind": "contradiction", "depends_on": ["tradeoffs"]}]}
+                           "kind": "contradiction", "depends_on": ["tradeoffs"]}],
+            "dimensions": [], "stateful": []}
 
 
 def decide(root, actions, batch="user-1"):

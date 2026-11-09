@@ -23,6 +23,14 @@ exceptions on resume. Explicit batch approval may cover several named items;
 recommendations, displayed defaults, omitted answers and silence are not
 actions; `select` and `delegate` are actions.
 Capture contradictions/gaps as questions with the intent IDs that depend on them.
+
+Cross dimensions with state before freeze. A *dimension* is anything the product offers
+several instances of that a user moves between; a *stateful thing* is anything the
+product keeps about a user and shows back. For each pair, the thing is either shared
+across the instances, kept per instance, or a stated mix — a rule the user will see,
+that no single intent tends to say, and that a design node may not choose for them.
+Identify both from the draft (name them in the user's product, never from a list of
+examples) and declare them; the CLI asks every pair the draft does not already settle.
 A quote validator checks supplied evidence, not whether the agent discovered all
 relevant facts: the host still owns semantic analysis and dialogue quality.
 
@@ -82,6 +90,14 @@ not additional product authorities.
   experience responsibility a node carries. They are not interchangeable.
   A product nobody looks at excludes `gap-experience-direction` at `freeze` with
   its reason, like any other inapplicable dimension.
+  `dimensions` and `stateful` are required lists of `{id, name}` (empty when the
+  product has none); `settled_scopes` optionally lists `{dimension, stateful,
+  intent_id}` for pairs a drafted intent already decides. Every other pair becomes a
+  pending `scope-<dimension>-<stateful>` question (`kind: scope`, options `shared`,
+  `per-instance`, `mixed`) answered like any question; `freeze` refuses it unanswered
+  unless explicitly excluded. The CLI proves each declared pair was asked, not that the
+  host found every dimension: that stays the host's semantic work, and decision
+  rehearsal in `bootstrap-audits.md` A0 is the second net.
   Questions have `id`, `topic`, `question`, `kind`, and `depends_on` intent IDs.
   Question IDs are unique and distinct from all intent IDs, including generated
   gap questions; an ambiguous identity is rejected, never counted as an answer.

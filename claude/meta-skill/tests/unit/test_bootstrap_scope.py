@@ -4,6 +4,7 @@ The agent chooses the route and graph; these tests supply its explicit artifacts
 not a substitute semantic planner. Actual host dialogue proof belongs to T15.
 """
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -167,6 +168,7 @@ def publish_contract(root, node_id="deliver-export", kind="contract", verificati
     The default verifier is the copied bootstrap validator, a real check of the
     generated contract; evidence publication must pass the node's own acceptance argv.
     """
+    record_decision_coverage(root)
     observed = freshness(root, {"operation": "observe", "node_id": node_id, "kind": kind})
     assert observed.returncode == 0, (observed.stdout, observed.stderr)
     command = verification_command or [sys.executable, ".allforai/bootstrap/scripts/validate_bootstrap.py",
@@ -192,7 +194,38 @@ def codex_transition(root, node_id, status):
                                       "2026-09-07T10:00:00Z", [])
 
 
+def record_decision_coverage(root):
+    """Record a current A0 pass for a product-route plan, as interactive bootstrap would.
+
+    These suites exercise other gate rules; ADR-0011's provenance rule has its own suite
+    (`test_decision_coverage_provenance.py`). A product-route plan reaching a gate here
+    carries coverage whose digests match the plan as it stands at that moment.
+    """
+    bdir = root / ".allforai/bootstrap"
+    try:
+        profile = json.loads((bdir / "bootstrap-profile.json").read_text())
+        nodes = json.loads((bdir / "workflow.json").read_text()).get("nodes") or []
+    except (OSError, ValueError, AttributeError):
+        return
+    if not isinstance(profile, dict) or profile.get("task_route") not in ("new-product", "product-reconstruction"):
+        return
+
+    def read(paths):
+        return [{"path": p, "sha256": hashlib.sha256((root / p).read_bytes()).hexdigest()}
+                for p in paths if (root / p).is_file()] or [{"path": "none", "sha256": "none"}]
+
+    specs = [f".allforai/bootstrap/node-specs/{n['node_id']}.md" for n in nodes
+             if isinstance(n, dict) and isinstance(n.get("node_id"), str) and n["node_id"]]
+    passes = [{"angle": angle, "independent": True, "reader": "fixture", "produced_at": "2026-11-09T00:00:00Z",
+               "inputs": read(paths)}
+              for angle, paths in (("concept", [".allforai/product-concept/concept-baseline.json"]),
+                                   ("node-rehearsal", specs))]
+    (bdir / "decision-coverage.json").write_text(json.dumps(
+        {"captured": [], "missing": [], "provenance": {"passes": passes}}))
+
+
 def gate(root, name, *options):
+    record_decision_coverage(root)
     arg = root / ".allforai/bootstrap" if name == "validate_bootstrap.py" else root
     return subprocess.run([sys.executable, str(root / ".allforai/bootstrap/scripts" / name), str(arg), *options],
                           text=True, capture_output=True, cwd=root)

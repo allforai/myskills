@@ -22,14 +22,17 @@ def validate_granularity_audit(obj):
 
 
 def validate_decision_coverage(obj):
-    errs = _require_keys(obj, ["captured", "missing"])
-    for m in obj.get("missing", []):
-        if "id" not in m:
-            errs.append("missing-entry needs 'id'")
-        if "rationale" not in m:
-            errs.append("missing-entry needs 'rationale'")
-        if "consumer_node" not in m:  # fix C4: wire decision to its consumer
-            errs.append("missing-entry needs 'consumer_node'")
+    """A0 coverage, including the provenance that proves its passes ran (ADR-0011).
+
+    The rule lives in the bootstrap gate, which also checks the recorded digests against
+    the current plan; this CLI applies the project-free half of it, from that one place.
+    """
+    import os, sys
+    orchestrator = os.path.join(os.path.dirname(os.path.abspath(__file__)), "orchestrator")
+    if orchestrator not in sys.path:
+        sys.path.insert(0, orchestrator)
+    from validate_bootstrap import decision_coverage_shape_errors
+    errs = decision_coverage_shape_errors(obj)
     return (len(errs) == 0, errs)
 
 

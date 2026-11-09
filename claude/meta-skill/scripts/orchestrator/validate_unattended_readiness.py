@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from product_intent import validate_scope
-from validate_bootstrap import (plan_confirmation_blockers, structural_gate_blockers,
+from validate_bootstrap import (decision_coverage_disclosures, plan_confirmation_blockers,
+                               structural_gate_blockers,
                                workflow_shape_blockers)
 
 
@@ -189,6 +190,35 @@ def _safety_halt_blockers(bootstrap_root: Path, blockers: list[dict]) -> None:
              f"never durably published. What it would have named is unknown, and an absent "
              f"marker is not evidence that nothing needed quarantining. Reconcile the run "
              f"and remove the fence deliberately; execution does not resume by deleting it.")
+
+
+PRODUCT_DECISION_GAPS = "product-decision-gaps"
+
+
+def _product_decision_gap_blockers(bootstrap_root: Path, blockers: list[dict]) -> None:
+    """A product decision a node could not make waits for the user, not for another run.
+
+    A node that met a user-visible rule nobody settled records it in
+    `product-decision-gaps/<node_id>.json` (ADR-0011). The record stays until interactive
+    bootstrap asks it, wires the answer into that node's `decision_inputs` and removes
+    it, so its presence alone blocks the next unattended run. A record that cannot be
+    read is still an unanswered claim, never an absent one.
+    """
+    directory = bootstrap_root / PRODUCT_DECISION_GAPS
+    if not directory.is_dir():
+        return
+    for path in sorted(directory.glob("*.json")):
+        try:
+            record = _load_json(path)
+            decisions = record.get("decisions") if isinstance(record, dict) else None
+            questions = [d.get("needed_decision") for d in decisions or [] if isinstance(d, dict)]
+        except Exception:
+            questions = []
+        detail = "; ".join(q for q in questions if isinstance(q, str) and q.strip()) or \
+            "the record cannot be read; treat it as unanswered"
+        _add(blockers, "pending_product_decision",
+             f"{path.relative_to(bootstrap_root.parent.parent)} waits for the user: {detail} — "
+             f"answer it at interactive /bootstrap Phase A", node_id=path.stem)
 
 
 def _load_readiness_spec(path: Path, blockers: list[dict]) -> dict:
@@ -651,6 +681,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
 
     # A safety halt is run-wide and answers to nothing below it, so it is decided first.
     _safety_halt_blockers(bootstrap_root, blockers)
+    _product_decision_gap_blockers(bootstrap_root, blockers)
     readiness_spec = _load_readiness_spec(spec_path, blockers)
     _validate_policy_spec(readiness_spec, blockers, warnings)
     # `/run` must not assume bootstrap ran and passed: the plan the user confirmed is
@@ -669,6 +700,10 @@ def validate_unattended_readiness(project_root: Path) -> dict:
     blockers.extend(shape_blockers)
     if not shape_blockers:
         blockers.extend(structural_gate_blockers(project_root))
+    # A decision-coverage pass that could not run independently is accepted, never passed
+    # off as independent: it is carried to the person starting the run (ADR-0011).
+    for disclosure in decision_coverage_disclosures(str(bootstrap_root)):
+        warnings.append({"code": "decision_coverage_not_independent", "message": disclosure})
 
     if not workflow_path.exists():
         _add(blockers, "missing_workflow", f"{workflow_path} does not exist")

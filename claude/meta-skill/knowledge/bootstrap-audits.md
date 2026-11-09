@@ -278,18 +278,59 @@ Queue non-trivial restructures for Phase A confirmation (do not ask now).
 
 ## A0 — Decision-Coverage Audit (catch every decision before the run)
 
-Runs after G0 (over the right-sized graph), before Phase A. Dual-angle; union results.
+Runs after G0 (over the right-sized graph), before Phase A. The run is unattended; a
+user-visible choice it meets that nobody asked about stops its branch overnight, and the
+node that meets it is forbidden to choose. A0 exists so that every such choice is asked
+here instead. It has two angles, each a pass in a context independent of the planner:
 
-- **Agent 1 (concept completeness):** enumerate every direction/intent fork implied by
-  the source concept artifacts (art style, monetization model, tech selection, tone,
-  scope tradeoffs, …).
-- **Agent 2 (node reverse-inference):** scan nodes/node-specs for implicit choices NOT
-  marked `decision_mode: "brainstorm"`.
+- **Concept angle:** the forks the confirmed intent implies at direction level — what the
+  frozen baseline commits to without saying which way (style, business model, technology,
+  tone, scope trade-offs, …).
+- **Node angle — decision rehearsal:** for every node that will produce or implement an
+  end-user-visible rule, read that node's spec with the frozen baseline and the decision
+  journal and answer one question: *to do this work, which user-visible choices would I
+  have to make that these do not settle?* Rehearsal produces questions, never the node's
+  output. Each question names the node, offers 2–3 options with a recommendation, and says
+  what the node would otherwise have to invent. Ask only what the node may not decide.
+  A question is a fork in a rule's shape the baseline leaves open — who or what the rule
+  applies to; whether something is shared or separate, kept or lost, limited or free;
+  whether and how much a person pays — that someone using the product would meet as a
+  different product. Not questions: a choice the baseline or journal already settles; a
+  choice that only shapes internals; the node's own design work (the values, layout,
+  controls and wording of a rule whose shape is settled are what the node is for); a
+  choice an upstream node in the plan owns; a feature the baseline does not ask for, which
+  is scope, not a decision. Rehearsal is done when nothing further would have to be
+  invented, not when a count is reached. A cheaper model tier may run it.
+
+Rule-level choices are what direction-level reading misses: they appear only when someone
+starts to write the rules. Rehearsal is that someone, before the run instead of during it.
 
 Union the two; write `.allforai/bootstrap/decision-coverage.json`:
-`{ "captured": [{id, node_id}], "missing": [{id, rationale, consumer_node}] }`.
+
+```json
+{ "captured": [{"id": "...", "node_id": "..."}],
+  "missing":  [{"id": "...", "rationale": "...", "consumer_node": "..."}],
+  "provenance": {"passes": [
+    {"angle": "concept" | "node-rehearsal", "independent": true, "reader": "<which context ran it>",
+     "produced_at": "<ISO time>", "inputs": [{"path": "<project-relative>", "sha256": "<digest read>"}],
+     "disclosure": "<required only when independent is false: why>"}
+  ]}}
+```
+
 **Every `missing` entry MUST name its `consumer_node`** (fix C4 — which node will read this
 decision); a decision with no consumer is a planning error, not a decision.
+
+**Provenance is the receipt, not decoration.** The concept pass lists the frozen
+`concept-baseline.json`; node-rehearsal passes together list every node-spec in the current
+workflow, each at the digest actually read. An empty `missing` is a finding only when the
+passes that found nothing are recorded — a hand-written empty audit is
+`decision_coverage_unproven`. On a product route, `validate_bootstrap.py` and the readiness
+gate recompute those digests: a node-spec or baseline changed after its pass (a G0
+overturn, a Phase A answer, a node-spec audit fix) is `stale_decision_coverage` for that
+node. Re-rehearse only what changed and append its pass; the latest digest recorded for a
+path is the one judged. A host that cannot give a pass an independent context records
+`independent: false` with a `disclosure`; that is accepted and reported to the person
+starting the run, never counted as independent.
 
 Validate:
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision-coverage .allforai/bootstrap/decision-coverage.json`
@@ -303,7 +344,11 @@ Fold every `missing` entry into the Phase A decision queue (and set `decision_mo
 
 Resolve any remaining decisions after A0, as the final interactive step of `/bootstrap`. Iterate the decision
 queue = (nodes with `decision_mode: "brainstorm"`) ∪ (A0 `missing`) ∪ (G0 restructure
-confirmations).
+confirmations) ∪ (every record in `.allforai/bootstrap/product-decision-gaps/` — decisions
+an earlier `/run` met and parked, ADR-0011). A gap record is answered like any decision:
+write the decision artifact, wire it into that node's `decision_inputs`, then delete the
+record; readiness refuses the next run while one remains. Its node-spec usually changes
+with the answer, so re-rehearse that node and append its A0 pass.
 
 Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`: group independent decisions
 by topic, one message per topic, each decision with 2–3 options, tradeoffs and a recommended

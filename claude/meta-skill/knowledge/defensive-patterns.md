@@ -294,6 +294,14 @@ A client node must talk to a backend service. The contract specifies `Authorizat
 }
 ```
 
+**When the owner itself cannot decide — unresolved product decision.** Pattern I sends the gap upstream because an upstream design node can usually answer it. When the node that needs the decision is the one that owns it (a design or rules node) and the frozen intent and decision journal do not settle it, nobody in the run may choose: it is a product decision for the user. The node then does not pick, does not ship a "temporary" rule, and does not report it as an assumed decision. It:
+
+1. Writes `.allforai/bootstrap/product-decision-gaps/<node_id>.json` as `{"node_id", "decisions": [{"decision_id", "needed_decision", "options", "recommended", "blocking_intent_ids"}]}` — at least two options it actually weighed, the one it would recommend and why in `needed_decision`'s own words.
+2. Fails with one `blocking_findings` entry per decision, `type: "unresolved_product_decision"`, carrying the same fields.
+3. Finishes the rest of its own work. Only the fork it may not take goes in the record — who or what a rule applies to, shared or separate, kept or lost, limited or free, whether and how much a person pays. The values, wording and layout of a rule whose shape is settled are the node's own job, decided and delivered as usual.
+
+Both run engines park that node and its successors, let unrelated branches finish, and end the run `needs_product_decision`; readiness then refuses the next unattended run until interactive bootstrap has asked the question in Phase A, wired the answer into the node's `decision_inputs` and removed the record (ADR-0011). Decision rehearsal in A0 exists so that this path is rare: reaching it means a choice surfaced only from what the run itself produced.
+
 ---
 
 <a id="pattern-j"></a>

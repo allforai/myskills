@@ -926,6 +926,45 @@ def _validate_question_ids(concept):
         question_ids.add(identity)
 
 
+def _scope_questions(request, intent_ids):
+    """One pending scope question per dimension × stateful pair the draft leaves open.
+
+    A dimension is anything the product offers several instances of that a user moves
+    between; a stateful thing is anything it keeps about a user and shows back. Whether
+    each such thing is shared across the instances or kept per instance is a user-visible
+    rule nobody else will ask (ADR-0011). Finding both lists is the host's semantic work;
+    this only guarantees that every declared pair is asked or settled by a named intent.
+    """
+    declared = {}
+    for key in ("dimensions", "stateful"):
+        entries = request.get(key)
+        if not isinstance(entries, list):
+            raise ValueError(f"Draft must declare {key} as a list (empty when the product has none)")
+        seen = {}
+        for entry in entries:
+            if not isinstance(entry, dict) or not _text(entry.get("id")) or not _text(entry.get("name")):
+                raise ValueError(f"Each {key} entry needs id and name")
+            if entry["id"] in seen:
+                raise ValueError(f"Duplicate {key} identity")
+            seen[entry["id"]] = entry["name"]
+        declared[key] = seen
+    settled = set()
+    for entry in request.get("settled_scopes", []):
+        if (not isinstance(entry, dict) or entry.get("dimension") not in declared["dimensions"]
+                or entry.get("stateful") not in declared["stateful"]):
+            raise ValueError("settled_scopes entries must name a declared dimension and stateful thing")
+        if entry.get("intent_id") not in intent_ids:
+            raise ValueError("settled_scopes entries must name the drafted intent that settles them")
+        settled.add((entry["dimension"], entry["stateful"]))
+    return [{"id": f"scope-{dim}-{thing}", "topic": "business-loop", "kind": "scope",
+             "question": f"Is {thing_name} shared across {dim_name}, kept separately for each, "
+                         f"or a stated mix?",
+             "options": ["shared", "per-instance", "mixed"], "status": "pending", "depends_on": []}
+            for dim, dim_name in declared["dimensions"].items()
+            for thing, thing_name in declared["stateful"].items()
+            if (dim, thing) not in settled]
+
+
 def _question_pending(root, question):
     if question.get("status", "pending") != "resolved":
         return True
@@ -1596,6 +1635,7 @@ def session(root, request):
             if not any(i["topic"] == topic for i in items):
                 questions.append({"id": "gap-" + topic, "topic": topic, "kind": "gap",
                                   "question": "What is the desired " + topic + "?", "status": "pending", "depends_on": []})
+        questions.extend(_scope_questions(request, ids))
         concept.update(requirements=items, intent_facts=facts, intent_questions=questions)
         _validate_question_ids(concept)
         profile = _read(root, PROFILE, {})

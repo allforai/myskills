@@ -20,6 +20,7 @@ Checks:
   - node-specs/*.md: YAML frontmatter parseable, node_id field present
 """
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -2464,6 +2465,180 @@ def validate_experience_design_coverage(bdir: str) -> list:
     return _rendered(experience_design_coverage_findings(bdir))
 
 
+# A0 decision coverage (ADR-0011). The audit's own artifact used to be checked for shape
+# only, so a hand-written `missing: []` and a thorough audit were indistinguishable. Coverage
+# now records the passes that produced it, and this gate recomputes what they read: an
+# audit is about the plan it read, and a plan edited since is a plan nobody audited.
+DECISION_COVERAGE = "decision-coverage.json"
+DECISION_COVERAGE_ANGLES = ("concept", "node-rehearsal")
+CONCEPT_BASELINE = ".allforai/product-concept/concept-baseline.json"
+
+
+def decision_coverage_shape_errors(obj) -> list:
+    """Errors in one decision-coverage document, judged without the project.
+
+    Shared by the A0 audit CLI and the gates below. An empty `missing` is legal; an
+    empty or absent provenance is not, because only provenance distinguishes an audit
+    that found nothing from one that never ran. A pass that could not run in a context
+    independent of the planner (a host without sub-agents) is accepted only when it
+    says so: not-independent is its own outcome, never read as independent.
+    """
+    if not isinstance(obj, dict):
+        return ["decision coverage must be a JSON object"]
+    errors = []
+    for key in ("captured", "missing"):
+        if not isinstance(obj.get(key), list):
+            errors.append(f"missing top-level list {key!r}")
+    for entry in obj.get("missing") or []:
+        if not isinstance(entry, dict):
+            errors.append("missing-entry must be an object")
+            continue
+        for key in ("id", "rationale", "consumer_node"):
+            if not _text(entry.get(key)):
+                errors.append(f"missing-entry needs {key!r}")
+    provenance = obj.get("provenance")
+    passes = provenance.get("passes") if isinstance(provenance, dict) else None
+    if not isinstance(passes, list) or not passes:
+        errors.append("provenance.passes is required: record each audit pass, its angle, "
+                      "reader, time and the digests of what it read")
+        return errors
+    angles = set()
+    for index, item in enumerate(passes):
+        where = f"provenance.passes[{index}]"
+        if not isinstance(item, dict):
+            errors.append(f"{where} must be an object")
+            continue
+        angle = item.get("angle")
+        if angle not in DECISION_COVERAGE_ANGLES:
+            errors.append(f"{where}.angle must be one of {list(DECISION_COVERAGE_ANGLES)}")
+        else:
+            angles.add(angle)
+        for key in ("reader", "produced_at"):
+            if not _text(item.get(key)):
+                errors.append(f"{where} needs {key!r}")
+        if not isinstance(item.get("independent"), bool):
+            errors.append(f"{where}.independent must be true or false")
+        elif item["independent"] is False and not _text(item.get("disclosure")):
+            errors.append(f"{where} was not independent and needs a 'disclosure' saying why")
+        inputs = item.get("inputs")
+        if not isinstance(inputs, list) or not inputs:
+            errors.append(f"{where}.inputs must list what the pass read")
+            continue
+        for read in inputs:
+            if not (isinstance(read, dict) and _text(read.get("path")) and _text(read.get("sha256"))):
+                errors.append(f"{where}.inputs entries need 'path' and 'sha256'")
+                break
+    for angle in DECISION_COVERAGE_ANGLES:
+        if angle not in angles:
+            errors.append(f"provenance has no {angle!r} pass")
+    return errors
+
+
+def _sha256(path: str):
+    try:
+        with open(path, "rb") as handle:
+            return hashlib.sha256(handle.read()).hexdigest()
+    except OSError:
+        return None
+
+
+def _product_route_coverage(bdir: str):
+    """(workflow, coverage-or-None) on a product route; None when out of this gate's scope.
+
+    Local-change and legacy profiles are out of scope, and an unreadable profile or
+    workflow is left to the scope and shape gates that own those faults.
+    """
+    try:
+        profile = _load_json(os.path.join(bdir, "bootstrap-profile.json"))
+        workflow = _load_json(os.path.join(bdir, "workflow.json"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(profile, dict) or not isinstance(workflow, dict):
+        return None
+    if profile.get("task_route") not in PRODUCT_ROUTES:
+        return None
+    path = os.path.join(bdir, DECISION_COVERAGE)
+    if not os.path.exists(path):
+        return workflow, None
+    try:
+        return workflow, _load_json(path)
+    except (OSError, ValueError) as exc:
+        return workflow, exc
+
+
+def decision_coverage_findings(bdir: str) -> list:
+    """Product-route decision coverage exists, proves its passes, and is about this plan.
+
+    Every current node-spec must have been read by a node-rehearsal pass at its current
+    digest, and the frozen baseline by a concept pass at its current digest. Passes
+    accumulate: re-rehearsing one edited node appends a pass for that node alone, and the
+    latest digest any pass recorded for a path is the one judged.
+    """
+    findings = []
+    scoped = _product_route_coverage(bdir)
+    if scoped is None:
+        return findings
+    workflow, coverage = scoped
+    if coverage is None:
+        _structural(findings, "missing_decision_coverage",
+                    f"{DECISION_COVERAGE} is required before a product route can run: A0 "
+                    f"(concept angle and per-node decision rehearsal) has not been recorded — "
+                    f"{RETURN_TO_BOOTSTRAP}")
+        return findings
+    if isinstance(coverage, Exception):
+        _structural(findings, "decision_coverage_unproven",
+                    f"{DECISION_COVERAGE} cannot be parsed: {coverage} — {RETURN_TO_BOOTSTRAP}")
+        return findings
+    errors = decision_coverage_shape_errors(coverage)
+    if errors:
+        _structural(findings, "decision_coverage_unproven",
+                    f"{DECISION_COVERAGE} does not prove an audit ran: {'; '.join(errors)} — "
+                    f"{RETURN_TO_BOOTSTRAP}")
+        return findings
+
+    project_root = _project_root_from_bootstrap_dir(bdir)
+    read = {angle: {} for angle in DECISION_COVERAGE_ANGLES}
+    for item in coverage["provenance"]["passes"]:
+        for entry in item["inputs"]:
+            read[item["angle"]][os.path.normpath(entry["path"])] = entry["sha256"]
+
+    def judge(angle, rel, node_id=""):
+        current = _sha256(os.path.join(project_root, rel))
+        if current is None:
+            return
+        seen = read[angle].get(os.path.normpath(rel))
+        if seen is None:
+            _structural(findings, "stale_decision_coverage",
+                        f"no {angle} pass read {rel}; rerun that part of A0 and append its pass — "
+                        f"{RETURN_TO_BOOTSTRAP}", node_id)
+        elif seen != current:
+            _structural(findings, "stale_decision_coverage",
+                        f"{rel} changed after the {angle} pass read it; rerun that part of A0 "
+                        f"and append its pass — {RETURN_TO_BOOTSTRAP}", node_id)
+
+    judge("concept", CONCEPT_BASELINE)
+    for node in workflow.get("nodes") or []:
+        node_id = node.get("node_id") if isinstance(node, dict) else None
+        if isinstance(node_id, str) and node_id:
+            judge("node-rehearsal", f".allforai/bootstrap/node-specs/{node_id}.md", node_id)
+    return findings
+
+
+def decision_coverage_disclosures(bdir: str) -> list:
+    """`angle: disclosure` for every recorded pass that did not run independently."""
+    scoped = _product_route_coverage(bdir)
+    if scoped is None or not isinstance(scoped[1], dict):
+        return []
+    passes = (scoped[1].get("provenance") or {}).get("passes") or []
+    return [f"{p.get('angle')}: {p.get('disclosure')}" for p in passes
+            if isinstance(p, dict) and p.get("independent") is False and _text(p.get("disclosure"))]
+
+
+def validate_decision_coverage(bdir: str) -> list:
+    """Rendered decision-coverage errors for the bootstrap validator CLI."""
+    return _rendered(decision_coverage_findings(bdir))
+
+
 # The experience quality gate. Designing the interface (above) is not reviewing what was
 # built from that design, so the two rules are separate: this one reads the review nodes.
 EXPERIENCE_GATE_PRODUCT_ROUTES = ("new-product", "product-reconstruction")
@@ -2712,7 +2887,8 @@ def structural_gate_blockers(project_root) -> list:
     if shape:
         return shape
     return (repair_loop_declaration_findings(bdir) + effect_stage_ownership_findings(bdir)
-            + experience_design_coverage_findings(bdir) + experience_gate_flow_findings(bdir))
+            + experience_design_coverage_findings(bdir) + experience_gate_flow_findings(bdir)
+            + decision_coverage_findings(bdir))
 
 
 def validate_node_spec(path: str) -> list:
@@ -2760,6 +2936,7 @@ def main():
             errors.extend(validate_app_design_flow(bdir))
             errors.extend(validate_experience_design_coverage(bdir))
             errors.extend(validate_experience_gate_flow(bdir))
+            errors.extend(validate_decision_coverage(bdir))
             errors.extend(validate_game_2d_production_flow(bdir))
             errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
             errors.extend(validate_game_visual_acceptance_standard_flow(bdir))
@@ -2818,6 +2995,10 @@ __all__ = [
     "experience_design_coverage_findings",
     "validate_experience_gate_flow",
     "experience_gate_flow_findings",
+    "validate_decision_coverage",
+    "decision_coverage_findings",
+    "decision_coverage_shape_errors",
+    "decision_coverage_disclosures",
     "workflow_shape_findings",
     "workflow_shape_blockers",
     "structural_gate_blockers",

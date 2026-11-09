@@ -1143,6 +1143,43 @@ def exhausted_obligations(project_root: Path, workflow: dict) -> list[str]:
                    exhausted_obligation_pairs(project_root, workflow)})
 
 
+PRODUCT_DECISION_GAPS = ".allforai/bootstrap/product-decision-gaps"
+
+
+def product_decision_gap(project_root: Path, workflow: dict, node_id: str) -> dict | None:
+    """The structured product decision this node's latest failed attempt is waiting on.
+
+    ADR-0011: a node that met a user-visible rule nobody settled, and may not choose it,
+    fails and records the decision it needs with at least two options it saw. Only that
+    record, on a node whose latest attempt failed, parks the node and its successors
+    instead of retrying or diagnosing it; anything less is an ordinary failure.
+    """
+    if last_failed_transition(workflow, node_id) is None:
+        return None
+    try:
+        record = load_json(project_root / PRODUCT_DECISION_GAPS / f"{node_id}.json")
+    except (OSError, ValueError):
+        return None
+    decisions = record.get("decisions") if isinstance(record, dict) else None
+    if not isinstance(decisions, list) or not decisions:
+        return None
+    for decision in decisions:
+        options = decision.get("options") if isinstance(decision, dict) else None
+        if not (isinstance(decision, dict) and isinstance(decision.get("needed_decision"), str)
+                and decision["needed_decision"].strip() and isinstance(options, list)
+                and len([o for o in options if isinstance(o, str) and o.strip()]) >= 2):
+            return None
+    return record
+
+
+def pending_product_decisions(project_root: Path, workflow: dict) -> list[dict]:
+    """Every decision a parked node waits on, each tagged with its node."""
+    return [dict(decision, node_id=node_identity(node))
+            for node in workflow.get("nodes", [])
+            for decision in (product_decision_gap(project_root, workflow, node_identity(node)) or {})
+            .get("decisions", [])]
+
+
 def _pending_state(project_root: Path, workflow: dict, candidates: list | None = None) -> tuple[dict | None, list[str]]:
     """(next dispatchable node, ids of pending nodes nothing may dispatch yet)."""
     nodes = workflow.get("nodes", [])
@@ -1206,7 +1243,8 @@ def _pending_state(project_root: Path, workflow: dict, candidates: list | None =
             continue
         if not complete.get(node_id) and (node_id in routed or node_id in closure_blocked
                                           or node_id in unbounded
-                                          or node_id in dead_loop_repairs):
+                                          or node_id in dead_loop_repairs
+                                          or product_decision_gap(project_root, workflow, node_id)):
             blocked.append(node_id)
             continue
         if node_id in repair_nodes:
@@ -1772,6 +1810,7 @@ Requirements:
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings.
+   A user-visible choice this node needs that the frozen intent and decision journal do not settle is never chosen here: write `failed` and record it in `.allforai/bootstrap/product-decision-gaps/{node_id}.json` as `{{"node_id", "decisions": [{{"decision_id", "needed_decision", "options" (two or more), "recommended", "blocking_intent_ids"}}]}}`. It parks only this node and its successors until the user answers it at interactive bootstrap.
 10. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
 
 Do not ask for acceptance. Execute the work directly."""
@@ -2314,6 +2353,9 @@ def main() -> int:
                 exhausted = exhausted_obligations(project_root, workflow)
                 if exhausted:
                     payload["exhausted_obligations"] = exhausted
+                decisions = pending_product_decisions(project_root, workflow)
+                if decisions:
+                    payload["pending_product_decisions"] = decisions
                 unresolved = unresolved_authorizations(project_root)
                 if unresolved:
                     payload["unresolved_repair_authorizations"] = unresolved
@@ -2321,6 +2363,14 @@ def main() -> int:
                         "an authorization has no recorded outcome, so whether its repair "
                         "ran is unknown; the whole run is refused until it is reconciled "
                         "against attributable evidence — this is not a QA failure")
+                # Only decisions left, nothing else wrong: the run ends asking for them, the
+                # same terminal answer as the Claude engine's `needs_product_decision`.
+                if decisions and not (set(payload) - {"passed", "done", "error", "blocked_nodes",
+                                                      "pending_product_decisions"}):
+                    payload.update(status="needs_product_decision",
+                                   error="pending product decisions; answer them at interactive /bootstrap")
+                    print(json.dumps(payload), file=sys.stderr)
+                    return 7
                 print(json.dumps(payload), file=sys.stderr)
                 return 6
         # The coverage gate's policy is applied whenever the gate, its declared repair node

@@ -55,9 +55,14 @@ UNRESOLVED = {
 
 def _coverage_audit():
     """The A0 output `bootstrap-audits.md:264` requires before Phase A."""
+    passes = [{"angle": angle, "independent": True, "reader": f"{angle} sub-agent",
+               "produced_at": "2026-11-09T00:00:00Z", "inputs": [{"path": path, "sha256": "0" * 64}]}
+              for angle, path in (("concept", ".allforai/bootstrap/local-requirements.json"),
+                                  ("node-rehearsal", f".allforai/bootstrap/node-specs/{NODE}.md"))]
     return {"status": "complete", "captured": [{"id": "platform-stack", "node_id": NODE}],
             "missing": [{"id": "retention", "rationale": "Retention window is unowned",
-                         "consumer_node": NODE}]}
+                         "consumer_node": NODE}],
+            "provenance": {"passes": passes}}
 
 
 def _cli_request():

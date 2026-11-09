@@ -165,6 +165,20 @@ function qaReportUsable(result) {
   return (result.artifacts_written || []).length > 0
 }
 
+// ADR-0011: a node that met a user-visible rule nobody settled, and may not choose it,
+// fails with nothing but structured `unresolved_product_decision` findings — the decision
+// it needs and at least two options it saw. That failure blocks the node and its
+// successors, never unrelated branches, and is asked at the next interactive bootstrap.
+// A claim without that structure is not trusted as one: it stays a diagnosis case.
+function productDecisionGap(result) {
+  if (!result || result.outcome !== 'hard_fail') return false
+  const findings = result.blocking_findings || []
+  if (findings.length === 0) return false
+  return findings.every(f => f && f.type === 'unresolved_product_decision' &&
+    typeof f.needed_decision === 'string' && f.needed_decision.trim() !== '' &&
+    Array.isArray(f.options) && f.options.filter(o => typeof o === 'string' && o.trim()).length >= 2)
+}
+
 function repairLoopFor(loops, qaNodeId) {
   return (loops || []).find(loop => loop && loop.repair_node_id &&
     (loop.qa_node_ids || loop.qa_nodes || []).includes(qaNodeId)) || null
@@ -370,6 +384,9 @@ function runNodePrompt(node, strict) {
     'missing_mappings[] copied verbatim from .allforai/concept-acceptance/acceptance-report.json — the behaviour mappings',
     'with no evidence; an empty list means every mapping has evidence. Return no score, threshold or verdict.',
     'Product requirements can only come from recorded user decision_inputs; an unresolved product choice is a hard failure, never an assumed decision.',
+    'Report it as blocking_findings [{type: "unresolved_product_decision", decision_id, needed_decision, options (two or more),',
+    'recommended, blocking_intent_ids}] and write the same list to .allforai/bootstrap/product-decision-gaps/<node_id>.json',
+    'as {node_id, decisions}; it blocks only this node and its successors until the user answers it at interactive bootstrap.',
     strict || ''
   ].filter(Boolean).join(' ')
 }
@@ -998,6 +1015,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       // made truer by dispatching it again, so it stops the run now.
       const retained = hardFailures.filter(failure => {
         if ((failure.blocking_findings || []).some(f => f && NON_QA_FAILURE_TYPES.has(f.type))) return false
+        if (productDecisionGap(failure)) return false
         // Its repair role does not answer its own obligation. A node that owes a QA
         // obligation with no attempt left to fix it is blocked, not retained, however
         // funded the loop it repairs still is (ADR 0005, ADR 0006).
@@ -1017,7 +1035,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
           failure.blocking_findings = [...(failure.blocking_findings || []),
             { type: 'unauthorized_repair', detail: undeclaredCoverageLoopMessage(failure.node_id) }]
         }
-        if (!loop || !qaReportUsable(failure)) continue
+        // A missing product decision is not a defect a repair can fix: nobody may choose it.
+        if (!loop || !qaReportUsable(failure) || productDecisionGap(failure)) continue
         const budget = repairBudget(loop)
         if (budget === null) continue          // unusable declared budget: route nothing
         const key = `${loop.repair_node_id}::${failure.node_id}`
@@ -1042,8 +1061,12 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
         await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
         // A usable QA verdict blocks its obligation and successors, not unrelated
         // branches. Infrastructure/authority/policy failures still stop the run.
-        if (unhandled.some(f => !qaReportUsable(f))) {
-          return { status: 'needs_diagnosis', hardFailures }
+        // A missing product decision blocks the same way (ADR-0011): the user answers it
+        // at the next interactive bootstrap, and only its own subgraph waits for that.
+        if (unhandled.some(f => !qaReportUsable(f) && !productDecisionGap(f))) {
+          const earlier = [...blockedFailures.values()].filter(f => !handled.has(f.node_id) &&
+            !unhandled.some(u => u.node_id === f.node_id))
+          return { status: 'needs_diagnosis', hardFailures: [...hardFailures, ...earlier] }
         }
         for (const failure of unhandled) {
           blockedFailures.set(failure.node_id, failure)
@@ -1064,7 +1087,12 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   }
   const remaining = dag.nodes.filter(n => !done.has(n.node_id))
   if (blockedFailures.size > 0) {
-    return { status: 'needs_diagnosis', hardFailures: [...blockedFailures.values()] }
+    const blocked = [...blockedFailures.values()]
+    if (blocked.every(productDecisionGap)) {
+      return { status: 'needs_product_decision', decisions: blocked.flatMap(f =>
+        f.blocking_findings.map(finding => ({ node_id: f.node_id, ...finding }))) }
+    }
+    return { status: 'needs_diagnosis', hardFailures: blocked }
   }
   if (remaining.length > 0 && repair.open.size > 0) {
     // The repair budget is spent and the QA node still has not passed.
@@ -1093,7 +1121,7 @@ module.exports = {
   DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA, NODE_GATE_SCHEMA, READINESS_SCHEMA,
   MEASUREMENT_SCHEMA, measuredDelivery, measurePrompt,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
-  qaReportUsable, repairLoopFor, repairBudget, undeclaredCoverageLoopMessage,
+  qaReportUsable, productDecisionGap, repairLoopFor, repairBudget, undeclaredCoverageLoopMessage,
   serializeCommit, runNode, commitNode, runEngine,
   loadDagPrompt, expandPrompt, readinessPrompt, gateNodePrompt, repairPrompt,
   runNodePrompt, commitPrompt, commitFailuresPrompt, repairRoutePrompt,
