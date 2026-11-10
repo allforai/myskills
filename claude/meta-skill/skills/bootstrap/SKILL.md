@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 argument-hint: [path]
-version: "0.25.0"
+version: "0.26.0"
 description: Analyze the target project and generate its .allforai/ workflow (product concept, experience map, art, game design, verify nodes) for /run. User-invoked only via /bootstrap; never invoke it yourself.
 ---
 
@@ -447,7 +447,10 @@ This writes:
 
 If bootstrap creates a candidate workflow before committing the final one, run
 the same script with `--candidate-workflow <candidate-path> --write` and use
-the plan actions instead of direct replacement:
+the plan actions instead of direct replacement. With `--write` it also carries the
+current `transition_log`, `diagnosis_history`, `corrections_applied` and
+`repair_routes` into the candidate verbatim (reported as `carried_run_history`), so a
+candidate written from the template's empty lists does not wipe the run's history:
 
 | Plan Action | Meaning |
 |-------------|---------|
