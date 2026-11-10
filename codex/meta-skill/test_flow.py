@@ -2884,3 +2884,9 @@ def test_the_node_prompt_points_at_diagnosis_corrections():
     prompt = flow.build_prompt('implement', 'goal')
     assert '.allforai/bootstrap/diagnosis-corrections/implement.json' in prompt
     assert 'never settles a user-visible rule' in prompt
+
+
+def test_the_node_prompt_picks_an_open_building_block_and_warns():
+    prompt = flow.build_prompt('implement', 'goal')
+    assert 'A building block this node needs' in prompt
+    assert 'building block chosen by implement:' in prompt

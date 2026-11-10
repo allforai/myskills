@@ -56,7 +56,8 @@ both boundaries, so an unconfirmed node set or dependency edge holds the nodes i
 affects until the delta is presented and confirmed.
 
 Canonical A0 (`knowledge/bootstrap-audits.md`) runs its concept pass and its per-node
-decision rehearsal each in a Codex sub-agent context independent of the planner, and
+decision rehearsal (user-visible rules, and the building blocks: engine, frameworks, data
+stores, storage, UI style) each in a Codex sub-agent context independent of the planner, and
 records them in `decision-coverage.json` provenance. When no sub-agent is available, run
 the pass in this context, record `independent: false` with a `disclosure`, and say so to
 the user; readiness reports it, never as independent. Assume-and-declare answers none of

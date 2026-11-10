@@ -280,8 +280,9 @@ Queue non-trivial restructures for Phase A confirmation (do not ask now).
 
 Runs after G0 (over the right-sized graph), before Phase A. The run is unattended; a
 user-visible choice it meets that nobody asked about stops its branch overnight, and the
-node that meets it is forbidden to choose. A0 exists so that every such choice is asked
-here instead. It has two angles, each a pass in a context independent of the planner:
+node that meets it is forbidden to choose; a building block nobody asked about is picked
+overnight by whichever node meets it first. A0 exists so that every such choice is asked
+here instead. It has these angles, each a pass in a context independent of the planner:
 
 - **Concept angle:** the forks the confirmed intent implies at direction level — what the
   frozen baseline commits to without saying which way (style, business model, technology,
@@ -296,7 +297,8 @@ here instead. It has two angles, each a pass in a context independent of the pla
   applies to; whether something is shared or separate, kept or lost, limited or free;
   whether and how much a person pays — that someone using the product would meet as a
   different product. Not questions: a choice the baseline or journal already settles; a
-  choice that only shapes internals; the node's own design work (the values, layout,
+  choice that only shapes internals (building blocks aside: the stack angle below asks
+  those); the node's own design work (the values, layout,
   controls and wording of a rule whose shape is settled are what the node is for); a
   choice an upstream node in the plan owns; a feature the baseline does not ask for, which
   is scope, not a decision. Rehearsal also answers a second question: *which settled
@@ -308,11 +310,32 @@ here instead. It has two angles, each a pass in a context independent of the pla
   imposes the constraint). Rehearsal is done when nothing further would have to be
   invented and nothing settled is known to be unmeetable, not when a count is reached. A
   cheaper model tier may run it.
+- **Node angle — stack rehearsal (same pass):** for every node that designs, builds or
+  styles the product, also answer: *which building blocks would I have to pick that these
+  do not settle?* A building block is something the work is built on and later nodes
+  inherit: the game engine; on the client, the framework, state management, routing,
+  component library, styling approach and the UI's visual style; on the server, the
+  language and framework, database, cache, file or object storage, queue, realtime
+  transport and authentication; across both, the API style, hosting and deployment, and
+  build and test tooling. The list illustrates; the test is whether changing the choice
+  later means rework in the nodes that build on it. Each block is a question with 2–3
+  options, their trade-offs and a recommendation, raised once at the first node that would
+  pick it (its `consumer_node`); nodes downstream inherit the answer. Not questions: a
+  block the existing code already uses (settled, unless the baseline asks to move off
+  it); a block the baseline, the journal, the profile or the experience direction already
+  names; a choice inside a settled block (a table's columns, a store's module layout, a
+  component's props), which is the node's own work. Leaving a block out (no cache, no
+  queue, no component library) is a choice too: list each such omission with the
+  questions as a recommendation the person confirms or overrides, never decide it
+  silently. The person owns these choices even
+  though they are technical: a stack picked overnight is one they did not choose and may
+  not be able to maintain. They may still hand a layer back ("you pick"); that answer is
+  recorded like any other, with the recommendation as the decision and `delegated: true`.
 
 Rule-level choices are what direction-level reading misses: they appear only when someone
 starts to write the rules. Rehearsal is that someone, before the run instead of during it.
 
-Union the two; write `.allforai/bootstrap/decision-coverage.json`:
+Union them; write `.allforai/bootstrap/decision-coverage.json`:
 
 ```json
 { "captured": [{"id": "...", "node_id": "..."}],
@@ -360,6 +383,8 @@ with the answer, so re-rehearse that node and append its A0 pass.
 Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`: group independent decisions
 by topic, one message per topic, each decision with 2–3 options, tradeoffs and a recommended
 default; serialize only dependent forks → incremental confirm →
+(building blocks are asked by layer — engine and client, server, storage, UI style — with
+a block others depend on asked before them: state management after the framework) →
 write `.allforai/<domain>/decision-<id>.json` and validate it:
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision .allforai/<domain>/decision-<id>.json`
 

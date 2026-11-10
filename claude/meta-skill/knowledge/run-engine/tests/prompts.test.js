@@ -92,3 +92,9 @@ test('deliveryNote is empty for an ordinary dispatch', () => {
   assert.equal(core.deliveryNote(null), '')
   assert.doesNotMatch(core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, ''), /freshness publish being refused/)
 })
+
+test('runNodePrompt has a node pick an open building block and disclose it, never stop', () => {
+  const p = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.match(p, /building block your inputs leave open/)
+  assert.match(p, /kind "building_block", and keep going/)
+})
