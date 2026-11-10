@@ -334,12 +334,18 @@ never waive, downgrade, or hide a gap.
    d. Per-cause cap (the policy unit-tested as engine-core `convergenceCheck`): if the same root
       cause already appears ≥2 times in `diagnosis_history`, mark it UNRESOLVED, write best-effort
       output + TODO, and stop.
-   e. Otherwise apply the repair plan WITH CASCADE (fix C2):
-      `python3 .allforai/bootstrap/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json <root_id...>`
-      → remove the returned closure (root + transitive downstream) from the `transition_log`
-      completed set, then RESUME the engine
-      (same session: resumeFromRunId; cross-session: re-invoke — workflow.json idempotency
-      skips already-completed nodes).
+   e. Otherwise apply the repair plan WITH CASCADE (fix C2). Append the diagnosis to
+      `diagnosis_history`, then write each repair-plan step's action (and any prevention
+      hint for that node) to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json` as
+      `{node_id, diagnosis, corrections: [...]}`. Do not edit node-specs during `/run`: a
+      changed node-spec stales A0's decision coverage, and the next readiness check stops
+      for a new rehearsal. The engine tells each dispatched node to read its corrections
+      file and deletes it when the node completes. Then reset with the official operation:
+      `python3 .allforai/bootstrap/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json --apply --diagnosis <timestamp> <root_id...>`
+      — it marks the closure's (root + transitive downstream) completed transitions
+      `superseded`, keeping them for audit. Never edit `transition_log` by hand. Then RESUME
+      the engine (same session: resumeFromRunId; cross-session: re-invoke — workflow.json
+      idempotency skips already-completed nodes).
 
 3b. On `needs_product_decision`:
    <!-- clause-begin:run-product-decision-gap -->

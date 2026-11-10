@@ -110,3 +110,38 @@ def test_reconciliation_plan_marks_add_update_supersede_and_orphans(tmp_path):
     assert actions["new"] == "add"
     assert actions["done-old"] == "supersede"
     assert actions["orphan"] == "remove"
+
+
+def test_a_candidate_written_from_the_template_keeps_the_run_history(tmp_path, monkeypatch):
+    # Re-bootstrap writes a candidate with the template's empty lists. Accepting it must not
+    # wipe what the run recorded: --write carries the history into it, verbatim and first.
+    history = {
+        "transition_log": [{"node_id": "a", "status": "completed"},
+                           {"node_id": "b", "status": "superseded"}],
+        "diagnosis_history": [{"failed_node": "b", "repair_plan": []}],
+        "corrections_applied": [{"node": "b", "fix_applied": "x"}],
+    }
+    nodes = [{"node_id": "a", "goal": "g", "capability": "impl", "exit_artifacts": []}]
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps({"nodes": nodes, **history}))
+    candidate_path = _write(tmp_path, ".allforai/bootstrap/candidate-workflow.json", json.dumps(
+        {"nodes": nodes, "transition_log": [], "diagnosis_history": [],
+         "corrections_applied": [{"node": "c", "fix_applied": "new"}]}))
+    monkeypatch.chdir(tmp_path)
+    assert _reconcile.main([str(tmp_path), "--candidate-workflow", str(candidate_path), "--write"]) == 0
+    written = json.loads(candidate_path.read_text())
+    assert written["transition_log"] == history["transition_log"]
+    assert written["diagnosis_history"] == history["diagnosis_history"]
+    assert written["corrections_applied"] == history["corrections_applied"] + [{"node": "c", "fix_applied": "new"}]
+    plan = json.loads((tmp_path / ".allforai/bootstrap/workflow-reconciliation-plan.json").read_text())
+    assert plan["carried_run_history"] == {"transition_log": 2, "diagnosis_history": 1, "corrections_applied": 1}
+
+
+def test_without_write_the_candidate_is_untouched(tmp_path, monkeypatch):
+    nodes = [{"node_id": "a", "goal": "g", "capability": "impl", "exit_artifacts": []}]
+    _write(tmp_path, ".allforai/bootstrap/workflow.json", json.dumps(
+        {"nodes": nodes, "transition_log": [{"node_id": "a", "status": "completed"}]}))
+    text = json.dumps({"nodes": nodes, "transition_log": []})
+    candidate_path = _write(tmp_path, ".allforai/bootstrap/candidate-workflow.json", text)
+    monkeypatch.chdir(tmp_path)
+    assert _reconcile.main([str(tmp_path), "--candidate-workflow", str(candidate_path)]) == 0
+    assert candidate_path.read_text() == text

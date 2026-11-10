@@ -35,7 +35,8 @@ function writeReport(root, name, value) {
 
 // One executor for both hosts' story: the QA node fails, the repair delivers, the QA
 // rerun passes and publishes, the repair then publishes what it already delivered.
-function declaredLoopAgent(root, nodes, calls = [], { unmeasured = false, executor = null } = {}) {
+function declaredLoopAgent(root, nodes, calls = [], { unmeasured = false, executor = null,
+  selfReport = null, gateStatus = null } = {}) {
   const counters = {}
   const bump = id => (counters[id] = (counters[id] || 0) + 1)
   const gate = id => () => realGate(root, id, { unmeasured })
@@ -62,7 +63,9 @@ function declaredLoopAgent(root, nodes, calls = [], { unmeasured = false, execut
       calls.push(`repair:${n}`)
       if (executor) executor(root, n)
       else if (n === 1) writeReport(root, 'repair.json', { status: 'passed' })
-      calls.push(`repair-publish:${publishEvidence(root, 'repair')}`)
+      const published = publishEvidence(root, 'repair')
+      calls.push(`repair-publish:${published}`)
+      if (selfReport) return selfReport(published)
       return { node_id: 'repair', outcome: 'passed', artifacts_written: ['repair.json'], blocking_findings: [] }
     },
     accept: () => {
@@ -73,7 +76,10 @@ function declaredLoopAgent(root, nodes, calls = [], { unmeasured = false, execut
       return { node_id: 'accept', outcome: 'passed', artifacts_written: ['accept.json'], blocking_findings: [] }
     },
     'verify:verify': gate('verify'),
-    'verify:repair': gate('repair'),
+    'verify:repair': () => {
+      const verdict = realGate(root, 'repair', { unmeasured })
+      return gateStatus && verdict.status === 'repair' ? { ...verdict, status: gateStatus } : verdict
+    },
     'verify:accept': gate('accept'),
     'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {},
     'commit-failures': {}
@@ -239,4 +245,35 @@ test('runEngine closes a declared loop whose repair edits the source the QA node
 
   assert.equal(res.status, 'complete', `run did not close: ${JSON.stringify(res)}\n${calls.join(' ')}`)
   assert.equal(agent.counters.verify, 2, 'the QA node reran against the repaired source')
+})
+
+// The overnight incident: the repair node did its work, then reported its own refused
+// freshness publish as a hard failure. Taken at its word, every attempt of the loop was
+// charged and the QA node never reran. The delivery is measured instead.
+const staleSelfReport = published => published === 'stale'
+  ? { node_id: 'repair', outcome: 'hard_fail', artifacts_written: ['repair.json'],
+      blocking_findings: [{ type: 'stale_upstream_evidence',
+        detail: 'publish refused: upstream verify is stale' }] }
+  : { node_id: 'repair', outcome: 'passed', artifacts_written: ['repair.json'], blocking_findings: [] }
+
+for (const gateStatus of [null, 'hard_fail']) {
+  test(`a repair node reporting its refused publish as a failure still delivers (gate ${gateStatus || 'repair'})`, async () => {
+    const { root, nodes } = declaredLoopProject()
+    const calls = []
+    const agent = declaredLoopAgent(root, nodes, calls, { selfReport: staleSelfReport, gateStatus })
+    const res = await core.runEngine({ agent, pipeline })
+
+    assert.equal(res.status, 'complete', `run did not close: ${JSON.stringify(res)}\n${calls.join(' ')}`)
+    assert.equal(agent.counters.verify, 2, 'the QA node reran after the delivery')
+    assert.equal(agent.counters['repair-authorize:repair'], 1, 'one attempt was charged, not the whole budget')
+  })
+}
+
+test('the delivery dispatch tells the repair node a refused publish is expected', async () => {
+  const { root, nodes } = declaredLoopProject()
+  const agent = declaredLoopAgent(root, nodes)
+  await core.runEngine({ agent, pipeline })
+  const [first, second] = agent.calls.filter(c => c.label === 'repair').map(c => c.prompt)
+  assert.match(first, /freshness publish being refused because\s+of them is expected/)
+  assert.doesNotMatch(second, /freshness publish being refused/, 'the finalizing dispatch is ordinary')
 })

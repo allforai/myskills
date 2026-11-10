@@ -431,6 +431,12 @@ On the first iteration, if `transition_log` is non-empty:
 
 ## Safety
 
+- Diagnosis corrections go to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json`
+  (`{node_id, diagnosis, corrections: [...]}`), never into node-specs during a run: a
+  changed node-spec stales A0's decision coverage. The dispatched node reads its file and
+  it is removed when the node completes. Reset a diagnosed closure only with
+  `compute_reset_closure.py <workflow.json> --apply --diagnosis <ref> <root...>`, which marks
+  its completed transitions `superseded`; never edit `transition_log` by hand.
 - Same node fails 3 times: diagnose and record `diagnosis_history`; consume
   `product_intent.py . --policy-event on_repeated_failure`. Continue retries only
   for recorded `continue`; out-of-scope, convergence and stagnation caps still halt.

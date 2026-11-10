@@ -1144,6 +1144,17 @@ def exhausted_obligations(project_root: Path, workflow: dict) -> list[str]:
 
 
 PRODUCT_DECISION_GAPS = ".allforai/bootstrap/product-decision-gaps"
+# Corrections a diagnosis assigned to a node it reset (ADR-0012). The node reads its file
+# when it is dispatched again; the driver removes it once the node completes, and
+# diagnosis_history keeps the record. The node-spec is never edited for this.
+DIAGNOSIS_CORRECTIONS = ".allforai/bootstrap/diagnosis-corrections"
+
+
+def clear_diagnosis_corrections(project_root: Path, node_id: str) -> None:
+    try:
+        (project_root / DIAGNOSIS_CORRECTIONS / f"{node_id}.json").unlink()
+    except FileNotFoundError:
+        pass
 
 
 def product_decision_gap(project_root: Path, workflow: dict, node_id: str) -> dict | None:
@@ -1180,6 +1191,17 @@ def pending_product_decisions(project_root: Path, workflow: dict) -> list[dict]:
             .get("decisions", [])]
 
 
+def diagnosis_reset(workflow: dict, node_id: str) -> bool:
+    """A diagnosis reset this node (`compute_reset_closure.py --apply`) and it has not run since.
+
+    The reset supersedes the node's completed transitions; its artifacts may still pass the
+    gate, but they are what the diagnosis found wrong, so they do not count as done.
+    """
+    latest = next((entry for entry in reversed(workflow.get("transition_log", []) or [])
+                   if isinstance(entry, dict) and entry.get("node", entry.get("node_id")) == node_id), None)
+    return bool(latest) and latest.get("status") == "superseded"
+
+
 def _pending_state(project_root: Path, workflow: dict, candidates: list | None = None) -> tuple[dict | None, list[str]]:
     """(next dispatchable node, ids of pending nodes nothing may dispatch yet)."""
     nodes = workflow.get("nodes", [])
@@ -1198,7 +1220,8 @@ def _pending_state(project_root: Path, workflow: dict, candidates: list | None =
         # assumption that it is not — the refusal is global and it is refused before the
         # first dispatch, not when the affected repair node comes up.
         return None, [node_identity(n) for n in nodes]
-    complete = {node_identity(n): independent_artifact_gate(project_root, node_identity(n)) for n in nodes}
+    complete = {node_identity(n): not diagnosis_reset(workflow, node_identity(n))
+                and independent_artifact_gate(project_root, node_identity(n)) for n in nodes}
     routed = open_repair_loops(project_root, workflow, complete)
     repair_nodes = {str(loop["repair_node_id"]) for loop in routed.values()}
     # Closure waits for its QA node itself, never for the repair alone: only a
@@ -1811,7 +1834,8 @@ Requirements:
 8. Stop only after this node is truly completed or a failed transition has been written.
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings.
    A user-visible choice this node needs that the frozen intent and decision journal do not settle is never chosen here: write `failed` and record it in `.allforai/bootstrap/product-decision-gaps/{node_id}.json` as `{{"node_id", "decisions": [{{"decision_id", "needed_decision", "options" (two or more), "recommended", "blocking_intent_ids"}}]}}`. It parks only this node and its successors until the user answers it at interactive bootstrap.
-10. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
+10. If `.allforai/bootstrap/diagnosis-corrections/{node_id}.json` exists, read it before starting: it holds corrections a diagnosis of an earlier failure assigned to this node, and they bind this run as the node-spec does. A correction refines how this node meets its spec; it never settles a user-visible rule — a choice it needs that the decision inputs do not settle is an unresolved product decision (item 9), never picked here.
+11. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
 
 Do not ask for acceptance. Execute the work directly."""
 
@@ -2263,6 +2287,8 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
         artifacts = [artifact_path(a) for a in node.get("exit_artifacts", []) if artifact_ready(root, artifact_path(a))]
         append_transition_if_missing(workflow_path, before_count, node_id,
                                      "completed" if all_ready else "failed", started, artifacts, error or None)
+        if all_ready:
+            clear_diagnosis_corrections(root, node_id)
         print(json.dumps({"event": "parallel_node_verified", "node": node_id,
                           "all_exit_artifacts_ready": all_ready, "error": error}), flush=True)
         if result.returncode in {124, 130}:
@@ -2589,6 +2615,7 @@ def main() -> int:
                 started_at,
                 artifacts_created,
             )
+            clear_diagnosis_corrections(project_root, node_id)
         else:
             lines = (result.stderr or result.stdout or "").strip().splitlines()
             readiness_errors = []

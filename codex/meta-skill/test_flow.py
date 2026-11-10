@@ -1370,6 +1370,43 @@ def test_a_repair_that_mutates_after_the_qa_pass_does_not_reach_closure(tmp_path
     assert [e['status'] for e in current['transition_log'] if e['node'] == 'accept'] == []
 
 
+def test_a_repair_that_reports_its_refused_publish_as_failed_still_delivers(tmp_path, monkeypatch):
+    """Shared contract scenario with the Claude engine (declared-loop.test.js).
+
+    The repair does its work, its freshness publish is refused because the QA node it
+    repairs is stale, and the worker records that refusal as its own failed transition.
+    The driver measures the attempt instead of reading the worker's verdict, so the QA
+    node reruns and the loop closes on one charged attempt.
+    """
+    routing_project(tmp_path)
+
+    def executor(project_root, node_id, attempt):
+        if node_id == 'verify' and attempt == 1:
+            write(project_root / 'verify.json', {'status': 'failed', 'gaps': ['missing column']})
+            return
+        if node_id == 'verify':
+            write(project_root / 'verify.json', {'status': 'passed'})
+        elif node_id == 'repair' and attempt == 1:
+            (project_root / 'src/orders.py').write_text('def export():\n    return ["column"]\n')
+            write(project_root / 'repair.json', {'status': 'passed'})
+        elif node_id == 'accept':
+            write(project_root / 'accept.json', {'status': 'passed'})
+        published = try_publish_evidence(project_root, node_id)
+        if node_id == 'repair' and published == 'stale':
+            wf_path = project_root / '.allforai/bootstrap/workflow.json'
+            wf = flow.load_json(wf_path)
+            wf['transition_log'].append({'node': 'repair', 'status': 'failed',
+                                         'error': 'stale_upstream_evidence: publish refused, verify is stale'})
+            write(wf_path, wf)
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor)
+    assert executed[:3] == ['verify', 'repair', 'verify'], executed
+    assert 'accept' in executed, executed
+    current = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
+    spent, _ = flow.repair_progress(tmp_path, current, 'repair', 'verify')
+    assert spent == 1, 'one attempt was charged, not the whole budget'
+
+
 @pytest.mark.parametrize("mode", ['writes-nothing', 'touches-only', 'executor-error', 'blocked-report'])
 def test_a_repair_attempt_that_delivers_nothing_never_releases_the_qa_rerun(tmp_path, monkeypatch, mode):
     """Four ways to not deliver. None releases the QA rerun; each still spends an attempt.
@@ -2820,3 +2857,30 @@ def test_the_run_ends_asking_for_the_decision(tmp_path, monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().err)
     assert payload['status'] == 'needs_product_decision'
     assert [d['decision_id'] for d in payload['pending_product_decisions']] == ['scope-a-b']
+
+
+def test_a_diagnosis_reset_node_runs_again_even_though_its_artifacts_pass(tmp_path, monkeypatch):
+    """`compute_reset_closure.py --apply` supersedes the node's completion; the driver reruns it."""
+    workflow = repair_project(tmp_path, qa_report={'status': 'passed'},
+                              transition_log=[{'node': 'implement', 'status': 'completed'}])
+    gate_by_ready_artifacts(tmp_path, monkeypatch)
+    first = flow.first_pending_node(tmp_path, workflow)
+    workflow['transition_log'][0].update(status='superseded',
+                                         superseded_by={'diagnosis': 'd-1', 'at': 'T'})
+    assert flow.diagnosis_reset(workflow, 'implement')
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'implement', first
+
+
+def test_completion_clears_the_nodes_diagnosis_corrections(tmp_path):
+    path = tmp_path / flow.DIAGNOSIS_CORRECTIONS / 'implement.json'
+    path.parent.mkdir(parents=True)
+    path.write_text('{}')
+    flow.clear_diagnosis_corrections(tmp_path, 'implement')
+    assert not path.exists()
+    flow.clear_diagnosis_corrections(tmp_path, 'implement')   # absent is fine
+
+
+def test_the_node_prompt_points_at_diagnosis_corrections():
+    prompt = flow.build_prompt('implement', 'goal')
+    assert '.allforai/bootstrap/diagnosis-corrections/implement.json' in prompt
+    assert 'never settles a user-visible rule' in prompt

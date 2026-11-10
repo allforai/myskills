@@ -398,6 +398,31 @@ def build_reconciliation_plan(project_root: Path, state_index: dict[str, Any], c
     }
 
 
+# What a run recorded, as opposed to what bootstrap plans. A re-bootstrap that writes a
+# fresh workflow from the template would otherwise reset these to empty lists, losing the
+# completions, diagnoses and repair accounting the next run depends on.
+RUN_HISTORY_KEYS = ("transition_log", "diagnosis_history", "corrections_applied", "repair_routes")
+
+
+def carry_run_history(current: dict[str, Any], candidate: dict[str, Any]) -> dict[str, int]:
+    """Carry the current workflow's run history into the candidate, verbatim and first.
+
+    Entries the candidate already holds are kept after the carried ones unless they are an
+    exact copy of one. Returns how many entries were carried per key.
+    """
+    carried: dict[str, int] = {}
+    for key in RUN_HISTORY_KEYS:
+        existing = current.get(key)
+        if not isinstance(existing, list) or not existing:
+            continue
+        own = candidate.get(key) if isinstance(candidate.get(key), list) else []
+        seen = {json.dumps(e, sort_keys=True, ensure_ascii=False) for e in existing}
+        candidate[key] = list(existing) + [
+            e for e in own if json.dumps(e, sort_keys=True, ensure_ascii=False) not in seen]
+        carried[key] = len(existing)
+    return carried
+
+
 def render_plan_md(plan: dict[str, Any]) -> str:
     lines = [
         "# Workflow Reconciliation Plan",
@@ -432,6 +457,11 @@ def main(argv: list[str] | None = None) -> int:
     plan = build_reconciliation_plan(project_root, state, candidate)
 
     if args.write:
+        if candidate is not None and (project_root / WORKFLOW_PATH).exists() and candidate.exists():
+            current = json.loads((project_root / WORKFLOW_PATH).read_text(encoding="utf-8"))
+            proposed = json.loads(candidate.read_text(encoding="utf-8"))
+            plan["carried_run_history"] = carry_run_history(current, proposed)
+            _write_json(candidate, proposed)
         _write_json(project_root / STATE_INDEX_PATH, state)
         _write_json(project_root / RECONCILIATION_JSON_PATH, plan)
         (project_root / RECONCILIATION_MD_PATH).write_text(render_plan_md(plan), encoding="utf-8")

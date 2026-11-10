@@ -364,12 +364,32 @@ function repairPrompt(node, findings) {
   ].join(' ')
 }
 
-function runNodePrompt(node, strict) {
+// The repair node of an open loop is dispatched to deliver, not to complete: the QA node it
+// repairs stays stale until that node reruns, so this node's freshness publish is refused by
+// construction. Telling it so keeps it from reporting the refusal as its own failure; the
+// engine does not rely on that either way, it measures the delivery (see runNode).
+function deliveryNote(delivery) {
+  if (!delivery) return ''
+  return [
+    `This dispatch repairs the failure of QA node(s) ${JSON.stringify(delivery.qa || [])}.`,
+    'Their evidence stays stale until they rerun, so your freshness publish being refused because',
+    'of them is expected, not a failure. Make the repair, write your exit artifacts, run your own',
+    'validation, and return "passed" when your own work is done; the engine measures what you',
+    'delivered and reruns the QA node, which judges it.'
+  ].join(' ')
+}
+
+function runNodePrompt(node, strict, delivery = null) {
   const di = (node.decision_inputs || [])
   const cv = (node.closure_verify || [])
   return [
     `Read and execute the node-spec at ${node.node_spec_path}.`,
     di.length ? `First read these required decision inputs: ${di.join(', ')} — if any is missing, return outcome "hard_fail".` : '',
+    `If .allforai/bootstrap/diagnosis-corrections/${node.node_id}.json exists, read it before starting: it holds`,
+    'corrections a diagnosis of an earlier failure assigned to this node, and they bind this run as the node-spec does.',
+    'A correction refines how this node meets its spec; it never settles a user-visible rule. If applying one needs a',
+    'choice your decision inputs do not settle, report it as an unresolved product decision (below), never pick it.',
+    deliveryNote(delivery),
     `Project context (profile_slice): ${JSON.stringify(node.profile_slice || {})}.`,
     'Write all exit_artifacts and run their validation_commands to self-check.',
     'Follow .allforai/bootstrap/protocols/input-freshness.md: after implementation settles, observe current inputs, register additional reads, refresh required documents and publish evidence with the actual acceptance command. Reobserve and reverify stale inputs; contract-only publication cannot prove completion.',
@@ -411,6 +431,8 @@ function commitPrompt(result) {
     '(verification is recorded verbatim — do NOT upgrade method or invent evidence; completeness is',
     'computed from this field by compute_completeness.py.)',
     ad.length ? `Also append these to .allforai/bootstrap/assumed-decisions.json: ${JSON.stringify(ad)}.` : '',
+    `Then delete .allforai/bootstrap/diagnosis-corrections/${result.node_id}.json if it exists: the node completed`,
+    'with its corrections applied, and diagnosis_history keeps their record.',
     'Append only; do not touch other entries.'
   ].filter(Boolean).join(' ')
 }
@@ -585,7 +607,7 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
   let repairAttempt = 0
   let strict = ''
   while (true) {
-    const r = await agent(runNodePrompt(node, strict), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
+    const r = await agent(runNodePrompt(node, strict, deliveryOnly), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
     if (!r || r.node_id !== node.node_id) {
       return { node_id: node.node_id, outcome: 'hard_fail', artifacts_written: [],
         blocking_findings: [{ type: 'invalid_artifact_gate', detail: 'executor result missing or names a different node' }] }
@@ -595,7 +617,15 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
       if (policy.on_safety_warning !== 'continue') return { ...r, outcome: 'hard_fail',
         blocking_findings: [{ type: 'safety_warning', detail: 'Recorded Run Policy requires halt' }] }
     }
-    if (routeOutcome(r) === 'hard') return { ...r, outcome: 'hard_fail' }
+    // A delivery dispatch is judged by measurement, not by the repair node's own verdict. Its
+    // freshness publish is refused by construction while the QA node it repairs is stale, and
+    // a node that reports that refusal as its failure has told the engine nothing the gate
+    // will not measure. Taking it at its word charged every attempt of the loop without the
+    // QA node ever rerunning. Structural verdicts and a missing product decision stay its own.
+    const selfFailed = routeOutcome(r) === 'hard'
+    const measureInstead = selfFailed && deliveryOnly && !productDecisionGap(r) &&
+      !(r.blocking_findings || []).some(f => f && NON_QA_FAILURE_TYPES.has(f.type))
+    if (selfFailed && !measureInstead) return { ...r, outcome: 'hard_fail' }
     if (r.acceptance_verdict !== undefined) {
       // The coverage gate names missing behaviour mappings; it renders no verdict. A
       // result that still carries one is a scored report, not this gate's output (ADR 0008).
@@ -628,7 +658,7 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
       }
       return { ...r, outcome: 'hard_fail', blocking_findings: [{ type: 'needs_iteration', detail: 'Recorded policy halted with report' }] }
     }
-    const cls = routeOutcome(r)
+    const cls = measureInstead ? 'done' : routeOutcome(r)
     if (cls === 'done') {
       const gate = await agent(gateNodePrompt(node), {
         schema: NODE_GATE_SCHEMA, label: `verify:${node.node_id}`
@@ -638,22 +668,30 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
           type: 'invalid_artifact_gate', detail: 'independent artifact gate missing or mismatched'
         }] }
       }
-      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) return r
-      if (gate.status === 'hard_fail') {
-        return { ...r, outcome: 'hard_fail', blocking_findings: gate.blocking_findings || [] }
+      if (gate.status === 'passed' && (gate.blocking_findings || []).length === 0) {
+        return measureInstead ? { ...r, outcome: 'hard_fail' } : r
       }
       // A withheld gate on an open loop's repair node is the expected state, not a gap to
-      // retry. An environment, authority or cross-node blocker is still a hard failure
-      // above, so this defers nothing that a repair could have fixed — and the delivery
-      // itself must be measured by the gate step before it counts.
-      if (deliveryOnly) {
+      // retry, whether the gate step called the stale upstream "repair" or "hard_fail". The
+      // measurement is what decides: a delivery wrote its declared artifacts and is withheld
+      // by its own QA node and nothing else, so an environment, authority or other
+      // cross-node blocker still fails it here.
+      const structural = (gate.blocking_findings || []).some(f => f && NON_QA_FAILURE_TYPES.has(f.type))
+      if (deliveryOnly && !(gate.status === 'hard_fail' && structural)) {
         const delivery = measuredDelivery(node, gate, deliveryOnly)
-        if (delivery) return { ...r, delivered: true, delivery, gate_findings: gate.blocking_findings || [] }
-        return { ...r, outcome: 'hard_fail', blocking_findings: [{
-          type: 'unmeasured_repair_delivery',
-          detail: 'the gate did not measure this repair as having delivered its declared exit ' +
-                  'artifacts, bound to an input snapshot, withheld only by its own QA node'
-        }] }
+        if (delivery) {
+          return { ...r, outcome: 'passed', blocking_findings: [], delivered: true, delivery,
+            node_findings: r.blocking_findings || [], gate_findings: gate.blocking_findings || [] }
+        }
+        return { ...r, outcome: 'hard_fail', blocking_findings: [
+          ...(measureInstead ? r.blocking_findings || [] : []), {
+            type: 'unmeasured_repair_delivery',
+            detail: 'the gate did not measure this repair as having delivered its declared exit ' +
+                    'artifacts, bound to an input snapshot, withheld only by its own QA node'
+          }] }
+      }
+      if (gate.status === 'hard_fail') {
+        return { ...r, outcome: 'hard_fail', blocking_findings: gate.blocking_findings || [] }
       }
       if (repairAttempt >= repairMax) {
         return { ...r, outcome: 'hard_fail', blocking_findings: [{

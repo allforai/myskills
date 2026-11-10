@@ -76,3 +76,19 @@ test('commands with a bare project-root argument are delimited so the root is no
   const readiness = core.readinessPrompt()
   assert.match(readiness, /`python3 \.allforai\/bootstrap\/scripts\/validate_unattended_readiness\.py \. --write-report`/)
 })
+
+test('runNodePrompt points the node at its diagnosis corrections and bounds them', () => {
+  const p = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.match(p, /\.allforai\/bootstrap\/diagnosis-corrections\/n\.json/)
+  assert.match(p, /never settles a user-visible rule/)
+})
+
+test('commitPrompt removes the completed node\'s corrections file', () => {
+  const p = core.commitPrompt({ node_id: 'n', artifacts_written: [] })
+  assert.match(p, /delete \.allforai\/bootstrap\/diagnosis-corrections\/n\.json/)
+})
+
+test('deliveryNote is empty for an ordinary dispatch', () => {
+  assert.equal(core.deliveryNote(null), '')
+  assert.doesNotMatch(core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, ''), /freshness publish being refused/)
+})

@@ -299,8 +299,15 @@ here instead. It has two angles, each a pass in a context independent of the pla
   choice that only shapes internals; the node's own design work (the values, layout,
   controls and wording of a rule whose shape is settled are what the node is for); a
   choice an upstream node in the plan owns; a feature the baseline does not ask for, which
-  is scope, not a decision. Rehearsal is done when nothing further would have to be
-  invented, not when a count is reached. A cheaper model tier may run it.
+  is scope, not a decision. Rehearsal also answers a second question: *which settled
+  requirement could I not meet as written, given the constraints in what this node reads*
+  — the platform or host it runs on, an integration's documented limits, a reference the
+  spec names? A settled requirement that contradicts such a constraint stops the node as
+  surely as an open fork, so it is a question too: name the requirement and the
+  constraint, and offer the ways out (narrow or drop the requirement, change the path that
+  imposes the constraint). Rehearsal is done when nothing further would have to be
+  invented and nothing settled is known to be unmeetable, not when a count is reached. A
+  cheaper model tier may run it.
 
 Rule-level choices are what direction-level reading misses: they appear only when someone
 starts to write the rules. Rehearsal is that someone, before the run instead of during it.

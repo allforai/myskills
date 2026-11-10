@@ -71,14 +71,24 @@ Return JSON:
 
 After diagnosis returns:
 
-1. Orchestrator reads repair_plan
-2. Executes each step in order:
-   - Read the node-spec for that node
-   - Dispatch subagent with the repair action as additional context
-   - Carry gaps_found so the subagent knows the full scope
-3. After each step, update workflow.json progress
-4. Apply prevention rules: Edit the affected node-spec files
-5. **After each successful repair step**, orchestrator appends to `workflow.json corrections_applied[]`:
+1. Orchestrator reads repair_plan and appends the diagnosis to `workflow.json diagnosis_history[]`.
+2. For each step, writes `.allforai/bootstrap/diagnosis-corrections/<node>.json`:
+   ```json
+   { "node_id": "<node-id>", "diagnosis": "<diagnosis timestamp>",
+     "corrections": [{ "action": "<repair action>", "root_cause": "<root_cause.description>",
+                       "gaps": ["<gaps_found item>"], "prevention": "<hint, if any>" }] }
+   ```
+   The node reads this file when it is dispatched again and treats it as binding as its
+   node-spec. The file is removed when the node completes; diagnosis_history keeps the record.
+3. **Never edit node-specs during a run.** A node-spec changed after A0 makes decision
+   coverage stale, and the next readiness check stops the run for a new rehearsal. A
+   prevention rule that must outlive this run goes into the node-spec at the next
+   interactive `/bootstrap`, where rehearsal covers it.
+4. A correction refines how a node meets its spec. It never settles a user-visible rule. A
+   root cause that needs one is an unresolved product decision (Pattern I), not a repair.
+5. Reset the closure with `compute_reset_closure.py <workflow.json> --apply --diagnosis <ref> <root...>`;
+   it marks completed transitions `superseded` and keeps them. Never rewrite `transition_log` by hand.
+6. **After each successful repair step**, orchestrator appends to `workflow.json corrections_applied[]`:
    ```json
    { "node": "<node-id>", "what_was_wrong": "<root_cause.description>", "fix_applied": "<repair action taken>", "timestamp": "<ISO>" }
    ```
