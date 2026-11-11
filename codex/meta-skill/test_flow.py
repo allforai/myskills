@@ -2890,3 +2890,21 @@ def test_the_node_prompt_picks_an_open_building_block_and_warns():
     prompt = flow.build_prompt('implement', 'goal')
     assert 'A building block this node needs' in prompt
     assert 'building block chosen by implement:' in prompt
+
+
+def test_the_node_prompt_keeps_a_node_to_its_own_outputs():
+    prompt = flow.build_prompt('implement', 'goal')
+    assert 'Never create, edit or delete a file another node produces' in prompt
+    assert 'unpublished_producer' in prompt
+
+
+def test_recording_a_transition_closes_the_wave_and_preflight_recovers(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(flow, 'wave', lambda root, operation, node_ids=None: calls.append((operation, node_ids)))
+    monkeypatch.setattr(flow, 'run_script', lambda *args, **kwargs: None)
+    workflow_path = tmp_path / '.allforai/bootstrap/workflow.json'
+    workflow_path.parent.mkdir(parents=True)
+    workflow_path.write_text('{"nodes": [], "transition_log": []}')
+    flow.append_transition_if_missing(workflow_path, 0, 'n', 'failed', 'now', [], 'boom')
+    flow.run_preflight(tmp_path)
+    assert calls == [('end-wave', ['n']), ('recover-waves', None)]

@@ -95,6 +95,6 @@ and failed final checks block completion. Worker self-reported success never ove
 For JSON completion reports, declare `required_fields` and `accepted_statuses` on the
 `exit_artifacts` object (for example `["status", "evidence"]` and `["passed"]`). Domain data
 files need not invent a status field; use a domain validator in `validation_commands` instead.
-Malformed JSON is always rejected. Validation commands have a 300-second per-command timeout.
+Malformed JSON is always rejected. Validation commands have a 300-second per-command timeout. A completion with known limits is declared, never implied: list that status in `accepted_statuses` and again in `limited_statuses`, and the report must then carry `known_limits`, a non-empty list of `{limit, evidence}`. The checker refuses a limited status without them, and the run gate accepts a declared status as declared; a status in the checker's blocking list (`partial`, `conditional_pass`, `accepted_with_gaps`, …) can never be declared accepted.
 
 `state-machine.json` is a retired format. Nothing reads it; a bootstrap directory that holds only it fails validation with `retired_bootstrap_format` and must be regenerated.

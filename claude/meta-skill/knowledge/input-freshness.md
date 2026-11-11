@@ -52,6 +52,12 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    `{"operation":"read","observation":"TOKEN","path":"path/to/input"}`.
    Consume the returned content and replace TOKEN with the returned observation.
    This read is durably retained even when publication subsequently fails.
+   A path another node produces is an input only once that node has published it:
+   until then the file is a leftover of an earlier cycle or a sibling's unfinished
+   work, and `read` answers `unpublished_producer` naming that node, records nothing
+   and returns no content. Do not consume the file another way. A node this one is
+   ordered after (`hard_blocked_by`, transitively) is exempt, so a repair still reads
+   the failed report it answers.
 3. Publish with `{"operation":"publish","observation":"TOKEN",
    "verification_command":["python3","path/to/project-contract-validator.py"]}`.
    Supply a real project-specific validation argv that checks the relevant
@@ -87,6 +93,13 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    with `--write`. `check_artifacts.py` consumes evidence freshness and
    `validate_unattended_readiness.py` consumes contract readiness. Do not bypass
    either gate, including when transition history says completed.
+
+A driver brackets the nodes it dispatches: `{"operation":"begin-wave","node_ids":[...]}`
+before they start and `end-wave` once it has recorded how each attempt ended. At the
+next start `{"operation":"recover-waves"}` returns every node of a wave that never
+closed to the evidence, contract and registered reads it had before that wave, unless a
+completed transition was recorded for it since: an attempt nobody saw finish proves
+nothing, and its residue must not block the restart.
 
 Changed source content, path/glob membership, relevant baseline scope, consumed
 inputs or generated evidence invalidate direct and transitive consumers. An

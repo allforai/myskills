@@ -1330,6 +1330,8 @@ def append_transition_if_missing(
     error: str | None = None,
     qa_evidence: dict | None = None,
 ) -> None:
+    # Recording the transition is this driver observing how the attempt ended.
+    wave(workflow_path.parents[2], "end-wave", [node_id])
     workflow = load_json(workflow_path)
     transition_log = workflow.setdefault("transition_log", [])
     # The supervisor owns the verdict; a worker's self-reported completion cannot
@@ -1573,6 +1575,23 @@ def run_script(project_root: Path, name: str, args: list[str],
                        execution_policy(project_root)["helper_timeout_seconds"], stdin_text)
 
 
+def wave(project_root: Path, operation: str, node_ids: list[str] | None = None) -> None:
+    """Bracket the nodes being dispatched so an interrupted driver leaves no residue.
+
+    `begin-wave` keeps what each node had recorded, `end-wave` forgets it once this driver
+    has recorded how the attempt ended, and `recover-waves` at the next start returns a
+    node whose attempt was never seen to end to what it had: the reads it registered and
+    the evidence it published belong to an attempt nobody observed finishing.
+    """
+    request = {"operation": operation}
+    if node_ids is not None:
+        request["node_ids"] = node_ids
+    path = script_path(project_root, "evidence_freshness.py")
+    if path.exists():
+        run_bounded([sys.executable, str(path), "."], project_root,
+                    execution_policy(project_root)["helper_timeout_seconds"], json.dumps(request))
+
+
 def delegation_disclosure(project_root: Path):
     """Model-delegated product choices, disclosed at completion. Never blocks completion."""
     result = run_script(project_root, "product_intent.py", [".", "--delegations"])
@@ -1585,6 +1604,7 @@ def delegation_disclosure(project_root: Path):
 
 
 def run_preflight(project_root: Path) -> int:
+    wave(project_root, "recover-waves")
     run_script(project_root, "record_run_event.py", [".", "--event", "run_started", "--status", "started", "--message", "codex flow.py invoked"])
     started = time.monotonic()
     readiness = run_script(project_root, "validate_unattended_readiness.py", [".", "--write-report"])
@@ -1835,7 +1855,8 @@ Requirements:
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings. A building block this node needs that the existing code does not already use and its inputs do not name (an engine, framework, library, data store, storage or other service) is not a failure: pick the option that fits the existing code and settled inputs, and record a warning `building block chosen by {node_id}: <choice> (<why>)` so the person sees it.
    A user-visible choice this node needs that the frozen intent and decision journal do not settle is never chosen here: write `failed` and record it in `.allforai/bootstrap/product-decision-gaps/{node_id}.json` as `{{"node_id", "decisions": [{{"decision_id", "needed_decision", "options" (two or more), "recommended", "blocking_intent_ids"}}]}}`. It parks only this node and its successors until the user answers it at interactive bootstrap.
 10. If `.allforai/bootstrap/diagnosis-corrections/{node_id}.json` exists, read it before starting: it holds corrections a diagnosis of an earlier failure assigned to this node, and they bind this run as the node-spec does. A correction refines how this node meets its spec; it never settles a user-visible rule — a choice it needs that the decision inputs do not settle is an unresolved product decision (item 9), never picked here.
-11. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
+11. Write only what this node owns: its exit artifacts, required documents and declared `parallel_write_scopes`. Never create, edit or delete a file another node produces; if one is wrong or missing, write `failed` naming the producing node as repair owner so its owner repairs it. A file another node produces is an input only once that node has published it in this run: when the freshness `read` answers `unpublished_producer`, the file is a leftover or unfinished work, so do not consume it in any way.
+12. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
 
 Do not ask for acceptance. Execute the work directly."""
 
@@ -2204,6 +2225,7 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
         return 6
     print(json.dumps({"event": "parallel_batch_started", "nodes": [node_identity(n) for n in nodes],
                       "isolated_copies": str(batch_dir)}), flush=True)
+    wave(root, "begin-wave", [node_identity(n) for n in nodes])
     cancel = threading.Event()
     def execute(pair):
         PARALLEL_EXECUTION.cancel = cancel
@@ -2511,6 +2533,7 @@ def main() -> int:
                 return outcome
             continue
 
+        wave(project_root, "begin-wave", [node_id])
         before_count = len(workflow.get("transition_log", []))
         started_at = now_iso()
         # A declared QA node's failure may open an automatic repair, so this attempt has

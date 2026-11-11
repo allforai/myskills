@@ -288,3 +288,26 @@ test('L2.5 commit serialization: second commit waits for the first (fix C1)', as
   await run
   assert.deepEqual(started, ['A', 'B']) // serialized order
 })
+
+test('runEngine: recovers interrupted waves before loading, and brackets every wave', async () => {
+  const dag = { nodes: [
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }
+  ], completed: [] }
+  const agent = makeFakeAgent({ 'load-dag': dag, a: passed('a'), b: passed('b'), 'commit:a': {}, 'commit:b': {} })
+  await core.runEngine({ agent, pipeline })
+  const labels = agent.calls.map(c => c.label)
+  assert.ok(labels.indexOf('recover-waves') < labels.indexOf('load-dag'))
+  const order = labels.filter(l => ['begin-wave', 'a', 'b', 'end-wave', 'commit:a', 'commit:b'].includes(l))
+  assert.deepEqual(order, ['begin-wave', 'a', 'end-wave', 'commit:a', 'begin-wave', 'b', 'end-wave', 'commit:b'])
+  assert.match(agent.calls.find(c => c.label === 'begin-wave').prompt, /"node_ids":\["a"\]/)
+})
+
+test('runEngine: a wave the engine never saw end is left open for recovery', async () => {
+  const dag = { nodes: [{ node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }], completed: [] }
+  const agent = makeFakeAgent({ 'load-dag': dag, a: () => { throw new Error('host died') } })
+  const dying = async (items, fn) => { await Promise.all(items.map(fn)); throw new Error('engine interrupted') }
+  await assert.rejects(core.runEngine({ agent, pipeline: dying }))
+  assert.equal(agent.counters['begin-wave'], 1)
+  assert.equal(agent.counters['end-wave'], undefined)
+})

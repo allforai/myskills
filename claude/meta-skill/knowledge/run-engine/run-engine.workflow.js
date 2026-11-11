@@ -324,15 +324,36 @@ function readinessPrompt() {
   ].join(' ')
 }
 
+// A node owns what it declares it writes and nothing else. Editing another node's output
+// stales that node's evidence from outside it, and the owner never learns its work was
+// wrong; the finding goes back to the owner instead. The second half is the receiving side
+// of the same rule: a file whose producer has not published in this run is a leftover of an
+// earlier cycle or a sibling's work in progress, and the freshness `read` refuses it.
+const OWN_OUTPUTS_RULE = [
+  'Write only what this node owns: its exit_artifacts, required_documents and declared',
+  'parallel_write_scopes. Never create, edit or delete a file another node produces. If one is',
+  'wrong or missing, stop and report blocking_findings [{type: "cross_node", detail,',
+  'suspected_root_node: <the producing node>}] so its owner repairs it.',
+  'A file another node produces is an input only once that node has published it in this run:',
+  'when the freshness `read` answers unpublished_producer, the file is a leftover or unfinished',
+  'work, so do not consume it in any way.'
+].join(' ')
+
 function gateNodePrompt(node) {
   return [
     `Run python3 .allforai/bootstrap/scripts/check_artifacts.py`,
     `.allforai/bootstrap/workflow.json --node ${node.node_id} --json.`,
     'Read the JSON, every declared exit artifact, and every validation command result.',
     'Return status "passed" only when all_exist is true and there are no unresolved gaps.',
-    'Any code_gaps or test_gaps, conditional/partial/warning status, placeholder, fallback,',
-    'missing side effect, or failed validation returns status "repair". Cross-node,',
-    'environment, authority, or unsafe blockers return "hard_fail".',
+    'The exit declaration is the acceptance: a report status the checker printed as',
+    'declared_status.accepted true, with no status_error, is this node\'s declared outcome, so do',
+    'not return "repair" for that status. When it also printed declared_status.limited true, the',
+    'checker has verified that the report names each limit with evidence in known_limits; those',
+    'recorded limits are not gaps. Still return "repair" for anything outside the declaration:',
+    'code_gaps or test_gaps, a conditional/partial/warning status the exit does not declare, a',
+    'limited completion not declared in limited_statuses, a placeholder, a fallback or',
+    'degradation the report does not record in known_limits, a missing side effect, or a failed',
+    'validation. Cross-node, environment, authority, or unsafe blockers return "hard_fail".',
     'Also return measurement: {artifacts: the checker\'s artifacts[] verbatim (path, exists,',
     'status_error, digest, digest_error), binding_identity, binding_kind and readiness_status',
     'copied from the checker\'s freshness object, and withheld_by: the node ids it reports',
@@ -359,7 +380,8 @@ function repairPrompt(node, findings) {
     `Read ${'${CLAUDE_PLUGIN_ROOT}'}/skills/meta-orchestration/40-qa/execution-repair-loop/SKILL.md.`,
     `Repair node ${node.node_id} findings: ${JSON.stringify(findings || [])}.`,
     'Apply the generic repair loop to all code_gaps and test_gaps. Do not downgrade, waive,',
-    'or hide them. Rerun affected QA evidence, but do not mark the workflow node complete;',
+    'or hide them.', OWN_OUTPUTS_RULE,
+    'Rerun affected QA evidence, but do not mark the workflow node complete;',
     'the controller will rerun the original node and its independent artifact gate.'
   ].join(' ')
 }
@@ -392,6 +414,7 @@ function runNodePrompt(node, strict, delivery = null) {
     deliveryNote(delivery),
     `Project context (profile_slice): ${JSON.stringify(node.profile_slice || {})}.`,
     'Write all exit_artifacts and run their validation_commands to self-check.',
+    OWN_OUTPUTS_RULE,
     'Follow .allforai/bootstrap/protocols/input-freshness.md: after implementation settles, observe current inputs, register additional reads, refresh required documents and publish evidence with the actual acceptance command. Reobserve and reverify stale inputs; contract-only publication cannot prove completion.',
     cv.length ? `Additionally run closure verification for: ${cv.join(', ')}.` : '',
     'STRICTLY forbid placeholder / stub / debug-residue / pure-color placeholder outputs.',
@@ -422,6 +445,20 @@ function runNodePrompt(node, strict, delivery = null) {
     'as {node_id, decisions}; it blocks only this node and its successors until the user answers it at interactive bootstrap.',
     strict || ''
   ].filter(Boolean).join(' ')
+}
+
+// An interrupted engine leaves the nodes it was running half-recorded: dynamic reads they
+// registered, evidence they published, and no transition saying how the attempt ended. The
+// freshness helper owns both stores, so it brackets each wave and, at the next start,
+// returns whatever a wave that never closed left behind to its state before that wave.
+function wavePrompt(operation, nodeIds) {
+  const request = operation === 'recover-waves' ? { operation } : { operation, node_ids: nodeIds }
+  return [
+    'Run EXACTLY this command, once, and return its stdout parsed as your JSON result:',
+    `\`printf '%s' ${shellQuote(JSON.stringify(request))} | python3 .allforai/bootstrap/scripts/evidence_freshness.py .\``,
+    '(the command is everything between the backticks; its final `.` is the project-root argument, not punctuation).',
+    'Do not edit any file yourself and do not retry.'
+  ].join(' ')
 }
 
 function commitPrompt(result) {
@@ -741,6 +778,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       !['halt_with_report', 'auto_fix_once', 'accept'].includes(policy.on_needs_iteration)) {
     return { status: 'needs_run_policy', hardFailures: [] }
   }
+  // Before the graph is read: what an interrupted wave left behind must not be loaded as state.
+  await agent(wavePrompt('recover-waves'), { label: 'recover-waves' })
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
   const done = new Set(dag.completed || [])
   // A completion inherited from an earlier session is a claim read out of transition_log, not a
@@ -975,6 +1014,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     // Workflow pipelines have no stage barrier. Hold every completion until all
     // in-flight results are known, otherwise a late safety halt can follow a sibling's
     // already-published completion. The latch also fences further retries/gates.
+    const waveIds = ready.map(n => n.node_id)
+    await agent(wavePrompt('begin-wave', waveIds), { label: 'begin-wave' })
     let safetyHalted = false
     const waveAgent = async (prompt, opts = {}) => {
       if (safetyHalted && !(opts.label || '').startsWith('safety-report:')) {
@@ -1000,6 +1041,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
             detail: safetyHalted ? 'in-flight result quarantined after run safety halt' : 'node execution did not return a usable result' }] }
       }
     })).map(stopRepeatedIteration)
+    // Every result of the wave is known here, whatever it was; only a wave the engine never
+    // saw end stays open for recovery.
+    await agent(wavePrompt('end-wave', waveIds), { label: 'end-wave' })
     if (safetyHalted) {
       const hardFailures = outcomes.filter(r => r && routeOutcome(r) === 'hard')
       const quotedNodes = "'" + JSON.stringify(ready.map(n => n.node_id)).replace(/'/g, "'\\''") + "'"

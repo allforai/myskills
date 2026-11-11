@@ -20,11 +20,13 @@ STATE = '.allforai/bootstrap/evidence-freshness.json'
 OBSERVATIONS = '.allforai/bootstrap/input-observations'
 READS = '.allforai/bootstrap/observed-input-dependencies.json'
 EXTERNAL = '.allforai/bootstrap/external-changes.json'
+# The nodes of the wave a driver is running now, with what each had recorded before it.
+IN_FLIGHT = '.allforai/bootstrap/in-flight-wave.json'
 # The run's own bookkeeping. It changes on every committed transition, so a node that
 # registered it as a dependency would find its evidence stale after each commit the
 # engine records — including its own — and every consumer would wait on it forever.
 ORCHESTRATION_STATE = frozenset({
-    WORKFLOW, STATE, READS, EXTERNAL,
+    WORKFLOW, STATE, READS, EXTERNAL, IN_FLIGHT,
     '.allforai/bootstrap/run-log.jsonl',
     '.allforai/bootstrap/repair-authorizations.json',
     '.allforai/bootstrap/run-policy.json',
@@ -1032,8 +1034,100 @@ def evaluate(root):
     return {'nodes': result, 'uncertain_inputs': sorted(uncertain_inputs)}
 
 
+def _ancestors(workflow, node_id):
+    by_id = {n['node_id']: n for n in workflow.get('nodes', [])}
+    seen, stack = set(), list(by_id.get(node_id, {}).get('hard_blocked_by', []))
+    while stack:
+        current = stack.pop()
+        if current not in seen:
+            seen.add(current)
+            stack.extend(by_id.get(current, {}).get('hard_blocked_by', []))
+    return seen
+
+
+def unpublished_producer(root, node, workflow, path):
+    """The node whose unpublished output ``path`` is, when this node may not consume it.
+
+    A file another node produces is an input only once that node has published it. Until
+    then it is a leftover of an earlier cycle or a sibling's work in progress: consuming it
+    builds on content nobody verified, and registering it makes the reader wait on a node
+    the scheduler never orders before it. A node this one is ordered after is exempt — a
+    repair reads the failed report of the QA node it answers — and a retained node that
+    never declared inputs claims no provenance either way.
+    """
+    producers = {item['path'] if isinstance(item, dict) else item: n['node_id']
+                 for n in workflow.get('nodes', [])
+                 for item in [*n.get('exit_artifacts', []), *n.get('required_documents', [])]}
+    producer = producers.get(path)
+    if producer is None or producer == node['node_id'] or producer in _ancestors(workflow, node['node_id']):
+        return None
+    status = evaluate(root)['nodes'].get(producer, {}).get('status')
+    return None if status in {'valid', 'undeclared'} else producer
+
+
+def wave(root, request):
+    """Bracket the nodes a driver is running, and undo a wave that never closed.
+
+    A driver that dies mid-wave leaves its nodes half-recorded: reads they registered,
+    evidence they published, and no transition saying how the attempt ended. ``begin-wave``
+    keeps what each node had recorded; ``end-wave`` forgets it once the driver has seen the
+    wave end, whatever the outcome; ``recover-waves`` returns every node still listed to
+    what it had, unless a completed transition was recorded for it after the wave began —
+    that attempt was observed to finish and its records are its own.
+    """
+    operation = request['operation']
+    with publication_lock(root):
+        marker = read_json(root, IN_FLIGHT, {})
+        if not isinstance(marker, dict):
+            raise ValueError('Malformed in-flight wave marker (' + IN_FLIGHT + '); remove it to discard the record')
+        state = read_json(root, STATE, {'nodes': {}})
+        reads = observed_reads(root)
+        if operation == 'recover-waves':
+            log = read_json(root, WORKFLOW, {}).get('transition_log') or []
+            recovered = []
+            for node_id, before in sorted(marker.items()):
+                finished = any(isinstance(e, dict) and e.get('node_id', e.get('node')) == node_id
+                               and e.get('status') == 'completed' for e in log[before.get('transitions', 0):])
+                if finished:
+                    continue
+                for bucket in ('nodes', 'contracts'):
+                    if before.get(bucket) is None:
+                        state.get(bucket, {}).pop(node_id, None)
+                    else:
+                        state.setdefault(bucket, {})[node_id] = before[bucket]
+                if before.get('reads') is None:
+                    reads.pop(node_id, None)
+                else:
+                    reads[node_id] = before['reads']
+                recovered.append(node_id)
+            if recovered:
+                write_json(root, STATE, state)
+                write_json(root, READS, reads)
+            if marker:
+                write_json(root, IN_FLIGHT, {})
+            return {'status': 'ok', 'recovered': recovered}
+        node_ids = request.get('node_ids')
+        if not isinstance(node_ids, list) or not all(isinstance(n, str) and n for n in node_ids):
+            raise ValueError(operation + ' requires node_ids, a list of node ids')
+        if operation == 'begin-wave':
+            transitions = len(read_json(root, WORKFLOW, {}).get('transition_log') or [])
+            for node_id in node_ids:
+                # A node already listed keeps its earlier record: that is the older truth.
+                marker.setdefault(node_id, {
+                    'nodes': state.get('nodes', {}).get(node_id),
+                    'contracts': state.get('contracts', {}).get(node_id),
+                    'reads': reads.get(node_id), 'transitions': transitions})
+        else:
+            for node_id in node_ids:
+                marker.pop(node_id, None)
+        write_json(root, IN_FLIGHT, marker)
+        return {'status': 'ok', 'open': sorted(marker)}
+
+
 def session(root, request):
     operation = request['operation']
+    if operation in {'begin-wave', 'end-wave', 'recover-waves'}:
+        return wave(root, request)
     if operation == 'check':
         return evaluate(root)
     if operation == 'external-changes':
@@ -1074,6 +1168,12 @@ def session(root, request):
                                  'committed transition, so registering it would make this evidence stale '
                                  'after each commit; read it without registering')
             fingerprint(root, path)  # Validate project containment before reading.
+            producer = unpublished_producer(root, node, workflow, path)
+            if producer:
+                return {'status': 'unpublished_producer', 'producer': producer,
+                        'reason': path + ' is an output of ' + producer + ', which has not published it in '
+                                  'this run: a leftover or unfinished file, not an input. Do not consume it; '
+                                  'if this node needs it, that is a missing dependency to report, not to read around'}
             content = (root / path).read_bytes()
             observation['extra'] = sorted(set(observation.get('extra', [])) | {path})
             observation['inputs']['files'][path] = hashlib.sha256(content).hexdigest()
@@ -1173,7 +1273,7 @@ def main():
         result = {'status': 'invalid', 'reason': str(exc)}
     print(json.dumps(result, sort_keys=True))
     return 1 if result.get('status') in {'stale', 'invalid', 'inconsistent', 'failed_verification',
-                                         'conflict'} else 0
+                                         'conflict', 'unpublished_producer'} else 0
 
 
 if __name__ == '__main__':

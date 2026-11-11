@@ -429,6 +429,10 @@ On the first iteration, if `transition_log` is non-empty:
    means the workflow must continue repair/revalidation.
 3. continue from the current project state
 
+`flow.py` starts by undoing a dispatch an earlier session never saw end (`recover-waves`):
+the reads that node registered and the evidence it published return to what they were,
+so an interrupted run needs no cleanup by hand.
+
 ## Safety
 
 - Diagnosis corrections go to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json`

@@ -731,6 +731,33 @@ def _load_workflow(project_root: Path):
     return workflow if isinstance(workflow, dict) else None
 
 
+def _limited_status_error(item: dict, report: dict) -> str | None:
+    """A completion with known limits is accepted only as a declared, evidenced one.
+
+    ``limited_statuses`` names the accepted statuses that mean "done, with limits". A report
+    carrying one must say what each limit is and show the evidence for it, so the limit is a
+    recorded fact a reader can check rather than a softer word for an unfinished node.
+    """
+    limited = item.get("limited_statuses")
+    if limited is None:
+        return None
+    accepted = item.get("accepted_statuses") or []
+    if (not isinstance(limited, list) or not all(isinstance(v, str) and v for v in limited)
+            or any(v not in accepted for v in limited)):
+        return "limited_statuses must be a list of statuses that accepted_statuses also declares"
+    if report.get("status") not in limited:
+        return None
+    limits = report.get("known_limits")
+    if not isinstance(limits, list) or not limits:
+        return "limited completion without known_limits: name each limit and its evidence"
+    for entry in limits:
+        if not (isinstance(entry, dict)
+                and isinstance(entry.get("limit"), str) and entry["limit"].strip()
+                and isinstance(entry.get("evidence"), str) and entry["evidence"].strip()):
+            return "every known_limits entry needs a non-empty limit and evidence"
+    return None
+
+
 def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
     """Check if a node's exit_artifacts all exist."""
     node_id = node.get("node_id")
@@ -767,6 +794,17 @@ def check_node_artifacts(node: dict, project_root: Path | None = None) -> dict:
                     allowed = item.get("accepted_statuses")
                     if allowed and data.get("status") not in allowed:
                         raise ValueError("report status is not explicitly accepted")
+                    limited = _limited_status_error(item, data)
+                    if limited:
+                        raise ValueError(limited)
+                    if allowed and "status_error" not in entry:
+                        # What the exit declared and the report met, for the gate that reads
+                        # this output: a declared status is the acceptance, not a judgement call.
+                        is_limited = data.get("status") in (item.get("limited_statuses") or [])
+                        entry["declared_status"] = {"value": data.get("status"), "accepted": True,
+                                                    "limited": is_limited}
+                        if is_limited:
+                            entry["declared_status"]["known_limits"] = len(data["known_limits"])
                 except (ValueError, TypeError, OSError) as exc:
                     entry["status_error"] = {"field": "$", "reason": str(exc)}
         if validation_commands and entry["exists"]:

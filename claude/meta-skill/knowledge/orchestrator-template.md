@@ -387,6 +387,10 @@ On first iteration if transition_log is non-empty:
    a deleted file, a failed validation command and a stale input all count.
 3. Continue from where things stand
 
+The engine also starts by undoing a wave an earlier session never saw end (`recover-waves`):
+the reads those nodes registered and the evidence they published return to what they were,
+so an interrupted run needs no cleanup by hand.
+
 ## Safety (warnings, not blockers)
 
 - Same node fails 3 times → **before warning**, check `workflow.json.diagnosis_history` for that node:

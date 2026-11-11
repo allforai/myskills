@@ -139,6 +139,12 @@ publish freshness or edit the ledger.
 - Asynchronous runs have native completion notices: continue independent
   orchestrator work or return control; merge when notified. Do not poll,
   sleep, or call `bg_wait` only to wait.
+- A worker writes only what its node owns: exit artifacts, required documents and
+  declared `parallel_write_scopes`. It never creates, edits or deletes a file another
+  node produces; a defect there is returned as a finding naming the producing node, and
+  the orchestrator records a failed transition with that node as repair owner. A file
+  whose producer has not published in this run (`read` answers `unpublished_producer`)
+  is a leftover or unfinished work and is not consumed.
 - Workers never interview the user. Run Policy and product decisions stay in
   the main session, before the first node.
 
@@ -157,7 +163,10 @@ publish freshness or edit the ledger.
    - a failed QA node with a declared repair loop routes to that repair node first
      (see Declared cross-node repair loop below), then re-runs
 5. Read `.allforai/bootstrap/node-specs/<node-id>.md`
-6. Dispatch execution using that node-spec as the task contract (see Pi Dispatch)
+6. Send `{"operation":"begin-wave","node_ids":[...]}` to `evidence_freshness.py .` for the
+   nodes about to run, then dispatch execution using that node-spec as the task contract
+   (see Pi Dispatch). After recording each node's transition in step 9 or 10, send
+   `end-wave` with its id.
 7. When the node reports success, publish its freshness — contract, then evidence —
    with the `acceptance_argv` the worker returned (Pi Dispatch). The helper runs that
    command itself, so the worker's check is rerun, not reported — but it is still the
@@ -459,6 +468,11 @@ On the first iteration, if `transition_log` is non-empty:
    `remaining_gaps`, `blockers`, `major_findings`, or `unresolved_findings`
    means the workflow must continue repair/revalidation.
 3. continue from the current project state
+
+Before the first dispatch of every session, send `{"operation":"recover-waves"}` on stdin to
+`python3 .allforai/bootstrap/scripts/evidence_freshness.py .`: it returns the nodes of a
+dispatch an earlier session never saw end to the reads and evidence they had, so an
+interrupted run needs no cleanup by hand.
 
 ## Safety
 

@@ -98,3 +98,27 @@ test('runNodePrompt has a node pick an open building block and disclose it, neve
   assert.match(p, /building block your inputs leave open/)
   assert.match(p, /kind "building_block", and keep going/)
 })
+
+test('the gate accepts a status the exit declares and still refuses what it does not', () => {
+  const p = core.gateNodePrompt({ node_id: 'qa' })
+  assert.match(p, /declared_status\.accepted true/)
+  assert.match(p, /declared_status\.limited true/)
+  assert.match(p, /known_limits/)
+  assert.match(p, /limited completion not declared in limited_statuses/)
+  assert.match(p, /status the exit does not declare/)
+})
+
+test('a node and its repair write only their own outputs and report an upstream defect', () => {
+  for (const p of [core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, ''),
+    core.repairPrompt({ node_id: 'n' }, [])]) {
+    assert.match(p, /Never create, edit or delete a file another node produces/)
+    assert.match(p, /cross_node/)
+    assert.match(p, /unpublished_producer/)
+  }
+})
+
+test('wavePrompt runs the freshness helper with the exact request', () => {
+  assert.match(core.wavePrompt('begin-wave', ['a', 'b']),
+    /'\{"operation":"begin-wave","node_ids":\["a","b"\]\}' \| python3 \.allforai\/bootstrap\/scripts\/evidence_freshness\.py \./)
+  assert.match(core.wavePrompt('recover-waves'), /'\{"operation":"recover-waves"\}'/)
+})

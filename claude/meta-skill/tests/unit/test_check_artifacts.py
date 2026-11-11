@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import time
@@ -300,3 +301,37 @@ def test_parallel_write_contract_covers_outputs_but_not_shared_reads():
     assert checker.parallel_write_declaration_errors(node)
     node['parallel_write_scopes'].append('docs/a.md')
     assert checker.parallel_write_declaration_errors(node) == []
+
+
+LIMITED = {'required_fields': ['status'], 'accepted_statuses': ['passed', 'passed_with_known_limits'],
+           'limited_statuses': ['passed_with_known_limits']}
+
+
+@pytest.mark.parametrize('report,passed', [
+    ({'status': 'passed'}, True),
+    ({'status': 'passed_with_known_limits',
+      'known_limits': [{'limit': 'two of five sources unreachable', 'evidence': 'logs/fetch.txt'}]}, True),
+    ({'status': 'passed_with_known_limits'}, False),
+    ({'status': 'passed_with_known_limits', 'known_limits': []}, False),
+    ({'status': 'passed_with_known_limits', 'known_limits': [{'limit': 'unreachable'}]}, False),
+    ({'status': 'passed_with_known_limits', 'gaps': ['x'],
+      'known_limits': [{'limit': 'a', 'evidence': 'b'}]}, False),
+])
+def test_limited_completion_needs_declared_limits_with_evidence(tmp_path, report, passed):
+    path = tmp_path / 'report.json'
+    path.write_text(json.dumps(report))
+    result = check_node_artifacts(_make_node([{'path': str(path), **LIMITED}]))
+    assert result['all_exist'] is passed
+    declared = result['artifacts'][0].get('declared_status')
+    if passed:
+        assert declared['accepted'] is True
+        assert declared['limited'] is (report['status'] != 'passed')
+    else:
+        assert declared is None
+
+
+def test_limited_statuses_must_be_accepted_statuses(tmp_path):
+    path = tmp_path / 'report.json'
+    path.write_text('{"status": "passed"}')
+    item = {'path': str(path), 'accepted_statuses': ['passed'], 'limited_statuses': ['partial_ok']}
+    assert check_node_artifacts(_make_node([item]))['all_exist'] is False
