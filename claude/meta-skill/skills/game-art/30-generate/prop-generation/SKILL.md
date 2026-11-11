@@ -37,8 +37,7 @@ Downstream consumers include level blockouts, runtime import checks, inventory
 or interaction UI, and art-preview QA.
 
 Image requests must follow `image-generation-contract` with
-`generation_profile.task_type=prop` and `prompt_template=prop_prompt`. Use a
-model profile suited to isolated object output, alpha/background control, and
+`purpose` set to the asset family. The output must show isolated object output, alpha/background control, and
 scale readability.
 
 ## Invocation Contract

@@ -62,123 +62,44 @@ REQUIRED_ART_CONCEPT_ARTIFACTS = {
 }
 
 ENGINE_READY_MANIFEST = ".allforai/game-runtime/art/engine-ready-art-manifest.json"
+IMAGE_REQUEST_MANIFEST = ".allforai/game-design/art/image-generation/image-request-manifest.json"
 ACCEPTED_IMAGE_MANIFEST = ".allforai/game-design/art/image-generation/accepted-image-manifest.json"
-IMAGE_MODEL_REGISTRY = ".allforai/game-design/art/image-generation/image-model-capability-registry.json"
-IMAGE_MODEL_ROUTING_REPORT = ".allforai/game-design/art/image-generation/image-model-routing-report.json"
-MCP_IMAGE_BATCH_INPUT = ".allforai/game-design/art/image-generation/mcp-image-batch-input.json"
-MCP_IMAGE_BATCH_TASK = ".allforai/game-design/art/image-generation/mcp-image-batch-task.json"
-MCP_IMAGE_BATCH_OUTPUT = ".allforai/game-design/art/image-generation/mcp-image-batch-output.json"
-GENERATED_IMAGE_FILES_MANIFEST = ".allforai/game-design/art/image-generation/generated-image-files-manifest.json"
 PROGRAMMATIC_ART_PROCESSING_PLAN = ".allforai/game-design/art/programmatic-art-processing-plan.json"
-COMPILED_PROMPT_MANIFEST = ".allforai/game-design/art/image-generation/compiled-prompt-manifest.json"
-IMAGE_BATCH_GENERATION_PLAN = ".allforai/game-design/art/image-generation/image-batch-generation-plan.json"
 GENERATED_CANDIDATE_SELECTION_REPORT = ".allforai/game-design/art/image-generation/generated-candidate-selection-report.json"
 ASSET_ACCEPTANCE_CRITERIA_JSON = ".allforai/game-design/art/asset-acceptance-criteria.json"
 ASSET_ACCEPTANCE_CRITERIA_MD = ".allforai/game-design/art/asset-acceptance-criteria.md"
 ANIMATION_TOOLCHAIN_REPORT = ".allforai/game-design/art/env/2d-animation-toolchain-report.json"
 ANIMATION_TOOLCHAIN_REGISTRY = ".allforai/game-design/art/env/2d-animation-toolchain-registry.json"
-LORA_LOCK_SPEC = ".allforai/game-design/art/lora/lora-identity-style-lock-spec.json"
-LORA_DECISION_REPORT = ".allforai/game-design/art/lora/lora-training-decision-report.md"
-LORA_ADAPTER_REGISTRY = ".allforai/game-design/art/lora/lora-adapter-registry.json"
-LORA_TRAINING_JOB = ".allforai/game-design/art/lora/lora-training-job.json"
-LORA_VALIDATION_REPORT = ".allforai/game-design/art/lora/lora-validation-report.json"
-LORA_VALIDATION_CONTACT_SHEET = ".allforai/game-design/art/lora/lora-validation-contact-sheet.png"
 
 REQUIRED_IMAGE_CONTRACT_TERMS = {
     ACCEPTED_IMAGE_MANIFEST,
-    IMAGE_MODEL_REGISTRY,
-    IMAGE_MODEL_ROUTING_REPORT,
+    IMAGE_REQUEST_MANIFEST,
+    ASSET_ACCEPTANCE_CRITERIA_JSON,
     "consumer_ready",
-    "image-model-capability-registry",
-    "route_model",
-    "selected provider/model",
-    "missing_capabilities",
+    "consumer_ready` stays false",
+    "Downstream skills must not consume raw PNG paths directly",
+    "re-run the downstream consumer validation",
     "register_searched_or_existing",
     "web_or_marketplace_search",
     "local_asset_library",
-    "Downstream skills must not consume raw PNG paths directly",
-    "re-run the downstream consumer validation",
-    ASSET_ACCEPTANCE_CRITERIA_JSON,
-    "asset-acceptance-criteria",
-    "consumer_ready` remains false",
-    "game-art/30-generate/batch-image-generation/SKILL.md",
-    "mcp-image-batch",
-    "long-task",
-    MCP_IMAGE_BATCH_INPUT,
-    MCP_IMAGE_BATCH_TASK,
-    MCP_IMAGE_BATCH_OUTPUT,
-    GENERATED_IMAGE_FILES_MANIFEST,
-    "blocked_by_missing_mcp_image_batch",
-    "Do not mark MCP outputs `consumer_ready: true` directly",
     "repair_coverage_shortage",
-    "coverage shortage",
-    "insufficient accepted images",
-    "mcp-image-batch` file handoff",
-    "operation",
-    "context/base image",
-    "maskRegion",
-    "preservation acceptance",
-    "identity_lock",
-    "requires_lora",
-    "blocked_by_missing_identity_lock",
-    "lora_adapter_id",
-    "prompt-only",
-    "game-art/20-spec/programmatic-art-processing-plan/SKILL.md",
-    "game-art/20-spec/image-prompt-compiler/SKILL.md",
-    "game-art/20-spec/image-batch-generation-plan/SKILL.md",
-    "game-art/40-qa/generated-candidate-selection/SKILL.md",
-    PROGRAMMATIC_ART_PROCESSING_PLAN,
-    COMPILED_PROMPT_MANIFEST,
-    IMAGE_BATCH_GENERATION_PLAN,
-    GENERATED_CANDIDATE_SELECTION_REPORT,
-    "material_first",
-    "LLM outputs are candidates",
     "Coverage shortage",
+    "Generated results are candidates",
+    "game-art/40-qa/generated-candidate-selection/SKILL.md",
+    "game-art/20-spec/programmatic-art-processing-plan/SKILL.md",
+    "material_first",
+    "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md",
+    "Grok CLI",
+    "image_to_video",
+    "One source per medium",
+    "blocked_by_missing_image_cli",
+    "blocked_by_missing_video_cli",
+    "Never auto-approve all",
+    "is not a result until it is copied there",
+    "approved reference images",
+    "prompt-only result",
 }
 
-REQUIRED_BATCH_IMAGE_GENERATION_TERMS = {
-    "mcp-image-batch",
-    "long-task image generation",
-    "file handoff",
-    MCP_IMAGE_BATCH_INPUT,
-    MCP_IMAGE_BATCH_TASK,
-    MCP_IMAGE_BATCH_OUTPUT,
-    GENERATED_IMAGE_FILES_MANIFEST,
-    "input file path",
-    "output file path",
-    "poll",
-    "task_id",
-    "blocked_by_missing_mcp_image_batch",
-    "not paste large",
-    "`image-generation-contract` may write accepted entries",
-    "coverage shortage",
-    "enough visually accepted images",
-    "accepted output count is below",
-    "triggers another",
-    "mcp_image_batch_edit_file_handoff",
-    "prepare_edit_session",
-    "run_edit_prompt",
-    "operation=edit",
-    "contextImage",
-    "basePrompt",
-    "maskRegion",
-    "imageIndex",
-    "identity/style preservation outside the mask",
-    "LoRA",
-    "lora_adapter_id",
-    "lora_trigger_tokens",
-    "lora_weight",
-    "blocked_by_missing_identity_lock",
-    COMPILED_PROMPT_MANIFEST,
-    IMAGE_BATCH_GENERATION_PLAN,
-    PROGRAMMATIC_ART_PROCESSING_PLAN,
-    "compiled prompt manifest",
-    "image batch generation plan",
-    "programmatic art processing plan",
-    "game-art/20-spec/image-batch-generation-plan/SKILL.md",
-    "game-art/20-spec/image-prompt-compiler/SKILL.md",
-    "material_first",
-}
 
 REQUIRED_ART_GEN_COMPLETION_TERMS = {
     ACCEPTED_IMAGE_MANIFEST,
@@ -233,28 +154,7 @@ REQUIRED_PROGRAMMATIC_PROCESSING_TERMS = {
     "Direct final-image generation must be justified as an exception",
 }
 
-REQUIRED_IMAGE_PROMPT_COMPILER_TERMS = {
-    COMPILED_PROMPT_MANIFEST,
-    ".allforai/game-design/art/image-generation/prompts/",
-    "material-first generation",
-    "material_first",
-    "programmatic_consumer",
-    "assembly_contract_ref",
-    "LoRA",
-    "prompt files",
-    "Do not synthesize production prompts",
-}
 
-REQUIRED_IMAGE_BATCH_PLAN_TERMS = {
-    IMAGE_BATCH_GENERATION_PLAN,
-    ".allforai/game-design/art/image-generation/image-batch-generation-plan.md",
-    "raw-material-first",
-    "material_first_policy",
-    "required_candidate_count",
-    "retry_budget",
-    "mcp_image_batch_required",
-    "coverage shortage will trigger another batch",
-}
 
 REQUIRED_CANDIDATE_SELECTION_TERMS = {
     GENERATED_CANDIDATE_SELECTION_REPORT,
@@ -439,8 +339,8 @@ REQUIRED_ACCEPTANCE_CRITERIA_TERMS = {
     "repair_routes",
     "project/runtime-specific",
     "identity/style lock strategy",
-    "requires_lora",
-    "LoRA is required",
+    "reference_images",
+    "approved reference",
     "Return `UPSTREAM_DEFECT`",
 }
 
@@ -464,66 +364,8 @@ REQUIRED_ASSET_SEARCH_TERMS = {
     "consumer_ready: true",
 }
 
-REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = {
-    IMAGE_MODEL_REGISTRY,
-    IMAGE_MODEL_ROUTING_REPORT,
-    "google_gemini_image",
-    "fal_ai",
-    "openrouter_image",
-    "mcp_image_batch",
-    "project_local_mcp",
-    "GOOGLE_API_KEY",
-    "FAL_KEY",
-    "OPENROUTER_API_KEY",
-    "output_modalities=image",
-    "generation_profile",
-    "missing_capabilities",
-    "blocked_by_missing_model",
-    "mcp-image-batch",
-    "mcp_long_task",
-    "batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md",
-    "blocked_by_missing_mcp_image_batch",
-    "supports_edit_mode=true",
-    "missing edit capability",
-    "identity_lock",
-    "lora_adapter",
-    "style_lora",
-    "character_lora",
-    "blocked_by_missing_identity_lock",
-    "requires_lora=true",
-    "selected_model",
-}
 
-REQUIRED_LORA_LOCK_SPEC_TERMS = {
-    LORA_LOCK_SPEC,
-    LORA_DECISION_REPORT,
-    "local_gpu",
-    "remote_gpu_rental",
-    "provider_api_training",
-    "existing_lora",
-    "blocked_by_missing_identity_lock",
-    "blocked_by_missing_training_runtime",
-    "Do not choose local training just because the machine exists",
-    "training_location",
-    "requires_lora",
-}
 
-REQUIRED_LORA_ADAPTER_TRAINING_TERMS = {
-    LORA_ADAPTER_REGISTRY,
-    LORA_TRAINING_JOB,
-    LORA_VALIDATION_REPORT,
-    LORA_VALIDATION_CONTACT_SHEET,
-    "local_gpu",
-    "remote_gpu_rental",
-    "provider_api_training",
-    "Existing LoRA",
-    "blocked_by_missing_dataset",
-    "blocked_by_missing_training_runtime",
-    "lora_adapter_id",
-    "lora_trigger_tokens",
-    "validation_evidence",
-    "must not silently fall back to prompt-only generation",
-}
 
 REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS = {
     ANIMATION_TOOLCHAIN_REPORT,
@@ -654,7 +496,6 @@ REQUIRED_ART_QA_EXIT_ARTIFACTS = _with_neutral(REQUIRED_ART_QA_EXIT_ARTIFACTS)
 REQUIRED_ART_QA_SKILLS = _with_neutral(REQUIRED_ART_QA_SKILLS)
 REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS = _with_neutral(REQUIRED_ASSET_FAMILY_CONSISTENCY_TERMS)
 REQUIRED_ASSET_SEARCH_TERMS = _with_neutral(REQUIRED_ASSET_SEARCH_TERMS)
-REQUIRED_BATCH_IMAGE_GENERATION_TERMS = _with_neutral(REQUIRED_BATCH_IMAGE_GENERATION_TERMS)
 REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS = _with_neutral(REQUIRED_BOOTSTRAP_FRONTEND_HANDOFF_TERMS)
 REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS = _with_neutral(REQUIRED_BOOTSTRAP_UI_VISUAL_TERMS)
 REQUIRED_CANDIDATE_SELECTION_TERMS = _with_neutral(REQUIRED_CANDIDATE_SELECTION_TERMS)
@@ -662,13 +503,8 @@ REQUIRED_CODEX_DELEGATION_SKILL_TERMS = _with_neutral(REQUIRED_CODEX_DELEGATION_
 REQUIRED_CODEX_DELEGATION_TERMS = _with_neutral(REQUIRED_CODEX_DELEGATION_TERMS)
 REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS = _with_neutral(REQUIRED_FRONTEND_VISUAL_RUNTIME_TERMS)
 REQUIRED_GAME_FRONTEND_HANDOFF_TERMS = _with_neutral(REQUIRED_GAME_FRONTEND_HANDOFF_TERMS)
-REQUIRED_IMAGE_BATCH_PLAN_TERMS = _with_neutral(REQUIRED_IMAGE_BATCH_PLAN_TERMS)
 REQUIRED_IMAGE_CONTRACT_TERMS = _with_neutral(REQUIRED_IMAGE_CONTRACT_TERMS)
-REQUIRED_IMAGE_MODEL_REGISTRY_TERMS = _with_neutral(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS)
-REQUIRED_IMAGE_PROMPT_COMPILER_TERMS = _with_neutral(REQUIRED_IMAGE_PROMPT_COMPILER_TERMS)
 REQUIRED_IN_GAME_BEAUTY_GATE_TERMS = _with_neutral(REQUIRED_IN_GAME_BEAUTY_GATE_TERMS)
-REQUIRED_LORA_ADAPTER_TRAINING_TERMS = _with_neutral(REQUIRED_LORA_ADAPTER_TRAINING_TERMS)
-REQUIRED_LORA_LOCK_SPEC_TERMS = _with_neutral(REQUIRED_LORA_LOCK_SPEC_TERMS)
 REQUIRED_PRODUCTION_TOOL_RULE_TERMS = _with_neutral(REQUIRED_PRODUCTION_TOOL_RULE_TERMS)
 REQUIRED_PROGRAMMATIC_PROCESSING_TERMS = _with_neutral(REQUIRED_PROGRAMMATIC_PROCESSING_TERMS)
 REQUIRED_SOURCE_STRATEGY_TERMS = _with_neutral(REQUIRED_SOURCE_STRATEGY_TERMS)
@@ -728,24 +564,18 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready = game_art_root / "40-qa/engine-ready-art-output-contract/SKILL.md"
     asset_binding = skills_root / "game-frontend/20-spec/asset-import-binding-spec/SKILL.md"
     image_contract = game_art_root / "30-generate/image-generation-contract/SKILL.md"
-    batch_image_generation = game_art_root / "30-generate/batch-image-generation/SKILL.md"
     tileset_generation = game_art_root / "30-generate/tileset-generation/SKILL.md"
     art_preview_qa = game_art_root / "40-qa/art-preview-qa/SKILL.md"
     visual_acceptance = game_art_root / "40-qa/visual-acceptance-review/SKILL.md"
     art_style_taxonomy = game_art_root / "10-design/2d-art-style-taxonomy/SKILL.md"
     art_direction_benchmark = game_art_root / "10-design/art-direction-benchmark/SKILL.md"
     programmatic_processing = game_art_root / "20-spec/programmatic-art-processing-plan/SKILL.md"
-    image_prompt_compiler = game_art_root / "20-spec/image-prompt-compiler/SKILL.md"
-    image_batch_plan = game_art_root / "20-spec/image-batch-generation-plan/SKILL.md"
     candidate_selection = game_art_root / "40-qa/generated-candidate-selection/SKILL.md"
     asset_family_consistency = game_art_root / "40-qa/asset-family-consistency-qa/SKILL.md"
     in_game_beauty_gate = game_art_root / "40-qa/in-game-beauty-gate/SKILL.md"
     acceptance_criteria = game_art_root / "20-spec/asset-acceptance-criteria/SKILL.md"
-    lora_lock_spec = game_art_root / "20-spec/lora-identity-style-lock-spec/SKILL.md"
-    lora_training = game_art_root / "30-generate/lora-adapter-training/SKILL.md"
     codex_delegation = skills_root / "codex-cli-delegation/30-execute/codex-cli-task/SKILL.md"
     frontend_visual_runtime = skills_root / "game-frontend/40-qa/visual-runtime-regression-qa/SKILL.md"
-    image_model_registry = game_art_root / "00-env/image-model-capability-registry/SKILL.md"
     animation_toolchain_env = game_art_root / "00-env/2d-animation-toolchain-env/SKILL.md"
     production_tool_registry = game_art_root / "00-env/production-tool-capability-registry/SKILL.md"
     source_strategy = game_art_root / "10-design/asset-source-strategy-spec/SKILL.md"
@@ -758,24 +588,18 @@ def validate_art_pipeline(repo_root: str) -> list:
         engine_ready,
         asset_binding,
         image_contract,
-        batch_image_generation,
         tileset_generation,
         art_preview_qa,
         visual_acceptance,
         art_style_taxonomy,
         art_direction_benchmark,
         programmatic_processing,
-        image_prompt_compiler,
-        image_batch_plan,
         candidate_selection,
         asset_family_consistency,
         in_game_beauty_gate,
         acceptance_criteria,
-        lora_lock_spec,
-        lora_training,
         codex_delegation,
         frontend_visual_runtime,
-        image_model_registry,
         animation_toolchain_env,
         production_tool_registry,
         source_strategy,
@@ -793,24 +617,18 @@ def validate_art_pipeline(repo_root: str) -> list:
     engine_ready_text = _read(engine_ready)
     asset_binding_text = _read(asset_binding)
     image_contract_text = _read(image_contract)
-    batch_image_generation_text = _read(batch_image_generation)
     tileset_generation_text = _read(tileset_generation)
     art_preview_qa_text = _read(art_preview_qa)
     visual_acceptance_text = _read(visual_acceptance)
     art_style_taxonomy_text = _read(art_style_taxonomy)
     art_direction_benchmark_text = _read(art_direction_benchmark)
     programmatic_processing_text = _read(programmatic_processing)
-    image_prompt_compiler_text = _read(image_prompt_compiler)
-    image_batch_plan_text = _read(image_batch_plan)
     candidate_selection_text = _read(candidate_selection)
     asset_family_consistency_text = _read(asset_family_consistency)
     in_game_beauty_gate_text = _read(in_game_beauty_gate)
     acceptance_criteria_text = _read(acceptance_criteria)
-    lora_lock_spec_text = _read(lora_lock_spec)
-    lora_training_text = _read(lora_training)
     codex_delegation_text = _read(codex_delegation)
     frontend_visual_runtime_text = _read(frontend_visual_runtime)
-    image_model_registry_text = _read(image_model_registry)
     animation_toolchain_env_text = _read(animation_toolchain_env)
     production_tool_registry_text = _read(production_tool_registry)
     source_strategy_text = _read(source_strategy)
@@ -894,10 +712,8 @@ def validate_art_pipeline(repo_root: str) -> list:
             "technology-specific standards",
             "programmatic-art-processing-plan/SKILL.md",
             PROGRAMMATIC_ART_PROCESSING_PLAN,
-            "image-prompt-compiler/SKILL.md",
-            COMPILED_PROMPT_MANIFEST,
-            "image-batch-generation-plan/SKILL.md",
-            IMAGE_BATCH_GENERATION_PLAN,
+            "image-generation-contract/SKILL.md",
+            IMAGE_REQUEST_MANIFEST,
             "generated-candidate-selection/SKILL.md",
             GENERATED_CANDIDATE_SELECTION_REPORT,
             "material_first",
@@ -955,9 +771,6 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_IMAGE_CONTRACT_TERMS, key=_key):
         if not _has(image_contract_text, term):
             errors.append(f"image-generation-contract: missing closure term {_key(term)}")
-    for term in sorted(REQUIRED_BATCH_IMAGE_GENERATION_TERMS, key=_key):
-        if not _has(batch_image_generation_text, term):
-            errors.append(f"batch-image-generation: missing MCP batch term {_key(term)}")
     for term in sorted(REQUIRED_ART_PREVIEW_QA_TERMS, key=_key):
         if not _has(art_preview_qa_text, term):
             errors.append(f"art-preview-qa: missing visual evidence term {_key(term)}")
@@ -970,12 +783,6 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_PROGRAMMATIC_PROCESSING_TERMS, key=_key):
         if not _has(programmatic_processing_text, term):
             errors.append(f"programmatic-art-processing-plan: missing processing term {_key(term)}")
-    for term in sorted(REQUIRED_IMAGE_PROMPT_COMPILER_TERMS, key=_key):
-        if not _has(image_prompt_compiler_text, term):
-            errors.append(f"image-prompt-compiler: missing prompt compiler term {_key(term)}")
-    for term in sorted(REQUIRED_IMAGE_BATCH_PLAN_TERMS, key=_key):
-        if not _has(image_batch_plan_text, term):
-            errors.append(f"image-batch-generation-plan: missing batch plan term {_key(term)}")
     for term in sorted(REQUIRED_CANDIDATE_SELECTION_TERMS, key=_key):
         if not _has(candidate_selection_text, term):
             errors.append(f"generated-candidate-selection: missing candidate selection term {_key(term)}")
@@ -1008,15 +815,6 @@ def validate_art_pipeline(repo_root: str) -> list:
     for term in sorted(REQUIRED_ACCEPTANCE_CRITERIA_TERMS, key=_key):
         if not _has(acceptance_criteria_text, term):
             errors.append(f"asset-acceptance-criteria: missing standards term {_key(term)}")
-    for term in sorted(REQUIRED_IMAGE_MODEL_REGISTRY_TERMS, key=_key):
-        if not _has(image_model_registry_text, term):
-            errors.append(f"image-model-capability-registry: missing model routing term {_key(term)}")
-    for term in sorted(REQUIRED_LORA_LOCK_SPEC_TERMS, key=_key):
-        if not _has(lora_lock_spec_text, term):
-            errors.append(f"lora-identity-style-lock-spec: missing LoRA decision term {_key(term)}")
-    for term in sorted(REQUIRED_LORA_ADAPTER_TRAINING_TERMS, key=_key):
-        if not _has(lora_training_text, term):
-            errors.append(f"lora-adapter-training: missing LoRA training term {_key(term)}")
     for term in sorted(REQUIRED_2D_ANIMATION_TOOLCHAIN_TERMS, key=_key):
         if not _has(animation_toolchain_env_text, term):
             errors.append(f"2d-animation-toolchain-env: missing toolchain closure term {_key(term)}")
@@ -1035,12 +833,10 @@ def validate_art_pipeline(repo_root: str) -> list:
         errors.append("game-art/PACK.md: missing asset acceptance criteria child path")
     if "raw PNG/JPG/WebP paths" not in game_art_text:
         errors.append("game-art/PACK.md: missing raw bitmap path consumption ban")
-    if "game-art/00-env/image-model-capability-registry/SKILL.md" not in game_art_text:
-        errors.append("game-art/PACK.md: missing image model capability registry child path")
     if "game-art/00-env/2d-animation-toolchain-env/SKILL.md" not in game_art_text:
         errors.append("game-art/PACK.md: missing 2D animation toolchain env child path")
-    if IMAGE_MODEL_REGISTRY not in game_art_text and "image-model-capability-registry" not in game_art_text:
-        errors.append("game-art/PACK.md: missing image model routing closure rule")
+    if "AI image generation goes through Codex and AI video through the Grok CLI" not in game_art_text:
+        errors.append("game-art/PACK.md: missing generator rule (images from Codex, video from the Grok CLI)")
 
     for ref in sorted(IMAGE_UPSTREAM_CONSUMER_SKILLS):
         skill_path = _skill_ref_to_path(root, ref)

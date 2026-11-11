@@ -1,5 +1,5 @@
 ---
-description: "检测和配置外部能力（Playwright、OpenRouter、Brave Search、Google AI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
+description: "检测和配置外部能力（Playwright、Codex 生图与 Grok 生视频 CLI、OpenRouter、Brave Search、Google AI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
 argument-hint: "[check|reset|update|impact]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
@@ -29,15 +29,20 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 | 能力 | 探测方式 | 用途 |
 |------|---------|------|
 | Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | UI 自动化：验证、E2E 测试、死链扫描 |
-| 批量生图 (image-batch) | `.claude/settings.json` 中 `image-batch` mcpServer 存在 + node_modules 已安装 | 批量图片生成（通过已登录浏览器，无需 Playwright 重登录，仅 macOS） |
+
+### 生成 CLI（图片与视频的唯一生成源）
+
+| 能力 | 探测方式 | 用途 |
+|------|---------|------|
+| Codex CLI | `command -v codex` | 生图（文生图、按参考图编辑），见 game-art `image-generation-contract` |
+| Grok CLI | `command -v grok` + `grok --no-auto-update models` 显示已登录 | 生视频（`image_to_video` / `reference_to_video`）；需订阅含视频，账号零数据保留（ZDR）时视频不可用 |
 
 ### API Key 服务（需配置密钥）
 
 | 能力 | Key 格式 | 用途 | 备注 |
 |------|---------|------|------|
-| OpenRouter | `sk-or-...` | XV 交叉验证 + GPT-5/Gemini 生图 | Key 写入 ai-gateway env |
-| Google AI | `AIza...` | Imagen 4 生图 + Veo 3.1 生视频 + TTS | Key 写入 ai-gateway env |
-| fal.ai | fal key | FLUX 2 Pro 生图 + Kling 生视频 | Key 写入 ai-gateway env |
+| OpenRouter | `sk-or-...` | XV 交叉验证 | Key 写入 ai-gateway env |
+| Google AI | `AIza...` | Cloud TTS 语音合成 | Key 写入 ai-gateway env |
 | Brave Search | `BSA...` | 媒体搜索（网页/图片/视频） | Key 写入 ai-gateway env |
 
 ### 内置工具（始终可用）
@@ -68,28 +73,6 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
    - 失败 → 报告错误，提示「MCP 构建失败，MCP 工具不可用，但预置脚本不受影响」，继续执行
 
 3. **已存在** → 报告「MCP 服务器已构建」，继续
-
-#### mcp-image-batch 依赖检测
-
-检测项目本地的 image-batch MCP 服务器是否已安装：
-
-1. **读取项目 settings.json**：
-   ```bash
-   cat .claude/settings.json 2>/dev/null
-   ```
-   提取 `mcpServers.image-batch.args[0]` 中的路径（入口文件），取其父目录的父目录作为 `MCP_CGPT_DIR`。
-
-2. **若未注册**（settings.json 不存在或无 `image-batch` 条目）：
-   - 尝试自动检测：`find . -name "mcp-image-batch" -type d -maxdepth 4 2>/dev/null | head -1`
-   - 找到 → 记录路径，报告「image-batch 目录已找到但未注册」
-   - 未找到 → 报告「image-batch 未安装」，继续（Step 1.5b 引导安装）
-
-3. **若已注册**：
-   ```bash
-   ls "${MCP_CGPT_DIR}/node_modules/@modelcontextprotocol" 2>/dev/null
-   ```
-   - 存在 → 报告「image-batch 依赖已安装」
-   - 不存在 → 报告「image-batch 依赖缺失，需运行 npm install」，Step 1.5b 中补装
 
 ### Step 1: 检测当前状态
 
@@ -132,7 +115,7 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 
 #### 1d. Google AI
 
-1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_ai-gateway__generate_image`
+1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_ai-gateway__text_to_speech`
    - 可用 → Google AI MCP 就绪（ai-gateway 已加载且 GOOGLE_API_KEY 已配置）
    - 不可用 → Google AI MCP 未就绪
 
@@ -140,28 +123,16 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
    - 已设置 → Google AI Key 就绪
    - 未设置 → Google AI 未就绪
 
-#### 1e. fal.ai (FLUX + Kling)
+#### 1e. 生成 CLI（Codex 生图 / Grok 生视频）
 
-1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_ai-gateway__flux_generate_image`
-   - 可用 → fal.ai MCP 就绪
-   - 不可用 → fal.ai MCP 未就绪
+1. **Codex**：`command -v codex`
+   - 找到 → **✅ 生图就绪**
+   - 未找到 → **❌ 生图不可用**（生图请求会返回 `blocked_by_missing_image_cli`，没有替代生图源）
 
-2. **脚本通道**：检查 `FAL_KEY` 环境变量
-   - 已设置 → fal.ai Key 就绪
-   - 未设置 → fal.ai 未就绪
-
-#### 1f. 批量生图 MCP（image-batch）
-
-1. **检查 settings.json 注册状态**：
-   - `.claude/settings.json` 中存在 `mcpServers.image-batch` 条目 → 已注册
-   - 不存在 → **❌ 未注册**
-
-2. **检查 node_modules**（已注册时）：从 args[0] 路径找到 MCP 目录，检查 node_modules：
-   - 存在 → **✅ 就绪**
-   - 不存在 → **⚠️ 已注册但依赖未安装**
-
-3. **平台检查**：
-   - 非 macOS → **⚠️ 仅支持 macOS**（osascript 依赖）
+2. **Grok**：`command -v grok`，找到后运行 `grok --no-auto-update models`
+   - 输出含已登录信息 → **✅ 已登录**（视频是否可用还取决于订阅与 `/privacy` 设置，首次生成时才能确认）
+   - 显示 "You are not authenticated" → **⚠️ 未登录**
+   - 未找到 → **❌ 生视频不可用**（返回 `blocked_by_missing_video_cli`）
 
 #### 状态仪表板输出
 
@@ -173,14 +144,13 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 | 能力 | 类型 | 状态 | 用途 |
 |------|------|------|------|
 | Playwright | 用户级 MCP | {✅ 就绪 / ❌ 未安装} | UI 自动化 |
-| 批量生图 (image-batch) | 项目 MCP | {✅ 就绪 / ⚠️ 依赖未装 / ❌ 未注册} | 批量图片生成（通过浏览器，无需重登录） |
+| Codex CLI | 生成 CLI | {✅ 就绪 / ❌ 未安装} | 生图 |
+| Grok CLI | 生成 CLI | {✅ 已登录 / ⚠️ 未登录 / ❌ 未安装} | 生视频 |
 | OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | XV 交叉验证 |
-| Google AI (MCP) | AI Gateway | {就绪/未就绪} | AI 生图/生视频/TTS |
+| Google AI (MCP) | AI Gateway | {就绪/未就绪} | TTS |
 | Brave Search (MCP) | AI Gateway | {就绪/未就绪} | 媒体搜索（网页/图片/视频） |
-| OpenRouter Image | AI Gateway | 就绪（随 OpenRouter） | GPT-5/Gemini 生图（无额外 Key） |
-| fal.ai (MCP) | AI Gateway | {就绪/未就绪} | FLUX 2 Pro 生图 + Kling 生视频 |
 | OpenRouter (Script) | Key | {就绪/未就绪} | XV 交叉验证 |
-| Google AI (Key) | Key | {就绪/未就绪} | AI 生图/生视频/TTS |
+| Google AI (Key) | Key | {就绪/未就绪} | TTS |
 | Brave Search (Key) | Key | {就绪/未就绪} | 媒体搜索 |
 | WebSearch | 内置 | 就绪 | 搜索 |
 | MCP 服务器 | 构建产物 | {已构建/未构建} | AI Gateway（OpenRouter + Google AI + Brave） |
@@ -188,8 +158,8 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 降级链:
   Brave 不可用 → WebSearch → AI 生成
   OpenRouter MCP 不可用 → OpenRouter Script → 跳过 XV
-  生图: Google Imagen 4 → OpenAI GPT Image → FLUX 2 Pro → 跳过
-  生视频: Google Veo 3.1 → Kling → 跳过
+  生图: 只用 Codex，缺失即阻塞（无降级）
+  生视频: 只用 Grok CLI，缺失即阻塞（无降级）
   Playwright 不可用 → 无降级（提示安装）
 ```
 
@@ -219,71 +189,17 @@ claude mcp add -s user playwright -- npx -y @playwright/mcp@latest
 Playwright MCP 已注册到用户级配置。需重启 Claude Code 后生效。
 ```
 
-#### 1.5b. 批量生图 MCP（若未就绪）
+#### 1.5b. 生成 CLI（若未就绪）
 
-使用 AskUserQuestion 询问：
-
-**「批量生图 MCP（image-batch）未就绪，用于通过已登录浏览器批量生成图片，无需 API Key。是否安装？」**
-
-选项：
-- **安装** — npm install + 注册到 settings.json
-- **跳过** — 暂不安装
-
-##### 选择「安装」时：
-
-**Step 1: 定位目录**
-
-```bash
-# 从 git 仓库根目录找
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-MCP_CGPT_DIR="${REPO_ROOT}/shared/mcp-image-batch"
-```
-
-检查目录是否存在：
-```bash
-ls "${MCP_CGPT_DIR}/package.json"
-```
-- 不存在 → 报告「目录不存在，请确认 myskills 仓库完整」，跳过
-
-**Step 2: 安装依赖**
-
-```bash
-cd "${MCP_CGPT_DIR}" && npm install
-```
-
-验证：
-```bash
-ls "${MCP_CGPT_DIR}/node_modules/@modelcontextprotocol"
-```
-- 成功 → 继续
-- 失败 → 报告错误，跳过注册
-
-**Step 3: 注册到项目 settings.json**
-
-读取 `.claude/settings.json`（不存在则从空对象开始），合并写入：
-
-```json
-{
-  "mcpServers": {
-    "image-batch": {
-      "command": "node",
-      "args": ["${MCP_CGPT_DIR}/src/index.js"]
-    }
-  }
-}
-```
-
-> **注意**：`${MCP_CGPT_DIR}` 替换为实际绝对路径，不使用 shell 变量语法。
-
-**Step 4: 确认**
+只提示，不代装（安装会改用户的 shell 配置，登录需要浏览器）：
 
 ```
-✅ 批量生图 MCP（image-batch）已安装并注册。
-   路径: {MCP_CGPT_DIR}
-   需重启 Claude Code 后生效。
-   
-使用方式：Chrome 打开 chatgpt.com 并登录后，在对话中说
-「用 check_setup 检查环境」→「用 start_batch 跑 /path/to/prompts.json」
+生图需要 Codex CLI：按 OpenAI 官方说明安装 codex 并登录。
+生视频需要 Grok CLI：先阅读 https://x.ai/cli/install.sh，再运行
+  curl -fsSL https://x.ai/cli/install.sh | bash
+然后在终端运行 `grok login`。视频需要订阅含视频（如 SuperGrok）；
+若报 "unavailable under zero data retention (ZDR)"，在 grok 里用 `/privacy` 关闭零数据保留，
+或按 https://docs.x.ai/build/settings/zdr-video-storage 配置自有存储桶。
 ```
 
 ### Step 2: 引导获取 Key
@@ -395,7 +311,7 @@ Google AI API Key 获取步骤：
 
 提示：
 - 需要 Google Cloud 账号（有免费额度）
-- 一个 Key 覆盖: Imagen 4（生图）+ Veo 3.1（生视频）+ Cloud TTS（语音）
+- 用途: Cloud TTS（语音）；生图走 Codex，生视频走 Grok CLI，不用这个 Key
 - 建议限制 Key 仅允许 Vertex AI API 调用
 ```
 
@@ -408,45 +324,6 @@ Google AI API Key 获取步骤：
 ##### 选择「跳过」时：
 
 记录跳过，继续下一个服务。
-
-#### 2d. fal.ai (FLUX 2 Pro + Kling)
-
-使用 AskUserQuestion 询问：
-
-**「你是否已有 fal.ai API Key？」**
-
-选项：
-- **已有 Key** — 我已经有 fal.ai Key，直接配置
-- **需要注册** — 带我去获取一个
-- **跳过** — 暂不配置 fal.ai
-
-##### 选择「需要注册」时：
-
-展示注册步骤：
-
-```
-fal.ai API Key 获取步骤：
-
-1. 访问 https://fal.ai/dashboard
-2. 注册账号（GitHub 登录）
-3. 进入 Keys 页面创建 API Key
-4. 复制 Key
-
-提示：
-- FLUX 2 Pro: $0.055/张（质量 Elo 最高）
-- Kling 视频: ~$0.03/秒（性价比最高的视频生成）
-- 按量计费，无月费
-```
-
-然后使用 AskUserQuestion 询问「请粘贴你的 fal.ai Key」（提供"其他"输入框让用户粘贴）。
-
-##### 选择「已有 Key」时：
-
-使用 AskUserQuestion 询问「请粘贴你的 fal.ai Key」。
-
-##### 选择「跳过」时：
-
-记录跳过。
 
 ### Step 3: 持久化 Key
 
@@ -474,7 +351,6 @@ fal.ai API Key 获取步骤：
    # myskills API Keys
    export OPENROUTER_API_KEY="sk-or-..."
    export GOOGLE_API_KEY="AIza..."
-   export FAL_KEY="..."
    export BRAVE_API_KEY="BSA..."
    ```
 
@@ -485,7 +361,6 @@ fal.ai API Key 获取步骤：
 
   export OPENROUTER_API_KEY="sk-or-...{后4位}"
   export GOOGLE_API_KEY="AIza...{后4位}"
-  export FAL_KEY="...{后4位}"
   export BRAVE_API_KEY="BSA...{后4位}"
 
 确认写入？
@@ -506,9 +381,8 @@ fal.ai API Key 获取步骤：
 
 | 服务 | Key | 存储位置 | 用途 |
 |------|-----|---------|------|
-| OpenRouter | sk-or-...{后4位} | shell 环境变量 | XV + GPT-5/Gemini 生图 |
-| Google AI | AIza...{后4位} | shell 环境变量 | Imagen 4 + Veo 3.1 + TTS |
-| fal.ai | ...{后4位} | shell 环境变量 | FLUX 2 Pro + Kling 生视频 |
+| OpenRouter | sk-or-...{后4位} | shell 环境变量 | XV 交叉验证 |
+| Google AI | AIza...{后4位} | shell 环境变量 | TTS |
 | Brave Search | BSA...{后4位} | shell 环境变量 | 媒体搜索 |
 
 下一步：运行 source ~/.zshrc 后重启 Claude Code，然后 /setup check 验证连接。
@@ -527,20 +401,19 @@ fal.ai API Key 获取步骤：
 MCP 工具（用户级 claude mcp add -s user）:
   Playwright       {✅ 就绪 / ❌ 未安装}   UI 自动化
 
-项目 MCP（.claude/settings.json）:
-  批量生图         {✅ 就绪 / ⚠️ 依赖未装 / ❌ 未注册}   批量图片生成（通过浏览器，无需重登录）
+生成 CLI:
+  Codex            {✅ 就绪 / ❌ 未安装}   生图
+  Grok             {✅ 已登录 / ⚠️ 未登录 / ❌ 未安装}   生视频
 
 AI Gateway（统一 MCP 服务器）:
-  OpenRouter       {就绪/未就绪}   XV + GPT-5/Gemini 生图
-  Google AI        {就绪/未就绪}   Imagen 4 + Veo 3.1 + TTS
-  fal.ai           {就绪/未就绪}   FLUX 2 Pro + Kling 生视频
+  OpenRouter       {就绪/未就绪}   XV 交叉验证
+  Google AI        {就绪/未就绪}   TTS
   Brave Search     {就绪/未就绪}   媒体搜索（网页/图片/视频）
 
 API Key（环境变量）:
   OpenRouter Key   {就绪/未就绪}   XV 交叉验证
-  Google AI Key    {就绪/未就绪}   AI 生图/生视频/TTS
+  Google AI Key    {就绪/未就绪}   TTS
   Brave Key        {就绪/未就绪}   媒体搜索
-  fal.ai Key       {就绪/未就绪}   FLUX 2 Pro + Kling
 
 内置:
   WebSearch        就绪            搜索
@@ -557,9 +430,8 @@ API Key（环境变量）:
 
 | 服务 | Key | 状态 | 用途 |
 |------|-----|------|------|
-| OpenRouter | sk-or-...{后4位} | {已写入 shell / 已跳过 / 已配置} | XV + GPT-5/Gemini 生图 |
-| Google AI | AIza...{后4位} | {已写入 shell / 已跳过 / 已配置} | Imagen 4 + Veo 3.1 + TTS |
-| fal.ai | ...{后4位} | {已写入 shell / 已跳过 / 已配置} | FLUX 2 Pro + Kling 生视频 |
+| OpenRouter | sk-or-...{后4位} | {已写入 shell / 已跳过 / 已配置} | XV 交叉验证 |
+| Google AI | AIza...{后4位} | {已写入 shell / 已跳过 / 已配置} | TTS |
 | Brave Search | BSA...{后4位} | {已写入 shell / 已跳过 / 已配置} | 媒体搜索 |
 
 MCP 工具（Step 1.5 已引导安装）:

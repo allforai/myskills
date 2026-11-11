@@ -110,7 +110,7 @@ codex exec \
   --cd "/absolute/project/path" \
   --sandbox <mode the caller's own permissions map to> \
   --json \
-  --output "<output_root>/codex-cli-task-final.json" \
+  --output-last-message "<output_root>/codex-cli-task-final.md" \
   "Read <input paths>. Write <output paths>. Return only a concise final summary with files written and blocking issues."
 ```
 

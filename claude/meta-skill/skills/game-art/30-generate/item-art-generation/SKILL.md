@@ -37,8 +37,7 @@ Downstream consumers include economy specs, inventory UI, shop UI, loot tables,
 runtime import checks, and icon generation when smaller icons are derived.
 
 Image requests must follow `image-generation-contract` with
-`generation_profile.task_type=item_art` and `prompt_template=item_art_prompt`.
-Use a model profile suited to isolated item output, alpha/background control,
+`purpose` set to the asset family. The output must show isolated item output, alpha/background control,
 category readability, and rarity/state clarity.
 
 ## Invocation Contract

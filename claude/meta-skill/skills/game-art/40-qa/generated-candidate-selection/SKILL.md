@@ -1,6 +1,6 @@
 ---
 name: game-art-40-qa-generated-candidate-selection
-description: Select, reject, cluster, and register generated image candidates after batch generation so downstream consumers only see visually accepted, processing-ready images.
+description: Select, reject, cluster, and register generated image candidates after image generation so downstream consumers only see visually accepted, processing-ready images.
 ---
 
 # Generated Candidate Selection Skill
@@ -18,9 +18,7 @@ edited images before they can enter `accepted-image-manifest.json`.
 Required:
 
 ```text
-.allforai/game-design/art/image-generation/generated-image-files-manifest.json
-.allforai/game-design/art/image-generation/image-batch-generation-plan.json
-.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
+.allforai/game-design/art/image-generation/image-request-manifest.json
 .allforai/game-design/art/asset-acceptance-criteria.json
 .allforai/game-design/art/programmatic-art-processing-plan.json
 ```
@@ -78,7 +76,8 @@ The selection report must include:
    clear masks, simple alpha, no baked text, and correct framing.
 5. Select best candidates per request/family and record why each was selected.
 6. If accepted coverage is below target, set `coverage_shortage` and trigger
-   another `mcp-image-batch` run through `image-batch-generation-plan`.
+   another generation round for the affected requests through
+   `image-generation-contract` (`repair_coverage_shortage`).
 7. Write only accepted candidates to `accepted-image-manifest.json` with
    `consumer_ready: true` when deterministic, visual, provenance, processing,
    and downstream-readiness checks pass.

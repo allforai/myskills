@@ -43,7 +43,7 @@ Optional inputs:
 - `.allforai/game-design/art/asset-acceptance-criteria.json`
 - local asset library indexes and user-provided motion references
 - web/marketplace search candidates with license reports
-- AI video generation provider/task descriptors
+- AI video generated through the Grok CLI per `image-generation-contract`
 - Blender, engine, or browser preview capture outputs
 
 ## Output Contract
@@ -147,6 +147,10 @@ Source rules:
 
 - Local, user-provided, existing, web, and marketplace videos require provenance
   and license status before commercial use or adaptation.
+- AI video comes from the Grok CLI (`image_to_video` from an accepted still,
+  or `reference_to_video`) as `game-art/30-generate/image-generation-contract/SKILL.md`
+  defines; a missing or video-disabled Grok login is `blocked_by_missing_video_cli`,
+  not a reason to call another video provider.
 - AI video is allowed only as a motion/image source and must be followed by
   frame extraction, visual QA, and downstream runtime validation.
 - 3D render capture is preferred over AI video when camera angle, scale,

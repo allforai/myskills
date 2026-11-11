@@ -77,9 +77,9 @@ Allowed blocker codes:
 - `missing_workflow`
 - `missing_bootstrap_validator`
 - `missing_visual_model_route`
-- `missing_mcp_image_batch`
+- `missing_image_cli`
+- `missing_video_cli`
 - `missing_google_key`
-- `missing_fal_key`
 - `missing_runtime_command`
 - `missing_playwright_or_engine_automation`
 - `forbidden_completed_with_limits`
@@ -113,7 +113,7 @@ Project-specific requirements that bootstrap must specialize:
 
 - exact runtime commands and engine launch commands;
 - exact image/audio/model providers and API keys;
-- exact MCP servers such as `mcp-image-batch`;
+- exact generator CLIs (`codex` for images, `grok` for video);
 - exact visual acceptance criteria and forbidden placeholders;
 - exact QA nodes, repair loop node ids, closure node ids, and attempt budgets;
 - exact long-task timeout/retry values;
@@ -148,9 +148,8 @@ the selected workflow, including:
 - human gates that must already be approved or converted to final-only review;
 - reviewer two visual review requirements;
 - Playwright, engine, or UI automation requirements;
-- `mcp-image-batch` image generation requirements;
-- Google/fal/OpenRouter/audio provider key requirements;
-- LoRA dataset/training/runtime requirements when strict identity lock is used;
+- image generation (Codex CLI) and video generation (Grok CLI) requirements;
+- Google/OpenRouter/audio provider key requirements;
 - runtime command, dev server, simulator, or engine launch requirements;
 - long-task recovery policy and retry budgets;
 - disallowed fallback states such as `COMPLETED_WITH_LIMITS` for production
@@ -180,14 +179,13 @@ The readiness check must reject:
   runtime user prompts during execution;
 - any node-spec missing from the workflow;
 - visual QA workflows without reviewer two or visual model routing;
-- generated image workflows without a valid image provider or `mcp-image-batch`
-  route when batch generation is required;
+- generated image workflows without the Codex CLI, or generated video workflows
+  without the Grok CLI;
 - audio workflows without required provider keys when audio generation is
   selected;
 - runtime/frontend QA workflows without executable runtime commands,
   screenshots, or automation capability;
-- strict identity/style lock workflows without LoRA adapter, dataset/training
-  path, or explicit allowed fallback;
+- strict identity/style lock workflows without approved reference images;
 - production workflows that can complete with `COMPLETED_WITH_LIMITS` without
   an explicit project allowance;
 - long tasks that do not define file-based handoff, polling, retry, timeout,
@@ -231,7 +229,7 @@ The generated spec must be machine-readable and include at minimum:
 
 Allowed `required_capabilities[].capability` values include
 `runtime_command`, `engine_automation`, `playwright`, `browser_automation`,
-`codex_cli`, `mcp_image_batch`, `google_api_key`, `fal_key`, and
+`codex_cli`, `image_generation_cli`, `video_generation_cli`, `google_api_key`, and
 project-defined capability names. Unknown project-defined names must still be
 recorded, but cannot substitute for a known required tool.
 

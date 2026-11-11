@@ -164,7 +164,7 @@ meta-skill: `/skill:bootstrap [path]`, then `/skill:run [goal]` in the target pr
 
 ## Key Dependency: mcp-ai-gateway
 
-`shared/mcp-ai-gateway/` provides OpenRouter (cross-model XV + image gen) + Google AI (Imagen 4 / Veo 3.1 / TTS) + fal.ai (FLUX 2 Pro / Kling) in a single process:
+`shared/mcp-ai-gateway/` provides OpenRouter (cross-model XV) + Google AI (TTS) + Brave Search in a single process:
 
 ```bash
 cd shared/mcp-ai-gateway
@@ -172,18 +172,17 @@ npm install
 npm run build        # produces dist/index.js
 ```
 
-Requires `OPENROUTER_API_KEY` for cross-model queries and image generation. Optionally `GOOGLE_API_KEY` for Imagen 4/Veo 3.1/TTS, `FAL_KEY` for FLUX 2 Pro/Kling.
+Requires `OPENROUTER_API_KEY` for cross-model queries. Optionally `GOOGLE_API_KEY` for TTS, `BRAVE_API_KEY` for search. The gateway does not generate images or video: images come from Codex, video from the Grok CLI (`claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md`).
 
 ## External Service Keys
 
-Four optional API keys enhance plugin capabilities. Configure all at once with `/setup`:
+Three optional API keys enhance plugin capabilities; `/setup` also checks the generation CLIs (Codex for images, Grok for video, which needs `grok login` on a plan that includes video):
 
 | Service | Env Variable | Used By | Purpose |
 |---------|-------------|---------|---------|
-| OpenRouter | `OPENROUTER_API_KEY` | meta-skill capabilities, jev | Cross-model XV + image generation (GPT-5 Image); Jev decisions |
+| OpenRouter | `OPENROUTER_API_KEY` | meta-skill capabilities, jev | Cross-model XV; Jev decisions |
 | Brave Search | `BRAVE_API_KEY` | demo-forge capability | Media search (images/videos) |
-| Google AI | `GOOGLE_API_KEY` | demo-forge capability | Imagen 4 (image) + Veo 3.1 (video) + TTS |
-| fal.ai | `FAL_KEY` | demo-forge capability | FLUX 2 Pro (image) + Kling (video) |
+| Google AI | `GOOGLE_API_KEY` | demo-forge capability | TTS |
 
 All services are optional — plugins work without them, skipping enhanced features.
 

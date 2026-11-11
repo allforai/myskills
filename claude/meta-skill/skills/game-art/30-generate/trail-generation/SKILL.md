@@ -46,10 +46,7 @@ trail textures, and preview capabilities.
 When trail strip textures are generated, each bitmap request must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=trail_texture` and
-`generation_profile.task_type=trail_texture`. The request must use
-`prompt_template=trail_texture_prompt` and a model profile that supports
-transparent strip/gradient texture output. It must include trail width/length,
+Use normalized image requests with `purpose=trail_texture`. The output must support transparent strip/gradient texture output. It must include trail width/length,
 color over life, alpha/fade rule, layer, style, output path, positive prompt,
 negative prompt, stretch suitability checks, fade checks, and
 `downstream_feedback.enabled=true`.

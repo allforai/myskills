@@ -6,9 +6,8 @@ API Key 配置在插件 `.mcp.json` 的 `env` 块中（通过 `/setup` 命令管
 
 | 变量 | 用途 | 必需 |
 |------|------|------|
-| `OPENROUTER_API_KEY` | 跨模型 XV + GPT-5 Image 生图 | 是（核心） |
-| `GOOGLE_API_KEY` | Imagen 4 生图 + Veo 3.1 生视频 + TTS | 可选 |
-| `FAL_KEY` | FLUX 2 Pro 生图 + Kling 生视频 | 可选 |
+| `OPENROUTER_API_KEY` | 跨模型 XV | 是（核心） |
+| `GOOGLE_API_KEY` | Cloud TTS 语音合成 | 可选 |
 | `BRAVE_API_KEY` | Brave Search 搜索 | 可选 |
 
 ## MCP 服务器位置
@@ -30,8 +29,7 @@ shared/mcp-ai-gateway/
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
-        "BRAVE_API_KEY": "${BRAVE_API_KEY}",
-        "FAL_KEY": "${FAL_KEY}"
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
       }
     }
   }
@@ -52,12 +50,7 @@ shared/mcp-ai-gateway/
 |------|------|------|
 | `ask_model` | 始终 | 跨模型查询 |
 | `refresh_models` | 始终 | 刷新模型缓存 + 查看路由状态 |
-| `openrouter_generate_image` | 始终 | GPT-5 Image / Gemini Flash Image 生图 |
-| `generate_image` | GOOGLE_API_KEY | Imagen 4 生图 |
-| `generate_video` | GOOGLE_API_KEY | Veo 3.1 生视频 |
 | `generate_tts` | GOOGLE_API_KEY | Cloud TTS 语音合成 |
-| `flux_generate_image` | FAL_KEY | FLUX 2 Pro/Dev/Schnell 生图 |
-| `kling_generate_video` | FAL_KEY | Kling 2.1 Master 生视频 |
 | `brave_web_search` | BRAVE_API_KEY | 网页搜索 |
 | `brave_image_search` | BRAVE_API_KEY | 图片搜索 |
 | `brave_video_search` | BRAVE_API_KEY | 视频搜索 |
@@ -73,11 +66,14 @@ shared/mcp-ai-gateway/
 | llama | Meta | 通用推理、多语言 |
 | qwen | Alibaba | 中文理解、双语推理 |
 
+## 生图与生视频
+
+网关不再生图或生视频：图片交给 Codex，视频交给 Grok CLI，规则见
+`claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md`。
+
 ## 降级链
 
 ```
-生图: Imagen 4 -> GPT-5 Image -> FLUX 2 Pro -> 跳过
-生视频: Veo 3.1 -> Kling -> 跳过
 搜索: Brave Search -> WebSearch -> AI 生成
 ```
 
@@ -112,8 +108,8 @@ routing:
   market_research: "deepseek"
 ```
 
-## Where generated media may be saved
+## Where generated audio may be saved
 
-Every media tool's `save_path` must stay inside the directory the gateway was started in —
+Every file-writing tool's `save_path` (TTS audio) must stay inside the directory the gateway was started in —
 the project — and may not leave it through `..`, an absolute path or a symlinked directory.
 Set `AI_GATEWAY_SAVE_ROOT` to allow a different root.

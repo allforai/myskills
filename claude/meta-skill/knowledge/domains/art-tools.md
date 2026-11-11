@@ -9,70 +9,26 @@
 
 ---
 
-## 一、MCP 直接调用（ai-gateway 工具）
+## 一、生成：图片交给 Codex，视频交给 Grok
 
-### flux_generate_image
+规则与验收以 `skills/game-art/30-generate/image-generation-contract/SKILL.md` 为准；这里只列调用面。
 
-```
-invoke:  MCP tool — mcp__plugin_meta-skill_ai-gateway__flux_generate_image
-model:   FLUX 2 Pro（fal.ai）
-格式:    square(1:1) / portrait_4_3(3:4) / portrait_16_9(9:16)
-requires_install: false（需 FAL_KEY 环境变量）
-
-擅长:
-  - 2D 卡通/手绘风格角色立绘
-  - 游戏地砖（卡通/写实风格）
-  - UI 图标（质感类，如货币/道具）
-  - 环境场景（卡通风格）
-
-限制:
-  - 像素风效果差（边缘不硬，调色板不受控）
-  - 无法控制精确构图（右上角放特定物体等）
-  - 文字渲染不可靠
-  - 透明背景支持有限
-
-fallback: generate_image（Imagen 4）
-```
-
-### generate_image（Imagen 4）
+### Codex 生图（唯一图片生成源）
 
 ```
-invoke:  MCP tool — mcp__plugin_meta-skill_ai-gateway__generate_image
-model:   Google Imagen 4
-格式:    1:1 / 3:4 / 9:16（portrait 系）
-requires_install: false（需 GOOGLE_API_KEY 环境变量）
-
-擅长:
-  - 环境/背景场景（写实/半写实）
-  - 9:16 竖版场景（全屏背景）
-  - 自然光照场景（森林/海边/建筑）
-
-限制:
-  - 小尺寸 UI 图标细节不佳
-  - 纯卡通/夸张风格弱于 FLUX
-  - 像素风不可用
-
-fallback: flux_generate_image
+invoke:  Codex 平台直接用自带生图；Claude Code / Pi 上用 `codex exec`
+         （经 codex-cli-delegation/codex-cli-task，提示词走 stdin，要求把图存到 output_path）
+能做:    文生图、按参考图编辑/变体（保持角色/风格一致）、真透明背景 PNG
+缺失时:  blocked_by_missing_image_cli，不回退到其他生图服务
 ```
 
-### openrouter_generate_image（GPT / Gemini 生图）
+### Grok CLI 生视频（唯一视频生成源）
 
 ```
-invoke:  MCP tool — mcp__plugin_meta-skill_ai-gateway__openrouter_generate_image
-model:   通过 model 参数指定（如 gpt-image-1、gemini-2.0-flash-exp-image-generation）
-requires_install: false（需 OPENROUTER_API_KEY 环境变量）
-
-擅长:
-  - 风格多样（通过 model 参数切换）
-  - 概念设计/情绪板参考图
-  - 特殊风格需求
-
-限制:
-  - 速度慢于 FLUX/Imagen
-  - 成本较高
-  - 可用 model 随 OpenRouter 接入变化
-
-fallback: flux_generate_image
+invoke:  grok -p "<prompt>" --tools image_to_video --allow image_to_video --output-format json
+         （或 reference_to_video；输出在 ~/.grok/sessions/<编码后的 cwd>/<session id>/videos/，需拷到 output_path）
+需要:    已登录且订阅含视频；账号零数据保留（ZDR）时视频工具不可用
+缺失时:  blocked_by_missing_video_cli，不回退到其他视频服务
 ```
 
 ### ask_model（XV 交叉验证）
@@ -338,8 +294,8 @@ AI 直接编写 SVG XML 文件，无需调用任何工具：
 - 简单形状：circle、square、triangle 变体
 
 **不适用**：
-- 质感类图标（货币/道具，有光泽/渐变/细节）→ 用 flux_generate_image
-- 复杂多层图标（需 20+ 个 SVG 元素）→ 用 flux_generate_image
+- 质感类图标（货币/道具，有光泽/渐变/细节）→ 用 Codex 生图
+- 复杂多层图标（需 20+ 个 SVG 元素）→ 用 Codex 生图
 
 ### JSON 规格文档
 
@@ -417,20 +373,20 @@ fallback: 改走 2D 帧序列 / 视频抽帧，不要改开 3D 游戏分支
 
 ## 工具能力矩阵（节点执行策略速查）
 
-| 资产类型 | MCP 生图 | Bash CLI | Python PIL | AI 直写 | 人工必须 |
+| 资产类型 | Codex 生图 / Grok 视频 | Bash CLI | Python PIL | AI 直写 | 人工必须 |
 |---|---|---|---|---|---|
-| 2D 地砖（卡通） | ✅ flux | - | - | - | QA |
+| 2D 地砖（卡通） | ✅ Codex | - | - | - | QA |
 | 2D 地砖（像素风） | ⚠️ 生高分图→降采样 | ✅ pngquant | ✅ resize(NEAREST) | - | QA |
-| 角色立绘（卡通） | ✅ flux | - | - | - | QA |
-| 角色分层参考 | ✅ flux(分层参考) | - | - | - | 仅当 use_layer_sheet=true |
-| 角色帧动画 | ✅ flux | ✅ ffmpeg抽帧 | ✅ 合图 | - | QA 验收 |
+| 角色立绘（卡通） | ✅ Codex | - | - | - | QA |
+| 角色分层参考 | ✅ Codex(分层参考) | - | - | - | 仅当 use_layer_sheet=true |
+| 角色帧动画 | ✅ Codex 出帧 / Grok 出视频 | ✅ ffmpeg抽帧 | ✅ 合图 | - | QA 验收 |
 | 3D 低模 / 高模 | ❌ | ❌ | ❌ | ❌ | 超出本管线 |
 | UI 图标（矢量形状） | - | - | - | ✅ SVG | QA |
-| UI 图标（质感类） | ✅ flux | - | - | - | QA |
-| VFX 参考帧 | ✅ flux | - | - | - | QA |
+| UI 图标（质感类） | ✅ Codex | - | - | - | QA |
+| VFX 参考帧 | ✅ Codex | - | - | - | QA |
 | VFX 帧序列占位 | - | ✅ ffmpeg | ✅ PIL绘占位 | - | QA |
-| 背景/环境场景 | ✅ Imagen | - | - | - | QA |
-| 概念原画（参考） | ✅ flux/Imagen | - | - | - | QA |
+| 背景/环境场景 | ✅ Codex | - | - | - | QA |
+| 概念原画（参考） | ✅ Codex | - | - | - | QA |
 | Sprite Atlas 打包 | - | ✅ TexturePacker | ✅ PIL合图 | - | - |
 
 **图例**：✅ 可用 / ⚠️ 间接可用 / ❌ 不可用 / QA = 需人工 QA 验收
@@ -446,11 +402,9 @@ def check_tools() -> dict:
     """检测当前环境下哪些工具可用，供 art-gen 节点选择策略"""
     results = {}
     
-    # MCP 工具（由 skill 环境决定，此处只检测 API Key）
-    import os
-    results["flux"] = bool(os.environ.get("FAL_KEY"))
-    results["imagen"] = bool(os.environ.get("GOOGLE_API_KEY"))
-    results["openrouter"] = bool(os.environ.get("OPENROUTER_API_KEY"))
+    # 生成器：图片 Codex，视频 Grok CLI
+    results["codex"] = bool(shutil.which("codex"))
+    results["grok"] = bool(shutil.which("grok"))
     
     # CLI 工具
     results["imagemagick"] = bool(shutil.which("convert"))

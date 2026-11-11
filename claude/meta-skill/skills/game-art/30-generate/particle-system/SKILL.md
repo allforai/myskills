@@ -103,10 +103,7 @@ Out of scope:
 When particle textures are generated, each bitmap request must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=particle_texture` and
-`generation_profile.task_type=particle_texture`. The request must use
-`prompt_template=particle_texture_prompt` and a model profile that supports
-simple transparent sprite output. It must include particle role, layer, blend
+Use normalized image requests with `purpose=particle_texture`. The output must support simple transparent sprite output. It must include particle role, layer, blend
 mode, texture shape, alpha policy, style, output path, positive prompt, negative
 prompt, scale readability checks, blend suitability checks, and
 `downstream_feedback.enabled=true`.

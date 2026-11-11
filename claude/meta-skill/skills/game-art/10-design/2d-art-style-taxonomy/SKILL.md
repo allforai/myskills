@@ -77,7 +77,7 @@ Present only the relevant subset, but the taxonomy must be able to classify:
 - `painted_illustration`: high appeal and mood, good for backgrounds/portraits,
   higher consistency and production cost.
 - `anime_character`: strong character appeal, high identity drift risk, often
-  needs reference/LoRA and strict face/outfit locks.
+  needs approved reference images and strict face/outfit locks.
 - `storybook_watercolor`: soft emotional tone, good for cozy/narrative games,
   risk of low small-size contrast.
 - `cutout_paper`: layered craft look, excellent programmatic composition and
@@ -100,7 +100,7 @@ The HTML must be in Chinese and explain for each shortlisted style:
 - suitable game genres and screens;
 - asset workload and iteration cost;
 - LLM generation difficulty;
-- whether LoRA/reference/edit mode is likely required;
+- whether reference-image edit mode is likely required;
 - best programmatic processing methods;
 - runtime readability risks;
 - what the style should avoid.

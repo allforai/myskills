@@ -82,12 +82,11 @@ The JSON must include:
    icons match item/skill rarity, characters fit environments, and backgrounds
    do not overpower interactables.
 6. For every failed family, classify the root cause:
-   `prompt_problem`, `model_problem`, `missing_lora`, `source_asset_mismatch`,
+   `prompt_problem`, `model_problem`, `missing_reference_lock`, `source_asset_mismatch`,
    `asset_spec_problem`, `runtime_size_problem`, `palette_problem`,
    `crop_or_margin_problem`, or `engine_binding_problem`.
-7. Route repairs to the smallest upstream step: prompt/model routing, LoRA,
-   mcp-image-batch edit mode, source adaptation, atlas packaging, or runtime
-   binding.
+7. Route repairs to the smallest upstream step: the prompt, a reference-image
+   edit through Codex, source adaptation, atlas packaging, or runtime binding.
 
 ## Repair And Revalidation Loop
 
@@ -100,9 +99,9 @@ Loop:
    `.allforai/game-design/art/image-generation/image-feedback-report.json`
    unless the root cause is not image-owned.
 2. Route the failure to the smallest owner:
-   - `prompt_problem`, `model_problem`, `missing_lora`, or
-     `runtime_size_problem` -> `image-generation-contract` and
-     `batch-image-generation` or LoRA repair;
+   - `prompt_problem`, `model_problem`, `missing_reference_lock`, or
+     `runtime_size_problem` -> `image-generation-contract` (regenerate, or
+     edit from the approved reference images);
    - `source_asset_mismatch` -> `asset-source-strategy-spec`,
      `asset-pack-search-spec`, or `existing-asset-adaptation-spec`;
    - `asset_spec_problem` -> the producing art spec/generation skill;

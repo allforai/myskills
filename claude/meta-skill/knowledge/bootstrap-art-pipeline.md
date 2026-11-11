@@ -49,7 +49,7 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
 1. **2D 美术风格分类与偏好契约：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md`
    - 输入：产品/游戏概念、已有美术偏好、项目摘要
    - 输出：`.allforai/game-design/art/2d-art-style-taxonomy.html`（项目工作语言，人类阅读）、`.allforai/game-design/art/2d-art-style-taxonomy.json`、`.allforai/game-design/art/human-visual-preferences.json`
-   - 要求：在项目启动前向用户交代可选 2D 美术风格族、适合类型、生产成本、LLM 生图难度、LoRA/参考图/编辑模式需求、程序加工适配度、运行时风险和禁止风格；不得把具体项目标准写死到全局 skill。
+   - 要求：在项目启动前向用户交代可选 2D 美术风格族、适合类型、生产成本、LLM 生图难度、参考图/编辑模式需求、程序加工适配度、运行时风险和禁止风格；不得把具体项目标准写死到全局 skill。
 
 2. **动画生产计划：** `${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md`
    - 输入：参见 SKILL.md 的 Invocation Contract
@@ -213,11 +213,11 @@ family-level or play-surface-specific art generation rules, generate or read
 the project-local specialized skill at
 `.allforai/bootstrap/specialized-skills/<specialization_id>-art-generation/SKILL.md`.
 
-Use it to define node-local prompt templates, model profile preferences,
-preview validation contexts, and repair routing. This project-local skill must
-still route concrete generation through the bundled source strategy,
-image-model-capability-registry, image-generation-contract, accepted-image
-manifest, style QA, and runtime import contracts.
+Use it to define node-local prompt guidance, preview validation contexts, and
+repair routing. This project-local skill must still route concrete generation
+through the bundled source strategy, image-generation-contract (images from
+Codex, video from the Grok CLI), accepted-image manifest, style QA, and runtime
+import contracts.
 
 ### Step -0.5 — Asset Acceptance Criteria
 
@@ -235,7 +235,7 @@ requirements.
 
 ### Step -0.4 — Programmatic Art Processing Plan
 
-Before prompt compilation or direct image generation, invoke
+Before any image generation, invoke
 `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/programmatic-art-processing-plan/SKILL.md`.
 This writes `.allforai/game-design/art/programmatic-art-processing-plan.json`
 and `.allforai/game-design/art/programmatic-art-processing-plan.md`.
@@ -272,32 +272,23 @@ For each asset in `canonical_registry.<REGISTRY_KEY>[]`, check its `source_strat
 
 <List the pre-spec sub-skill paths from the mapping table above for this node_id, with conditions. Skip for assets that completed Step 0 and are already marked `adapted`.>
 
-### Step 1.5 — Prompt Compilation And Batch Plan
-
-For every asset still using `ai_generated`, `image_edit`, or `hybrid`
-production, invoke:
-
-1. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-prompt-compiler/SKILL.md`
-   - 输出：`.allforai/game-design/art/image-generation/compiled-prompt-manifest.json` 和 prompt 文件目录
-   - 要求：按资产类型、风格基准、验收标准、模型路由、LoRA/参考图锁定和程序加工计划编译 prompt；不得使用临时自由 prompt。
-2. `${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md`
-   - 输出：`.allforai/game-design/art/image-generation/image-batch-generation-plan.json` 和 `.md`
-   - 要求：按资产家族、模型能力、prompt 模板、候选数量、重试预算和 material-first 策略分批；覆盖不足必须触发下一批或保持阻塞。
-
 ### Step 2 — Generate
 
 <List the generate sub-skill paths from the mapping table above for this node_id, with conditions. Skip for assets already marked `adapted`.>
 
-After batch generation, invoke
+Generated pixels come from Codex and generated video from the Grok CLI, through
+`${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md`;
+a missing generator blocks the asset rather than falling back to another
+provider. After generation, invoke
 `${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/generated-candidate-selection/SKILL.md`
-before any downstream consumer reads images. Raw MCP/image outputs are candidates
+before any downstream consumer reads images. Raw generated outputs are candidates
 only. They may enter `.allforai/game-design/art/image-generation/accepted-image-manifest.json`
 with `consumer_ready: true` only after selection verifies visual evidence,
 processing readiness, coverage, and acceptance criteria.
 
 ## Completion Condition
 
-`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND `.allforai/game-design/art/programmatic-art-processing-plan.json` exists AND `.allforai/game-design/art/image-generation/compiled-prompt-manifest.json` exists when generation is required AND `.allforai/game-design/art/image-generation/image-batch-generation-plan.json` exists when batch generation is required AND `.allforai/game-design/art/image-generation/generated-candidate-selection-report.json` exists when new images were generated AND `.allforai/game-design/art/image-generation/accepted-image-manifest.json` contains entries for this node's produced/adapted bitmap assets with `consumer_ready: true` AND the referenced image files exist.
+`.allforai/game-design/systems/<node_id>-spec.json` exists AND `.allforai/game-design/<node_id>-review.html` exists AND `.allforai/game-design/art/programmatic-art-processing-plan.json` exists AND `.allforai/game-design/art/image-generation/image-request-manifest.json` exists when generation is required AND `.allforai/game-design/art/image-generation/generated-candidate-selection-report.json` exists when new images were generated AND `.allforai/game-design/art/image-generation/accepted-image-manifest.json` contains entries for this node's produced/adapted bitmap assets with `consumer_ready: true` AND the referenced image files exist.
 
 Spec-only, manifest-only, or path-existence-only output is not a completed art-gen node. If the node is expected to generate, adapt, search, register, or render images and no actual visual evidence exists, return `FAILED_VALIDATION` or `blocked_by_missing_visual_evidence`; do not advance to `art-qa`.
 

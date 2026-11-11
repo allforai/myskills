@@ -162,7 +162,7 @@ Motion video to sprite policy:
   path and the extraction/normalization path.
 - Acceptable source adapters include project-local video libraries,
   user-provided motion references, licensed web/marketplace downloads,
-  AI-video provider tasks, Blender/3D render capture, and engine/browser
+  AI video from the Grok CLI, Blender/3D render capture, and engine/browser
   capture, but each required adapter must have executable or file evidence.
 - `ffmpeg` or an equivalent verified extractor must produce frame files from a
   fixture/source video. A video URL, prompt, or manifest alone is not evidence.

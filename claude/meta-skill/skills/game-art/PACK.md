@@ -1,6 +1,6 @@
 ---
 name: game-art
-description: "Game art production pack: environment and tool registries, art direction and visual tokens, view/layer/animation/VFX/tileset specs, image, animation, VFX, icon, prop, and LoRA generation, and QA through engine-ready output."
+description: "Game art production pack: environment and tool registries, art direction and visual tokens, view/layer/animation/VFX/tileset specs, image (Codex), video (Grok), animation, VFX, icon, and prop generation, and QA through engine-ready output."
 ---
 
 # Game Art Skill Pack
@@ -58,8 +58,7 @@ that exists but is not good enough.
 LLM/image-search production must prefer material-first generation when
 deterministic processing can improve consistency. The standard chain writes
 `.allforai/game-design/art/programmatic-art-processing-plan.json`,
-`.allforai/game-design/art/image-generation/compiled-prompt-manifest.json`,
-`.allforai/game-design/art/image-generation/image-batch-generation-plan.json`,
+`.allforai/game-design/art/image-generation/image-request-manifest.json`,
 `.allforai/game-design/art/image-generation/generated-candidate-selection-report.json`,
 and finally `.allforai/game-design/art/image-generation/accepted-image-manifest.json`.
 Downstream skills consume the accepted manifest only after candidate selection
@@ -73,7 +72,6 @@ Layer numbers indicate directory organization and default execution order for ne
 |---|---|---|
 | `00-env` | `asset-registry` | Canonical asset IDs, file prefixes, paths, lifecycle states, validation report. |
 | `00-env` | `2d-animation-toolchain-env` | Detect, install when possible, verify, and block missing 2D animation authoring, preview, atlas, and runtime import tools. |
-| `00-env` | `image-model-capability-registry` | Detect image provider/MCP access, discover current model catalogs, and route generation profiles to suitable models. |
 | `00-env` | `production-tool-capability-registry` | Detect, auto-install, and validate Blender CLI/Python, image, atlas, importer, and probe tools before use. |
 | `10-design` | `2d-animation-production-plan` | Light 2D animation method selection, fallback strategy, downstream routing, QA requirements. |
 | `10-design` | `2d-art-style-taxonomy` | Bootstrap-facing 2D art style families, tradeoffs, LLM fit, processing fit, and selected preference contract. |
@@ -96,17 +94,12 @@ Layer numbers indicate directory organization and default execution order for ne
 | `20-spec` | `character-layer-sheet` | Optional outfit/part sheet. Only when `character.use_layer_sheet === true`. Not default character animation. |
 | `20-spec` | `engine-export-profile` | Engine/tool export contracts for atlases, pivots, clips, tilemaps, and runtime import. |
 | `20-spec` | `existing-asset-adaptation-spec` | Normalize, edit, recolor, resize, rerender, or route existing 2D/3D assets into project art contracts. |
-| `20-spec` | `lora-identity-style-lock-spec` | Decide whether strict identity/style lock requires LoRA, and choose local GPU, remote GPU rental, provider API training, existing LoRA, or fallback. |
 | `20-spec` | `tileset-spec` | Tilemap mode selection, terrain vocabulary, tile rules, collision/walkability contracts. |
 | `20-spec` | `vfx-spec` | VFX semantics, gameplay events, presentation layer, dimension, implementation mode, timing, readability budgets. |
 | `20-spec` | `visual-style-tokens` | Shared palette, shape, line, material, camera, typography, and motion tokens. |
 | `20-spec` | `frame-animation-spec` | Frame-animation vocabulary, frame counts, timing, anchors, loop rules, acceptance. |
 | `20-spec` | `programmatic-art-processing-plan` | Material-first deterministic processing plan for layers, parts, palettes, atlases, animation, tile rules, masks, UI components, and previews. |
-| `20-spec` | `image-prompt-compiler` | Compile standardized prompts from benchmark, acceptance criteria, routing, LoRA/reference locks, and processing requirements. |
-| `20-spec` | `image-batch-generation-plan` | Plan image batches by family, model profile, prompt template, candidate coverage, repair budget, and material-first policy. |
-| `30-generate` | `image-generation-contract` | Shared bitmap acquisition request, prompt/search/register, output, visual acceptance, repair, and fallback contract. |
-| `30-generate` | `batch-image-generation` | Execute bulk LLM image generation through `mcp-image-batch` long-task MCP with file-based input/output handoff. |
-| `30-generate` | `lora-adapter-training` | Train, purchase/register, validate, and hand off LoRA adapters for strict identity/style locking. |
+| `30-generate` | `image-generation-contract` | Shared image/video acquisition contract: images from Codex, video from the Grok CLI, search/register for acquired assets, visual acceptance, repair, and downstream feedback. |
 | `30-generate` | `background-generation` | Background scene prompts, layers, parallax/depth, generated images, validation. |
 | `30-generate` | `prop-generation` | Reusable prop specs, generated images/models/placeholders, variants, validation. |
 | `30-generate` | `portrait-generation` | Character portraits, busts, dialogue/emotion variants, generated images, QA. |
@@ -147,7 +140,6 @@ Use these paths when a node-spec calls a child skill:
 ```text
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/asset-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md
@@ -170,17 +162,12 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/artifact-handoff-contract/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/engine-export-profile/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/existing-asset-adaptation-spec/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/tileset-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/vfx-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/visual-style-tokens/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/frame-animation-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/programmatic-art-processing-plan/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-prompt-compiler/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/lora-adapter-training/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/prop-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/portrait-generation/SKILL.md
@@ -251,14 +238,10 @@ Art methods should be placed where they are executed:
   `20-spec/asset-acceptance-criteria`;
 - material-first deterministic processing:
   `20-spec/programmatic-art-processing-plan`;
-- prompt compilation and batch planning:
-  `20-spec/image-prompt-compiler` and
-  `20-spec/image-batch-generation-plan`;
 - decomposition and runtime fit: `20-spec/2d-layering-spec`,
   `20-spec/engine-export-profile`, and asset-specific `20-spec/*` skills;
-- image provider/model capability discovery and routing:
-  `00-env/image-model-capability-registry`;
-- bitmap acquisition prompt/search/register/repair/feedback loop:
+- image/video generation source (Codex for images, Grok CLI for video) and
+  the prompt/search/register/repair/feedback loop:
   `30-generate/image-generation-contract`;
 - candidate selection before downstream consumption:
   `40-qa/generated-candidate-selection`;
@@ -316,9 +299,9 @@ Bitmap source closure:
 - asset sourcing must check `local_asset_library`, `user_provided_asset`,
   approved/cached libraries, and allowed web or marketplace sources before LLM
   image generation unless source policy explicitly skips them;
-- AI image generation must first route through
-  `00-env/image-model-capability-registry`; a model may be selected only when
-  its detected provider capabilities satisfy the request `generation_profile`;
+- AI image generation goes through Codex and AI video through the Grok CLI,
+  as `30-generate/image-generation-contract` defines; a missing generator
+  blocks the request instead of falling back to another provider;
 - all generated, searched, user-provided, adapted, local, or 3D-rendered bitmap
   outputs must be registered through
   `30-generate/image-generation-contract`;

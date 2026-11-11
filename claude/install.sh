@@ -45,4 +45,4 @@ fi
 echo ""
 echo "Done. Run 'claude' to start using the plugins."
 echo "Set OPENROUTER_API_KEY for cross-model XV and image generation."
-echo "Optional: GOOGLE_API_KEY (Imagen 4/Veo 3.1), FAL_KEY (FLUX 2 Pro/Kling)"
+echo "Optional: GOOGLE_API_KEY (TTS). Images: Codex CLI. Video: Grok CLI (grok login)."

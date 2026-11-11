@@ -324,33 +324,23 @@ def _validate_required_capabilities(
             if not codex_path:
                 warnings.append({"code": "missing_cross_platform_cli",
                                  "message": "Codex CLI not found; reviewer two runs as a second fresh-context sub-agent"})
-        elif capability == "mcp_image_batch":
-            settings = project_root / ".claude/settings.json"
-            has_image_batch = False
-            if settings.exists():
-                try:
-                    data = _load_json(settings)
-                    servers = data.get("mcpServers") or {}
-                    has_image_batch = "image-batch" in servers or "mcp-image-batch" in servers
-                except Exception:
-                    has_image_batch = False
-            external_tool_findings.append({
-                "capability": "mcp_image_batch",
-                "registered": has_image_batch,
-                "source": "spec",
-            })
-            if not has_image_batch:
-                _add(blockers, "missing_mcp_image_batch", "mcp-image-batch is required by unattended spec")
+        elif capability == "image_generation_cli":
+            # Generated images come only from Codex; unlike reviewer two there is no fallback.
+            codex_path = shutil.which("codex")
+            external_tool_findings.append({"capability": "image_generation_cli", "path": codex_path, "source": "spec"})
+            if not codex_path:
+                _add(blockers, "missing_image_cli", "Codex CLI is required to generate images and was not found")
+        elif capability == "video_generation_cli":
+            # Generated video comes only from the Grok CLI. Login and plan are checked when it runs.
+            grok_path = shutil.which("grok")
+            external_tool_findings.append({"capability": "video_generation_cli", "path": grok_path, "source": "spec"})
+            if not grok_path:
+                _add(blockers, "missing_video_cli", "Grok CLI is required to generate video and was not found")
         elif capability == "google_api_key":
             has_key = bool(os.environ.get(item.get("env") or "GOOGLE_API_KEY"))
             external_tool_findings.append({"capability": "google_api_key", "present": has_key, "source": "spec"})
             if not has_key:
                 _add(blockers, "missing_google_key", "Google API key is required by unattended spec")
-        elif capability == "fal_key":
-            has_key = bool(os.environ.get(item.get("env") or "FAL_KEY"))
-            external_tool_findings.append({"capability": "fal_key", "present": has_key, "source": "spec"})
-            if not has_key:
-                _add(blockers, "missing_fal_key", "FAL key is required by unattended spec")
         elif capability == "runtime_command":
             commands = item.get("commands")
             if not isinstance(commands, list) or not commands:
@@ -850,7 +840,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
             )
             fallback_findings.append({"node_id": nid, "state": "failed"})
 
-        if _contains_any(text, ("long-task", "poll", "task_id", "mcp-image-batch")):
+        if _contains_any(text, ("long-task", "poll", "task_id")):
             has_recovery = _contains_any(text, ("retry", "rerun", "resume", "repair", "timeout", "poll"))
             long_task_findings.append({"node_id": nid, "has_recovery_policy": has_recovery})
             if not has_recovery:
@@ -898,30 +888,11 @@ def validate_unattended_readiness(project_root: Path) -> dict:
             warnings.append({"code": "missing_cross_platform_cli",
                              "message": "Codex CLI not found in PATH; visual gates run reviewer two as a second fresh-context sub-agent (ADR-0003)"})
 
-    if "mcp-image-batch" in lower_blob or "image-batch" in lower_blob:
-        settings = project_root / ".claude/settings.json"
-        has_image_batch = False
-        if settings.exists():
-            try:
-                data = _load_json(settings)
-                has_image_batch = "image-batch" in (data.get("mcpServers") or {})
-            except Exception:
-                has_image_batch = False
-        external_tool_findings.append({"capability": "mcp_image_batch", "registered": has_image_batch})
-        if not has_image_batch:
-            _add(blockers, "missing_mcp_image_batch", "image-batch MCP is required but not registered")
-
-    if "google" in lower_blob or "lyria" in lower_blob or "imagen" in lower_blob:
+    if "google" in lower_blob or "lyria" in lower_blob:
         has_key = bool(os.environ.get("GOOGLE_API_KEY"))
         external_tool_findings.append({"capability": "google_api_key", "present": has_key})
         if not has_key:
             _add(blockers, "missing_google_key", "GOOGLE_API_KEY is required by selected workflow")
-
-    if "fal.ai" in lower_blob or "fal_key" in lower_blob:
-        has_key = bool(os.environ.get("FAL_KEY"))
-        external_tool_findings.append({"capability": "fal_key", "present": has_key})
-        if not has_key:
-            _add(blockers, "missing_fal_key", "FAL_KEY is required by selected workflow")
 
     if "program-development-node-handoff.json" in lower_blob and "game-frontend" in lower_blob:
         if "runtime-gameplay-visual-acceptance" not in lower_blob:

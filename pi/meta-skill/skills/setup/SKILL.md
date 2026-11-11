@@ -27,7 +27,14 @@ description: >
 | Capability | Pi check | Purpose |
 |------------|----------|---------|
 | browser automation | 当前会话是否已有 Playwright/浏览器工具 | UI verification |
-| ai-gateway | `../../mcp-ai-gateway/dist/index.js` 存在 | search / image / model gateway |
+| ai-gateway | `../../mcp-ai-gateway/dist/index.js` 存在 | search / TTS / model gateway |
+
+### 生成 CLI
+
+| Capability | Pi check | Purpose |
+|------------|----------|---------|
+| 生图 | `command -v codex` | 唯一图片生成源（`codex exec`），见 game-art `image-generation-contract` |
+| 生视频 | `command -v grok` + `grok --no-auto-update models` 显示已登录 | 唯一视频生成源；需订阅含视频且未被零数据保留关闭 |
 
 ### API-key-backed services
 
@@ -35,7 +42,6 @@ description: >
 |------------|---------|
 | OpenRouter | `OPENROUTER_API_KEY` |
 | Google AI | `GOOGLE_API_KEY` |
-| fal.ai | `FAL_KEY` |
 | Brave Search | `BRAVE_API_KEY` |
 
 ### Built-in fallback
@@ -55,8 +61,8 @@ description: >
 
 ## Step 1: Status Dashboard
 
-至少报告：gateway 构建、浏览器自动化、四个 API key。
-附降级说明：无浏览器则跳过动态 UI 验证；无搜索 key 则用已有搜索或用户材料；无图/视频服务则跳过媒体增强。
+至少报告：gateway 构建、浏览器自动化、Codex 与 Grok CLI、三个 API key。
+附降级说明：无浏览器则跳过动态 UI 验证；无搜索 key 则用已有搜索或用户材料；无 Codex 则生图请求阻塞（`blocked_by_missing_image_cli`），无 Grok 则生视频请求阻塞（`blocked_by_missing_video_cli`），二者都没有替代源。
 
 `check` 模式在仪表板后停止。
 

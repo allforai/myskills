@@ -227,6 +227,25 @@ def test_missing_codex_cli_is_a_warning_not_a_blocker(tmp_path, monkeypatch):
     assert any(f.get("reviewer_two_backend") == "session-subagent" for f in report["external_tool_findings"])
 
 
+@pytest.mark.parametrize("capability,code", [
+    ("image_generation_cli", "missing_image_cli"),
+    ("video_generation_cli", "missing_video_cli"),
+])
+def test_missing_generator_cli_blocks_unlike_reviewer_two(tmp_path, monkeypatch, capability, code):
+    # Generated images come only from Codex and generated video only from Grok; with no
+    # fallback generator, a missing CLI must stop the run before it starts.
+    import validate_unattended_readiness as m
+    monkeypatch.setattr(m.shutil, "which", lambda name: None)
+    _minimal_project(tmp_path)
+    spec_path = tmp_path / ".allforai/bootstrap/unattended-run-readiness-spec.json"
+    spec = json.loads(spec_path.read_text())
+    spec["required_capabilities"] = [{"capability": capability, "required": True}]
+    spec_path.write_text(json.dumps(spec))
+    report = validate_unattended_readiness(tmp_path)
+    assert code in {b["code"] for b in report["blockers"]}
+    assert report["status"] == "not_ready"
+
+
 # The run boundary reads whatever `workflow.json` currently holds. Every check below the
 # workflow load either indexes the graph by node identifier or names one in a blocker, so
 # an identifier that cannot key a map is decided first and reported as a blocker. A gate

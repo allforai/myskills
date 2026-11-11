@@ -94,9 +94,7 @@ unique landmarks that break repetition.
 Every generated tile image or tile sheet must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=tileset` and
-`generation_profile.task_type=tileset`. The request must use
-`prompt_template=tileset_prompt` and a model profile that supports consistent
+Use normalized image requests with `purpose=tileset`. The output must support consistent
 tile/texture output. It must include tile size, projection, connectivity,
 terrain id, variant id, atlas contract, positive prompt, negative prompt, output
 path, seam checks, preview-map checks, and `downstream_feedback.enabled=true`.

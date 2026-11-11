@@ -104,8 +104,8 @@ The JSON must contain:
         "identity_lock": {
           "required": false,
           "lock_scope": "none|project_style|character|object|tile_family|icon_family|ui_family",
-          "requires_lora": false,
-          "allowed_methods": ["lora_adapter", "reference_edit_mode", "reference_image_only", "prompt_only"],
+          "reference_images": [],
+          "allowed_methods": ["reference_edit", "prompt_only"],
           "fallback_policy": "forbid|allow_with_warning|allow",
           "blocking_failure_codes": ["IDENTITY_DRIFT", "STYLE_DRIFT"]
         },
@@ -169,8 +169,8 @@ For each applicable asset family, define standards for:
   project;
 - identity/style lock strategy: whether recurring characters, project-wide
   styles, branded objects, tile families, icon families, or UI visual systems
-  require LoRA, reference edit mode, reference-only fallback, or prompt-only
-  generation;
+  must be generated from approved reference images (Codex edit/reference
+  mode) or may be prompt-only;
 - production fit: model/source/tool choices can realistically satisfy the
   standard;
 - technical import: file format, alpha, atlas, pivot, animation, compression,
@@ -193,8 +193,9 @@ Before completion:
 5. Confirm each blocking failure code has a repair route.
 6. Confirm image-generation requests and visual-acceptance batches can reference
    this criteria document.
-7. Confirm strict identity/style lock criteria declare whether LoRA is required,
-   which fallback methods are allowed, and which drift failures are blockers.
+7. Confirm strict identity/style lock criteria name the approved reference
+   images, whether prompt-only output is allowed, and which drift failures are
+   blockers.
 
 ## Completion Conditions
 

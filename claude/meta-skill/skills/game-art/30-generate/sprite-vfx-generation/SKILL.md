@@ -49,9 +49,7 @@ generation capabilities.
 Every generated sprite-sheet image must follow
 `game-art/30-generate/image-generation-contract/SKILL.md`.
 
-Use normalized image requests with `purpose=sprite_vfx` and
-`generation_profile.task_type=sprite_vfx`. The request must use
-`prompt_template=sprite_vfx_prompt` and a model profile that supports frame-grid
+Use normalized image requests with `purpose=sprite_vfx`. The output must support frame-grid
 or multi-frame consistency. It must include frame count, FPS, frame size,
 lifecycle phase, layer, alpha policy, output path, positive prompt, negative
 prompt, sequence readability checks, frame crop checks, and

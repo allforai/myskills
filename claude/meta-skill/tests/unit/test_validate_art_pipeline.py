@@ -23,7 +23,6 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/visual-acceptance-review/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/asset-family-consistency-qa/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/40-qa/in-game-beauty-gate/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/2d-animation-toolchain-env/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/image-model-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/00-env/production-tool-capability-registry/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-animation-production-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/2d-art-style-taxonomy/SKILL.md
@@ -32,13 +31,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/game-art/10-design/asset-source-strategy-spec/SKILL
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-acceptance-criteria/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/asset-pack-search-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/character-layer-sheet/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/programmatic-art-processing-plan/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-prompt-compiler/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/image-generation-contract/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/batch-image-generation/SKILL.md
-${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/lora-adapter-training/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/background-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/decal-generation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/game-art/30-generate/expression-set-generation/SKILL.md
@@ -94,11 +88,9 @@ blocked_by_missing_visual_model_capability
 .allforai/game-design/art/qa/runtime-import-check-report.json
 .allforai/game-design/art/image-generation/accepted-image-manifest.json
 .allforai/game-design/art/programmatic-art-processing-plan.json
-.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
-.allforai/game-design/art/image-generation/image-batch-generation-plan.json
 .allforai/game-design/art/image-generation/generated-candidate-selection-report.json
 raw PNG/JPG/WebP paths
-image-model-capability-registry
+AI image generation goes through Codex and AI video through the Grok CLI
 game-art/20-spec/asset-acceptance-criteria/SKILL.md
 """,
     )
@@ -296,132 +288,31 @@ blocked_by_missing_codex_cli
         tmp_path,
         "claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md",
         """.allforai/game-design/art/image-generation/accepted-image-manifest.json
-.allforai/game-design/art/image-generation/image-model-capability-registry.json
-.allforai/game-design/art/image-generation/image-model-routing-report.json
+.allforai/game-design/art/image-generation/image-request-manifest.json
+.allforai/game-design/art/asset-acceptance-criteria.json
 consumer_ready
-image-model-capability-registry
-route_model
-selected provider/model
-missing_capabilities
+consumer_ready` stays false
+Downstream skills must not consume raw PNG paths directly
+re-run the downstream consumer validation
 register_searched_or_existing
 web_or_marketplace_search
 local_asset_library
-Downstream skills must not consume raw PNG paths directly
-re-run the downstream consumer validation
-.allforai/game-design/art/asset-acceptance-criteria.json
-asset-acceptance-criteria
-consumer_ready` remains false
-game-art/30-generate/batch-image-generation/SKILL.md
-mcp-image-batch
-long-task
-.allforai/game-design/art/image-generation/mcp-image-batch-input.json
-.allforai/game-design/art/image-generation/mcp-image-batch-task.json
-.allforai/game-design/art/image-generation/mcp-image-batch-output.json
-.allforai/game-design/art/image-generation/generated-image-files-manifest.json
-blocked_by_missing_mcp_image_batch
-Do not mark MCP outputs `consumer_ready: true` directly
 repair_coverage_shortage
-coverage shortage
-insufficient accepted images
-mcp-image-batch` file handoff
-operation
-context/base image
-maskRegion
-preservation acceptance
-identity_lock
-requires_lora
-blocked_by_missing_identity_lock
-lora_adapter_id
-prompt-only
-game-art/20-spec/programmatic-art-processing-plan/SKILL.md
-game-art/20-spec/image-prompt-compiler/SKILL.md
-game-art/20-spec/image-batch-generation-plan/SKILL.md
-game-art/40-qa/generated-candidate-selection/SKILL.md
-.allforai/game-design/art/programmatic-art-processing-plan.json
-.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
-.allforai/game-design/art/image-generation/image-batch-generation-plan.json
-.allforai/game-design/art/image-generation/generated-candidate-selection-report.json
-material_first
-LLM outputs are candidates
 Coverage shortage
-""",
-    )
-    _write(
-        tmp_path,
-        "claude/meta-skill/skills/game-art/30-generate/batch-image-generation/SKILL.md",
-        """mcp-image-batch
-long-task image generation
-file handoff
-.allforai/game-design/art/image-generation/mcp-image-batch-input.json
-.allforai/game-design/art/image-generation/mcp-image-batch-task.json
-.allforai/game-design/art/image-generation/mcp-image-batch-output.json
-.allforai/game-design/art/image-generation/generated-image-files-manifest.json
-input file path
-output file path
-poll
-task_id
-blocked_by_missing_mcp_image_batch
-not paste large
-`image-generation-contract` may write accepted entries
-coverage shortage
-enough visually accepted images
-accepted output count is below
-triggers another
-mcp_image_batch_edit_file_handoff
-prepare_edit_session
-run_edit_prompt
-operation=edit
-contextImage
-basePrompt
-maskRegion
-imageIndex
-identity/style preservation outside the mask
-LoRA
-lora_adapter_id
-lora_trigger_tokens
-lora_weight
-blocked_by_missing_identity_lock
-.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
-.allforai/game-design/art/image-generation/image-batch-generation-plan.json
-.allforai/game-design/art/programmatic-art-processing-plan.json
-compiled prompt manifest
-image batch generation plan
-programmatic art processing plan
-game-art/20-spec/image-batch-generation-plan/SKILL.md
-game-art/20-spec/image-prompt-compiler/SKILL.md
+Generated results are candidates
+game-art/40-qa/generated-candidate-selection/SKILL.md
+game-art/20-spec/programmatic-art-processing-plan/SKILL.md
 material_first
-""",
-    )
-    _write(
-        tmp_path,
-        "claude/meta-skill/skills/game-art/00-env/image-model-capability-registry/SKILL.md",
-        """.allforai/game-design/art/image-generation/image-model-capability-registry.json
-.allforai/game-design/art/image-generation/image-model-routing-report.json
-google_gemini_image
-fal_ai
-openrouter_image
-mcp_image_batch
-project_local_mcp
-GOOGLE_API_KEY
-FAL_KEY
-OPENROUTER_API_KEY
-output_modalities=image
-generation_profile
-missing_capabilities
-blocked_by_missing_model
-mcp-image-batch
-mcp_long_task
-batch_execution_skill=game-art/30-generate/batch-image-generation/SKILL.md
-blocked_by_missing_mcp_image_batch
-supports_edit_mode=true
-missing edit capability
-identity_lock
-lora_adapter
-style_lora
-character_lora
-blocked_by_missing_identity_lock
-requires_lora=true
-selected_model
+codex-cli-delegation/30-execute/codex-cli-task/SKILL.md
+Grok CLI
+image_to_video
+One source per medium
+blocked_by_missing_image_cli
+blocked_by_missing_video_cli
+Never auto-approve all
+is not a result until it is copied there
+approved reference images
+prompt-only result
 """,
     )
     _write(
@@ -494,8 +385,8 @@ blocking_failure_codes
 repair_routes
 project/runtime-specific
 identity/style lock strategy
-requires_lora
-LoRA is required
+reference_images
+approved reference
 Return `UPSTREAM_DEFECT`
 """,
     )
@@ -515,68 +406,6 @@ tile_rule_generation
 ui_componentization
 automatic_preview_generation
 Direct final-image generation must be justified as an exception
-""",
-    )
-    _write(
-        tmp_path,
-        "claude/meta-skill/skills/game-art/20-spec/image-prompt-compiler/SKILL.md",
-        """.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
-.allforai/game-design/art/image-generation/prompts/
-material-first generation
-material_first
-programmatic_consumer
-assembly_contract_ref
-LoRA
-prompt files
-Do not synthesize production prompts
-""",
-    )
-    _write(
-        tmp_path,
-        "claude/meta-skill/skills/game-art/20-spec/image-batch-generation-plan/SKILL.md",
-        """.allforai/game-design/art/image-generation/image-batch-generation-plan.json
-.allforai/game-design/art/image-generation/image-batch-generation-plan.md
-raw-material-first
-material_first_policy
-required_candidate_count
-retry_budget
-mcp_image_batch_required
-coverage shortage will trigger another batch
-""",
-    )
-    _write(
-        tmp_path,
-        "claude/meta-skill/skills/game-art/20-spec/lora-identity-style-lock-spec/SKILL.md",
-        """.allforai/game-design/art/lora/lora-identity-style-lock-spec.json
-.allforai/game-design/art/lora/lora-training-decision-report.md
-local_gpu
-remote_gpu_rental
-provider_api_training
-existing_lora
-blocked_by_missing_identity_lock
-blocked_by_missing_training_runtime
-Do not choose local training just because the machine exists
-training_location
-requires_lora
-""",
-    )
-    _write(
-        tmp_path,
-        "claude/meta-skill/skills/game-art/30-generate/lora-adapter-training/SKILL.md",
-        """.allforai/game-design/art/lora/lora-adapter-registry.json
-.allforai/game-design/art/lora/lora-training-job.json
-.allforai/game-design/art/lora/lora-validation-report.json
-.allforai/game-design/art/lora/lora-validation-contact-sheet.png
-local_gpu
-remote_gpu_rental
-provider_api_training
-Existing LoRA
-blocked_by_missing_dataset
-blocked_by_missing_training_runtime
-lora_adapter_id
-lora_trigger_tokens
-validation_evidence
-must not silently fall back to prompt-only generation
 """,
     )
     for rel in [
@@ -677,10 +506,8 @@ UPSTREAM_DEFECT
 asset-acceptance-criteria/SKILL.md
 programmatic-art-processing-plan/SKILL.md
 .allforai/game-design/art/programmatic-art-processing-plan.json
-image-prompt-compiler/SKILL.md
-.allforai/game-design/art/image-generation/compiled-prompt-manifest.json
-image-batch-generation-plan/SKILL.md
-.allforai/game-design/art/image-generation/image-batch-generation-plan.json
+image-generation-contract/SKILL.md
+.allforai/game-design/art/image-generation/image-request-manifest.json
 generated-candidate-selection/SKILL.md
 .allforai/game-design/art/image-generation/generated-candidate-selection-report.json
 material_first
@@ -776,6 +603,18 @@ def test_validate_art_pipeline_rejects_missing_engine_ready_consumer(tmp_path):
     )
     errors = validate_art_pipeline(str(tmp_path))
     assert any("does not consume engine-ready manifest" in error for error in errors)
+
+
+def test_validate_art_pipeline_rejects_contract_with_provider_fallback(tmp_path):
+    # Images come only from Codex and video only from Grok; a contract that drops the
+    # no-fallback rule or the missing-generator states would let a run quietly switch providers.
+    _minimal_repo(tmp_path)
+    contract = tmp_path / "claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md"
+    text = contract.read_text()
+    contract.write_text(text.replace("One source per medium\n", "").replace("blocked_by_missing_video_cli\n", ""))
+    errors = validate_art_pipeline(str(tmp_path))
+    assert any("One source per medium" in error for error in errors)
+    assert any("blocked_by_missing_video_cli" in error for error in errors)
 
 
 _ADR3_NEUTRAL = _art_pipeline.ADR3_NEUTRAL

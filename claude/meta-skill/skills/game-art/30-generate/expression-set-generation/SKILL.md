@@ -36,8 +36,7 @@ Downstream consumers include dialogue generation, portrait generation,
 narrative QA, UI character panels, and localization screenshots.
 
 Image requests must follow `image-generation-contract` with
-`generation_profile.task_type=expression_set` and
-`prompt_template=expression_set_prompt`. Use a model profile suited to identity
+`purpose` set to the asset family. The output must show identity
 consistency, expression distinction, crop consistency, and style lock.
 
 ## Invocation Contract

@@ -37,8 +37,7 @@ Downstream consumers include level previews, menu screens, UI mockups, runtime
 import checks, and art-preview QA.
 
 Image requests must follow `image-generation-contract` with
-`generation_profile.task_type=background` and
-`prompt_template=background_prompt`. Use a model profile suited to scene
+`purpose` set to the asset family. The output must show scene
 composition, camera/view control, and style lock.
 
 ## Invocation Contract

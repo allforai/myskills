@@ -49,4 +49,4 @@ for plugin in meta-skill superstorm-skill cross-exam-skill grillstorm; do
   fi
 done
 echo ""
-echo "Optional env vars: OPENROUTER_API_KEY, GOOGLE_API_KEY, FAL_KEY"
+echo "Optional env vars: OPENROUTER_API_KEY, GOOGLE_API_KEY. Video generation needs the Grok CLI (grok login)."

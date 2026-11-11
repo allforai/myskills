@@ -25,7 +25,14 @@ Optional capabilities are grouped into three classes:
 | Capability | Codex check | Purpose |
 |------------|-------------|---------|
 | browser automation | look for a Playwright-capable tool in the current session | UI verification and automation |
-| ai-gateway | `.mcp.json` present + `./mcp-ai-gateway/dist/index.js` exists | model gateway for search / image / model calls |
+| ai-gateway | `.mcp.json` present + `./mcp-ai-gateway/dist/index.js` exists | model gateway for search / TTS / cross-model calls |
+
+### Generation CLIs
+
+| Capability | Codex check | Purpose |
+|------------|-------------|---------|
+| image generation | Codex's own image generation (this harness) | the only image source; see game-art `image-generation-contract` |
+| video generation | `command -v grok` + `grok --no-auto-update models` shows a login | the only video source; needs a plan with video and video not disabled by zero data retention |
 
 ### API-key-backed services
 
@@ -33,7 +40,6 @@ Optional capabilities are grouped into three classes:
 |------------|---------|
 | OpenRouter | `OPENROUTER_API_KEY` |
 | Google AI | `GOOGLE_API_KEY` |
-| fal.ai | `FAL_KEY` |
 | Brave Search | `BRAVE_API_KEY` |
 
 ### Built-in fallback
@@ -61,14 +67,14 @@ Report at least:
 - browser automation readiness
 - OpenRouter key readiness
 - Google AI key readiness
-- fal.ai key readiness
+- Grok CLI install and login readiness
 - Brave Search key readiness
 
 Include downgrade guidance:
 
 - no browser automation -> skip dynamic browser verification
 - no Brave Search -> use Codex web search or user-provided references
-- no image/video services -> skip media generation enhancements
+- no Grok CLI -> video requests return `blocked_by_missing_video_cli`; there is no other video source
 
 ## Step 2: Remediation Guidance
 

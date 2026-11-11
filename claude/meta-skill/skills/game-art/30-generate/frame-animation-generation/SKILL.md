@@ -39,8 +39,7 @@ Downstream consumers include runtime import, combat event timing, UI mascots,
 VFX animation-event bindings, and art-preview QA.
 
 Image requests must follow `image-generation-contract` with
-`generation_profile.task_type=frame_animation` and
-`prompt_template=frame_animation_prompt`. Use a model profile suited to exact
+`purpose` set to the asset family. The output must show exact
 frame grids, anchor consistency, and multi-frame consistency. If that profile is
 unavailable, produce metadata/spec-only fallback instead of pretending the sheet
 is final.
