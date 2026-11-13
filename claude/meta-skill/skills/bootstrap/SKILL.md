@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 argument-hint: [path]
-version: "0.29.0"
+version: "0.30.0"
 description: Analyze the target project and generate its .allforai/ workflow (product concept, experience map, art, game design, verify nodes) for /run. User-invoked only via /bootstrap; never invoke it yourself.
 ---
 
@@ -867,6 +867,9 @@ Persist the validated files from Steps 3–5 and required runtime assets:
     `{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`：
     `hard_blocked_by` 边只表达顺序，失败的 QA 节点永远不会 complete，两个 orchestrator
     都从这份声明去派发 repair 并在 QA 重跑通过前拦住 closure。只连边不声明 = 修复不可达。
+    修复节点的写入权限有两个来源：回路打开时，它可以改 QA 节点所依赖节点的出口产物和必备文档
+    （仅限 QA 发现要求改的文件，改后重新发布该节点的证据）；要改项目源码的修复节点另外声明
+    `parallel_write_scopes` 覆盖这些源码目录。两者都没有覆盖到的文件它不能改。
 15. `.allforai/bootstrap/unattended-run-readiness.json` 和 `.allforai/bootstrap/unattended-run-readiness.md`：bootstrap 结束前运行一次：
     ```bash
     python3 .allforai/bootstrap/scripts/validate_unattended_readiness.py . --write-report
