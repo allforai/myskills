@@ -320,13 +320,17 @@ function readinessPrompt() {
 // of the same rule: a file whose producer has not published in this run is a leftover of an
 // earlier cycle or a sibling's work in progress, and the freshness `read` refuses it.
 const OWN_OUTPUTS_RULE = [
-  'Write only what this node owns: its exit_artifacts, required_documents and declared',
-  'parallel_write_scopes. Never create, edit or delete a file another node produces. If one is',
-  'wrong or missing, stop and report blocking_findings [{type: "cross_node", detail,',
-  'suspected_root_node: <the producing node>}] so its owner repairs it.',
-  'A file another node produces is an input only once that node has published it in this run:',
-  'when the freshness `read` answers unpublished_producer, the file is a leftover or unfinished',
-  'work, so do not consume it in any way.'
+  'Write only what this node owns: its exit_artifacts, its required_documents and the files its',
+  'declared parallel_write_scopes cover. Never create, edit or delete any other file another node',
+  'produces, unless this dispatch names you the repair of a failed QA node, which grants exactly',
+  'what it states. If one is wrong or missing, stop and report',
+  'blocking_findings [{type: "cross_node", detail, suspected_root_node: <the producing node>}] so',
+  'its owner repairs it.',
+  'A file another node produces is an input only along a declared dependency, once that node has',
+  'published it in this run: when the freshness `read` answers unpublished_producer (a leftover or',
+  'unfinished work) or producer_outside_graph (a node the plan does not order before this one),',
+  'do not consume the file in any way; if this node cannot be done without it, report the missing',
+  'dependency as a blocking finding instead.'
 ].join(' ')
 
 function gateNodePrompt(node) {
@@ -385,7 +389,15 @@ function deliveryNote(delivery) {
   return [
     `This dispatch repairs the failure of QA node(s) ${JSON.stringify(delivery.qa || [])}.`,
     'Their evidence stays stale until they rerun, so your freshness publish being refused because',
-    'of them is expected, not a failure. Make the repair, write your exit artifacts, run your own',
+    'of them is expected, not a failure.',
+    'For this dispatch you may also change an exit artifact or required document of a node those QA',
+    'node(s) are hard_blocked_by, directly or transitively (see workflow.json) — but only a file a QA',
+    'finding requires changed, and never a decision input. Changing such a file stales the evidence',
+    'of the node that produced it, and a stale producer withholds the QA rerun and you alike: before',
+    'you finish, each node whose file you changed must have valid evidence again — observe it, run',
+    'its own declared validation commands and publish it through the freshness helper. If its',
+    'validation fails on your change, the change is wrong.',
+    'Make the repair, write your exit artifacts, run your own',
     'validation, and return "passed" when your own work is done; the engine measures what you',
     'delivered and reruns the QA node, which judges it.'
   ].join(' ')
@@ -399,6 +411,8 @@ function runNodePrompt(node, strict, delivery = null) {
     di.length ? `First read these required decision inputs: ${di.join(', ')} — if any is missing, return outcome "hard_fail".` : '',
     `If .allforai/bootstrap/diagnosis-corrections/${node.node_id}.json exists, read it before starting: it holds`,
     'corrections a diagnosis of an earlier failure assigned to this node, and they bind this run as the node-spec does.',
+    'Read that file directly and never register it with the freshness `read`: it is the run\'s instruction, deleted',
+    'when this node completes, not a product input.',
     'A correction refines how this node meets its spec; it never settles a user-visible rule. If applying one needs a',
     'choice your decision inputs do not settle, report it as an unresolved product decision (below), never pick it.',
     deliveryNote(delivery),

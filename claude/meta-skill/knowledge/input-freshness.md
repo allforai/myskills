@@ -52,12 +52,17 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    `{"operation":"read","observation":"TOKEN","path":"path/to/input"}`.
    Consume the returned content and replace TOKEN with the returned observation.
    This read is durably retained even when publication subsequently fails.
-   A path another node produces is an input only once that node has published it:
-   until then the file is a leftover of an earlier cycle or a sibling's unfinished
-   work, and `read` answers `unpublished_producer` naming that node, records nothing
-   and returns no content. Do not consume the file another way. A node this one is
-   ordered after (`hard_blocked_by`, transitively) is exempt, so a repair still reads
-   the failed report it answers.
+   A path another node produces is an input only along a declared dependency. From a
+   node this one is not ordered after (`hard_blocked_by`, transitively), `read` records
+   nothing and returns no content: it answers `unpublished_producer` when that node has
+   no valid evidence (a leftover of an earlier cycle or a sibling's unfinished work) and
+   `producer_outside_graph` when it has, because the readiness gate refuses such a
+   recorded read as `dependency_outside_graph` on the next start. Do not consume the
+   file another way; a node that cannot be done without it reports the missing
+   dependency. A node this one is ordered after is exempt, so a repair still reads the
+   failed report it answers. `.allforai/bootstrap/diagnosis-corrections/` is the run's
+   own instruction to a node, deleted when the node completes: `read` refuses it as
+   orchestration state, and the node reads it without registering.
 3. Publish with `{"operation":"publish","observation":"TOKEN",
    "verification_command":["python3","path/to/project-contract-validator.py"]}`.
    Supply a real project-specific validation argv that checks the relevant
@@ -99,7 +104,13 @@ before they start and `end-wave` once it has recorded how each attempt ended. At
 next start `{"operation":"recover-waves"}` returns every node of a wave that never
 closed to the evidence, contract and registered reads it had before that wave, unless a
 completed transition was recorded for it since: an attempt nobody saw finish proves
-nothing, and its residue must not block the restart.
+nothing, and its residue must not block the restart. The same call removes every file
+under `input-observations/`: no attempt survives to a start, so none can still publish.
+
+A snapshot records each upstream node as the identity (digest) of that node's snapshot,
+not a copy of it. A record written before this embeds the upstream snapshots whole; it
+still compares equal while nothing changed and is rewritten in the current shape the
+next time its node publishes.
 
 Changed source content, path/glob membership, relevant baseline scope, consumed
 inputs or generated evidence invalidate direct and transitive consumers. An
@@ -123,7 +134,15 @@ nothing, so an implementation that never says what it writes keeps invalidating 
 planners — that is the missing declaration reported, not freshness failing. Changes
 inside a declared write scope still invalidate the node owning that scope and its
 own consumers, and still surface as external change when no delivery accounts for
-them. Planning refuses the inversion rather than tolerating it: `source_inputs`
+them. The whole-tree comparison follows the same ownership: a changed path that no
+node declared as an input but that lies inside another node's declared write scope
+belongs to that writer, so it is not an unmapped input of a node that neither depends
+on the writer nor declared the path — two branches that each declare what they write
+do not stale each other. The declared repair node of an open loop may change an exit artifact or
+required document of a node its QA node depends on; doing so has
+staled that producer, and republishes it (observe, the producer's own validation
+commands, publish) before it finishes; left stale, the producer withholds the repair
+and the QA rerun alike. Planning refuses the inversion rather than tolerating it: `source_inputs`
 that intersect the declared write scope of a node depending on that node are
 reported as `inverted_source_inputs`.
 

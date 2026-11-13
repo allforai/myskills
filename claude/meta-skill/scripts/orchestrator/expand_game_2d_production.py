@@ -395,6 +395,20 @@ def expand_game_2d_production(project_root: Path, *, dry_run: bool = False) -> d
                 updated.append(node_id)
         previous = node_id
 
+    # A repair changes the code its QA nodes judged, which other nodes wrote. The paths
+    # are the project's, so they come from what the plan already declares as written;
+    # a plan that declares none leaves this empty and the readiness gate reports it.
+    repair = by_node_id["game-2d-code-repair-loop"]
+    if not repair.get("parallel_write_scopes"):
+        scopes = sorted({scope for node in nodes if node is not repair
+                         for scope in (node.get("parallel_write_scopes") or [])
+                         if isinstance(scope, str) and scope.strip()})
+        if scopes:
+            repair["parallel_write_scopes"] = scopes
+            changed = True
+            if "game-2d-code-repair-loop" not in generated and "game-2d-code-repair-loop" not in updated:
+                updated.append("game-2d-code-repair-loop")
+
     if changed and not dry_run:
         _write_json(workflow_path, workflow)
 

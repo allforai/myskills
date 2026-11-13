@@ -437,8 +437,8 @@ so an interrupted run needs no cleanup by hand.
 
 - Diagnosis corrections go to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json`
   (`{node_id, diagnosis, corrections: [...]}`), never into node-specs during a run: a
-  changed node-spec stales A0's decision coverage. The dispatched node reads its file and
-  it is removed when the node completes. Reset a diagnosed closure only with
+  changed node-spec stales A0's decision coverage. The dispatched node reads its file
+  directly, never through the freshness `read`, and it is removed when the node completes. Reset a diagnosed closure only with
   `compute_reset_closure.py <workflow.json> --apply --diagnosis <ref> <root...>`, which marks
   its completed transitions `superseded`; never edit `transition_log` by hand.
 - Same node fails 3 times: diagnose and record `diagnosis_history`; consume

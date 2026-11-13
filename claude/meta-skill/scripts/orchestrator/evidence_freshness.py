@@ -35,7 +35,10 @@ ORCHESTRATION_STATE = frozenset({
     '.allforai/bootstrap/workflow-state-index.json',
     '.allforai/bootstrap/workflow-reconciliation-plan.json',
 })
-ORCHESTRATION_STATE_DIRS = (OBSERVATIONS + '/',)
+# A diagnosis correction is the run's instruction to one node and is deleted once that
+# node completes: bound as an input, its removal would stale the evidence it produced.
+CORRECTIONS = '.allforai/bootstrap/diagnosis-corrections'
+ORCHESTRATION_STATE_DIRS = (OBSERVATIONS + '/', CORRECTIONS + '/')
 
 
 def orchestration_state(path):
@@ -292,10 +295,28 @@ def _snapshot(root, node, extra=(), seen=()):
     for dep in dependencies(root, node, workflow):
         if dep not in by_id:
             raise ValueError('Missing dependency ' + dep + '; impact is uncertain')
-        upstream[dep] = snapshot(root, by_id[dep], state['nodes'].get(dep, {}).get('extra', []),
-                                 (*seen, node['node_id']))
+        # An identity, not a copy: embedding each upstream snapshot whole repeats the
+        # baseline at every level of the graph and grows the record with its depth.
+        upstream[dep] = digest(snapshot(root, by_id[dep], state['nodes'].get(dep, {}).get('extra', []),
+                                        (*seen, node['node_id'])))
     return {'files': inputs, 'requirements': requirements, 'contract': digest(node),
             'baseline_scope': baseline_scope, 'upstream': upstream}
+
+
+def compact_inputs(inputs):
+    """A recorded snapshot in the current shape: each upstream as its identity.
+
+    Records written before upstream snapshots became identities embed them whole. The
+    digest of an embedded snapshot, taken after compacting its own upstreams the same
+    way, equals the identity the current code records, so an old record still compares
+    equal to an unchanged project and is rewritten compact the next time it publishes.
+    """
+    upstream = inputs.get('upstream') if isinstance(inputs, dict) else None
+    if not isinstance(upstream, dict) or not any(isinstance(v, dict) for v in upstream.values()):
+        return inputs
+    return _memoized(('compact-inputs', id(inputs)), lambda: {**inputs, 'upstream': {
+        dep: digest(compact_inputs(value)) if isinstance(value, dict) else value
+        for dep, value in upstream.items()}})
 
 
 def dependencies(root, node, workflow):
@@ -368,6 +389,7 @@ def outputs(root, node, kind='evidence'):
 
 def input_diff(recorded, current):
     """Explicit differences between a recorded input snapshot and the current one."""
+    recorded = compact_inputs(recorded)
     diff: dict[str, Any] = {}
     files = {}
     for path in sorted(set(recorded.get('files', {})) | set(current.get('files', {}))):
@@ -584,6 +606,27 @@ def _downstream_write_scope(root, node_id, workflow):
     return scoped
 
 
+def others_write_scope(root, node_id, workflow):
+    """Paths any other node declares that it writes.
+
+    A change inside a declared ``parallel_write_scopes`` has an owner: it invalidates
+    the node that declared the scope and, through the graph, that node's consumers. A
+    node that neither declared the path as an input nor depends on the writer has no
+    stake in it, so the change is not an unmapped input of that node. A node's own
+    scope never exempts it: content it wrote that changed afterwards is its drift.
+    """
+    return _memoized(('others-write-scope', node_id),
+                     lambda: _others_write_scope(root, node_id, workflow))
+
+
+def _others_write_scope(root, node_id, workflow):
+    scoped: set[str] = set()
+    for other in workflow.get('nodes', []):
+        if other['node_id'] != node_id:
+            scoped |= expand_paths(root, other.get('parallel_write_scopes') or [])
+    return scoped
+
+
 def change_impact(root, node, workflow, files):
     """What a changed source file reaches: facts, product decisions, documents,
     dependent tasks and the acceptance artifacts bound to this delivery."""
@@ -633,7 +676,7 @@ def unmapped_changes(root, workflow, state):
         unknown = {p for p in set(previous) | set(current)
                    if source_path_included(p) and not reclassified(root, p, current)
                    and previous.get(p) != current.get(p)} - owned
-        unknown -= downstream_write_scope(root, node_id, workflow)
+        unknown -= others_write_scope(root, node_id, workflow)
         if not unknown:
             continue
         tasks.add(node_id)
@@ -969,9 +1012,10 @@ def evaluate(root):
             result[node['node_id']] = {'status': 'undeclared', 'readiness_status': 'undeclared',
                                       'reason': 'No source declaration or observation; no provenance claimed'}
             continue
-        valid = record and record['inputs'] == snapshot(root, node, record.get('extra', []))
+        valid = record and compact_inputs(record['inputs']) == snapshot(root, node, record.get('extra', []))
         valid = valid and record.get('outputs') == outputs(root, node, record.get('kind', 'evidence'))
-        evidence_valid = (valid and evidence and evidence['inputs'] == snapshot(root, node, evidence.get('extra', []))
+        evidence_valid = (valid and evidence
+                          and compact_inputs(evidence['inputs']) == snapshot(root, node, evidence.get('extra', []))
                           and evidence['outputs'] == outputs(root, node))
         diff: dict[str, Any]
         if record is None:
@@ -995,12 +1039,12 @@ def evaluate(root):
             result[node['node_id']]['repair'] = repair_responsibility(root, node, diff, blockers, external)
         if record:
             previous = record.get('source_snapshot', {})
-            # The whole-tree snapshot follows the same graph rule as declared inputs:
-            # what a consumer declares it writes is this node's output, not its input.
+            # What another node declares it writes is that node's delivery: a change
+            # there reaches this node through the graph or not at all.
             unknown = {p for p in set(previous) | set(current)
                        if source_path_included(p) and not reclassified(root, p, current)
                        and previous.get(p) != current.get(p)} - owned
-            unknown -= downstream_write_scope(root, node['node_id'], workflow)
+            unknown -= others_write_scope(root, node['node_id'], workflow)
             uncertain_inputs.update(unknown)
             if unknown and valid:
                 result[node['node_id']] = {'status': 'uncertain', 'readiness_status': 'uncertain',
@@ -1045,24 +1089,25 @@ def _ancestors(workflow, node_id):
     return seen
 
 
-def unpublished_producer(root, node, workflow, path):
-    """The node whose unpublished output ``path`` is, when this node may not consume it.
+def unconsumable_producer(root, node, workflow, path):
+    """(producer, status) when ``path`` is another node's output this node may not consume.
 
-    A file another node produces is an input only once that node has published it. Until
-    then it is a leftover of an earlier cycle or a sibling's work in progress: consuming it
-    builds on content nobody verified, and registering it makes the reader wait on a node
-    the scheduler never orders before it. A node this one is ordered after is exempt — a
-    repair reads the failed report of the QA node it answers — and a retained node that
-    never declared inputs claims no provenance either way.
+    A file another node produces is an input only along an edge the plan declares.
+    Freshness treats the producer of every consumed file as an upstream, so a read of a
+    node the scheduler does not order before this one binds this evidence to work that
+    can rerun, or first run, afterwards. Unpublished, the file is also a leftover of an
+    earlier cycle or a sibling's work in progress: content nobody verified. A node this
+    one is ordered after is exempt — a repair reads the failed report of the QA node it
+    answers.
     """
     producers = {item['path'] if isinstance(item, dict) else item: n['node_id']
                  for n in workflow.get('nodes', [])
                  for item in [*n.get('exit_artifacts', []), *n.get('required_documents', [])]}
     producer = producers.get(path)
     if producer is None or producer == node['node_id'] or producer in _ancestors(workflow, node['node_id']):
-        return None
-    status = evaluate(root)['nodes'].get(producer, {}).get('status')
-    return None if status in {'valid', 'undeclared'} else producer
+        return None, None
+    published = evaluate(root)['nodes'].get(producer, {}).get('status') == 'valid'
+    return producer, 'producer_outside_graph' if published else 'unpublished_producer'
 
 
 def wave(root, request):
@@ -1105,7 +1150,13 @@ def wave(root, request):
                 write_json(root, READS, reads)
             if marker:
                 write_json(root, IN_FLIGHT, {})
-            return {'status': 'ok', 'recovered': recovered}
+            # No attempt survives to this point, so no observation can still be published:
+            # each one holds a whole input snapshot and nothing else ever removes it.
+            pruned = 0
+            for path in (root / OBSERVATIONS).glob('*.json'):
+                path.unlink(missing_ok=True)
+                pruned += 1
+            return {'status': 'ok', 'recovered': recovered, 'pruned_observations': pruned}
         node_ids = request.get('node_ids')
         if not isinstance(node_ids, list) or not all(isinstance(n, str) and n for n in node_ids):
             raise ValueError(operation + ' requires node_ids, a list of node ids')
@@ -1157,6 +1208,7 @@ def session(root, request):
         observation = read_json(root, OBSERVATIONS + '/' + token + '.json')
         if digest(observation) != token:
             raise ValueError('Observation content does not match its identity')
+        observation['inputs'] = compact_inputs(observation['inputs'])
         node = next(n for n in workflow['nodes'] if n['node_id'] == observation['node_id'])
         if (observation['inputs'] != snapshot(root, node, observation.get('extra', []))
                 or observation['source_snapshot'] != inventory(root, workflow)):
@@ -1168,12 +1220,22 @@ def session(root, request):
                                  'committed transition, so registering it would make this evidence stale '
                                  'after each commit; read it without registering')
             fingerprint(root, path)  # Validate project containment before reading.
-            producer = unpublished_producer(root, node, workflow, path)
-            if producer:
-                return {'status': 'unpublished_producer', 'producer': producer,
+            # A path already bound to this observation was declared or recorded earlier;
+            # the planning gates own those. Only a new binding is decided here.
+            producer, refusal = ((None, None) if path in observation['inputs']['files']
+                                 else unconsumable_producer(root, node, workflow, path))
+            if refusal == 'unpublished_producer':
+                return {'status': refusal, 'producer': producer,
                         'reason': path + ' is an output of ' + producer + ', which has not published it in '
                                   'this run: a leftover or unfinished file, not an input. Do not consume it; '
                                   'if this node needs it, that is a missing dependency to report, not to read around'}
+            if refusal:
+                return {'status': refusal, 'producer': producer,
+                        'reason': path + ' is an output of ' + producer + ', which the plan does not order '
+                                  'before ' + node['node_id'] + ': recording the read would bind this evidence '
+                                  'to a node outside its dependencies and block the next readiness check. Do '
+                                  'not consume it; if this node needs it, report the missing dependency so '
+                                  'planning declares the edge'}
             content = (root / path).read_bytes()
             observation['extra'] = sorted(set(observation.get('extra', [])) | {path})
             observation['inputs']['files'][path] = hashlib.sha256(content).hexdigest()
@@ -1273,7 +1335,8 @@ def main():
         result = {'status': 'invalid', 'reason': str(exc)}
     print(json.dumps(result, sort_keys=True))
     return 1 if result.get('status') in {'stale', 'invalid', 'inconsistent', 'failed_verification',
-                                         'conflict', 'unpublished_producer'} else 0
+                                         'conflict', 'unpublished_producer',
+                                         'producer_outside_graph'} else 0
 
 
 if __name__ == '__main__':

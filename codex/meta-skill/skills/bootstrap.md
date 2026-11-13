@@ -162,6 +162,10 @@ requires:
 - each critique node sits inside its own declared loop in
   `unattended-run-readiness-spec.json.required_repair_loops`; an exhausted attempt budget follows
   Run Policy and asks nothing during the run
+- a repair node's write authority has two sources: while its loop is open it may change the exit
+  artifacts and required documents of the nodes its QA node depends on (only files a QA finding
+  requires changed, republishing each node it changed); a repair that must change project source
+  also declares `parallel_write_scopes` over that source
 - the three shared gates (bootstrap, decision inputs, unattended readiness) must pass before the
   generated workflow is presented as executable, and they refuse a workflow whose experience gate
   is missing or mis-wired

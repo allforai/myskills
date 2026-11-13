@@ -163,3 +163,22 @@ def test_expand_game_2d_production_still_repairs_workflow_when_required_artifact
     node_ids = [node["node_id"] for node in workflow["nodes"]]
     assert GAME_2D_PRODUCTION_REQUIRED_NODES[-1] in node_ids
     assert validate_game_2d_production_flow(str(tmp_path / ".allforai/bootstrap")) == []
+
+
+def test_the_repair_node_may_write_what_the_plan_declares_as_written(tmp_path):
+    _minimal_project(tmp_path)
+    path = tmp_path / ".allforai/bootstrap/workflow.json"
+    workflow = json.loads(path.read_text())
+    workflow["nodes"][0]["parallel_write_scopes"] = ["client/**"]
+    path.write_text(json.dumps(workflow))
+
+    expand_game_2d_production(tmp_path)
+
+    nodes = {node["node_id"]: node for node in json.loads(path.read_text())["nodes"]}
+    assert nodes["game-2d-code-repair-loop"]["parallel_write_scopes"] == ["client/**"]
+    # a scope the plan set on the repair node itself is kept
+    nodes["game-2d-code-repair-loop"]["parallel_write_scopes"] = ["client/src/**"]
+    path.write_text(json.dumps({**json.loads(path.read_text()), "nodes": list(nodes.values())}))
+    expand_game_2d_production(tmp_path)
+    nodes = {node["node_id"]: node for node in json.loads(path.read_text())["nodes"]}
+    assert nodes["game-2d-code-repair-loop"]["parallel_write_scopes"] == ["client/src/**"]

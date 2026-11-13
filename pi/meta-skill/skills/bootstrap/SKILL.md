@@ -140,6 +140,8 @@ canonical 这部分在 Pi 上照常执行，只有提问方式不同。
    runtime 两道体验质量门节点：design 门在任何 UI 实现节点之前，runtime 门在最后一个 UI/产品验证/视觉 QA 之后，
    收尾与验收节点 `hard_blocked_by` runtime 那道门；两道门各自在
    `unattended-run-readiness-spec.json.required_repair_loops` 里有修复回路。
+   修复节点的写入权限有两个来源：回路打开时可以改 QA 节点所依赖节点的出口产物和必备文档（仅限 QA
+   发现要求改的文件，改后重新发布该节点的证据）；要改项目源码的修复节点另外声明 `parallel_write_scopes`。
    把 `/skill:run` 说成可执行之前，第 6 节那三道共享门必须通过。
 
 ## Validation

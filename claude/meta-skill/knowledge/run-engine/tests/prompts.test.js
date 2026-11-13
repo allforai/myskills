@@ -111,10 +111,28 @@ test('the gate accepts a status the exit declares and still refuses what it does
 test('a node and its repair write only their own outputs and report an upstream defect', () => {
   for (const p of [core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, ''),
     core.repairPrompt({ node_id: 'n' }, [])]) {
-    assert.match(p, /Never create, edit or delete a file another node produces/)
+    assert.match(p, /Never create,\s+edit or delete any other file another node produces/)
     assert.match(p, /cross_node/)
     assert.match(p, /unpublished_producer/)
+    assert.match(p, /producer_outside_graph/)
+    assert.match(p, /declared parallel_write_scopes cover/)
+    assert.match(p, /unless this dispatch names you the repair of a failed QA node/)
   }
+})
+
+test('the repair of an open loop may change what its QA node judged, and republishes it', () => {
+  const plain = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.doesNotMatch(plain, /For this dispatch you may also change/)
+  const p = core.runNodePrompt({ node_id: 'fix', node_spec_path: 's.md' }, '', { qa: ['critique'] })
+  assert.match(p, /repairs the failure of QA node\(s\) \["critique"\]/)
+  assert.match(p, /may also change an exit artifact or required document of a node those QA\s+node\(s\) are hard_blocked_by, directly or transitively/)
+  assert.match(p, /only a file a QA\s+finding requires changed, and never a decision input/)
+  assert.match(p, /each node whose file you changed must have valid evidence again/)
+})
+
+test('a diagnosis correction is read directly, never registered as an input', () => {
+  const p = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.match(p, /never register it with the freshness `read`/)
 })
 
 test('wavePrompt runs the freshness helper with the exact request', () => {

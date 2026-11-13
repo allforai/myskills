@@ -112,7 +112,8 @@ Every production workflow must be expanded through these lenses:
   `unattended-run-readiness-spec.json.required_repair_loops` as
   `{scope, qa_node_ids, repair_node_id, closure_node_ids, max_attempts}`, so the
   repair is reachable while its QA node is failed and closure still waits for the
-  QA rerun.
+  QA rerun. A repair node that must change project source declares
+  `parallel_write_scopes` over it.
 - **Documentation contract**: a node that promises a generated fact document
   declares it at planning time in `required_documents`, with its
   `document_verification` argv. A document promised only in prose has no gate.

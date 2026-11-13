@@ -88,3 +88,86 @@ def test_recover_leaves_a_wave_that_was_seen_to_finish(tmp_path, host, closed_by
     _, recovered = invoke(tmp_path, 'recover-waves')
     assert recovered['recovered'] == []
     assert (tmp_path / STATE).read_bytes() == before
+
+
+def publish(root, node_id):
+    _, observed = invoke(root, 'observe', node_id=node_id)
+    result, published = invoke(root, 'publish', observation=observed['observation'])
+    assert result.returncode == 0, published
+    return observed
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_read_refuses_a_published_output_of_a_node_the_plan_does_not_order_before(tmp_path, host):
+    # Readiness rejects such a recorded read afterwards, so it is never recorded.
+    setup(tmp_path, host)
+    add_node(tmp_path, 'later', LATER)
+    write(tmp_path, LATER, {'status': 'passed'})
+    publish(tmp_path, 'later')
+    _, observed = invoke(tmp_path, 'observe', node_id='deliver-export')
+    result, refused = invoke(tmp_path, 'read', observation=observed['observation'], path=LATER)
+    assert result.returncode == 1
+    assert refused['status'] == 'producer_outside_graph' and refused['producer'] == 'later'
+    assert 'content' not in refused
+    assert not (tmp_path / READS).exists() or 'deliver-export' not in json.loads((tmp_path / READS).read_text())
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_a_diagnosis_correction_is_never_registered_as_an_input(tmp_path, host):
+    # The run deletes it when the node completes; bound, that would stale the evidence.
+    setup(tmp_path, host)
+    correction = '.allforai/bootstrap/diagnosis-corrections/deliver-export.json'
+    write(tmp_path, correction, {'corrections': ['x']})
+    _, observed = invoke(tmp_path, 'observe', node_id='deliver-export')
+    result, refused = invoke(tmp_path, 'read', observation=observed['observation'], path=correction)
+    assert result.returncode == 1 and refused['status'] == 'invalid'
+    assert 'orchestration state' in refused['reason']
+    assert not (tmp_path / READS).exists() or 'deliver-export' not in json.loads((tmp_path / READS).read_text())
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
+@pytest.mark.parametrize('declared', [True, False])
+def test_a_write_inside_another_nodes_declared_scope_is_not_this_nodes_unmapped_input(tmp_path, host, declared):
+    setup(tmp_path, host)
+    add_node(tmp_path, 'later', LATER)
+    if declared:
+        workflow = json.loads((tmp_path / WORKFLOW).read_text())
+        workflow['nodes'][-1]['parallel_write_scopes'] = ['docs/index.md']
+        write(tmp_path, WORKFLOW, workflow)
+    publish(tmp_path, 'deliver-export')
+    (tmp_path / 'docs').mkdir(exist_ok=True)
+    (tmp_path / 'docs/index.md').write_text('written by the unrelated node\n')
+    _, checked = invoke(tmp_path, 'check')
+    assert checked['nodes']['deliver-export']['status'] == ('valid' if declared else 'uncertain')
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_an_upstream_is_recorded_as_an_identity_and_an_embedded_record_still_compares(tmp_path, host):
+    setup(tmp_path, host)
+    add_node(tmp_path, 'later', LATER)
+    block_first_node_on(tmp_path, 'later')
+    write(tmp_path, LATER, {'status': 'passed'})
+    publish(tmp_path, 'later')
+    publish(tmp_path, 'deliver-export')
+    state = json.loads((tmp_path / STATE).read_text())
+    recorded = state['nodes']['deliver-export']['inputs']['upstream']
+    assert isinstance(recorded['later'], str) and len(recorded['later']) == 64
+    # a record written before upstreams became identities embeds the snapshot whole
+    recorded['later'] = state['nodes']['later']['inputs']
+    write(tmp_path, STATE, state)
+    _, checked = invoke(tmp_path, 'check')
+    assert checked['nodes']['deliver-export']['status'] == 'valid'
+    write(tmp_path, LATER, {'status': 'passed', 'changed': True})
+    _, checked = invoke(tmp_path, 'check')
+    assert checked['nodes']['deliver-export']['status'] == 'stale'
+
+
+@pytest.mark.parametrize('host', ['claude', 'codex'])
+def test_recover_removes_observations_no_attempt_can_still_publish(tmp_path, host):
+    setup(tmp_path, host)
+    invoke(tmp_path, 'observe', node_id='deliver-export')
+    observations = tmp_path / '.allforai/bootstrap/input-observations'
+    assert list(observations.glob('*.json'))
+    result, recovered = invoke(tmp_path, 'recover-waves')
+    assert result.returncode == 0 and recovered['pruned_observations'] == 1
+    assert not list(observations.glob('*.json'))

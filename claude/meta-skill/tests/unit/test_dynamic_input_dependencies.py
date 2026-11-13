@@ -23,6 +23,10 @@ def test_consumed_artifact_producer_invalidates_transitive_consumers(tmp_path, h
                 'exit_artifacts': ['.allforai/bootstrap/consumer-report.json']}
     if binding == 'declared-glob':
         consumer['input_dependencies'] = ['.allforai/bootstrap/export-*.json']
+    else:
+        # A runtime read binds only along a declared order: `read` refuses the output of a
+        # node the reader is not ordered after, as the readiness gate would afterwards.
+        consumer['hard_blocked_by'] = ['deliver-export']
     workflow['nodes'] += [consumer,
         {'node_id': 'downstream', 'source_inputs': [], 'hard_blocked_by': ['consumer'],
          'exit_artifacts': ['.allforai/bootstrap/downstream-report.json']},

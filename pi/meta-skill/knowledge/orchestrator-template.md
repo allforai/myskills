@@ -139,12 +139,23 @@ publish freshness or edit the ledger.
 - Asynchronous runs have native completion notices: continue independent
   orchestrator work or return control; merge when notified. Do not poll,
   sleep, or call `bg_wait` only to wait.
-- A worker writes only what its node owns: exit artifacts, required documents and
-  declared `parallel_write_scopes`. It never creates, edits or deletes a file another
-  node produces; a defect there is returned as a finding naming the producing node, and
-  the orchestrator records a failed transition with that node as repair owner. A file
-  whose producer has not published in this run (`read` answers `unpublished_producer`)
-  is a leftover or unfinished work and is not consumed.
+- A worker writes only what its node owns: exit artifacts, required documents and the
+  files its declared `parallel_write_scopes` cover. It never creates, edits or deletes
+  any other file another node produces, with one exception: the declared repair node of
+  a loop whose QA node has failed may also change an exit artifact or required document
+  of a node that QA node is `hard_blocked_by`, directly or transitively — only a file a
+  QA finding requires changed, and never a decision input. Changing such a file stales
+  the evidence of the node that produced it, and a stale producer withholds the QA rerun
+  and the repair alike: before the worker finishes, each node whose file it changed must
+  have valid evidence again (observe it, run its own declared validation commands,
+  publish it); a validation that fails on the change means the change is wrong. Outside
+  that exception a defect in another node's file is returned as a finding naming the producing node, and the
+  orchestrator records a failed transition with that node as repair owner. A file
+  another node produces is an input only along a declared dependency: when `read`
+  answers `unpublished_producer` (a leftover or unfinished work) or
+  `producer_outside_graph` (a node the plan does not order before this one) it is not
+  consumed, and a worker that cannot finish without it returns the missing dependency
+  as a finding.
 - Workers never interview the user. Run Policy and product decisions stay in
   the main session, before the first node.
 
@@ -478,8 +489,8 @@ interrupted run needs no cleanup by hand.
 
 - Diagnosis corrections go to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json`
   (`{node_id, diagnosis, corrections: [...]}`), never into node-specs during a run: a
-  changed node-spec stales A0's decision coverage. The dispatched node reads its file and
-  it is removed when the node completes. Reset a diagnosed closure only with
+  changed node-spec stales A0's decision coverage. The dispatched node reads its file
+  directly, never through the freshness `read`, and it is removed when the node completes. Reset a diagnosed closure only with
   `compute_reset_closure.py <workflow.json> --apply --diagnosis <ref> <root...>`, which marks
   its completed transitions `superseded`; never edit `transition_log` by hand.
 - Same node fails 3 times: diagnose and record `diagnosis_history`; consume

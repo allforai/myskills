@@ -2894,8 +2894,11 @@ def test_the_node_prompt_picks_an_open_building_block_and_warns():
 
 def test_the_node_prompt_keeps_a_node_to_its_own_outputs():
     prompt = flow.build_prompt('implement', 'goal')
-    assert 'Never create, edit or delete a file another node produces' in prompt
-    assert 'unpublished_producer' in prompt
+    assert 'Never create, edit or delete any other file another node produces' in prompt
+    assert 'unpublished_producer' in prompt and 'producer_outside_graph' in prompt
+    assert 'only a file a QA finding requires changed, and never a decision input' in prompt
+    assert 'each node whose file you changed must have valid evidence again' in prompt
+    assert 'never register it with the freshness `read`' in prompt
 
 
 def test_recording_a_transition_closes_the_wave_and_preflight_recovers(tmp_path, monkeypatch):

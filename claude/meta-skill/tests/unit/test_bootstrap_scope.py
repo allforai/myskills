@@ -625,7 +625,10 @@ def test_mixed_native_history_uses_latest_state_without_changing_authority(tmp_p
     write(tmp_path, ".allforai/bootstrap/stock.json", {"status": "passed", "count": 3})
     (tmp_path / ".allforai/bootstrap/node-specs/warehouse.md").write_text(
         "---\n" + json.dumps(retained) + "\n---\n" + ATTENTION_CONTRACT_BODY)
-    preserved = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file() and p != workflow_path}
+    # Observations are scratch a run start discards (no attempt survives to it); every
+    # other file must come through the gates untouched.
+    preserved = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file() and p != workflow_path
+                 and "input-observations" not in p.parts}
     writers = [first_writer, "node" if first_writer == "node_id" else "node_id", first_writer]
     for writer, status in zip(writers, ["completed", "failed", "completed"]):
         if writer == "node":
