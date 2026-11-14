@@ -1,7 +1,7 @@
 ---
 name: bootstrap
 argument-hint: [path]
-version: "0.30.0"
+version: "0.31.0"
 description: Analyze the target project and generate its .allforai/ workflow (product concept, experience map, art, game design, verify nodes) for /run. User-invoked only via /bootstrap; never invoke it yourself.
 ---
 
@@ -647,6 +647,8 @@ When writing each node into `workflow.json`, add:
   it in the Node-spec frontmatter. An unowned deferral is refused as `unowned_effect_stage`.
 - `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
 - `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
+- `acceptance`: what this node's own output must satisfy, checkable against that output alone — never a stage's goals copied onto each of its nodes.
+- `inline_review`: `{"qa_node_id": "<node>"}` on a producer whose output a later QA node judges for quality (design, generated art, content, wording); omit it where validation commands already decide right from wrong. See `bootstrap-planning.md` § Keep a failure local, which also governs what a gate, a QA node and a bulk producer may depend on.
 
 <!-- clause:user-steps-cross-exam-kept@918988ee -->
 At the top level of `workflow.json`, add:
