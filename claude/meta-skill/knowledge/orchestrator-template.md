@@ -327,13 +327,16 @@ never waive, downgrade, or hide a gap.
 3. On `needs_diagnosis`:
    a. Read `hardFailures` (always non-empty — a stuck graph carries a synthesized `deadlock`
       finding) + `workflow.json` `diagnosis_history`.
-   b. GLOBAL cap (fix L1): if total entries in `diagnosis_history` ≥ 5, mark UNRESOLVED and
-      stop — this catches oscillating root causes the per-cause cap misses.
+   b. GLOBAL cap (fix L1): run `python3 .allforai/bootstrap/scripts/record_run_event.py . --diagnosis-budget`.
+      It counts the `diagnosis_history` entries recorded since this invocation's `run_started`;
+      if it prints `"capped": true` (5 or more), mark UNRESOLVED and stop — this catches
+      oscillating root causes the per-cause cap misses. Entries of earlier invocations are
+      history and never count.
    c. Run `.allforai/bootstrap/protocols/diagnosis.md`: locate the root-cause node
       (use `suspected_root_node` when present). This is autonomous — never ask the user.
    d. Per-cause cap (the policy unit-tested as engine-core `convergenceCheck`): if the same root
-      cause already appears ≥2 times in `diagnosis_history`, mark it UNRESOLVED, write best-effort
-      output + TODO, and stop.
+      cause already appears ≥2 times among this invocation's entries (`this_invocation` in the
+      output above), mark it UNRESOLVED, write best-effort output + TODO, and stop.
    e. Otherwise apply the repair plan WITH CASCADE (fix C2). Append the diagnosis to
       `diagnosis_history`, then write each repair-plan step's action (and any prevention
       hint for that node) to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json` as
@@ -346,6 +349,34 @@ never waive, downgrade, or hide a gap.
       `superseded`, keeping them for audit. Never edit `transition_log` by hand. Then RESUME
       the engine (same session: resumeFromRunId; cross-session: re-invoke — workflow.json
       idempotency skips already-completed nodes).
+
+3a. What a stop asks of the user:
+   <!-- clause-begin:run-invocation-allowance -->
+   A repair budget and a diagnosis cap bound one invocation of the run, not the life of
+   the plan. A declared `max_attempts` counts repair attempts in a row that left the QA
+   node with no fewer blocking findings: each failed QA verdict of a declared loop is
+   recorded through `repair_authorization.py` as
+   `{"operation":"verdict","repair_node_id":…,"qa_node_id":…,"blocking_count":…}` before
+   it is routed, and a count lower than every earlier one of this invocation starts the
+   count of attempts again. No invocation grants one obligation more than ten attempts
+   (or its `max_attempts`, when that is higher). Attempts and diagnoses recorded before
+   this invocation's `run_started` are history: the ledger leaves them out by itself.
+   So a loop that stopped, or a cap that was reached, is reported with its open findings
+   and the words "run again to continue" — it is never a reason to send the user to
+   interactive bootstrap. Only three things go back there: a product decision nobody has
+   answered, a plan change nobody has confirmed, and a defect in the plan itself (a
+   deadlock, an undeclared loop, a node-spec that has to change).
+   <!-- clause-end:run-invocation-allowance -->
+   The engine records each verdict itself. In the halt report, list the stops that only
+   need another `/run` separately from the ones that need `/bootstrap`.
+
+   A node that declares `inline_review` is reviewed by the engine as soon as it passes:
+   an independent reviewer writes its blocking findings to
+   `.allforai/bootstrap/inline-review/<node_id>.json`, the node revises its own output
+   from that file, and reviews continue while each finds fewer findings than the best so
+   far. A review that stops converging lets the node through with the file as the record
+   of what is still open — the QA node downstream judges it; it is not a failure to
+   diagnose. In the final report, name every node whose review ended `open`.
 
 3b. On `needs_product_decision`:
    <!-- clause-begin:run-product-decision-gap -->

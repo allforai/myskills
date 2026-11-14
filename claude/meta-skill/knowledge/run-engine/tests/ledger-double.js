@@ -16,12 +16,14 @@
 function makeLedgerDouble({ runId = 'run-double', spent = {}, unresolved = [], missing = false } = {}) {
   const entries = new Map()          // authorization_id -> entry
   const charged = new Map(Object.entries(spent))   // "repair::qa" -> attempts
+  const granted = new Map(charged)                 // "repair::qa" -> every attempt ever granted
+  const best = new Map()                           // "repair::qa" -> fewest blocking findings seen
   let initialized = !missing
   const calls = []
 
   const obligations = () => [...charged].map(([key, n]) => {
     const [repair_node_id, qa_node_id] = key.split('::')
-    return { repair_node_id, qa_node_id, spent: n, budget: null, remaining: null, exhausted: false,
+    return { repair_node_id, qa_node_id, spent: n, granted: granted.get(key) || 0, budget: null, remaining: null, exhausted: false,
       unresolved: [...entries.values()].filter(e => e.state !== 'settled' &&
         e.repair_node_id === repair_node_id && e.obligations.includes(qa_node_id))
         .map(e => e.authorization_id) }
@@ -63,7 +65,11 @@ function makeLedgerDouble({ runId = 'run-double', spent = {}, unresolved = [], m
             repair_node_id: request.repair_node_id, reason: 'Repair budget is exhausted' }
         }
       }
-      for (const qa of request.obligations) charged.set(`${request.repair_node_id}::${qa}`, next[qa])
+      for (const qa of request.obligations) {
+        const key = `${request.repair_node_id}::${qa}`
+        charged.set(key, next[qa])
+        granted.set(key, (granted.get(key) || 0) + 1)
+      }
       entries.set(request.authorization_id, { authorization_id: request.authorization_id,
         repair_node_id: request.repair_node_id, obligations: [...request.obligations],
         charged: next, state: 'authorized' })
@@ -94,6 +100,17 @@ function makeLedgerDouble({ runId = 'run-double', spent = {}, unresolved = [], m
       return { status: 'settled', authorization_id: request.authorization_id,
         outcome: request.outcome, charged: entry.charged, refunded: false }
     }
+    if (request.operation === 'verdict') {
+      // Mirrors the helper: the first verdict is a baseline, a lower count than any before
+      // is progress and starts the count of attempts again.
+      const key = `${request.repair_node_id}::${request.qa_node_id}`
+      const progress = best.has(key) && request.blocking_count < best.get(key)
+      best.set(key, Math.min(best.has(key) ? best.get(key) : Infinity, request.blocking_count))
+      if (progress) charged.set(key, 0)
+      return { status: 'ok', run_id: runId, repair_node_id: request.repair_node_id,
+        qa_node_id: request.qa_node_id, progress, blocking_count: request.blocking_count,
+        spent: charged.get(key) || 0, granted: granted.get(key) || 0 }
+    }
     return { status: 'invalid', reason: `unknown operation ${request.operation}` }
   }
 
@@ -110,7 +127,7 @@ function makeLedgerDouble({ runId = 'run-double', spent = {}, unresolved = [], m
 }
 
 // The labels the engine uses for ledger work; the rest of the map is the test's own.
-const LEDGER_LABEL = /^(ledger:(consumption|initialize)|repair-(authorize|start|settle):)/
+const LEDGER_LABEL = /^(ledger:(consumption|initialize)|repair-(authorize|start|settle|verdict):)/
 
 // Spread into makeFakeAgent's response map: it answers every ledger label from one double
 // and leaves every other label to the test.

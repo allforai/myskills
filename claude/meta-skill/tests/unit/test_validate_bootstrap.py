@@ -1718,3 +1718,43 @@ def test_main_refuses_a_directory_that_holds_only_the_retired_format(tmp_path, h
     assert returncode == 1, report
     assert report["passed"] is False, report
     assert RETIRED_FORMAT_ERROR in report["errors"], report
+
+
+# --- inline_review: a node reviewed in place needs its own criteria and a real QA node (ADR 0017) ---
+
+def _reviewed_graph(**design_fields):
+    design = _base_node(node_id="design", exit_artifacts=["docs/design.md"],
+                        acceptance=["every screen names its primary action"],
+                        inline_review={"qa_node_id": "critique"})
+    design.update(design_fields)
+    critique = _base_node(node_id="critique", capability="quality-checks", hard_blocked_by=["design"],
+                          exit_artifacts=[".allforai/qa/critique.json"],
+                          acceptance=["no unresolved must_fix"])
+    other = _base_node(node_id="schema", exit_artifacts=["docs/schema.md"],
+                       acceptance=["every table has a primary key"])
+    return [design, critique, other]
+
+
+def _inline_errors(tmp_path, nodes):
+    return [e for e in validate_workflow(_write_workflow(tmp_path, nodes)) if "inline_review" in e]
+
+
+def test_a_reviewed_node_with_its_own_acceptance_and_a_downstream_qa_node_passes(tmp_path):
+    assert _inline_errors(tmp_path, _reviewed_graph()) == []
+
+
+@pytest.mark.parametrize("fields, code", [
+    ({"inline_review": True}, "invalid_inline_review"),
+    ({"inline_review": {"qa_node_id": "nobody"}}, "invalid_inline_review"),
+    ({"inline_review": {"qa_node_id": "schema"}}, "invalid_inline_review"),     # not downstream
+    ({"acceptance": []}, "inline_review_without_acceptance"),
+])
+def test_an_inline_review_that_cannot_be_carried_out_is_refused(tmp_path, fields, code):
+    errors = _inline_errors(tmp_path, _reviewed_graph(**fields))
+    assert errors and code in errors[0], errors
+
+
+def test_producers_of_parallel_parts_may_share_one_acceptance_list(tmp_path):
+    nodes = _reviewed_graph()
+    nodes[0]["acceptance"] = nodes[2]["acceptance"]
+    assert _inline_errors(tmp_path, nodes) == []

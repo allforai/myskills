@@ -127,6 +127,19 @@
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
          "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision"]}
       ]
+    },
+    {
+      "id": "run-invocation-allowance",
+      "rule": "A repair budget counts attempts without progress within one invocation; a stopped loop or a reached cap says run again, and only a product decision, an unconfirmed plan change or a plan defect sends the user to interactive bootstrap.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["\"operation\":\"verdict\"", "run again to continue",
+                                "never a reason to send the user to"]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["\"operation\":\"verdict\"", "run again to continue"]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["\"operation\":\"verdict\"", "run again to continue"]}
+      ]
     }
   ]
 }

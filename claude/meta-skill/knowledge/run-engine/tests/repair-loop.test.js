@@ -731,3 +731,121 @@ test('an obligation the trusted ledger does not list has provably spent nothing'
   assert.deepEqual(ledger.calls.filter(c => c.operation === 'authorize').map(g => g.obligations),
     [['verifyB']], 'the grant names only the obligation that still had budget')
 })
+
+// --- the budget counts attempts without progress (ADR 0017) ---
+
+const qaFailedWith = (id, count) => ({ ...qaFailed(id), blocking_count: count })
+
+test('runEngine: a loop whose QA verdicts keep falling runs past the declared budget', async () => {
+  const dag = { nodes: nodes(), completed: [], repair_loops: [LOOP] }
+  const counts = [9, 7, 5, 3, 2]
+  const agent = agentWith(ledgerFor(), {
+    'load-dag': dag,
+    implement: passed('implement'),
+    verify: idx => (idx < counts.length ? qaFailedWith('verify', counts[idx]) : passed('verify')),
+    repair: passed('repair'),
+    accept: passed('accept'),
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.ok(counts.length > LOOP.max_attempts, 'the scenario needs more repairs than the budget')
+  assert.equal(agent.counters.repair, counts.length, 'every falling verdict earned another attempt')
+  const ids = agent.calls.filter(c => c.label === 'repair-authorize:repair')
+    .map(c => /"authorization_id":"([^"]+)"/.exec(c.prompt)[1])
+  assert.equal(new Set(ids).size, ids.length, 'a renewed count never reuses a dispatch identity')
+})
+
+test('runEngine: verdicts that stop falling spend the declared budget and stop the run', async () => {
+  const dag = { nodes: nodes(), completed: [], repair_loops: [LOOP] }
+  const counts = [9, 4, 4, 6, 4, 4]
+  const agent = agentWith(ledgerFor(), {
+    'load-dag': dag,
+    implement: passed('implement'),
+    verify: idx => qaFailedWith('verify', counts[Math.min(idx, counts.length - 1)]),
+    repair: passed('repair'),
+    'commit:implement': {}, 'commit:repair': {}, 'commit-failures': {}
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'needs_diagnosis')
+  // one attempt that made progress (9 -> 4), then max_attempts in a row that did not
+  assert.equal(agent.counters.repair, 1 + LOOP.max_attempts)
+})
+
+// --- inline review: a node revises its own output before anything consumes it ---
+
+const reviewed = () => nodes().map(n => n.node_id === 'implement'
+  ? { ...n, node_spec_path: 'specs/implement.md', inline_review: { qa_node_id: 'verify' } } : n)
+const review = (count) => ({ node_id: 'implement', status: count ? 'findings' : 'passed',
+  blocking_count: count, findings_path: '.allforai/bootstrap/inline-review/implement.json' })
+
+test('runEngine: a reviewed node revises until its review passes, then is committed once', async () => {
+  const dag = { nodes: reviewed(), completed: [], repair_loops: [LOOP] }
+  const agent = agentWith(ledgerFor(), {
+    'load-dag': dag,
+    implement: passed('implement'),
+    'inline-review:implement:1': review(4),
+    'inline-review:implement:2': review(1),
+    'inline-review:implement:3': review(0),
+    verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.equal(agent.counters.implement, 3, 'the original run and two revisions')
+  assert.equal(agent.counters['commit:implement'], 1)
+  const revision = agent.calls.filter(c => c.label === 'implement')[1].prompt
+  assert.match(revision, /inline review 1/)
+  assert.match(revision, /\.allforai\/bootstrap\/inline-review\/implement\.json/)
+  const order = agent.calls.map(c => c.label).filter(l => l === 'verify' || l.startsWith('inline-review:'))
+  assert.equal(order[order.length - 1], 'verify', 'the QA node runs only after the review is over')
+})
+
+test('runEngine: a review that stops finding fewer problems lets the node through to its QA node', async () => {
+  const dag = { nodes: reviewed(), completed: [], repair_loops: [LOOP] }
+  const agent = agentWith(ledgerFor(), {
+    'load-dag': dag,
+    implement: passed('implement'),
+    'inline-review:implement:1': review(3),
+    'inline-review:implement:2': review(3),
+    'inline-review:implement:3': review(3),
+    verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete', 'an unconverged review is never why a run stops')
+  assert.equal(agent.counters['inline-review:implement:3'], 1)
+  assert.equal(agent.counters['inline-review:implement:4'], undefined)
+  assert.equal(agent.counters.implement, 3)
+})
+
+test('runEngine: a revision that fails the node fails it; a node without the declaration is never reviewed', async () => {
+  const dag = { nodes: reviewed(), completed: [], repair_loops: [LOOP] }
+  const agent = agentWith(ledgerFor(), {
+    'load-dag': dag,
+    implement: [passed('implement'), { node_id: 'implement', outcome: 'hard_fail', artifacts_written: [],
+      blocking_findings: [{ type: 'cross_node', detail: 'revision broke the build' }] }],
+    'inline-review:implement:1': review(2),
+    'commit-failures': {}
+  })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'needs_diagnosis')
+  assert.equal(agent.counters['commit:implement'], undefined)
+
+  const plain = agentWith(ledgerFor(), {
+    'load-dag': { nodes: nodes(), completed: [], repair_loops: [LOOP] },
+    implement: passed('implement'), verify: passed('verify'), repair: passed('repair'), accept: passed('accept'),
+    'commit:implement': {}, 'commit:verify': {}, 'commit:repair': {}, 'commit:accept': {}
+  })
+  assert.equal((await core.runEngine({ agent: plain, pipeline })).status, 'complete')
+  assert.equal(plain.calls.some(c => c.label.startsWith('inline-review:')), false)
+})
+
+test('inlineReviewPrompt keeps the reviewer independent and writing one file', () => {
+  const prompt = core.inlineReviewPrompt(reviewed()[0], 2)
+  assert.match(prompt, /You did not produce its output and you change none of it/)
+  assert.match(prompt, /specs\/implement\.md/)
+  assert.match(prompt, /Node verify will judge this output later/)
+  assert.match(prompt, /\.allforai\/bootstrap\/inline-review\/implement\.json/)
+  assert.match(prompt, /and nothing else/)
+})

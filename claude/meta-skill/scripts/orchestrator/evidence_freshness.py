@@ -38,7 +38,10 @@ ORCHESTRATION_STATE = frozenset({
 # A diagnosis correction is the run's instruction to one node and is deleted once that
 # node completes: bound as an input, its removal would stale the evidence it produced.
 CORRECTIONS = '.allforai/bootstrap/diagnosis-corrections'
-ORCHESTRATION_STATE_DIRS = (OBSERVATIONS + '/', CORRECTIONS + '/')
+# An inline review's findings are addressed to the node that revises its own output:
+# the run's instruction, like a correction, never a product input.
+INLINE_REVIEW = '.allforai/bootstrap/inline-review'
+ORCHESTRATION_STATE_DIRS = (OBSERVATIONS + '/', CORRECTIONS + '/', INLINE_REVIEW + '/')
 
 
 def orchestration_state(path):

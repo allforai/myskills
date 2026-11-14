@@ -210,7 +210,7 @@ def test_exhausted_budget_refuses_and_charges_nothing(root):
     attempt(root, 'a1', ['qa-a'], {'qa-a': 1})
     verdict = refusal(grant, root, 'a2', ['qa-a'], {'qa-a': 1})
     assert verdict['status'] == 'budget_exhausted'
-    assert verdict['exhausted'] == {'qa-a': {'spent': 1, 'budget': 1}}
+    assert verdict['exhausted'] == {'qa-a': {'spent': 1, 'budget': 1, 'rounds': 1, 'round_cap': 10}}
     assert spend_by_obligation(root) == {'qa-a': 1}
 
 
@@ -1527,3 +1527,109 @@ def test_cli_without_a_root_argument_reads_the_current_directory(root):
                              text=True, capture_output=True, cwd=root)
     assert without.returncode == with_root.returncode == 0, without.stdout
     assert json.loads(without.stdout) == verdict
+
+
+# --- a budget bounds attempts without progress, within one invocation (ADR 0017) ---
+
+RUN_LOG = '.allforai/bootstrap/run-log.jsonl'
+
+
+def clock(monkeypatch, value):
+    monkeypatch.setattr(ra, 'now_iso', lambda: value)
+
+
+def invoke_run(root, at):
+    with (root / RUN_LOG).open('a') as log:
+        log.write(json.dumps({'event': 'run_started', 'ts': at}) + '\n')
+
+
+def spent(root, qa='qa-a', repair='fix'):
+    record = next(o for o in ra.consumption(root)['obligations']
+                  if o['repair_node_id'] == repair and o['qa_node_id'] == qa)
+    return record
+
+
+def judged(root, count, qa='qa-a', repair='fix'):
+    return ra.verdict(root, {'repair_node_id': repair, 'qa_node_id': qa, 'blocking_count': count})
+
+
+def test_a_new_invocation_starts_the_count_again_and_keeps_the_history(root, monkeypatch):
+    started(root, loops=(('fix', ['qa-a'], 2),))
+    clock(monkeypatch, '2026-11-13T12:00:00Z')
+    attempt(root, 'a1', ['qa-a'], {'qa-a': 2})
+    attempt(root, 'a2', ['qa-a'], {'qa-a': 2})
+    assert refusal(grant, root, 'a3', ['qa-a'], {'qa-a': 2})['status'] == 'budget_exhausted'
+    assert spent(root)['exhausted'] is True
+
+    invoke_run(root, '2026-11-14T08:00:00.123456+00:00')
+    clock(monkeypatch, '2026-11-14T08:05:00Z')
+    record = spent(root)
+    assert (record['spent'], record['rounds'], record['granted'], record['exhausted']) == (0, 0, 2, False)
+    assert attempt(root, 'a3', ['qa-a'], {'qa-a': 2})['charged'] == {'qa-a': 1}
+    assert len(json.loads((root / LEDGER).read_text())['authorizations']) == 3
+
+
+def test_without_a_run_log_every_recorded_attempt_still_counts(root):
+    started(root, loops=(('fix', ['qa-a'], 1),))
+    attempt(root, 'a1', ['qa-a'], {'qa-a': 1})
+    assert refusal(grant, root, 'a2', ['qa-a'], {'qa-a': 1})['status'] == 'budget_exhausted'
+
+
+def test_a_plan_revised_between_invocations_is_not_a_budget_conflict(root, monkeypatch):
+    started(root, loops=(('fix', ['qa-a'], 2),))
+    clock(monkeypatch, '2026-11-13T12:00:00Z')
+    attempt(root, 'a1', ['qa-a'], {'qa-a': 2})
+    plan(root, ('fix', ['qa-a'], 4))
+    assert refusal(grant, root, 'a2', ['qa-a'], {'qa-a': 4})['untrusted'] == 'budget_conflict'
+    invoke_run(root, '2026-11-14T08:00:00+00:00')
+    clock(monkeypatch, '2026-11-14T08:05:00Z')
+    assert grant(root, 'a2', ['qa-a'], {'qa-a': 4})['charged'] == {'qa-a': 1}
+
+
+def test_a_falling_verdict_is_progress_and_starts_the_count_again(root):
+    started(root, loops=(('fix', ['qa-a'], 2),))
+    first = judged(root, 9)
+    assert (first['progress'], first['spent']) == (False, 0)      # a baseline renews nothing
+    attempt(root, 'a1', ['qa-a'], {'qa-a': 2})
+    attempt(root, 'a2', ['qa-a'], {'qa-a': 2}) if judged(root, 9)['spent'] == 1 else None
+    assert spent(root)['spent'] == 2
+    lower = judged(root, 4)
+    assert (lower['progress'], lower['spent'], lower['granted']) == (True, 0, 2)
+    assert judged(root, 4)['progress'] is False                    # the same verdict again is not progress
+    assert attempt(root, 'a3', ['qa-a'], {'qa-a': 2})['charged'] == {'qa-a': 1}
+    assert judged(root, 6)['spent'] == 1                           # worse than the best: keeps counting
+    assert attempt(root, 'a4', ['qa-a'], {'qa-a': 2})['charged'] == {'qa-a': 2}
+    assert refusal(grant, root, 'a5', ['qa-a'], {'qa-a': 2})['status'] == 'budget_exhausted'
+
+
+def test_progress_never_carries_a_loop_past_the_invocation_ceiling(root):
+    started(root, loops=(('fix', ['qa-a'], 2),))
+    count = 100
+    judged(root, count)
+    for index in range(ra.MAX_REPAIR_ROUNDS):
+        attempt(root, f'a{index}', ['qa-a'], {'qa-a': 2})
+        count -= 1
+        assert judged(root, count)['progress'] is True
+    record = spent(root)
+    assert (record['rounds'], record['exhausted']) == (ra.MAX_REPAIR_ROUNDS, True)
+    verdict = refusal(grant, root, 'over', ['qa-a'], {'qa-a': 2})
+    assert verdict['status'] == 'budget_exhausted'
+    assert verdict['exhausted']['qa-a']['round_cap'] == ra.MAX_REPAIR_ROUNDS
+
+
+def test_a_verdict_is_refused_outside_a_declared_loop_or_without_a_count(root):
+    started(root, loops=(('fix', ['qa-a'], 2),))
+    assert refusal(judged, root, 3, qa='qa-z')['untrusted'] == 'undeclared_obligation'
+    assert refusal(judged, root, 0)['status'] == 'invalid'
+    result, verdict = cli(root, {'operation': 'verdict', 'repair_node_id': 'fix',
+                                 'qa_node_id': 'qa-a', 'blocking_count': 5})
+    assert result.returncode == 0 and verdict['status'] == 'ok'
+
+
+def test_one_obligations_progress_renews_nothing_for_its_sibling(root):
+    started(root, loops=(('fix', ['qa-a', 'qa-b'], 2),))
+    judged(root, 5)
+    judged(root, 5, qa='qa-b')
+    attempt(root, 'a1', ['qa-a', 'qa-b'], {'qa-a': 2, 'qa-b': 2})
+    judged(root, 2)
+    assert (spent(root)['spent'], spent(root, qa='qa-b')['spent']) == (0, 1)

@@ -583,6 +583,60 @@ def repair_attempts_spent(project_root: Path, repair_node_id: str, qa_node_id: s
     return spent
 
 
+# The ledger's ceiling on attempts for one obligation in one invocation
+# (`repair_authorization.MAX_REPAIR_ROUNDS`); the generic caps below must not undercut it.
+MAX_REPAIR_ROUNDS = 10
+
+# Report fields whose entries are blocking findings of a failed QA verdict. Warnings and
+# known gaps are left out: a loop is not making progress by reclassifying a blocker.
+BLOCKING_COUNT_FIELDS = (
+    "asset_gaps", "audio_gaps", "code_gaps", "contract_gaps", "gaps", "remaining_gaps",
+    "test_gaps", "unresolved_findings", "blockers", "major_findings", "missing_mappings",
+    "blocking", "blocking_findings", "blocking_union", "must_fix",
+    "must_fix_before_implementation",
+)
+
+
+def report_blocking_count(project_root: Path, node: dict) -> int:
+    """Blocking findings a failed QA node's own report states, never fewer than one.
+
+    Read from the report files, not from what the worker said about them. Several reports
+    of one node (two reviewers and their reconciliation) overlap, so the largest single
+    report is the count rather than their sum.
+    """
+    best = 1
+    for item in node.get("exit_artifacts") or []:
+        path = artifact_path(item)
+        if not path.endswith(".json"):
+            continue
+        try:
+            data = load_json(project_root / path)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        total = sum(len(data[field]) for field in BLOCKING_COUNT_FIELDS
+                    if isinstance(data.get(field), (list, dict)))
+        best = max(best, total)
+    return best
+
+
+def record_qa_verdict(project_root: Path, node: dict) -> None:
+    """Tell the ledger how many blocking findings this failed QA verdict carries.
+
+    The ledger compares it with the earlier verdicts of this invocation: fewer than any
+    before is progress, and the declared budget — attempts in a row without progress —
+    starts again. A verdict it could not record renews nothing, which is the safe side.
+    """
+    node_id = node_identity(node)
+    for loop in declared_repair_loops(project_root):
+        if node_id in loop_nodes(loop, "qa_node_ids", "qa_nodes"):
+            authorization_request(project_root, {
+                "operation": "verdict", "repair_node_id": str(loop["repair_node_id"]),
+                "qa_node_id": node_id,
+                "blocking_count": report_blocking_count(project_root, node)})
+
+
 def repair_progress(project_root: Path, workflow: dict, repair_node_id: str,
                     qa_node_id: str) -> tuple[int | None, bool]:
     """(attempts this QA obligation has spent, repair already delivered for its last failure).
@@ -1432,10 +1486,13 @@ def failure_threshold(project_root: Path, node_id: str) -> int:
     repairs authorized the failures that go with them, and stopping at the smaller
     generic number would silently curtail an explicit per-QA budget while reporting a
     supervisor threshold instead of an exhausted one. The bound stays finite either
-    way — it is the declared budget, plus the failure that opened the loop.
+    way — it is the most attempts the ledger grants one obligation in an invocation
+    (a loop that keeps closing findings earns attempts past its declared budget, up to
+    that ceiling), plus the failure that opened the loop.
     """
     budgets = loop_budgets_for(project_root, node_id)
-    return max([MAX_CONSECUTIVE_FAILURES_PER_NODE] + [budget + 1 for budget in budgets])
+    return max([MAX_CONSECUTIVE_FAILURES_PER_NODE] +
+               [max(MAX_REPAIR_ROUNDS, budget) + 1 for budget in budgets])
 
 
 def stagnation_limit(project_root: Path) -> int:
@@ -1448,7 +1505,8 @@ def stagnation_limit(project_root: Path) -> int:
     """
     budgets = [budget for loop in declared_repair_loops(project_root)
                for budget in [repair_budget(loop)] if budget is not None]
-    return max([MAX_STAGNANT_ITERATIONS] + [2 * budget + 1 for budget in budgets])
+    return max([MAX_STAGNANT_ITERATIONS] +
+               [2 * max(MAX_REPAIR_ROUNDS, budget) + 1 for budget in budgets])
 
 
 def transition_artifacts(entry: dict) -> list[str]:
@@ -1934,6 +1992,86 @@ def host_permission_args(start_pid: int | None = None, reader=process_argv,
                        for line in config.splitlines() if "=" in line)
     # Bare `codex exec` is read-only, a mode no interactive host runs its own work in.
     return inherited if selected else [*inherited, "--sandbox", "workspace-write"]
+
+
+# Inline review (ADR 0017): a node that declares `inline_review` is reviewed the moment it
+# passes its gate, by a separate `codex exec` that never saw it being made, and revises
+# its own output while nothing has consumed it. Findings travel in this file only.
+INLINE_REVIEW_DIR = ".allforai/bootstrap/inline-review"
+# Reviews that find no fewer blocking findings than the best so far before the node is let
+# through with what remains, and the ceiling on reviews of one node whatever the progress.
+INLINE_REVIEW_STALLS = 2
+INLINE_REVIEW_ROUNDS = 6
+
+
+def inline_review_prompt(node: dict, node_id: str, round_number: int) -> str:
+    qa_node_id = (node.get("inline_review") or {}).get("qa_node_id") if isinstance(
+        node.get("inline_review"), dict) else None
+    artifacts = [artifact_path(item) for item in node.get("exit_artifacts") or []]
+    target = f"{INLINE_REVIEW_DIR}/{node_id}.json"
+    return "\n".join(line for line in [
+        f"You are an independent reviewer of workflow node `{node_id}`, which has just finished.",
+        "You did not produce its output and you change none of it.",
+        f"Read its node-spec at `{node.get('node_spec_path', '')}` for what it had to deliver and its acceptance criteria.",
+        (f"Node `{qa_node_id}` will judge this output later: read that node's node-spec (its path is in "
+         "`.allforai/bootstrap/workflow.json`) and apply the same criteria it will, to this node's output alone."
+         if qa_node_id else ""),
+        f"Then read what the node produced: {json.dumps(artifacts)} and the files those name.",
+        "Judge only against those criteria. A blocking finding is a criterion the output does not meet, stated so "
+        "the producer can fix it in its own files; a preference, or a defect only a later node can see, is not one.",
+        f"Write `{target}` as {{\"node_id\", \"round\": {round_number}, \"status\", \"blocking\": "
+        "[{\"id\", \"criterion\", \"artifact\", \"detail\"}]}} — status `passed` when blocking is empty, "
+        "otherwise `findings` — and nothing else: no product file, no report of the node, no freshness record, "
+        "no workflow transition.",
+    ] if line)
+
+
+def inline_review_count(project_root: Path, node_id: str) -> int | None:
+    """Blocking findings the review just wrote, or None when it wrote nothing readable."""
+    try:
+        data = load_json(project_root / INLINE_REVIEW_DIR / f"{node_id}.json")
+    except (OSError, ValueError):
+        return None
+    blocking = data.get("blocking") if isinstance(data, dict) else None
+    return len(blocking) if isinstance(blocking, list) else None
+
+
+def run_inline_review(project_root: Path, node: dict, node_id: str, goal: str,
+                      gate_node_id: str) -> bool:
+    """Review a node that just passed and let it revise its own output. True = it stands.
+
+    Reviews continue while each finds fewer blocking findings than the best so far. When
+    they stop falling the node is let through with what remains recorded in its findings
+    file: the QA node planned downstream still judges it, so a review that does not
+    converge is never why a run stops. A review that produced nothing readable settles
+    nothing either way. Only a revision that no longer passes the node's own gate fails it.
+    """
+    target = project_root / INLINE_REVIEW_DIR / f"{node_id}.json"
+    best: int | None = None
+    stalls = 0
+    for round_number in range(1, INLINE_REVIEW_ROUNDS + 1):
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            target.unlink()      # this round's findings, never an earlier round's
+        review = run_codex(project_root, inline_review_prompt(node, node_id, round_number))
+        count = None if review.returncode else inline_review_count(project_root, node_id)
+        if not count:            # unreadable, or no blocking finding
+            return True
+        stalls = 0 if best is None or count < best else stalls + 1
+        best = count if best is None else min(best, count)
+        if stalls >= INLINE_REVIEW_STALLS or round_number == INLINE_REVIEW_ROUNDS:
+            return True
+        revised = run_codex(project_root, build_prompt(node_id, goal) + (
+            f"\n\nInline review {round_number}: an independent reviewer found blocking findings in what "
+            f"you delivered. Read `{INLINE_REVIEW_DIR}/{node_id}.json` directly (never register it with the "
+            "freshness `read`) and fix every finding in your own outputs; change nothing the findings do "
+            "not require, then validate and publish as usual."))
+        warnings = read_safety_warnings(project_root)
+        if (revised.returncode != 0 or warnings is None
+                or safety_halt_required(project_root, warnings)
+                or not independent_artifact_gate(project_root, gate_node_id)):
+            return False
+    return True
 
 
 def run_codex(project_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
@@ -2610,6 +2748,8 @@ def main() -> int:
         all_ready = result.returncode == 0 and independent_artifact_gate(
             project_root, gate_node_id
         )
+        if all_ready and grant is None and node.get("inline_review"):
+            all_ready = run_inline_review(project_root, node, node_id, goal, gate_node_id)
 
         # Settled before the attempt may be accepted. This driver watched the attempt
         # finish, so its end is recorded; settling returns no budget, because the attempt
@@ -2678,6 +2818,8 @@ def main() -> int:
                 error_line,
                 qa_evidence,
             )
+            if is_qa_node and qa_report_usable(project_root, node, load_json(workflow_path)):
+                record_qa_verdict(project_root, node)
 
         if settlement_error:
             print(json.dumps({

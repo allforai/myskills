@@ -27,7 +27,7 @@ const LOOP = {
 // every ledger prompt by actually running the shipped `repair_authorization.py` in the
 // temporary project, so the prompts, the request encoding, the receipts and the real
 // authorize -> start -> settle state machine are all exercised end to end.
-const LEDGER_LABEL = /^(ledger:(consumption|initialize)|repair-(authorize|start|settle):)/
+const LEDGER_LABEL = /^(ledger:(consumption|initialize)|repair-(authorize|start|settle|verdict):)/
 
 function writeReport(root, name, value) {
   fs.writeFileSync(path.join(root, name), JSON.stringify(value))

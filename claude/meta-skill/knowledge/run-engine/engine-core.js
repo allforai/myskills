@@ -16,7 +16,10 @@ const DAG_SCHEMA = {
         decision_mode: { type: 'string', enum: ['brainstorm', 'none'] },
         decision_inputs: { type: 'array', items: { type: 'string' } },
         closure_verify: { type: 'array', items: { type: 'string' } },
-        soft_retry_max: { type: 'integer' }
+        soft_retry_max: { type: 'integer' },
+        // Declared at bootstrap on a node whose output a later QA node judges: review it
+        // against its own acceptance right after it passes, while nothing consumes it yet.
+        inline_review: { type: 'object', properties: { qa_node_id: { type: 'string' } } }
       } } },
     completed: { type: 'array', items: { type: 'string' } },
     expanders: { type: 'array', items: { type: 'string' } },
@@ -55,6 +58,9 @@ const LEDGER_VERDICT_SCHEMA = {
     refunded: { type: 'boolean' },
     charged: { type: 'object' },
     remaining: { type: 'object' },
+    qa_node_id: { type: 'string' },
+    progress: { type: 'boolean' },
+    spent: { type: 'integer' },
     obligations: { type: 'array' },
     unresolved: { type: 'array' }
   }
@@ -68,6 +74,9 @@ const NODE_RESULT_SCHEMA = {
     outcome: { type: 'string', enum: ['passed', 'soft_fail', 'hard_fail'] },
     artifacts_written: { type: 'array', items: { type: 'string' } },
     blocking_findings: { type: 'array', items: { type: 'object' } },
+    // How many distinct blocking findings a failed QA report holds. The findings above may
+    // summarize; this is the figure a declared repair loop's progress is read from.
+    blocking_count: { type: 'integer' },
     assumed_decisions: { type: 'array', items: { type: 'object' } }, // fix C1: engine persists these, not the subagent
     verification: { type: 'object',                                  // verification-honesty: evidence of real working behavior
       properties: {
@@ -148,6 +157,22 @@ const MEASUREMENT_SCHEMA = {
 }
 
 const DEFAULT_REPAIR_ATTEMPTS = 3
+
+// An inline review of a node's own output, by an agent that never saw it being made.
+const INLINE_REVIEW_SCHEMA = {
+  type: 'object',
+  required: ['node_id', 'status', 'blocking_count'],
+  properties: {
+    node_id: { type: 'string' },
+    status: { type: 'string', enum: ['passed', 'findings'] },
+    blocking_count: { type: 'integer' },
+    findings_path: { type: 'string' }
+  }
+}
+// Reviews that find no fewer blocking findings than the best so far before the node is let
+// through with what remains, and the ceiling on reviews of one node whatever the progress.
+const INLINE_REVIEW_STALLS = 2
+const INLINE_REVIEW_ROUNDS = 6
 
 // A failure only opens a repair loop when the QA node reached its own verdict and
 // published it. An infrastructure, authority or never-ran failure has no current
@@ -281,7 +306,7 @@ function loadDagPrompt() {
   return [
     'Read .allforai/bootstrap/workflow.json and .allforai/bootstrap/bootstrap-profile.json.',
     'Return a DAG object: nodes[] (each with node_id, capability, hard_blocked_by, alignment_refs,',
-    'exit_artifacts, node_spec_path, decision_mode, decision_inputs, closure_verify, soft_retry_max,',
+    'exit_artifacts, node_spec_path, decision_mode, decision_inputs, closure_verify, soft_retry_max, inline_review,',
     'and a profile_slice carrying only the bootstrap-profile fields that node needs — tech stack,',
     'scenario, target paths); completed[] = node_ids whose transition_log status is "completed";',
     'expanders[] = the declared idempotent expander scripts.',
@@ -403,6 +428,36 @@ function deliveryNote(delivery) {
   ].join(' ')
 }
 
+// The reviewer sees the artifacts and the criteria, never how the node reasoned its way to
+// them, and the node that revises sees the findings file, never the review. Everything
+// passes through files so no context carries one role's reasoning into another.
+function inlineReviewPath(node) {
+  return `.allforai/bootstrap/inline-review/${node.node_id}.json`
+}
+
+function inlineReviewPrompt(node, round) {
+  const qa = node.inline_review && node.inline_review.qa_node_id
+  const artifacts = (node.exit_artifacts || []).map(a => (a && a.path) || a).filter(Boolean)
+  return [
+    `You are an independent reviewer of node ${node.node_id}, which has just finished. You did not produce its output`,
+    'and you change none of it.',
+    `Read its node-spec at ${node.node_spec_path} for what it had to deliver and its acceptance criteria.`,
+    qa ? `Node ${qa} will judge this output later: read that node's node-spec (its path is in .allforai/bootstrap/workflow.json) and apply the same criteria it will, to this node's output alone.` : '',
+    `Then read what the node produced: ${JSON.stringify(artifacts)} and the files those name.`,
+    'Judge only against those criteria. A blocking finding is a criterion the output does not meet, stated so the',
+    'producer can fix it in its own files; a preference, or a defect only a later node can see, is not one.',
+    `Write ${inlineReviewPath(node)} as {node_id, round: ${round}, status, blocking: [{id, criterion, artifact, detail}]}`,
+    'and nothing else: no product file, no report of the node, no freshness record.',
+    `Return {node_id, status ("passed" when blocking is empty, otherwise "findings"), blocking_count, findings_path}.`
+  ].filter(Boolean).join(' ')
+}
+
+function inlineReviseNote(node, round) {
+  return ` [inline review ${round}: an independent reviewer found blocking findings in what you delivered. Read ` +
+    `${inlineReviewPath(node)} directly (never register it with the freshness \`read\`) and fix every finding in your own ` +
+    'outputs; change nothing the findings do not require, then validate and publish as usual.]'
+}
+
 function runNodePrompt(node, strict, delivery = null) {
   const di = (node.decision_inputs || [])
   const cv = (node.closure_verify || [])
@@ -439,7 +494,9 @@ function runNodePrompt(node, strict, delivery = null) {
     'inputs, return it with kind "building_block", and keep going; the person sees it in the run report.',
     'Return a NODE_RESULT { node_id, outcome (passed|soft_fail|hard_fail), artifacts_written,',
     'blocking_findings: [{type, detail, suspected_root_node?}], assumed_decisions? }. Attach',
-    'suspected_root_node when the root cause is in another node.',
+    'suspected_root_node when the root cause is in another node. When this node is a QA node and it fails on its own',
+    'report, also return blocking_count: the number of distinct blocking findings in that report — count the defects,',
+    'never the summary lines, and count the same way on every run.',
     'Return safety_warnings[] for non-blocking warnings. When this node is the concept-acceptance coverage gate, return',
     'missing_mappings[] copied verbatim from .allforai/concept-acceptance/acceptance-report.json — the behaviour mappings',
     'with no evidence; an empty list means every mapping has evidence. Return no score, threshold or verdict.',
@@ -485,7 +542,7 @@ function repairRoutePrompt(qaNodeId, loop, attempt) {
   return [
     `Append a failed transition for ${qaNodeId} to .allforai/bootstrap/workflow.json transition_log`,
     `with error "QA failed; routed to declared repair node ${loop.repair_node_id}`,
-    `(attempt ${attempt} of ${repairBudget(loop)})".`,
+    `(attempt ${attempt} of ${repairBudget(loop)} without progress)".`,
     'Do NOT mark the QA node completed and do not edit its report: the declared repair node runs',
     'next, this QA node then reruns, and no closure node of this loop may start until that rerun',
     'passes. Append only; do not touch other entries, and do not write the repair_routes entry',
@@ -644,12 +701,12 @@ function undeclaredCoverageLoopMessage(gateNodeId) {
 // budget against something no repair can fix. Its delivery closes the loop instead, the
 // QA rerun is the check, and the node is dispatched again afterwards as an ordinary node
 // and must pass this same gate on its own merits before anything commits it.
-async function runNode(node, agent, policy = {}, deliveryOnly = null) {
+async function runNode(node, agent, policy = {}, deliveryOnly = null, note = '') {
   const max = node.soft_retry_max ?? 2
   const repairMax = node.repair_retry_max ?? 3
   let attempt = 0
   let repairAttempt = 0
-  let strict = ''
+  let strict = note
   while (true) {
     const r = await agent(runNodePrompt(node, strict, deliveryOnly), { schema: NODE_RESULT_SCHEMA, label: node.node_id })
     if (!r || r.node_id !== node.node_id) {
@@ -747,7 +804,7 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
       await agent(repairPrompt(node, gate.blocking_findings), {
         label: `repair:${node.node_id}:${repairAttempt}`
       })
-      strict = ` [repair ${repairAttempt}: rerun affected QA evidence; all gaps must be empty]`
+      strict = `${note} [repair ${repairAttempt}: rerun affected QA evidence; all gaps must be empty]`
       continue
     }
     if (cls === 'hard') return { ...r, outcome: 'hard_fail' }
@@ -756,8 +813,41 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null) {
         blocking_findings: [{ type: 'exhausted_retries', detail: `soft retried ${max}x without passing` }] }
     }
     attempt += 1
-    strict = ` [retry ${attempt}: must fix all blocking findings]`
+    strict = `${note} [retry ${attempt}: must fix all blocking findings]`
   }
+}
+
+// A node that declares inline_review is reviewed the moment it passes, and revises its own
+// output while nothing has consumed it: no other node's file is touched and no evidence
+// goes stale downstream. Reviews continue while each finds fewer blocking findings than the
+// best so far. When they stop falling the node is let through with what remains recorded in
+// its findings file — the QA node planned downstream still judges it, so a review that does
+// not converge is never the reason a run stops. Only a revision that fails the node's own
+// gate fails the node.
+async function runNodeWithReview(node, agent, policy = {}, deliveryOnly = null) {
+  let result = await runNode(node, agent, policy, deliveryOnly)
+  if (!node.inline_review || deliveryOnly || routeOutcome(result) !== 'done' || result.delivered) return result
+  let best = Infinity
+  let stalls = 0
+  for (let round = 1; round <= INLINE_REVIEW_ROUNDS; round++) {
+    const review = await agent(inlineReviewPrompt(node, round), {
+      schema: INLINE_REVIEW_SCHEMA, label: `inline-review:${node.node_id}:${round}`
+    })
+    // An unusable review settles nothing either way; the node stands on its own gate.
+    if (!review || review.node_id !== node.node_id) return { ...result, inline_review: { status: 'unreviewed', rounds: round } }
+    const count = Number.isInteger(review.blocking_count) ? review.blocking_count : 0
+    if (review.status === 'passed' || count <= 0) return { ...result, inline_review: { status: 'passed', rounds: round } }
+    stalls = count < best ? 0 : stalls + 1
+    best = Math.min(best, count)
+    if (stalls >= INLINE_REVIEW_STALLS || round === INLINE_REVIEW_ROUNDS) {
+      return { ...result, inline_review: { status: 'open', rounds: round, blocking_count: count,
+        findings_path: inlineReviewPath(node) } }
+    }
+    const revised = await runNode(node, agent, policy, null, inlineReviseNote(node, round))
+    if (routeOutcome(revised) !== 'done') return revised
+    result = revised
+  }
+  return result
 }
 
 async function commitNode(result, agent, done) {
@@ -831,6 +921,10 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   // Keyed by the pair because one repair node may serve several QA nodes and each carries
   // its own declared budget; seeded from the recorded history so a restart resumes it.
   const repairAttempts = new Map()
+  // Every attempt ever granted to the pair, across invocations. The spend above starts again
+  // with each invocation and each QA verdict that was progress, so it cannot name a dispatch
+  // uniquely; this count only grows.
+  const repairGranted = new Map()
   // Coverage gates whose missing-mapping failure was routed to their declared repair in
   // this session. The recorded auto_fix_once policy grants exactly one iteration repair,
   // whatever the loop's remaining budget: a rerun that passes stops the run as
@@ -896,6 +990,8 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
           `unreadable ledger obligation: ${JSON.stringify(record)}`)
       }
       repairAttempts.set(`${record.repair_node_id}::${record.qa_node_id}`, record.spent)
+      repairGranted.set(`${record.repair_node_id}::${record.qa_node_id}`,
+        Number.isInteger(record.granted) ? record.granted : record.spent)
     }
   }
 
@@ -975,12 +1071,14 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
           'no obligation of this dispatch has budget left; a repair attempt may not run unpaid')
       }
       const priorSpent = {}
+      const priorGranted = {}
       const budgets = {}
       for (const qaNodeId of authorizedQa) {
         priorSpent[qaNodeId] = repairAttempts.get(`${repairNodeId}::${qaNodeId}`) || 0
+        priorGranted[qaNodeId] = repairGranted.get(`${repairNodeId}::${qaNodeId}`) || 0
         budgets[qaNodeId] = repairBudget(repair.open.get(qaNodeId))
       }
-      const grantId = authorizationId(ledgerRunId, repairNodeId, priorSpent)
+      const grantId = authorizationId(ledgerRunId, repairNodeId, priorGranted)
       // One atomic grant for the whole dispatch: every obligation is charged or none is,
       // so a partial charge can never leave a sibling paying for an attempt that was
       // never authorized. It is still not permission to run.
@@ -1000,6 +1098,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
             `receipt charged ${JSON.stringify(charged)} to ${qaNodeId}, expected ${priorSpent[qaNodeId] + 1}`)
         }
         repairAttempts.set(`${repairNodeId}::${qaNodeId}`, charged)
+        repairGranted.set(`${repairNodeId}::${qaNodeId}`, priorGranted[qaNodeId] + 1)
       }
       // The launch claim is separate and succeeds once. A replay, a resumed engine and a
       // second worker are all told no, so nothing executes twice on one charge.
@@ -1032,7 +1131,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     }
     const outcomes = (await pipeline(ready, async node => {
       try {
-        return await runNode(node, waveAgent, policy, openDelivery.get(node.node_id) || null)
+        return await runNodeWithReview(node, waveAgent, policy, openDelivery.get(node.node_id) || null)
       } catch (error) {
         // A thrown stage is otherwise swallowed by Workflow as null. Unknown execution
         // is a blocker, never absence of a failure or permission to repeat the node.
@@ -1139,6 +1238,16 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
         const budget = repairBudget(loop)
         if (budget === null) continue          // unusable declared budget: route nothing
         const key = `${loop.repair_node_id}::${failure.node_id}`
+        // The ledger reads this verdict against the earlier ones of the invocation: fewer
+        // blocking findings than any before is progress, and the count of attempts starts
+        // again. Its answer is the spend; a verdict it could not record renews nothing.
+        const count = Number.isInteger(failure.blocking_count) && failure.blocking_count > 0
+          ? failure.blocking_count : (failure.blocking_findings || []).length
+        const judged = await agent(authorizationPrompt({ operation: 'verdict',
+          repair_node_id: loop.repair_node_id, qa_node_id: failure.node_id, blocking_count: count
+        }), { schema: LEDGER_VERDICT_SCHEMA, label: `repair-verdict:${failure.node_id}` })
+        if (judged && judged.status === 'ok' && judged.qa_node_id === failure.node_id &&
+            Number.isInteger(judged.spent) && judged.spent >= 0) repairAttempts.set(key, judged.spent)
         // Peek, never charge: the attempt is spent when the repair is dispatched, so a
         // route that opens and is then interrupted before any dispatch costs nothing.
         const spent = repairAttempts.get(key) || 0
@@ -1198,7 +1307,9 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
     const hardFailures = [...repair.open].map(([qaNodeId, loop]) => ({
       node_id: qaNodeId, outcome: 'hard_fail',
       blocking_findings: [{ type: 'exhausted_repair_loop',
-        detail: `declared repair loop ${loop.repair_node_id} exhausted after ${repairBudget(loop)} attempts` }]
+        detail: `declared repair loop ${loop.repair_node_id} stopped: ${repairBudget(loop)} attempts in a row left its ` +
+          'QA node with no fewer blocking findings, or the invocation\'s ceiling on attempts was reached. ' +
+          'The next invocation of the run starts the count again' }]
     }))
     await agent(commitFailuresPrompt(hardFailures), { label: 'commit-failures' })
     return { status: 'needs_diagnosis', hardFailures }
@@ -1221,7 +1332,8 @@ module.exports = {
   MEASUREMENT_SCHEMA, measuredDelivery, measurePrompt,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
   qaReportUsable, productDecisionGap, repairLoopFor, repairBudget, undeclaredCoverageLoopMessage,
-  serializeCommit, runNode, commitNode, runEngine,
+  serializeCommit, runNode, runNodeWithReview, commitNode, runEngine,
+  INLINE_REVIEW_SCHEMA, inlineReviewPrompt, inlineReviseNote, inlineReviewPath,
   loadDagPrompt, expandPrompt, readinessPrompt, gateNodePrompt, repairPrompt,
   runNodePrompt, deliveryNote, wavePrompt, OWN_OUTPUTS_RULE, commitPrompt, commitFailuresPrompt, repairRoutePrompt,
   LEDGER_VERDICT_SCHEMA, authorizationPrompt, authorizationId, ledgerReceiptError, shellQuote,

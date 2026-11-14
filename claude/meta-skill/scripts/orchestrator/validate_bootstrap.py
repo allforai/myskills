@@ -687,6 +687,57 @@ def _write_scope_ownership(raw_nodes: list) -> list:
     return errors
 
 
+def _inline_review_declarations(raw_nodes: list) -> list:
+    """A node reviewed in place needs criteria of its own and a real QA node behind it.
+
+    `inline_review` has an independent reviewer judge the node's output the moment it
+    passes, against the node's own acceptance and the criteria of the QA node that judges
+    it later. That needs three things the declaration cannot supply by itself: acceptance
+    for this node, a `qa_node_id` that names a
+    node, and that node actually downstream — a QA node that does not depend on this
+    output is not the one that judges it.
+    """
+    errors = []
+    nodes = [n for n in raw_nodes if isinstance(n, dict) and _addressable_id(n.get("node_id"))]
+    by_id = {n["node_id"]: n for n in nodes}
+    edges = _dependency_edges(nodes)
+
+    def depends_on(start: str, target: str) -> bool:
+        seen, stack = set(), [start]
+        while stack:
+            for dep in edges.get(stack.pop(), ()):
+                if dep == target:
+                    return True
+                if dep not in seen:
+                    seen.add(dep)
+                    stack.append(dep)
+        return False
+
+    for node in nodes:
+        if "inline_review" not in node:
+            continue
+        nid, declared = node["node_id"], node["inline_review"]
+        if not isinstance(declared, dict):
+            errors.append(f"workflow.json: {nid} inline_review must be an object "
+                          f'like {{"qa_node_id": "<QA node>"}} (invalid_inline_review)')
+            continue
+        qa = declared.get("qa_node_id")
+        if qa is not None:
+            if not _addressable_id(qa) or qa not in by_id:
+                errors.append(f"workflow.json: {nid} inline_review.qa_node_id {qa!r} names no "
+                              f"node (invalid_inline_review)")
+            elif not depends_on(qa, nid):
+                errors.append(f"workflow.json: {nid} inline_review.qa_node_id '{qa}' does not "
+                              f"depend on {nid}; the QA node that judges this output must be "
+                              f"downstream of it (invalid_inline_review)")
+        # Whether the acceptance is this node's own or a stage goal copied onto it is the
+        # node-expansion audit's judgment: producers of parallel parts rightly share one list.
+        if not _string_list(node.get("acceptance")):
+            errors.append(f"workflow.json: {nid} declares inline_review but no acceptance; a "
+                          f"reviewer needs this node's own criteria (inline_review_without_acceptance)")
+    return errors
+
+
 def validate_workflow(wf_path: str) -> list:
     """Validate workflow.json schema."""
     errors = []
@@ -785,6 +836,7 @@ def validate_workflow(wf_path: str) -> list:
 
     errors.extend(_inverted_source_inputs(wf["nodes"]))
     errors.extend(_write_scope_ownership(wf["nodes"]))
+    errors.extend(_inline_review_declarations(wf["nodes"]))
 
     return errors
 

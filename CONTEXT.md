@@ -41,7 +41,7 @@ Agreement between execution hosts on workflow admission, repair-budget authoriza
 _Avoid_: identical engines, identical execution order
 
 **Per-QA repair budget**:
-The maximum repair authorizations available to an individual QA obligation in its declared repair loop. Sharing a repair task with another QA obligation does not pool their budgets or discharge an exhausted obligation.
+The repair authorizations in a row, within one invocation of the run, that an individual QA obligation may spend in its declared repair loop without its blocking findings falling. A verdict with fewer findings than any before it in the invocation starts the count again, up to a fixed ceiling per invocation (ADR-0017). Sharing a repair task with another QA obligation does not pool their budgets or discharge an exhausted obligation.
 _Avoid_: shared retry pool, repair-task success
 
 **Untrusted run state**:

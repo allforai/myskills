@@ -332,6 +332,7 @@ def validate_bootstrap_node_expansion_contract(errors: list[str]) -> None:
         "missing_io_effect_qa",
         "missing_platform_qa",
         "missing_runtime_family",
+        "failure_not_local",
         "knowledge/engines/<runtime>.md",
         "small legal-looking workflow",
     ):

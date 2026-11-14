@@ -2041,23 +2041,27 @@ def test_an_unresolved_authorization_blocks_the_next_dispatch_instead_of_replayi
 def test_a_declared_per_qa_budget_is_not_curtailed_by_the_generic_caps(tmp_path):
     """An explicit `max_attempts` outranks the generic supervisor and stagnation caps.
 
-    Both stay finite: they rise only to what the plan itself declared.
+    Both stay finite: they rise to the most attempts the ledger grants one obligation in
+    an invocation — the declared budget when that is higher than the ceiling of ten.
     """
-    repair_project(tmp_path, qa_report={'status': 'failed'}, max_attempts=6)
+    repair_project(tmp_path, qa_report={'status': 'failed'}, max_attempts=12)
     assert flow.MAX_CONSECUTIVE_FAILURES_PER_NODE == 3 and flow.MAX_STAGNANT_ITERATIONS == 5
     for node_id in ('verify', 'repair'):
-        assert flow.failure_threshold(tmp_path, node_id) == 7, \
-            'a declared 6-attempt loop is not ended at the generic 3'
+        assert flow.failure_threshold(tmp_path, node_id) == 13, \
+            'a declared 12-attempt loop is not ended at the generic 3'
     assert flow.failure_threshold(tmp_path, 'implement') == 3, \
         'a node no loop declared keeps the generic backstop'
-    assert flow.stagnation_limit(tmp_path) == 13, \
+    assert flow.stagnation_limit(tmp_path) == 25, \
         'two transitions per authorized attempt, plus the failure that opened the loop'
 
 
-def test_a_smaller_declared_budget_never_raises_the_generic_backstop(tmp_path):
+def test_a_small_declared_budget_still_leaves_room_for_a_loop_that_makes_progress(tmp_path):
+    """The budget counts attempts without progress, so a loop that keeps closing findings
+    may run to the ledger's ceiling; the generic caps must not end it sooner (ADR 0017)."""
     repair_project(tmp_path, qa_report={'status': 'failed'}, max_attempts=1)
-    assert flow.failure_threshold(tmp_path, 'verify') == flow.MAX_CONSECUTIVE_FAILURES_PER_NODE
-    assert flow.stagnation_limit(tmp_path) == flow.MAX_STAGNANT_ITERATIONS
+    assert flow.failure_threshold(tmp_path, 'verify') == flow.MAX_REPAIR_ROUNDS + 1
+    assert flow.stagnation_limit(tmp_path) == 2 * flow.MAX_REPAIR_ROUNDS + 1
+    assert flow.failure_threshold(tmp_path, 'implement') == flow.MAX_CONSECUTIVE_FAILURES_PER_NODE
 
 
 # --- role overlap, uncertain execution, and the fences around them ---------------------
@@ -2911,3 +2915,98 @@ def test_recording_a_transition_closes_the_wave_and_preflight_recovers(tmp_path,
     flow.append_transition_if_missing(workflow_path, 0, 'n', 'failed', 'now', [], 'boom')
     flow.run_preflight(tmp_path)
     assert calls == [('end-wave', ['n']), ('recover-waves', None)]
+
+
+# --- a budget counts attempts without progress; a reviewed node revises its own output (ADR 0017) ---
+
+def test_a_loop_whose_verdicts_keep_falling_runs_past_the_declared_budget(tmp_path, monkeypatch):
+    """max_attempts is 2. Four repairs each remove a finding, so each earns the next one."""
+    routing_project(tmp_path)
+    gaps = [['a', 'b', 'c', 'd'], ['a', 'b', 'c'], ['a', 'b'], ['a']]
+
+    def executor(project_root, node_id, attempt):
+        if node_id == 'verify':
+            left = gaps[attempt - 1] if attempt <= len(gaps) else []
+            write(project_root / 'verify.json', {'status': 'failed' if left else 'passed',
+                                                 'gaps': left, 'attempt': attempt})
+        elif node_id in ('repair', 'accept'):
+            write(project_root / f'{node_id}.json', {'status': 'passed', 'attempt': attempt})
+        try_publish_evidence(project_root, node_id)
+
+    selected, executed = drive_real_routing(tmp_path, monkeypatch, executor)
+    assert executed.count('repair') > 2, f'more repairs than max_attempts (2): {executed}'
+    assert 'accept' in executed, executed
+    verdicts = json.loads((tmp_path / '.allforai/bootstrap/repair-authorizations.json').read_text())['verdicts']
+    counts = [v['blocking_count'] for v in verdicts]
+    assert counts == sorted(counts, reverse=True) and len(set(counts)) == len(counts), counts
+    assert [v['progress'] for v in verdicts] == [False] + [True] * (len(verdicts) - 1)
+
+
+def test_report_blocking_count_reads_the_largest_report_and_ignores_warnings(tmp_path):
+    write(tmp_path / 'review-1.json', {'status': 'failed', 'blocking': ['a', 'b'], 'warnings': ['w'] * 9})
+    write(tmp_path / 'review-2.json', {'status': 'failed', 'blocking': ['a', 'b', 'c'], 'gaps': ['d']})
+    write(tmp_path / 'bare.json', {'status': 'failed'})
+    node = {'node_id': 'qa', 'exit_artifacts': ['review-1.json', 'review-2.json', 'notes.md']}
+    assert flow.report_blocking_count(tmp_path, node) == 4
+    assert flow.report_blocking_count(tmp_path, {'node_id': 'qa', 'exit_artifacts': ['bare.json']}) == 1
+
+
+def reviewed_node():
+    return {'node_id': 'design', 'node_spec_path': 'specs/design.md', 'exit_artifacts': ['design.json'],
+            'inline_review': {'qa_node_id': 'critique'}}
+
+
+def scripted_review(tmp_path, monkeypatch, counts, revision_ok=True):
+    """Stand in for `codex exec`: reviews write the next count, revisions are recorded."""
+    calls = []
+    remaining = list(counts)
+
+    def worker(project_root, prompt):
+        if prompt.startswith('You are an independent reviewer'):
+            calls.append('review')
+            count = remaining.pop(0)
+            if count is not None:
+                write(project_root / '.allforai/bootstrap/inline-review/design.json',
+                      {'node_id': 'design', 'status': 'findings' if count else 'passed',
+                       'blocking': [{'id': i} for i in range(count)]})
+            return subprocess.CompletedProcess([], 0, '', '')
+        calls.append('revise')
+        assert '.allforai/bootstrap/inline-review/design.json' in prompt
+        return subprocess.CompletedProcess([], 0 if revision_ok else 1, '', '')
+
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'build_prompt', lambda *a, **k: 'run the node')
+    monkeypatch.setattr(flow, 'read_safety_warnings', lambda *a: [])
+    monkeypatch.setattr(flow, 'safety_halt_required', lambda *a: False)
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
+    return calls
+
+
+def test_a_reviewed_node_revises_until_its_review_passes(tmp_path, monkeypatch):
+    calls = scripted_review(tmp_path, monkeypatch, [4, 1, 0])
+    assert flow.run_inline_review(tmp_path, reviewed_node(), 'design', 'goal', 'design') is True
+    assert calls == ['review', 'revise', 'review', 'revise', 'review']
+
+
+def test_a_review_that_stops_falling_lets_the_node_through_with_its_findings(tmp_path, monkeypatch):
+    calls = scripted_review(tmp_path, monkeypatch, [3, 3, 3, 3])
+    assert flow.run_inline_review(tmp_path, reviewed_node(), 'design', 'goal', 'design') is True
+    assert calls == ['review', 'revise', 'review', 'revise', 'review']
+    left = json.loads((tmp_path / '.allforai/bootstrap/inline-review/design.json').read_text())
+    assert len(left['blocking']) == 3, 'what remains stays on record for the QA node'
+
+
+def test_an_unreadable_review_settles_nothing_and_a_failed_revision_fails_the_node(tmp_path, monkeypatch):
+    calls = scripted_review(tmp_path, monkeypatch, [None])
+    assert flow.run_inline_review(tmp_path, reviewed_node(), 'design', 'goal', 'design') is True
+    assert calls == ['review']
+    calls = scripted_review(tmp_path, monkeypatch, [2, 0], revision_ok=False)
+    assert flow.run_inline_review(tmp_path, reviewed_node(), 'design', 'goal', 'design') is False
+    assert calls == ['review', 'revise']
+
+
+def test_the_inline_reviewer_is_told_to_judge_and_touch_nothing(tmp_path):
+    prompt = flow.inline_review_prompt(reviewed_node(), 'design', 2)
+    assert 'You did not produce its output and you change none of it.' in prompt
+    assert 'specs/design.md' in prompt and 'Node `critique` will judge this output later' in prompt
+    assert '.allforai/bootstrap/inline-review/design.json' in prompt and 'and nothing else' in prompt

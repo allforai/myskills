@@ -114,6 +114,16 @@ Every production workflow must be expanded through these lenses:
   repair is reachable while its QA node is failed and closure still waits for the
   QA rerun. A repair node that must change project source declares
   `parallel_write_scopes` over it.
+- **Local failure**: a finding holds up only the work that reads what it found
+  wrong, and is found while the producer can still fix its own output. Reject a
+  gate (freeze, sign-off, closure) that sits in front of nodes which do not read
+  everything it gathers, a QA node that waits for work it does not judge, a bulk
+  producer whose whole output is judged and repaired as one batch when its parts
+  could fail independently, and `acceptance` that is the same list on several
+  nodes. A producer a later QA node judges for quality declares `inline_review`
+  naming that node; one decided by its validation commands does not. Record
+  these as `failure_not_local` with the nodes that would wait for nothing
+  (`${CLAUDE_PLUGIN_ROOT}/knowledge/bootstrap-planning.md` § Keep a failure local).
 - **Documentation contract**: a node that promises a generated fact document
   declares it at planning time in `required_documents`, with its
   `document_verification` argv. A document promised only in prose has no gate.
@@ -199,6 +209,7 @@ Allowed blocker codes:
 - `undeclared_repair_loop_routing`
 - `unowned_effect_stage`
 - `missing_document_contract`
+- `failure_not_local`
 
 ## What the gates already prove, and what this audit must judge
 

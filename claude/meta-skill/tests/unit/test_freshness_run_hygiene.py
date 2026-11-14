@@ -113,10 +113,12 @@ def test_read_refuses_a_published_output_of_a_node_the_plan_does_not_order_befor
 
 
 @pytest.mark.parametrize('host', ['claude', 'codex'])
-def test_a_diagnosis_correction_is_never_registered_as_an_input(tmp_path, host):
-    # The run deletes it when the node completes; bound, that would stale the evidence.
+@pytest.mark.parametrize('directory', ['diagnosis-corrections', 'inline-review'])
+def test_a_diagnosis_correction_is_never_registered_as_an_input(tmp_path, host, directory):
+    # The run's instruction to a node, rewritten or deleted by the run; bound, it would
+    # stale the evidence. An inline review's findings are the same kind of file.
     setup(tmp_path, host)
-    correction = '.allforai/bootstrap/diagnosis-corrections/deliver-export.json'
+    correction = f'.allforai/bootstrap/{directory}/deliver-export.json'
     write(tmp_path, correction, {'corrections': ['x']})
     _, observed = invoke(tmp_path, 'observe', node_id='deliver-export')
     result, refused = invoke(tmp_path, 'read', observation=observed['observation'], path=correction)

@@ -414,12 +414,28 @@ It does not check that the declared repair can actually fix the finding. This lo
   else. Otherwise the dispatch one loop authorized would put that node in front of the
   executor with its own QA report among its exit artifacts, and success in one role would
   cancel another role's blocker — which it never may (ADR 0006).
+<!-- clause:run-invocation-allowance@5c8d09b8 -->
+- **The budget counts attempts without progress, within one invocation.** A declared
+  `max_attempts` bounds repair attempts in a row that left the QA node with no fewer
+  blocking findings. When a QA node of a declared loop fails on its own report, record
+  the verdict before routing it — count the blocking findings in that report, the same
+  way every time:
+  `printf '%s' '{"operation":"verdict","repair_node_id":"<repair>","qa_node_id":"<qa>","blocking_count":<n>}' | python3 .allforai/bootstrap/scripts/repair_authorization.py .`
+  A count lower than every earlier one of this invocation starts the count of attempts
+  again; the `spent` it prints is what the next `authorize` is bounded by. No invocation
+  grants one obligation more than ten attempts (or its `max_attempts`, when higher).
+  Attempts recorded before this invocation's `run_started` are history and the ledger
+  leaves them out. So a loop that stopped is reported with its open findings and the
+  words "run again to continue"; it never sends the user to interactive bootstrap. Only
+  an unanswered product decision, an unconfirmed plan change, or a defect in the plan
+  itself (a deadlock, an undeclared loop, a node-spec that has to change) goes back there.
 - **A declared `max_attempts` outranks the generic caps.** The consecutive-failure
   threshold and the stagnation cap are backstops for nodes nobody planned a bound for.
-  They rise to what the plan declared — the budget plus the failure that opened the loop,
-  and two transitions per authorized attempt — so a 6-attempt loop is never ended at the
+  They rise to the most attempts the ledger grants one obligation in an invocation — ten,
+  or the declared budget when higher — plus the failure that opened the loop, and two
+  transitions per attempt, so a loop that keeps closing findings is never ended at the
   generic 3 while reporting a supervisor threshold instead of an exhausted budget. They
-  stay finite, and a loop declaring fewer attempts never lowers them.
+  stay finite.
 - When no node is dispatchable but pending nodes remain, the graph is blocked. Report the
   blocked nodes; that state is never a completed workflow.
 
@@ -493,6 +509,21 @@ interrupted run needs no cleanup by hand.
   directly, never through the freshness `read`, and it is removed when the node completes. Reset a diagnosed closure only with
   `compute_reset_closure.py <workflow.json> --apply --diagnosis <ref> <root...>`, which marks
   its completed transitions `superseded`; never edit `transition_log` by hand.
+- **Inline review.** When a node declares `inline_review` and a `subagent` tool is
+  available, review it as soon as it passes its gate, before recording it completed:
+  dispatch a fresh subagent that did not produce the output, give it the node-spec, the
+  node-spec of `inline_review.qa_node_id` when one is named, and the node's exit
+  artifacts, and have it write its blocking findings to
+  `.allforai/bootstrap/inline-review/<node_id>.json` as
+  `{node_id, round, status, blocking: [{id, criterion, artifact, detail}]}` and change
+  nothing else. With findings, dispatch the node's worker again to fix them in its own
+  outputs from that file (read directly, never through the freshness `read`), re-run its
+  gate, and review again. Continue while each review finds fewer findings than the best
+  so far, six at most; when they stop falling, complete the node and leave the file as
+  the record of what is still open — the QA node downstream judges it. Only a revision
+  that fails the node's own gate fails the node. Without `subagent` there is no
+  independent reviewer: skip the review, never self-review, and say in the final report
+  which nodes went unreviewed.
 - Same node fails 3 times: diagnose and record `diagnosis_history`; consume
   `product_intent.py . --policy-event on_repeated_failure`. Continue retries only
   for recorded `continue`; out-of-scope, convergence and stagnation caps still halt.

@@ -62,7 +62,9 @@ Use JSON on stdin to `python3 .allforai/bootstrap/scripts/evidence_freshness.py 
    dependency. A node this one is ordered after is exempt, so a repair still reads the
    failed report it answers. `.allforai/bootstrap/diagnosis-corrections/` is the run's
    own instruction to a node, deleted when the node completes: `read` refuses it as
-   orchestration state, and the node reads it without registering.
+   orchestration state, and the node reads it without registering. The findings of an
+   inline review, under `.allforai/bootstrap/inline-review/`, are the same kind of file
+   and are refused the same way.
 3. Publish with `{"operation":"publish","observation":"TOKEN",
    "verification_command":["python3","path/to/project-contract-validator.py"]}`.
    Supply a real project-specific validation argv that checks the relevant

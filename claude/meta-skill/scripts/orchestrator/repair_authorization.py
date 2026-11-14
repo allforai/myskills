@@ -18,6 +18,7 @@ either host consumes it.
 from __future__ import annotations
 
 from contextlib import contextmanager
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -41,6 +42,16 @@ READINESS_SPEC = '.allforai/bootstrap/unattended-run-readiness-spec.json'
 # `validate_unattended_readiness.py` already read it as three. A declared-but-unusable
 # bound is not a request for this default: it is a planning error.
 DEFAULT_REPAIR_ATTEMPTS = 3
+# The run log names when the user last invoked the run. A budget bounds one unattended
+# invocation: attempts granted before the latest `run_started` belong to an invocation a
+# person has since looked at and started again, so they are history, not spend (ADR 0017).
+RUN_LOG = '.allforai/bootstrap/run-log.jsonl'
+INVOCATION_EVENT = 'run_started'
+# The declared budget counts attempts without progress; a QA verdict with fewer blocking
+# findings than any before it in this invocation starts the count again. This is the
+# ceiling on attempts for one obligation in one invocation whatever the progress, so a
+# loop that removes one finding per attempt still ends.
+MAX_REPAIR_ROUNDS = 10
 
 STATES = ('authorized', 'started', 'settled')
 # authorized: charged, never launched. started: the one-time launch claim is durable, so
@@ -201,6 +212,15 @@ def read_ledger(root: Path) -> dict:
     seen: set[str] = set()
     for entry in entries:
         check_entry(entry, seen)
+    verdicts = ledger.get('verdicts', [])
+    if not isinstance(verdicts, list) or not all(
+            isinstance(v, dict) and text(v.get('repair_node_id')) and text(v.get('qa_node_id'))
+            and isinstance(v.get('after_grants'), int) and not isinstance(v.get('after_grants'), bool)
+            and v['after_grants'] >= 0 and positive_int(v.get('blocking_count'))
+            for v in verdicts):
+        raise blocked('Repair-authorization ledger carries an unreadable QA verdict record; '
+                      'which attempts still count cannot be read exactly',
+                      untrusted='unreadable_ledger')
     return ledger
 
 
@@ -256,16 +276,78 @@ def budget_of(entry: dict, obligation: str) -> int | None:
     return value if positive_int(value) else None
 
 
-def spend(ledger: dict, repair_node_id: str, obligation: str) -> int:
-    """Attempts already charged to this obligation through this repair node.
+def moment(value: Any) -> datetime | None:
+    """A recorded time as an aware UTC datetime, or None when it is not one."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace('Z', '+00:00'))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
-    Per obligation, not per repair task: one repair node serving several QA obligations
-    spends one attempt of each, and an attempt answering a sibling is never charged
-    here (CONTEXT.md, ADR 0005). Started and settled entries both count — the charge is
-    the grant, and no settlement refunds it.
+
+def invocation_start(root: Path) -> datetime | None:
+    """When the current invocation began: the latest `run_started` in the run log.
+
+    None when the log is absent or names no start. Nothing is renewed then — every
+    recorded attempt counts, which is the bound this module had before invocations.
     """
-    return sum(1 for entry in ledger['authorizations']
-               if entry['repair_node_id'] == repair_node_id and obligation in entry['obligations'])
+    try:
+        lines = (root / RUN_LOG).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    latest = None
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict) and event.get('event') == INVOCATION_EVENT:
+            at = moment(event.get('ts'))
+            if at is not None and (latest is None or at > latest):
+                latest = at
+    return latest
+
+
+def round_cap(budget: int | None) -> int:
+    return max(MAX_REPAIR_ROUNDS, budget or 0)
+
+
+def account(ledger: dict, repair_node_id: str, obligation: str,
+            since: datetime | None) -> dict:
+    """What this obligation has been granted, and how much of it still counts.
+
+    `granted` is every attempt ever charged. `rounds` is those of the current invocation.
+    `spent` is the attempts since the later of the invocation's start and the last QA
+    verdict that was recorded as progress — the figure the declared budget bounds.
+    Per obligation, not per repair task: one repair node serving several QA obligations
+    spends one attempt of each (CONTEXT.md, ADR 0005). Started and settled entries both
+    count — the charge is the grant, and no settlement refunds it.
+    """
+    grants = [entry for entry in ledger['authorizations']
+              if entry['repair_node_id'] == repair_node_id and obligation in entry['obligations']]
+    earlier = 0
+    if since is not None:
+        for entry in grants:
+            at = moment(entry.get('granted_at'))
+            if at is not None and at < since:
+                earlier += 1
+            else:
+                break
+    base = earlier
+    for verdict in ledger.get('verdicts') or []:
+        if (verdict.get('progress') is True and verdict['repair_node_id'] == repair_node_id
+                and verdict['qa_node_id'] == obligation):
+            base = max(base, min(verdict['after_grants'], len(grants)))
+    return {'granted': len(grants), 'rounds': len(grants) - earlier,
+            'spent': len(grants) - base}
+
+
+def spend(ledger: dict, repair_node_id: str, obligation: str,
+          since: datetime | None = None) -> int:
+    """Attempts charged to this obligation that the declared budget still counts."""
+    return account(ledger, repair_node_id, obligation, since)['spent']
 
 
 def unresolved(ledger: dict, repair_node_id: str, obligation: str) -> list[str]:
@@ -1151,9 +1233,10 @@ def authorize(root: Path, request: dict) -> dict:
                           'outcome; whether its execution occurred is unknown. Reconcile '
                           'it with evidence — this module neither replays nor refunds it',
                           untrusted='unresolved_authorization', unresolved=stuck)
+        since = invocation_start(root)
         conflicting = {}
         for obligation in obligations:
-            recorded = recorded_budget(ledger, repair_node_id, obligation)
+            recorded = recorded_budget(ledger, repair_node_id, obligation, since)
             if recorded is not None and recorded != budgets[obligation]:
                 conflicting[obligation] = {'recorded': recorded,
                                            'requested': budgets[obligation]}
@@ -1168,9 +1251,12 @@ def authorize(root: Path, request: dict) -> dict:
                           'moves is not a bound. Reconcile the plan with the spend '
                           'already made — this module neither re-prices it nor resets it',
                           untrusted='budget_conflict', budgets=conflicting)
-        charged = {o: spend(ledger, repair_node_id, o) + 1 for o in obligations}
-        over = {o: {'spent': charged[o] - 1, 'budget': budgets[o]}
-                for o in obligations if charged[o] > budgets[o]}
+        accounts = {o: account(ledger, repair_node_id, o, since) for o in obligations}
+        charged = {o: accounts[o]['spent'] + 1 for o in obligations}
+        over = {o: {'spent': charged[o] - 1, 'budget': budgets[o],
+                    'rounds': accounts[o]['rounds'], 'round_cap': round_cap(budgets[o])}
+                for o in obligations
+                if charged[o] > budgets[o] or accounts[o]['rounds'] >= round_cap(budgets[o])}
         if over:
             # All-or-none: an obligation with budget left is not charged on behalf of an
             # exhausted sibling, and the exhausted sibling is not charged again.
@@ -1199,8 +1285,17 @@ def authorize(root: Path, request: dict) -> dict:
                 'state': 'authorized'}
 
 
-def recorded_budget(ledger: dict, repair_node_id: str, obligation: str) -> int | None:
+def recorded_budget(ledger: dict, repair_node_id: str, obligation: str,
+                    since: datetime | None = None) -> int | None:
+    """The bound this obligation's attempts of the current invocation were charged against.
+
+    An earlier invocation's bound is history: a plan revised between invocations is the
+    plan, and only a bound that moves under attempts still being counted is a conflict.
+    """
     for entry in reversed(ledger['authorizations']):
+        at = moment(entry.get('granted_at'))
+        if since is not None and at is not None and at < since:
+            continue
         if entry['repair_node_id'] == repair_node_id and obligation in entry['obligations']:
             bound = budget_of(entry, obligation)
             if bound is not None:
@@ -1493,6 +1588,7 @@ def consumption(root: Path, repair_node_id: str | None = None) -> dict:
     another independent repair is in flight is a normal thing to do.
     """
     ledger = read_ledger(root)
+    since = invocation_start(root)
     wanted = text(repair_node_id) if repair_node_id else None
     obligations: dict[str, dict] = {}
     for entry in ledger['authorizations']:
@@ -1503,13 +1599,18 @@ def consumption(root: Path, repair_node_id: str | None = None) -> dict:
             record = obligations.setdefault(key, {
                 'repair_node_id': entry['repair_node_id'], 'qa_node_id': obligation,
                 'spent': 0, 'budget': None, 'unresolved': []})
-            record['spent'] += 1
             bound = budget_of(entry, obligation)
             if bound is not None:
                 record['budget'] = bound
             if entry['state'] in UNRESOLVED:
                 record['unresolved'].append(entry['authorization_id'])
     for record in obligations.values():
+        record.update(account(ledger, record['repair_node_id'], record['qa_node_id'], since))
+        record['round_cap'] = round_cap(record['budget'])
+        if record['budget'] is not None and record['rounds'] >= record['round_cap']:
+            # The ceiling reads as a spent budget, so a caller that only compares spent
+            # with budget stops exactly where `authorize` would refuse.
+            record['spent'] = max(record['spent'], record['budget'])
         record['remaining'] = (None if record['budget'] is None
                                else record['budget'] - record['spent'])
         record['exhausted'] = (record['remaining'] is not None and record['remaining'] <= 0)
@@ -1526,8 +1627,58 @@ def consumption(root: Path, repair_node_id: str | None = None) -> dict:
                            and not (wanted and entry['repair_node_id'] != wanted)]}
 
 
+def verdict(root: Path, request: dict) -> dict:
+    """Record a failed QA verdict of a declared loop, and say whether it was progress.
+
+    Progress is a verdict with fewer blocking findings than every earlier one for this
+    obligation in the current invocation. It starts the count of attempts again, because
+    a loop that is closing its findings is not the loop a budget exists to stop; one
+    whose findings stop falling runs out of budget as before. The first verdict of an
+    invocation is a baseline and renews nothing. Recording the same verdict twice is not
+    progress twice — the second is not lower than the first.
+    """
+    repair_node_id = text(request.get('repair_node_id'))
+    qa_node_id = text(request.get('qa_node_id'))
+    count = request.get('blocking_count')
+    if not repair_node_id or not qa_node_id:
+        raise invalid('repair_node_id and qa_node_id are required')
+    if not positive_int(count):
+        raise invalid('blocking_count must be a positive integer: a failed verdict names '
+                      'at least one blocking finding')
+    with ledger_lock(root):
+        ledger = read_ledger(root)
+        since = invocation_start(root)
+        if (repair_node_id, qa_node_id) not in declared_bounds(root):
+            raise blocked(f'{repair_node_id} is not declared as the repair of {qa_node_id}; '
+                          'a verdict outside a declared loop renews nothing',
+                          untrusted='undeclared_obligation')
+        earlier = [v['blocking_count'] for v in ledger.get('verdicts') or []
+                   if v['repair_node_id'] == repair_node_id and v['qa_node_id'] == qa_node_id
+                   and not (since is not None and (moment(v.get('at')) or since) < since)]
+        progress = bool(earlier) and count < min(earlier)
+        before = account(ledger, repair_node_id, qa_node_id, since)
+        ledger.setdefault('verdicts', []).append({
+            'repair_node_id': repair_node_id, 'qa_node_id': qa_node_id,
+            'blocking_count': count, 'at': now_iso(), 'after_grants': before['granted'],
+            'progress': progress})
+        write_json(root / LEDGER, ledger)
+        after = account(ledger, repair_node_id, qa_node_id, since)
+        budget = declared_bounds(root)[(repair_node_id, qa_node_id)]
+        capped = after['rounds'] >= round_cap(budget)
+        return {'status': 'ok', 'run_id': ledger['run_id'],
+                'reason': ('Fewer blocking findings than any earlier verdict of this '
+                           'invocation; the count of attempts without progress starts again'
+                           if progress else
+                           'No fewer blocking findings than before; attempts keep counting'),
+                'repair_node_id': repair_node_id, 'qa_node_id': qa_node_id,
+                'progress': progress, 'blocking_count': count,
+                'spent': max(after['spent'], budget) if capped else after['spent'],
+                'budget': budget, 'rounds': after['rounds'], 'round_cap': round_cap(budget),
+                'granted': after['granted']}
+
+
 OPERATIONS = ('initialize', 'adopt_history', 'authorize', 'start', 'settle',
-              'reconcile', 'consumption')
+              'reconcile', 'consumption', 'verdict')
 
 
 def session(root: Path, request: Any) -> dict:
@@ -1551,6 +1702,8 @@ def session(root: Path, request: Any) -> dict:
                          request.get('evidence'))
     if operation == 'consumption':
         return consumption(root, request.get('repair_node_id'))
+    if operation == 'verdict':
+        return verdict(root, request)
     raise invalid(f'Unknown operation {operation!r}; expected one of {", ".join(OPERATIONS)}')
 
 
