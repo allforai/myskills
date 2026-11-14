@@ -1,6 +1,6 @@
 # T12 admission corrections (#12 review blockers 1 and 5)
 
-Worker checkout `/Users/aa/orca/workspaces/myskills/meta-intent-t12`, starting HEAD
+Worker checkout `/Users/me/orca/workspaces/myskills/meta-intent-t12`, starting HEAD
 `5cab4f8f`, uncommitted. Corrects the two #12 blockers from
 `T11-T12-spec-review.md`: freshness was opt-in (blocker 1) and a malformed
 declaration crashed the readiness and reconciliation gates (blocker 5).

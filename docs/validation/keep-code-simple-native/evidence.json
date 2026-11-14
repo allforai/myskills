@@ -140,7 +140,7 @@
         "--no-context-files",
         "--no-extensions",
         "-e",
-        "/Users/aa/.pi/agent/npm/node_modules/pi-subagents",
+        "/Users/me/.pi/agent/npm/node_modules/pi-subagents",
         "-e",
         "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-2v5evcm7/packages/pi",
         "--no-prompt-templates",
@@ -262,7 +262,7 @@
         "--no-context-files",
         "--no-extensions",
         "-e",
-        "/Users/aa/.pi/agent/npm/node_modules/pi-subagents",
+        "/Users/me/.pi/agent/npm/node_modules/pi-subagents",
         "-e",
         "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g/packages/pi",
         "--no-prompt-templates",
@@ -424,7 +424,7 @@
   },
   "codex": {
     "thread_id": "01a08ad3-15c5-7e30-b630-ca327c288da8",
-    "rollout_path": "/Users/aa/Library/Application Support/orca/codex-accounts/d02eabc5-cd18-4a24-8a8b-8e282d2272d4/home/sessions/2026/09/10/rollout-2026-09-10T18-18-04-01a08ad3-15c5-7e30-b630-ca327c288da8.jsonl",
+    "rollout_path": "/Users/me/Library/Application Support/orca/codex-accounts/d02eabc5-cd18-4a24-8a8b-8e282d2272d4/home/sessions/2026/09/10/rollout-2026-09-10T18-18-04-01a08ad3-15c5-7e30-b630-ca327c288da8.jsonl",
     "rollout_sha256": "ba94b3847b0834a8a28c6341d8e2320127f146993f6ba54f4336a3f0ea5d7db1",
     "skill_expansion_observed": true,
     "spawn_calls": [

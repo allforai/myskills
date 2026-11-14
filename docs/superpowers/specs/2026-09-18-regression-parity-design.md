@@ -25,9 +25,9 @@
 
 ## 需求
 
-- **R-M5-01 ink-scent 形状的回归夹具（确定性）。** 新增
+- **R-M5-01 learning-app 形状的回归夹具（确定性）。** 新增
   `claude/meta-skill/tests/fixtures/consumer-learning-app/`：
-  - `bad-workflow/`：脚本化的 profile + workflow + node-specs，复刻 ink-scent 的形状——
+  - `bad-workflow/`：脚本化的 profile + workflow + node-specs，复刻 learning-app 的形状——
     `task_route: new-product`、Expo 移动应用 + 服务端、13 个节点、零体验设计节点、无体验方向意图、
     无质量门。
   - `good-workflow/`：同一产品，含体验方向意图（`select` 产生）、体验设计节点、design/runtime 两次评审、
@@ -100,7 +100,7 @@
 
 - **真实宿主对话质量。** 思维测试是模拟决策，不是真实宿主验收。"真实 Claude Code / Codex / Pi 会话里，
   bootstrap 面对真实用户产出了好的体验方向并据此交付了体验良好的产品"在本环境无法自动证明。
-  runbook：用改造后的版本对 ink-scent 的原始请求重跑 `/bootstrap` → `/run`，再跑 `/product-review`，
+  runbook：用改造后的版本对 learning-app 的原始请求重跑 `/bootstrap` → `/run`，再跑 `/product-review`，
   对照本轮诊断的三个症状（直译、无设计节点、服务地址输入框）。
 
 ## 不做
@@ -132,7 +132,7 @@ python3 -m pytest -q claude/superstorm/scripts/test_package_manifests.py
 2. **`disclosed_protocols` 在 `check_codex_meta_skill_parity.py:102-109`**（规格写 104-111），循环在 `:110`。
 3. **三个公共门不会在同一次调用里报全三个码。** `validate_bootstrap.py` 的 `main()`（`:2151-2175`）
    在 `validate_scope` 有错时跳过全部跨节点检查；`check_decision_inputs.py:57-75` 只调 `validate_scope`，
-   从不调 `structural_gate_blockers`。因此 ink-scent 形状的工作流上：
+   从不调 `structural_gate_blockers`。因此 learning-app 形状的工作流上：
    `check_decision_inputs.py` 与 `validate_bootstrap.py` 只会报 M2 的 `ui_product_without_experience_direction`；
    只有 `validate_unattended_readiness.py`（`:578-615`，结构门与 scope 不互相短路）能同时报三个码。
    R-M5-01 的"阻断码集合"按**三个门输出的并集**断言，并另外断言 readiness 报告单独含全部三个码。
@@ -164,7 +164,7 @@ U7 文档                  CLAUDE.md、README.md
 
 ### U1 回归夹具与确定性测试（R-M5-01，暴露 `data:regressionFixtures`）
 
-**做什么。** 提供一份 ink-scent 形状的脚本化 bootstrap 对话（bad）与同一产品的正确对话（good），
+**做什么。** 提供一份 learning-app 形状的脚本化 bootstrap 对话（bad）与同一产品的正确对话（good），
 经**复制到生成项目里的公共 CLI**重放，证明三个公共门对前者拒绝、对后者放行。
 
 **夹具不是静态的 `.allforai/` 快照，而是重放输入。** 理由：通过门的工作流依赖 `product_intent.py`
@@ -177,10 +177,10 @@ plan-confirmation 与 freshness 合约；手写这些等于在夹具里复制一
 
 | 文件 | 内容 |
 |---|---|
-| `README.md` | 两句话：来源（ink-scent 2026-09-14~16 new-product 运行的形状，非其内容拷贝）；"显式产物，不是语义规划器替身" |
+| `README.md` | 两句话：来源（learning-app 2026-09-14~16 new-product 运行的形状，非其内容拷贝）；"显式产物，不是语义规划器替身" |
 | `bad-workflow/profile.json` | 合并进 `bootstrap-profile.json` 的字段：`task_goal`、`architecture_pattern`、`modules`（Expo 移动端 + Node 服务端，键名取 `_profile_has_mobile_ui_module` `validate_bootstrap.py:626-676` 能识别的形状）、`experience_priority: {"mode":"consumer","reason":…}` |
 | `bad-workflow/dialogue.json` | 有序的 `product_intent.py` 请求数组：`draft`（route `new-product`，`origin: user-request`，六个旧话题；"碎片化学习"被直译为"2/5/10 分钟时长选择 + 题型清单"的 `acceptance`）→ `decide`（全部 `confirm`）→ `freeze`（`exclude: {"gap-experience-direction": "<当时无此话题>"}`，确切 gap id 以 M2 落地后的 `resume` 输出为准） |
-| `bad-workflow/plan.json` | `plan` 请求：**13 个节点**（1 契约、1 内容库、6 implement、其余 verify/repair；实现节点把 `experience` 写进自己的 `responsibilities`——ink-scent 正是这样让"阶段全覆盖"通过的），无任何节点产出 `.allforai/app-design/**`，无节点引用 `experience-quality-critique`；每节点含 `body`（≥ `ATTENTION_CONTRACT_BODY` 的术语） |
+| `bad-workflow/plan.json` | `plan` 请求：**13 个节点**（1 契约、1 内容库、6 implement、其余 verify/repair；实现节点把 `experience` 写进自己的 `responsibilities`——learning-app 正是这样让"阶段全覆盖"通过的），无任何节点产出 `.allforai/app-design/**`，无节点引用 `experience-quality-critique`；每节点含 `body`（≥ `ATTENTION_CONTRACT_BODY` 的术语） |
 | `bad-workflow/readiness-spec.json` | `_minimal_project` 同形，`required_repair_loops: []` |
 | `good-workflow/profile.json` | 同 bad |
 | `good-workflow/dialogue.json` | `draft`（同六话题）→ `propose`（3 条方向、1 条推荐，字段按 R-M2-02；`comparable` 为 `{product, approach}` 对象，见 M2 设计 A2）→ `decide`（六话题 `confirm` + `{"operation":"select","proposal_id":…,"reason":…}` + 对 `gap-experience-direction` 的 `{"operation":"answer",…}`；动作键是 `operation`，见 `product_intent.py:1217`）→ `freeze`（include 含由 select 生成的体验方向意图 `experience-direction-<proposal_id>`） |
@@ -244,7 +244,7 @@ def codes(root) -> dict[str, set[str]]
 
 | 用例 | 构建 | 断言 |
 |---|---|---|
-| `test_ink_scent_shaped_workflow_is_refused_at_every_public_gate` | bad 对话 + bad 计划，`force_past_front_door=True` | 三个门 `returncode == 1`；三门码的并集 ⊇ `{missing_experience_design_node, missing_experience_gate, ui_product_without_experience_direction}`；readiness 报告单独 ⊇ 同一集合；`check_decision_inputs` 的码含 `ui_product_without_experience_direction`；工作流节点数 == 13 且无节点 `exit_artifacts` 以 `.allforai/app-design/` 开头（守住夹具自身形状） |
+| `test_learning_app_shaped_workflow_is_refused_at_every_public_gate` | bad 对话 + bad 计划，`force_past_front_door=True` | 三个门 `returncode == 1`；三门码的并集 ⊇ `{missing_experience_design_node, missing_experience_gate, ui_product_without_experience_direction}`；readiness 报告单独 ⊇ 同一集合；`check_decision_inputs` 的码含 `ui_product_without_experience_direction`；工作流节点数 == 13 且无节点 `exit_artifacts` 以 `.allforai/app-design/` 开头（守住夹具自身形状） |
 | `test_chosen_direction_does_not_excuse_a_graph_without_design_or_gate` | good 对话 + bad 计划（测试内把体验方向意图 id 追加到 bad 计划各实现节点的 `intent_ids`，使冻结范围有消费者） | `plan` 成功（scope 已干净）；`validate_bootstrap.py` **自身** `returncode == 1` 且码 ⊇ `{missing_experience_design_node, missing_experience_gate}`——补上 Spec correction 3 指出的盲区 |
 | `test_designed_and_gated_workflow_passes_every_public_gate` | good 对话 + good 计划 | 三门 `returncode == 0`、`stderr` 为空、readiness `status == "ready"`；冻结范围内恰有一条 `topic == "experience-direction"`、`origin == "model-proposal"` 的意图；重跑三门前后项目文件字节不变（沿用 `test_bootstrap_scope.py:217-221`） |
 
@@ -264,7 +264,7 @@ def codes(root) -> dict[str, set[str]]
 
 - `claude/meta-skill/tests/prompts/new-product-consumer-app.md`：结构对齐 `prompts/specialization.md`
   （标题 / 角色句 / 输入 / 执行步骤 / 严格输出 schema）。角色："你是 bootstrap skill"；输入：空仓库 +
-  一段用户请求（消费级语言学习应用，Expo + 服务端，"碎片化时间学习"，不出现 ink-scent 专名）；
+  一段用户请求（消费级语言学习应用，Expo + 服务端，"碎片化时间学习"，不出现 learning-app 专名）；
   要读的文件用 `claude/meta-skill/...` 仓库相对路径；输出 schema 只含答案键会核对的字段：
   `profile.task_route`、`profile.experience_priority.mode`、`loaded_knowledge[]`、
   `experience_direction{proposed_count, recommended, user_action}`、
@@ -492,7 +492,7 @@ python3 -m pytest -q claude/superstorm/scripts/test_package_manifests.py
 - A1 夹具以"重放输入"（profile / dialogue / plan / readiness-spec）而非静态 `.allforai/` 快照存放；
   规格中的"脚本化的 profile + workflow + node-specs"由 `plan.json`（节点 + `body`）经公共 `plan` 投影得到。
 - A2 "阻断码集合"取三门并集，并加 readiness 报告单独含全三码的更强断言（Spec correction 3）。
-- A3 增加第三个用例（已选方向 + ink-scent 图），只用两份夹具的现成部件拼出，不新增夹具目录。
+- A3 增加第三个用例（已选方向 + learning-app 图），只用两份夹具的现成部件拼出，不新增夹具目录。
 - A4 good-workflow 不使用 `capability: "app-design"` 与固定节点 id，以产物路径满足 M1。
 - A5 `--delegations` 的 stdout 是 JSON（`product_intent.py:1372` 的既有输出约定）；flow.py 原样嵌入，不解释其字段，
   故不依赖 M2 对内部键名的选择。

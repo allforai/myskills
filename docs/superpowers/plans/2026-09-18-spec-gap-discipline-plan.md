@@ -2,7 +2,7 @@
 
 Design: `docs/superpowers/specs/2026-09-18-spec-gap-discipline-design.md` (requirements R-M4-01..07 and
 "Detailed design", units U1–U7). Registry: `docs/superpowers/runs/2026-09-18-product-experience-overhaul/registry.json`.
-Branch `product-experience-overhaul`. All commands run from the repo root `/Users/aa/workspace/myskills`.
+Branch `product-experience-overhaul`. All commands run from the repo root `/Users/me/workspace/myskills`.
 Paths below are repo-relative; `MS` = `claude/meta-skill`.
 
 Exposes `data:unspecifiedDecisionGap` (T-M4-01) and `data:settingsAudience` (T-M4-03).
@@ -14,7 +14,7 @@ Consumes `data:experienceDesignArtifacts` from M1 (T-M4-01, T-M4-02).
   how it is proven, and the write set. Do not leave the write set. No new files anywhere in M4.
 - Append-only. Every M4 edit adds text; none removes, reorders or rewrites an existing sentence, literal,
   frontmatter field or Invocation Contract JSON block. Existing pinned literals must survive verbatim.
-- English body text in every edited file (matches the files). No project names (`ink-scent` etc.) in any
+- English body text in every edited file (matches the files). No project names (`learning-app` etc.) in any
   example — `validate_generalization_boundaries.py` and the acceptance commands check this.
 - No codex/pi twin writes: `codex/meta-skill/knowledge/defensive-patterns.md` and `codex/.../capabilities/`
   are symlinks to the canonical files; the other touched files have no twins.
@@ -125,7 +125,7 @@ All pinned literals are absent today, so the command fails before the task.
 **Acceptance.**
 
 ```bash
-F=claude/meta-skill/knowledge/defensive-patterns.md; for t in '<a id="pattern-i"></a>' '## Pattern I: Specification Gap Escalation' '<a id="pattern-j"></a>' '## Pattern J: Audience Isolation' unspecified_user_visible_decision needed_decision blocking_intent_ids suggested_owner_artifact suspected_root_node requirement_ref '`end-user`' '`operator`' '`developer`' build-time remote-config deploy-env '.allforai/app-design/spec/permissions-notifications-settings-spec.json'; do grep -qF -- "$t" "$F" || { echo "missing: $t"; exit 1; }; done && ! grep -qi 'ink-scent' "$F" && python3 -c "t=open('claude/meta-skill/knowledge/defensive-patterns.md',encoding='utf-8').read(); assert t.count('## Pattern H:')==1 and t.index('## Pattern H:')<t.index('## Pattern I: Specification Gap Escalation')<t.index('## Pattern J: Audience Isolation'); tail=t.split('## Pattern I: Specification Gap Escalation')[1]; assert all(tail.count(s)>=2 for s in ('**Trigger condition**:','**Protocol**:','**Key principles**:','**Example**:')), 'four-part layout incomplete'" && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
+F=claude/meta-skill/knowledge/defensive-patterns.md; for t in '<a id="pattern-i"></a>' '## Pattern I: Specification Gap Escalation' '<a id="pattern-j"></a>' '## Pattern J: Audience Isolation' unspecified_user_visible_decision needed_decision blocking_intent_ids suggested_owner_artifact suspected_root_node requirement_ref '`end-user`' '`operator`' '`developer`' build-time remote-config deploy-env '.allforai/app-design/spec/permissions-notifications-settings-spec.json'; do grep -qF -- "$t" "$F" || { echo "missing: $t"; exit 1; }; done && ! grep -qi 'learning-app' "$F" && python3 -c "t=open('claude/meta-skill/knowledge/defensive-patterns.md',encoding='utf-8').read(); assert t.count('## Pattern H:')==1 and t.index('## Pattern H:')<t.index('## Pattern I: Specification Gap Escalation')<t.index('## Pattern J: Audience Isolation'); tail=t.split('## Pattern I: Specification Gap Escalation')[1]; assert all(tail.count(s)>=2 for s in ('**Trigger condition**:','**Protocol**:','**Key principles**:','**Example**:')), 'four-part layout incomplete'" && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py
 ```
 
 Write set: `claude/meta-skill/knowledge/defensive-patterns.md`.

@@ -7,7 +7,7 @@ run `2026-09-18-product-experience-overhaul` · 分支 `product-experience-overh
 
 56 个任务：**55 个经监督者确认完成 / 0 跳过 / 1 个 reality gate 待人工验证**（经由 1 次升级，已解决）。
 49 条需求全部有已确认的任务覆盖。**在下面的 reality gate 清单非空之前，不能说"meta-skill 现在能无人值守做出体验良好的产品"**；
-能说的是：导致 ink-scent 那次结果的三个结构性缺口，现在都有确定性的门拦着，且这些门经过了独立重跑验证。
+能说的是：导致 learning-app 那次结果的三个结构性缺口，现在都有确定性的门拦着，且这些门经过了独立重跑验证。
 
 ## 经验证的完成（监督者确认，不是执行器自述）
 
@@ -20,7 +20,7 @@ run `2026-09-18-product-experience-overhaul` · 分支 `product-experience-overh
 | M3 体验质量门 | 10/10 | 新子 skill `app-design/40-qa/experience-quality-critique`（design / runtime 两阶段，独立评审）；Must #9；must-fix 非空即产物不通过（含游戏报告嵌在 `gates{}` 里的情形）；`validate_experience_gate_flow` 同时强制应用与游戏的评审节点存在并阻断收尾；`docs/experience-review/` 留痕 |
 | M4 规格留白纪律 | 8/8 | Pattern I（规格未覆盖的用户可见决定上报 `unspecified_user_visible_decision`，不自行发明）；Pattern J（设置项受众 `end-user/operator/developer`）；设置规格、交接、收口 QA、product-verify 四处把关 |
 | M6 事后评审对齐 | 5/5 | `/product-review` 五镜头与运行内质量门同名同义（有 parity 测试）；采信 `docs/experience-review/runtime.md`；`/cross-exam` 旅程候选增加体验方向来源并标注受托选定；两边加受众泄漏观察点；claude/codex 双写 |
-| M5 回归与多端一致 | 15/16 + 1 reality gate | ink-scent 形状的好/坏夹具；模型运行夹具；9 场景思维测试；codex/pi 孪生同步；版本 meta-skill 0.20.0、superstorm 0.43.0；全量验证 |
+| M5 回归与多端一致 | 15/16 + 1 reality gate | learning-app 形状的好/坏夹具；模型运行夹具；9 场景思维测试；codex/pi 孪生同步；版本 meta-skill 0.20.0、superstorm 0.43.0；全量验证 |
 
 **全量验证**（监督者在 HEAD `22ef8cfd` 独立重跑，exit 0；记录见 `verification-M5.md`）：
 
@@ -37,9 +37,9 @@ run `2026-09-18-product-experience-overhaul` · 分支 `product-experience-overh
 `test_evidence_freshness…cannot_claim_completion[claude|codex]`），未被触碰。监督者指出它们反映一个真实的
 过期证据检测缺口（`validate_unattended_readiness` 该返回 1 却返回 0），本轮按范围带过，列入 Roadmap。
 
-**对触发事件的直接证明。** M1 设计阶段在临时副本里拿真实的 ink-scent `.allforai/bootstrap` 跑过原型：
+**对触发事件的直接证明。** M1 设计阶段在临时副本里拿真实的 learning-app `.allforai/bootstrap` 跑过原型：
 原样 → `missing_experience_priority`；补上 `mode: consumer` → 两条 `missing_experience_design_node`。
-落地后的回归夹具 `consumer-learning-app/bad-workflow`（ink-scent 的形状）被三个公共门拒绝，
+落地后的回归夹具 `consumer-learning-app/bad-workflow`（learning-app 的形状）被三个公共门拒绝，
 并集含 `missing_experience_design_node`、`missing_experience_gate`、`ui_product_without_experience_direction`；
 `good-workflow` 三个门全过。
 
@@ -53,7 +53,7 @@ E5（`mode = none` 时冻结没把体验 gap 排除）。各补一句、各钉�
 |---|---|---|
 | T-M5-16 真实宿主验收 | 需要真实交互式宿主会话与真人。思维测试是模拟决策，不是宿主验收。执行器按要求只留了未填写的模板（`host-run: pending`），没有伪造 verdict。 | `docs/superpowers/plans/2026-09-18-regression-parity-plan.md#runbook-real-host-bootstrap-run`；填写 `docs/validation/product-experience-host-run.md` |
 
-做法：用 0.20.0 对 ink-scent 的原始请求重跑 `/bootstrap` → `/run` → `/product-review`，对照三个症状
+做法：用 0.20.0 对 learning-app 的原始请求重跑 `/bootstrap` → `/run` → `/product-review`，对照三个症状
 （直译、无设计节点、服务地址输入框）逐条写 `verdict`。这是本轮唯一能回答"产品真的变好了吗"的证据。
 
 ## 自主决策（每条一次）
@@ -87,7 +87,7 @@ E5（`mode = none` 时冻结没把体验 gap 排除）。各补一句、各钉�
 
 ## 你需要知道的三件事
 
-1. **升级影响。** 已用旧版 bootstrap 过的产品路线项目（包括 ink-scent）下次 `/run` 会被
+1. **升级影响。** 已用旧版 bootstrap 过的产品路线项目（包括 learning-app）下次 `/run` 会被
    `missing_experience_priority` 拦住。这是设计意图。处理：重跑交互式 `/bootstrap`。`local-change` 路线不受影响。
    已写进 `CLAUDE.md`、`README.md` 与发布说明草稿 `release-commit-message.txt`。
 2. **有另一个会话在同一个检出里提交了 `a963d82a`**（`fix(cross-exam): 收编本地额度改动…`，Pi cross-exam 的工作，
@@ -143,4 +143,4 @@ E5（`mode = none` 时冻结没把体验 gap 排除）。各补一句、各钉�
 - 修 4 个既有失败背后的过期证据检测缺口。
 - 游戏专项审计（场景模板、各 pack 的质量判据）。
 - 上面"带过的要点"。
-- 用 0.20.0 重跑 ink-scent 并返工其首页循环与设置页（即 T-M5-16 的 runbook，属产品仓库的工作）。
+- 用 0.20.0 重跑 learning-app 并返工其首页循环与设置页（即 T-M5-16 的 runbook，属产品仓库的工作）。

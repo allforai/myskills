@@ -70,13 +70,13 @@ Conclusion:
 ### 0.3 Codex product-inference contract check
 
 Execution method:
-- Run `python3 shared/scripts/orchestrator/check_product_summary.py /Users/aa/workspace/babylon1/.allforai/bootstrap/product-summary.json`
+- Run `python3 shared/scripts/orchestrator/check_product_summary.py /Users/me/workspace/sample-project/.allforai/bootstrap/product-summary.json`
 
 Result:
 - PASS
 
 Observed result:
-- `babylon1` bootstrap output now includes `product-summary.json`
+- `sample-project` bootstrap output now includes `product-summary.json`
 - the product summary includes a non-empty `product_shape`
 - the product summary includes 7 evidence entries and 8 core systems
 - confidence is recorded and valid

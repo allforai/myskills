@@ -17,7 +17,7 @@ repairs are now consumed, without resetting the original two.
 - Root independently reproduced on both adapters: bootstrap/readiness exit 0, decision checker exits 1. Source, requirement, journal and workflow bytes remain unchanged.
 - No task was integrated or marked confirmed. T10–T18 were not launched and are skipped for this stopped run due to their transitive dependency on T9. There is no independent ready branch left.
 
-Current candidate is clean at `/Users/aa/orca/workspaces/myskills/meta-intent-t9`.
+Current candidate is clean at `/Users/me/orca/workspaces/myskills/meta-intent-t9`.
 Cumulative base `cadac5525abf2407fdcd0588252336cba8f60a01`; all five T9 candidate
 commits remain preserved, with exactly 11 cumulative allowed changed paths.
 The integration branch contains only run-owned control/evidence documentation, not these
@@ -48,7 +48,7 @@ The passing supervisor checks do not override the independent Spec reproduction.
   they were not counted as candidate defects.
 - [Root journal reproduction](reviews/T9-journal-root-recheck.json).
 - Runnable red-capable command, from integration:
-  `python3 docs/grillstorm/meta-intent/reviews/probes/T9-journal-provenance.py /Users/aa/orca/workspaces/myskills/meta-intent-t9`.
+  `python3 docs/grillstorm/meta-intent/reviews/probes/T9-journal-provenance.py /Users/me/orca/workspaces/myskills/meta-intent-t9`.
   Observed exit 1 in 0.13 s; it returns 0 only when both adapter paths admit the valid
   journal-backed request through all three real copied gates without changing protected files.
   This diagnostic reuses existing fixture construction, not private production APIs.

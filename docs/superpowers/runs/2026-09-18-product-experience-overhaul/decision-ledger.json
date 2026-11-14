@@ -59,7 +59,7 @@
       "authority_basis": {
         "field": "scope",
         "value": [
-          "repo:/Users/aa/workspace/myskills",
+          "repo:/Users/me/workspace/myskills",
           "branch:product-experience-overhaul"
         ]
       },
@@ -131,7 +131,7 @@
       "authority_basis": {
         "field": "write_roots",
         "value": [
-          "/Users/aa/workspace/myskills"
+          "/Users/me/workspace/myskills"
         ]
       },
       "fallback": null,

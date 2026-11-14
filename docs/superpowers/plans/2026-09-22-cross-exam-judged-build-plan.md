@@ -428,7 +428,7 @@ Expected: 0 failed.
 
 Dispatch one read-only subagent on the `sonnet` model with exactly this prompt:
 
-> You are running `/product-review` per `/Users/aa/workspace/myskills/claude/superstorm/skills/product-review/SKILL.md`. Read only that file. Do not run the product. A target repository has `docs/cross-exam/2026-09-01-shop/completion-report.md` whose header's second line reads `被评构建：未记录（intake 未写 judged_build；读这份报告的一方无法核对它是否过期）`, and its gap list contains `G1 退款重复扣减`. The job in scope is "买家申请退款". Write only the `Prior evidence` line of your report and one sentence explaining it.
+> You are running `/product-review` per `/Users/me/workspace/myskills/claude/superstorm/skills/product-review/SKILL.md`. Read only that file. Do not run the product. A target repository has `docs/cross-exam/2026-09-01-shop/completion-report.md` whose header's second line reads `被评构建：未记录（intake 未写 judged_build；读这份报告的一方无法核对它是否过期）`, and its gap list contains `G1 退款重复扣减`. The job in scope is "买家申请退款". Write only the `Prior evidence` line of your report and one sentence explaining it.
 
 Pass when the returned line cites `G1`, contains `新鲜度未核`, and does not claim the report is current. If it fails, do not reword blindly: first check that the subject was asked for the artifact where the behaviour lands (the `Prior evidence` line), then adjust the Step 1 sentence and rerun once. Record the subject's output in the task report.
 

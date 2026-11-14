@@ -2,11 +2,11 @@
  "0": {
   "status": "ok",
   "changed_files": [
-   "/Users/aa/workspace/myskills/docs/superpowers/plans/2026-09-18-experience-gate-plan.md",
-   "/Users/aa/workspace/myskills/docs/superpowers/plans/2026-09-18-regression-parity-plan.md",
-   "/Users/aa/workspace/myskills/docs/superpowers/specs/2026-09-18-experience-gate-design.md",
-   "/Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M3.json",
-   "/Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json"
+   "/Users/me/workspace/myskills/docs/superpowers/plans/2026-09-18-experience-gate-plan.md",
+   "/Users/me/workspace/myskills/docs/superpowers/plans/2026-09-18-regression-parity-plan.md",
+   "/Users/me/workspace/myskills/docs/superpowers/specs/2026-09-18-experience-gate-design.md",
+   "/Users/me/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M3.json",
+   "/Users/me/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M5.json"
   ],
   "findings_fixed": [
    "Cross-module ordering in M5 (defect). build_task_dag.py feeds a dependency-ready scheduler, not a module-ordered one. The requires->implements edges only reach early upstream tasks. On the combined M1-M6 DAG, T-M5-12 had no ancestors at all. T-M5-14 (full validation, records 'status: pass') and T-M5-13 (version bump) had no path to T-M1-03/05/06/07, T-M2-07..10, T-M3-03/04/06..10, T-M4-02/04..08 or any M6 task. T-M5-06 asserts ui_product_without_experience_direction but did not depend on T-M2-07, which creates that code. T-M5-02/03/04 copy the wording that T-M2-08 lands without depending on it. T-M5-09/10 inline the M6 texts for cases E7/E8 and the T-M3-07/08 texts for E5/E6 with no edge to the tasks that write them. Fix: the seven M5 root tasks (01, 02, 03, 04, 06, 08, 12) now depend on the upstream sink tasks T-M1-07, T-M2-10, T-M3-10, T-M4-07, T-M4-08, T-M6-03, T-M6-04 and T-M6-05. After the rebuild, every non-M5 task is an ancestor of T-M5-14 and nothing depends on T-M5-16.",
@@ -24,19 +24,19 @@
    "T-M5-06 and T-M5-07 cannot be verified before M1-M3 land. The risk is whether the good workflow passes all of M1, M2 and M3 plus mobile-UI coverage, repair-loop declaration, plan confirmation and validate_scope, and whether force_past_front_door leaves plan confirmation consistent. The design addresses each pre-existing gate, and the acceptance runs the real tests, so an infeasible fixture surfaces as a blocked task rather than a false pass.",
    "T-M3-04 intentionally makes a game creative-quality-critique.json with non-empty gates.must_fix_before_release fail check_artifacts. No test or fixture in the repo has that shape today, confirmed by grep. Generated game projects will see the stricter behaviour on upgrade.",
    "M6 tasks are prose plus greps. The behavioural proof is M5's E7/E8 thought tests, which are now ordered after M6. The T-M6-01/02/04 acceptances do not run the full claude/superstorm/scripts suite. No test there pins product-review text (confirmed by grep), and T-M5-14 runs the full suite anyway.",
-   "T-M5-16 is a reality gate. Its runbook is present, the anchor resolves and no task depends on it. Its step 3 has a human retrieve the original ink-scent request text from session history."
+   "T-M5-16 is a reality gate. Its runbook is present, the anchor resolves and no task depends on it. Its step 3 has a human retrieve the original learning-app request text from session history."
   ],
   "evidence": "- Combined DAG: build_dag over M1..M6 returned ok=true with 0 errors both before and after the edits. Before, T-M5-12 had no ancestors and T-M5-14 lacked paths to most of M1, M2, M3, M4 and M6. After, the only tasks that are not ancestors of T-M5-14 are its own descendants, T-M5-15 and T-M5-16.\n- T-M5-16 has no dependents. T-M3-10 now has all of M1, M2 and M4 as ancestors.\n- Unordered same-path warnings dropped from 24 to 10. None of the remaining 10 involve M3, M5 or M6.\n- validate_plan_tasks.py returns OK for M3 (10 tasks), M5 (16 tasks) and M6 (5 tasks).\n- Every plan acceptance block was checked programmatically against its JSON acceptance_cmd for M3, M5 and M6: no mismatch.\n- Claims checked against the real tree:\n  - .githooks/pre-commit carries the game pipeline validator line exactly once.\n  - check_artifacts._production_gap_error reads top-level keys only.\n  - The validate_skills.py orphan check is satisfied by a PACK.md reference.\n  - The product-review twins differ by exactly 12 diff lines today.\n  - The two lenses.md files are byte-identical.\n  - pi/meta-skill/test_contract.py has EntryTests and TemplateTests.\n  - Version strings match the T-M5-13 table.\n  - The CLAUDE.md and README.md literals are absent today.\n  - test_validate_unattended_readiness.py fixtures are profile-less.\n  - validate_scope is invoked by the readiness gate.\n- git status shows only the five doc and JSON files modified. No product source was touched and no git mutation was made."
  },
  "1": {
   "status": "ok",
   "changed_files": [
-   "/Users/aa/workspace/myskills/docs/superpowers/plans/2026-09-18-design-routing-plan.md",
-   "/Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M1.json",
-   "/Users/aa/workspace/myskills/docs/superpowers/specs/2026-09-18-design-routing-design.md",
-   "/Users/aa/workspace/myskills/docs/superpowers/plans/2026-09-18-experience-intent-plan.md",
-   "/Users/aa/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M2.json",
-   "/Users/aa/workspace/myskills/docs/superpowers/specs/2026-09-18-experience-intent-design.md"
+   "/Users/me/workspace/myskills/docs/superpowers/plans/2026-09-18-design-routing-plan.md",
+   "/Users/me/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M1.json",
+   "/Users/me/workspace/myskills/docs/superpowers/specs/2026-09-18-design-routing-design.md",
+   "/Users/me/workspace/myskills/docs/superpowers/plans/2026-09-18-experience-intent-plan.md",
+   "/Users/me/workspace/myskills/docs/superpowers/runs/2026-09-18-product-experience-overhaul/tasks/M2.json",
+   "/Users/me/workspace/myskills/docs/superpowers/specs/2026-09-18-experience-intent-design.md"
   ],
   "findings_fixed": [
    "CROSS-MODULE ORDERING (M1->M2) was not enforced. build_task_dag.py derives cross-module edges only from requires/implements; T-M2-01..03, 05, 06, 08, 09, 10 had no `requires`, so the head of the M2 chain could run concurrently with T-M1-01 in the shared tree (no worktree isolation). While T-M1-01 is half done the new gate is registered but the project() fixture line may not be, so every M2 acceptance (product-route gate tests) would see missing_experience_priority; conversely T-M1-01's regression set reads product_intent.py / test_product_intent_session.py that M2 rewrites. touched_paths only serializes writers. Fix: T-M2-01 now carries requires:[\"api:validateExperienceDesignCoverage\"] (edge to T-M1-01), which makes all ten M2 tasks DAG descendants of T-M1-01; documented in M2 plan (T-M2-01, interface table), M1 plan (orchestrator notes) and M2 design A10b. Global DAG rebuilt: ok, no cycle.",

@@ -3,7 +3,7 @@
 The agent chooses the route and graph; these tests supply its explicit artifacts,
 not a substitute semantic planner. Actual host dialogue proof belongs to T15.
 
-The artifacts here are one product replayed twice: the graph the ink-scent run actually
+The artifacts here are one product replayed twice: the graph the learning-app run actually
 shipped, which every public gate must refuse, and the graph it should have shipped.
 """
 import json
@@ -124,7 +124,7 @@ def codes(root):
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
-def test_ink_scent_shaped_workflow_is_refused_at_every_public_gate(tmp_path, host):
+def test_learning_app_shaped_workflow_is_refused_at_every_public_gate(tmp_path, host):
     """The graph that shipped: screens planned, none designed, none reviewed, no direction."""
     workflow = build(tmp_path, host, dialogue="bad-workflow/dialogue.json",
                      plan="bad-workflow/plan.json", readiness="bad-workflow/readiness-spec.json",

@@ -1,7 +1,7 @@
 # Revised #12 implementation evidence
 
-Assigned checkout: `/Users/aa/orca/workspaces/myskills/meta-intent-t12`, branch
-`j08069099777/meta-intent-t12`. Accepted producer: `3f66d7acc367cdb39ee12ae10827c8d81298ae0a`;
+Assigned checkout: `/Users/me/orca/workspaces/myskills/meta-intent-t12`, branch
+`user/meta-intent-t12`. Accepted producer: `3f66d7acc367cdb39ee12ae10827c8d81298ae0a`;
 starting documentation HEAD: `88e7becaf30522ef29dd2fa168b62045affcb782`.
 
 Implemented the revised issue and parent version/freshness contract through the

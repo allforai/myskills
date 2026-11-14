@@ -1,7 +1,7 @@
 # Ticket 9 revised implementation evidence
 
 Fresh attempt from `c1893395b8ea49084a6bbb9a63c671868d236a56` on
-`j08069099777/meta-intent-t9`; historical implementation and failure records are retained.
+`user/meta-intent-t9`; historical implementation and failure records are retained.
 
 The decision-input gate now recognizes a canonical journal consumed through a
 validated scoped requirement. All three public gates resolve journal references
@@ -17,7 +17,7 @@ No installed assets, product source, later tickets, or historical records were c
 
 ## Verification
 
-- Original diagnostic before changes: `python3 /Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/probes/T9-journal-provenance.py /Users/aa/orca/workspaces/myskills/meta-intent-t9` reported `passed: false`; decision-input gates on both adapters rejected the journal as orphan while the other four gates accepted.
+- Original diagnostic before changes: `python3 /Users/me/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/probes/T9-journal-provenance.py /Users/me/orca/workspaces/myskills/meta-intent-t9` reported `passed: false`; decision-input gates on both adapters rejected the journal as orphan while the other four gates accepted.
 - First public-boundary cycle: `python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -k journal_backed -q` failed twice before implementation, then passed twice.
 - Missing/forged provenance cycle: `python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -k forged_journal -q` reproduced acceptance of nonexistent sources, then invalid canonical records, before their corresponding repairs.
 - Superseded-choice cycle: `python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -k superseded -q --tb=short` failed on both adapters before repair.

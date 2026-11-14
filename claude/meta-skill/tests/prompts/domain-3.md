@@ -2,7 +2,7 @@
 ## 负责 capabilities：translate、compile-verify
 
 读取以下文件：
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/compile-verify.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/compile-verify.md`
 
 注意：translate 可能没有独立 capability `.md`，若不存在，从 bootstrap.md 和 compile-verify.md 推断其契约，并在 b2_findings 中注明。
 

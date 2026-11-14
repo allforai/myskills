@@ -1,7 +1,7 @@
 # Orientation evidence map
 
 Goal verbatim: “grillstorm”“并发执行”, applied to approved GitHub #8 and implementation/thought-test #9–#18.
-Starting ref 81acdddca29ab6dde95a1ab72decc2067f3a0f9a; git status --short empty. Integration child at /Users/aa/orca/workspaces/myskills/grillstorm-meta-intent. No implementation dispatched.
+Starting ref 81acdddca29ab6dde95a1ab72decc2067f3a0f9a; git status --short empty. Integration child at /Users/me/orca/workspaces/myskills/grillstorm-meta-intent. No implementation dispatched.
 
 All claims below are material, observed, confidence high, status verified by investigator (independent confirmation pending). Impact is execution/acceptance unless stated otherwise.
 
@@ -26,4 +26,4 @@ OS-004 additional baseline: python3 -m pytest codex/meta-skill/test_flow.py code
 
 OS-005 native GitHub GET dependencies/blocked_by rechecked for each #8–#18; exactly agrees with the listed edges; snapshots in sources/issue-*.json.
 
-OS-006 current integration untracked docs/grillstorm/ are coordinator-owned control-plane artifacts; original /Users/aa/workspace/myskills remains unchanged. Codex actual read-only worker ctx_1b9dfaf196d3 ran tests; Claude probe ctx_e53bbe574a03 ran pwd and git rev-parse HEAD and completed. Claude CLI 2.1.263 and codex-cli 0.153.4 available. Environment startup/tool execution is proven; actual bootstrap interaction remains future acceptance and is not confused with startup.
+OS-006 current integration untracked docs/grillstorm/ are coordinator-owned control-plane artifacts; original /Users/me/workspace/myskills remains unchanged. Codex actual read-only worker ctx_1b9dfaf196d3 ran tests; Claude probe ctx_e53bbe574a03 ran pwd and git rev-parse HEAD and completed. Claude CLI 2.1.263 and codex-cli 0.153.4 available. Environment startup/tool execution is proven; actual bootstrap interaction remains future acceptance and is not confused with startup.

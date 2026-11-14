@@ -1,6 +1,6 @@
 # consumer-learning-app
 
-The shape of the ink-scent new-product run of 2026-09-14~16 — a consumer language-learning
+The shape of the learning-app new-product run of 2026-09-14~16 — a consumer language-learning
 app with an Expo mobile client and a Node service — replayed as bootstrap dialogue, not a
 copy of that project's content: every goal, rule and acceptance line here is written for
 this fixture.

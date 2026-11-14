@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Repository root for all paths below: `/Users/aa/Documents/myskills`.
+- Repository root for all paths below: `/Users/me/Documents/myskills`.
 - Claude source of truth: `claude/grillstorm/skills/grillstorm/`. All edits land there first.
 - `codex/grillstorm/` is byte-identical to the Claude skill directory apart from its `agents/` directory. Task 6 mirrors every change.
 - Test command, run from `claude/grillstorm/skills/grillstorm/`: `python3 -m pytest scripts/ -q`. Baseline before this plan: **182 passed**.

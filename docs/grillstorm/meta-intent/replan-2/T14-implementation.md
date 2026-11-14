@@ -1,7 +1,7 @@
 # External source change recovery (#14 v2) — implementation report
 
 Producer base: accepted `1ed30ee5819adf95cf4f2b64c08956ec4c751b1d` on the
-integration branch `j08069099777/grillstorm-meta-intent`. Scope is #14 v2 only.
+integration branch `user/grillstorm-meta-intent`. Scope is #14 v2 only.
 No issue is closed, nothing is pushed, no installation or main merge occurred.
 
 ## What was built

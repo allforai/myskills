@@ -86,7 +86,7 @@ behaviour tests are parametrized over `HOSTS = ["claude", "codex"]`, names exact
 |---|---|---|
 | `…passes_with_design_node_blocking_ui_implementation` | baseline graph, `consumer` → `[]` | no false positive on the intended shape |
 | `…rejects_missing_experience_priority` (3 shapes) | only that code | short-circuit and A1 (`reason` required) |
-| `…rejects_workflow_without_design_node` | code present, messages name the user-flow and screen-requirements paths | the ink-scent incident is refused |
+| `…rejects_workflow_without_design_node` | code present, messages name the user-flow and screen-requirements paths | the learning-app incident is refused |
 | `…rejects_ui_implementation_not_blocked_by_design` | only the unblocked node reported with correct `node_id`; a transitively blocked sibling is not | transitive closure is honoured |
 | `…rejects_experience_not_applicable_on_ui_product` | code present under `mode=admin` | check applies to every non-`none` mode |
 | `…ignores_local_change`, `…ignores_mode_none` | `[]` | non-trigger routes stay silent |

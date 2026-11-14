@@ -7,7 +7,7 @@ export const meta = {
   ],
 }
 
-const REPO = '/Users/aa/workspace/myskills'
+const REPO = '/Users/me/workspace/myskills'
 const RUN = REPO + '/docs/superpowers/runs/2026-09-18-product-experience-overhaul'
 const CAP = 3
 const EXECUTOR_MODEL = 'opus'
@@ -308,7 +308,7 @@ const TASKS = [
   "touched_paths": [
    "claude/meta-skill/knowledge/defensive-patterns.md"
   ],
-  "acceptance_cmd": "F=claude/meta-skill/knowledge/defensive-patterns.md; for t in '<a id=\"pattern-i\"></a>' '## Pattern I: Specification Gap Escalation' '<a id=\"pattern-j\"></a>' '## Pattern J: Audience Isolation' unspecified_user_visible_decision needed_decision blocking_intent_ids suggested_owner_artifact suspected_root_node requirement_ref '`end-user`' '`operator`' '`developer`' build-time remote-config deploy-env '.allforai/app-design/spec/permissions-notifications-settings-spec.json'; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && ! grep -qi 'ink-scent' \"$F\" && python3 -c \"t=open('claude/meta-skill/knowledge/defensive-patterns.md',encoding='utf-8').read(); assert t.count('## Pattern H:')==1 and t.index('## Pattern H:')<t.index('## Pattern I: Specification Gap Escalation')<t.index('## Pattern J: Audience Isolation'); tail=t.split('## Pattern I: Specification Gap Escalation')[1]; assert all(tail.count(s)>=2 for s in ('**Trigger condition**:','**Protocol**:','**Key principles**:','**Example**:')), 'four-part layout incomplete'\" && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
+  "acceptance_cmd": "F=claude/meta-skill/knowledge/defensive-patterns.md; for t in '<a id=\"pattern-i\"></a>' '## Pattern I: Specification Gap Escalation' '<a id=\"pattern-j\"></a>' '## Pattern J: Audience Isolation' unspecified_user_visible_decision needed_decision blocking_intent_ids suggested_owner_artifact suspected_root_node requirement_ref '`end-user`' '`operator`' '`developer`' build-time remote-config deploy-env '.allforai/app-design/spec/permissions-notifications-settings-spec.json'; do grep -qF -- \"$t\" \"$F\" || { echo \"missing: $t\"; exit 1; }; done && ! grep -qi 'learning-app' \"$F\" && python3 -c \"t=open('claude/meta-skill/knowledge/defensive-patterns.md',encoding='utf-8').read(); assert t.count('## Pattern H:')==1 and t.index('## Pattern H:')<t.index('## Pattern I: Specification Gap Escalation')<t.index('## Pattern J: Audience Isolation'); tail=t.split('## Pattern I: Specification Gap Escalation')[1]; assert all(tail.count(s)>=2 for s in ('**Trigger condition**:','**Protocol**:','**Key principles**:','**Example**:')), 'four-part layout incomplete'\" && python3 claude/meta-skill/scripts/orchestrator/validate_generalization_boundaries.py && python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py",
   "deps": [
    "T-M1-04"
   ],
@@ -845,7 +845,7 @@ const TASKS = [
  },
  {
   "id": "T-M5-06",
-  "title": "ink-scent-shaped bad-workflow replay fixture + test that all three public gates refuse it",
+  "title": "learning-app-shaped bad-workflow replay fixture + test that all three public gates refuse it",
   "touched_paths": [
    "claude/meta-skill/tests/fixtures/consumer-learning-app/README.md",
    "claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/profile.json",
@@ -854,7 +854,7 @@ const TASKS = [
    "claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/readiness-spec.json",
    "claude/meta-skill/tests/unit/test_consumer_product_regression.py"
   ],
-  "acceptance_cmd": "python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_regression.py | grep -q 'test_ink_scent_shaped_workflow_is_refused_at_every_public_gate\\[codex\\]' && python3 -m pytest -q claude/meta-skill/tests/unit/test_consumer_product_regression.py && python3 -c 'import json; p=json.load(open(\"claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/plan.json\")); s=json.dumps(p); assert \".allforai/app-design/\" not in s and \"experience-quality-critique\" not in s'",
+  "acceptance_cmd": "python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_regression.py | grep -q 'test_learning_app_shaped_workflow_is_refused_at_every_public_gate\\[codex\\]' && python3 -m pytest -q claude/meta-skill/tests/unit/test_consumer_product_regression.py && python3 -c 'import json; p=json.load(open(\"claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/plan.json\")); s=json.dumps(p); assert \".allforai/app-design/\" not in s and \"experience-quality-critique\" not in s'",
   "deps": [
    "T-M1-01",
    "T-M1-07",
@@ -908,7 +908,7 @@ const TASKS = [
    "claude/meta-skill/tests/expected/new-product-consumer-app-expected.json",
    "claude/meta-skill/tests/expected/new-product-consumer-app-codex-expected.json"
   ],
-  "acceptance_cmd": "python3 -c 'import json; P=\"claude/meta-skill/tests/expected/new-product-consumer-app\"; docs=[json.load(open(P+s)) for s in (\"-expected.json\",\"-codex-expected.json\")]; need={\".allforai/app-design/spec/user-flow-spec.json\",\".allforai/app-design/spec/screen-requirements-spec.json\",\".allforai/app-design/qa/experience-quality-critique-design.json\",\".allforai/app-design/qa/experience-quality-critique-runtime.json\"}; assert all(need<=set(d[\"some_node_exit_artifacts_include\"]) and d[\"profile\"][\"task_route\"]==\"new-product\" and d[\"profile\"][\"experience_priority.mode\"]==\"consumer\" and \"assert by node_id\" in d[\"forbidden\"] and set(d[\"experience_direction\"][\"user_action_in\"])=={\"select\",\"delegate\"} for d in docs)' && grep -rq --exclude-dir=tests 'experience-quality-critique-design.json' claude/meta-skill && grep -rq --exclude-dir=tests 'experience-quality-critique-runtime.json' claude/meta-skill && grep -q 'claude/meta-skill/skills/bootstrap/SKILL.md' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'codex/meta-skill/skills/bootstrap.md' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -qi 'ink-scent' claude/meta-skill/tests/prompts/new-product-consumer-app.md claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\\|AskUserQuestion' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md",
+  "acceptance_cmd": "python3 -c 'import json; P=\"claude/meta-skill/tests/expected/new-product-consumer-app\"; docs=[json.load(open(P+s)) for s in (\"-expected.json\",\"-codex-expected.json\")]; need={\".allforai/app-design/spec/user-flow-spec.json\",\".allforai/app-design/spec/screen-requirements-spec.json\",\".allforai/app-design/qa/experience-quality-critique-design.json\",\".allforai/app-design/qa/experience-quality-critique-runtime.json\"}; assert all(need<=set(d[\"some_node_exit_artifacts_include\"]) and d[\"profile\"][\"task_route\"]==\"new-product\" and d[\"profile\"][\"experience_priority.mode\"]==\"consumer\" and \"assert by node_id\" in d[\"forbidden\"] and set(d[\"experience_direction\"][\"user_action_in\"])=={\"select\",\"delegate\"} for d in docs)' && grep -rq --exclude-dir=tests 'experience-quality-critique-design.json' claude/meta-skill && grep -rq --exclude-dir=tests 'experience-quality-critique-runtime.json' claude/meta-skill && grep -q 'claude/meta-skill/skills/bootstrap/SKILL.md' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'codex/meta-skill/skills/bootstrap.md' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -qi 'learning-app' claude/meta-skill/tests/prompts/new-product-consumer-app.md claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\\|AskUserQuestion' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md",
   "deps": [
    "T-M1-07",
    "T-M2-10",
@@ -1093,7 +1093,7 @@ const TASKS = [
  },
  {
   "id": "T-M5-16",
-  "title": "Real-host acceptance: rerun the original ink-scent request through /bootstrap, /run, /product-review and record the three symptoms",
+  "title": "Real-host acceptance: rerun the original learning-app request through /bootstrap, /run, /product-review and record the three symptoms",
   "touched_paths": [
    "docs/validation/product-experience-host-run.md"
   ],

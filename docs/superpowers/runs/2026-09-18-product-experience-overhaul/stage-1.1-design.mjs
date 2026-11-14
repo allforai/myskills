@@ -4,7 +4,7 @@ export const meta = {
   phases: [{ title: 'Design', detail: 'one design agent per module, session model' }],
 }
 
-const REPO = '/Users/aa/workspace/myskills'
+const REPO = '/Users/me/workspace/myskills'
 const SPECS = REPO + '/docs/superpowers/specs'
 const OVERVIEW = SPECS + '/2026-09-18-product-experience-overhaul-overview.md'
 

@@ -1,6 +1,6 @@
 {
   "candidate": "c93fc9419db540277aa6925aae0b588f3b7a6128",
-  "command": "python3 /Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/probes/T9-malformed-node.py /Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "command": "python3 /Users/me/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/probes/T9-malformed-node.py /Users/me/orca/workspaces/myskills/meta-intent-t9",
   "runs": [
     {
       "chunk_id": "6d2555",

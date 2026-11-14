@@ -8,7 +8,7 @@
   "spec_revision": 2,
   "task_revision": 1,
   "workflow_revision": 2,
-  "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "worktree": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
   "summary": "Focused acceptance and affected tests pass, and independent copied-project gates enforce normal T9 local requirement contracts across both adapter asset paths. Rejected because the new shared scope call regresses malformed-workflow handling: nodes:null raises before readiness can publish a typed not_ready report, leaving an earlier ready report untouched. No source changes or repairs were made.",
   "scope": {
     "included": [
@@ -27,7 +27,7 @@
     "independence": "No executor narrative, executor report, or other review report was read. reviews/failure-classification.json was read only as a required frozen contract. No subagents, installs, tracker changes, pushes, commits or source fixes."
   },
   "frozen_inputs": {
-    "root": "/Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent",
+    "root": "/Users/me/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent",
     "hashes": {
       "program-spec.md": "b860a0a357babf5264196ab57edb360fd6c647952324b49360cfa7ed02827237",
       "modules/intent-spec.md": "5a564dc8af7021342530e108df7558bf65afa6567a8cccb89f00706a5987eee4",
@@ -65,7 +65,7 @@
     "candidate_clean_before": true,
     "candidate_clean_after": true,
     "diff_check_exit": 0,
-    "report_only_edit": "/Users/aa/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/T9-supervisor-1.json"
+    "report_only_edit": "/Users/me/orca/workspaces/myskills/grillstorm-meta-intent/docs/grillstorm/meta-intent/reviews/T9-supervisor-1.json"
   },
   "candidate_file_hashes": {
     "claude/meta-skill/knowledge/bootstrap-audits.md": "e6d211684040f9216927540fe7c3bb4f1120aab3ad2666ab71b9a06857e7dc71",
@@ -88,7 +88,7 @@
     "commands": [
       {
         "command": "python3 -m pytest claude/meta-skill/tests/unit/test_bootstrap_scope.py -q",
-        "cwd": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+        "cwd": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
         "stdout": "....................                                                     [100%]\n20 passed in 0.95s\n",
         "stderr": "",
         "exit": 0,
@@ -99,7 +99,7 @@
       },
       {
         "command": "python3 -m pytest claude/meta-skill/tests/unit/test_validate_bootstrap.py claude/meta-skill/tests/unit/test_validate_unattended_readiness.py claude/meta-skill/tests/unit/test_check_artifacts.py claude/meta-skill/tests/unit/test_reconcile_bootstrap_workflow.py -q",
-        "cwd": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+        "cwd": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
         "stdout": "...............................................................          [100%]\n63 passed in 0.15s\n",
         "stderr": "",
         "exit": 0,
@@ -109,7 +109,7 @@
       },
       {
         "command": "python3 -m pytest codex/meta-skill/test_flow.py -q -k 'missing_preflight or preflight_requires_report'",
-        "cwd": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+        "cwd": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
         "stdout": "..                                                                       [100%]\n2 passed, 22 deselected in 0.02s\n",
         "stderr": "",
         "exit": 0,
@@ -223,56 +223,56 @@
     "copied_asset_identity": [
       {
         "host_adapter": "claude",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/product_intent.py",
         "sha256": "4132651f7311ff0d89debf75f420cb6d10030d6bfbda70cc53974fb3d9031c52",
         "matches_candidate": true
       },
       {
         "host_adapter": "claude",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
         "sha256": "7fef3be74d9c613fe26cc72bb69df432bfea8fcdb40afdbe0fb1c388b6fee8ba",
         "matches_candidate": true
       },
       {
         "host_adapter": "claude",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
         "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
         "matches_candidate": true
       },
       {
         "host_adapter": "claude",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/claude-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
         "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
         "matches_candidate": true
       },
       {
         "host_adapter": "codex",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/product_intent.py",
         "sha256": "4132651f7311ff0d89debf75f420cb6d10030d6bfbda70cc53974fb3d9031c52",
         "matches_candidate": true
       },
       {
         "host_adapter": "codex",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/validate_bootstrap.py",
         "sha256": "7fef3be74d9c613fe26cc72bb69df432bfea8fcdb40afdbe0fb1c388b6fee8ba",
         "matches_candidate": true
       },
       {
         "host_adapter": "codex",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/validate_unattended_readiness.py",
         "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
         "matches_candidate": true
       },
       {
         "host_adapter": "codex",
-        "source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
         "copied_path": "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-supervisor-4dbtcx91/codex-docs/.allforai/bootstrap/scripts/check_decision_inputs.py",
         "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
         "matches_candidate": true

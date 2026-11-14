@@ -51,7 +51,7 @@ The JSON contract must include:
 ```json
 {
   "schema_version": "1.0",
-  "bridge_id": "glow-island-cocos-runtime-debug-bridge",
+  "bridge_id": "sample-game-cocos-runtime-debug-bridge",
   "enabled_only_in": ["qa", "dev"],
   "access_paths": ["browser_window", "websocket", "local_http", "mcp_server", "engine_test_api"],
   "read_capabilities": [

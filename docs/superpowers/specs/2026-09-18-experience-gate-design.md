@@ -392,7 +392,7 @@ def validate_experience_gate_flow(bdir: str) -> list:   # return _rendered(exper
     `repair_route`、`counterexample_or_comparison`、`rerun_from_node_id`、`fresh-context`、`insufficient_evidence`。
   - `BOOTSTRAP_CORPUS`（与游戏版一样写成相对仓库根、带 `claude/meta-skill/` 前缀的路径，缺失文件跳过）：
     `skills/bootstrap/SKILL.md`、`knowledge/bootstrap-planning.md`、`knowledge/capabilities/app-design.md`；语料须含 `skills/app-design/40-qa/experience-quality-critique/SKILL.md`。
-- **`/Users/aa/workspace/myskills/.githooks/pre-commit`（edit，仓库根）：** 在 `validate_game_creative_pipeline.py .` 一行之后加
+- **`/Users/me/workspace/myskills/.githooks/pre-commit`（edit，仓库根）：** 在 `validate_game_creative_pipeline.py .` 一行之后加
   `python3 claude/meta-skill/scripts/orchestrator/validate_app_experience_pipeline.py .`。游戏那行已存在（见 Spec corrections #1），不重复加。
 - **`scripts/orchestrator/validate_meta_contracts.py`（edit，追加）：** 新函数
   `validate_experience_gate_contract(errors)`，仿 `validate_execution_repair_loop_contract`；`main()` 注册列表末尾加一行。钉住：
@@ -505,7 +505,7 @@ def validate_experience_gate_flow(bdir: str) -> list:   # return _rendered(exper
      这证明本门确实经 `structural_gate_blockers` 在 `/run` 边界生效。
   `validate_unattended_readiness.py` 本身**不改**。
 
-### 验收命令（在规格"验收"一节基础上补全；均在 `/Users/aa/workspace/myskills` 根目录执行）
+### 验收命令（在规格"验收"一节基础上补全；均在 `/Users/me/workspace/myskills` 根目录执行）
 
 ```bash
 python3 -m pytest -q claude/meta-skill/tests/unit/test_validate_bootstrap.py \

@@ -2,9 +2,9 @@
 ## 负责 capabilities：product-concept、reverse-concept、product-analysis
 
 读取以下文件：
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-concept.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/reverse-concept.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-analysis.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-concept.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/reverse-concept.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-analysis.md`
 
 ## Contract 表（来自设计 spec）
 

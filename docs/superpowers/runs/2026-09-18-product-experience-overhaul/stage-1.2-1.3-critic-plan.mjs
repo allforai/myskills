@@ -7,7 +7,7 @@ export const meta = {
   ],
 }
 
-const REPO = '/Users/aa/workspace/myskills'
+const REPO = '/Users/me/workspace/myskills'
 const SPECS = REPO + '/docs/superpowers/specs'
 const PLANS = REPO + '/docs/superpowers/plans'
 const RUN = REPO + '/docs/superpowers/runs/2026-09-18-product-experience-overhaul'

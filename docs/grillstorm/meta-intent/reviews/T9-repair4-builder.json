@@ -19,7 +19,7 @@
     "claude/meta-skill/scripts/orchestrator/product_intent.py": "69ee8fc933f3a1de10528ec1f3d58a97f1dd307ced86e5f07c2f568f3dbff617",
     "claude/meta-skill/tests/unit/test_bootstrap_scope.py": "c614a7d914386c7e808d13372a8c9e56817139ccc63faaa1d853067779252aa9"
   },
-  "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "worktree": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
   "worktree_clean": true,
   "tdd": [
     {
@@ -46,7 +46,7 @@
   "reproduce_command": [
     "python3",
     "/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/t9-repair4-qwl2miru/reproduce.py",
-    "/Users/aa/orca/workspaces/myskills/meta-intent-t9"
+    "/Users/me/orca/workspaces/myskills/meta-intent-t9"
   ],
   "original_failure_history": "prior-supervisor-4.json copied unchanged; preceding repair commits remain ancestors; baseline-cli.json and notify-cli.json preserve this attempt red admissions",
   "input_hashes": "input-hashes.json",

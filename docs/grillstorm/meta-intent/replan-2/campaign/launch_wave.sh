@@ -10,7 +10,7 @@
 set -uo pipefail
 T=$1; shift
 ORCA=${ORCA:-orca}
-HERE=/Users/aa/workspace/myskills/docs/grillstorm/meta-intent/replan-2/campaign
+HERE=/Users/me/workspace/myskills/docs/grillstorm/meta-intent/replan-2/campaign
 ROOT=/private/tmp/meta-intent-host-campaign.pGw3c0/T15
 SC=${SC:-/tmp}
 for SCENE in "$@"; do

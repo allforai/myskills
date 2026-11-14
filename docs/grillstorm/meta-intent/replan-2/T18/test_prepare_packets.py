@@ -8,7 +8,7 @@ import sys
 import pytest
 
 HERE = Path(__file__).resolve().parent
-T9_REPLAN = Path("/Users/aa/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2")
+T9_REPLAN = Path("/Users/me/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2")
 
 
 def t15_root():

@@ -304,7 +304,7 @@ Read only the two specified files. Here is the output per the capability's Sub-P
 }
 ```
 
-Files read: `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-concept.md`, `/private/tmp/claude-502/-Users-aa-workspace-myskills/fb343e3d-f2a8-4138-af31-769ec8b68bcd/scratchpad/tt/s8.md`.
+Files read: `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-concept.md`, `/private/tmp/claude-502/-Users-me-workspace-myskills/fb343e3d-f2a8-4138-af31-769ec8b68bcd/scratchpad/tt/s8.md`.
 ~~~~
 
 ### s6 · agent `a457427d538ebc728` · claude-sonnet-5 · 被测：`product-concept.md`
@@ -557,8 +557,8 @@ Included effort: 10d (T01 3 + T02 2 + T03 3 + T04 2). Excluded effort: 14d, sums
 - 5d buffer retained against the 3-week/15d ceiling for integration and testing, per the scope-gate guidance (don't include everything by default).
 
 **Files read:**
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/feature-prune.md`
-- `/private/tmp/claude-502/-Users-aa-workspace-myskills/fb343e3d-f2a8-4138-af31-769ec8b68bcd/scratchpad/tt/p1.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/feature-prune.md`
+- `/private/tmp/claude-502/-Users-me-workspace-myskills/fb343e3d-f2a8-4138-af31-769ec8b68bcd/scratchpad/tt/p1.md`
 ~~~~
 
 ### p1 · agent `a8c2414e360068eec` · claude-sonnet-5 · 被测：`feature-prune.md`

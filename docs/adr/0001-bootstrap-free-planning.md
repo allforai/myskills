@@ -4,4 +4,4 @@
 
 `/run` does not stop for humans; former `human_gate` direction is a Phase A `decision_inputs` artifact. Planning musts live in `claude/meta-skill/knowledge/bootstrap-planning.md`, `suppress-rules.md`, and `bootstrap-audits.md`. Retired run-engine spec/plans are under `docs/superpowers/retired/`. This pass does not rewrite `human_gate` approval machinery or give Codex a second planning philosophy.
 
-**Gold samples:** `claude/meta-skill/tests/fixtures/retail-sphere` and `/Users/aa/workspace/glow-island`.
+**Gold samples:** `claude/meta-skill/tests/fixtures/retail-sphere` and `/Users/me/workspace/sample-game`.

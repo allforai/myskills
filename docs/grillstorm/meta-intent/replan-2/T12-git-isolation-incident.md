@@ -10,7 +10,7 @@ development/test isolation defect, not a successful product or host scenario.
 - The shared Git configuration also changed to `core.bare=true`. A read-only main
   check failed with `fatal: this operation must be run in a work tree`.
 - The coordinator restored only the known non-bare repository setting with
-  `git config --local core.bare false` from `/Users/aa/workspace/myskills`.
+  `git config --local core.bare false` from `/Users/me/workspace/myskills`.
   Main then reported a clean worktree, `--is-bare-repository=false`, and HEAD
   `d8a84fac` (another actor's newer main commit, left intact).
 - No reset, history rewrite, main merge, push, or real product-source deletion was

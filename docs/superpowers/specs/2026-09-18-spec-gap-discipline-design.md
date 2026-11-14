@@ -4,7 +4,7 @@
 
 ## 问题
 
-ink-scent 的契约只写了 `Authorization Bearer INK_SCENT_ACCESS_TOKEN; one configured token is one client`
+learning-app 的契约只写了 `Authorization Bearer LEARNING_APP_ACCESS_TOKEN; one configured token is one client`
 和"可本地启动的 AI 服务端"，从未定义最终用户如何得到服务地址与凭证。实现节点自行填洞，把部署方配置做成了
 最终用户的设置页（`mobile/src/ServiceSettings.tsx`，文案还写着"配置由部署方提供"）。验证只对契约核对，放行。
 
@@ -328,7 +328,7 @@ audience, provisioning, requirement_ref?}`；endpoint 的 `audience` 指"谁提�
 实施次序即红绿证明：先做 U1 并运行 `validate_meta_contracts.py`，应当**失败**并列出全部缺词（红）；
 再做 U2–U6，脚本转绿；最后 U7。执行器须在任务报告里贴出红、绿两次输出。
 
-验收命令（全部从仓库根 `/Users/aa/workspace/myskills` 运行）：
+验收命令（全部从仓库根 `/Users/me/workspace/myskills` 运行）：
 
 ```bash
 python3 claude/meta-skill/scripts/orchestrator/validate_meta_contracts.py

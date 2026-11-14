@@ -1,15 +1,15 @@
 {
   "run_id": "2026-09-18-product-experience-overhaul",
   "scope": [
-    "repo:/Users/aa/workspace/myskills",
+    "repo:/Users/me/workspace/myskills",
     "branch:product-experience-overhaul"
   ],
   "write_roots": [
-    "/Users/aa/workspace/myskills"
+    "/Users/me/workspace/myskills"
   ],
   "forbidden_roots": [
-    "/Users/aa/workspace/ink-scent",
-    "/Users/aa/.claude/plugins"
+    "/Users/me/workspace/learning-app",
+    "/Users/me/.claude/plugins"
   ],
   "destructive_limits": [
     "no git reset --hard",

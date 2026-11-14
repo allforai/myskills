@@ -2,7 +2,7 @@
 
 Never copy this file, the issue, scenario matrix, result ledger, or other reports into an actor's prompt or project. Actors receive only their `actor-input.md`, raw project, candidate assets, and the current user reply. This file is an oracle and turn-delivery guide, not a tested Skill.
 
-Accepted producer candidate: `ed430dfcebed485b913b54d7785f02cc86998303`, exported as both source and production commit. It supersedes `3f66d7acc367cdb39ee12ae10827c8d81298ae0a`/`88e7becaf30522ef29dd2fa168b62045affcb782`, which carry zero host proof and must not be launched. Source checkout: `/Users/aa/orca/workspaces/myskills/meta-intent-t9`. Coordinator owns fresh actor placement and raw Orca transcript collection. Evaluator owns no production changes and launches no actors.
+Accepted producer candidate: `ed430dfcebed485b913b54d7785f02cc86998303`, exported as both source and production commit. It supersedes `3f66d7acc367cdb39ee12ae10827c8d81298ae0a`/`88e7becaf30522ef29dd2fa168b62045affcb782`, which carry zero host proof and must not be launched. Source checkout: `/Users/me/orca/workspaces/myskills/meta-intent-t9`. Coordinator owns fresh actor placement and raw Orca transcript collection. Evaluator owns no production changes and launches no actors.
 
 ## Launch and evidence
 
@@ -93,8 +93,8 @@ The coordinator initialized Git metadata in the first Claude large-code project 
 The coordinator requested `capture_worker.py` as a bounded recorder. Run it against the exact real actor Dispatch, never a guessed provider session or transcript path:
 
 ```text
-python3 /Users/aa/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2/T15/capture_worker.py <actor-dispatch> <new-capture-directory> --orca orca
-python3 /Users/aa/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2/T15/capture_worker.py <same-actor-dispatch> <next-new-capture-directory> --orca orca --after <previous-capture-directory>/capture.json
+python3 /Users/me/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2/T15/capture_worker.py <actor-dispatch> <new-capture-directory> --orca orca
+python3 /Users/me/orca/workspaces/myskills/meta-intent-t9/docs/grillstorm/meta-intent/replan-2/T15/capture_worker.py <same-actor-dispatch> <next-new-capture-directory> --orca orca --after <previous-capture-directory>/capture.json
 ```
 
 Substitute the already selected executable if this Orca environment requires one. Each invocation runs only `orchestration worker-read --dispatch <exact-id> --source auto --limit 100 --json`, optionally followed by Orca's returned opaque cursor. It saves raw stdout JSON bytes, stderr bytes and exact command/exit/hash records per page, with a `capture.json` index. No actor launches, injections, session guessing, cursor synthesis, transcript editing or semantic grading occur. Output directories must be new to preserve previous pages. `--pages` bounds each capture; it stops when the returned cursor is absent/unchanged and can be continued later using `--after`.

@@ -34,7 +34,7 @@ Important limitation:
 ### 1. FreshEats
 
 Files:
-- [codex-test-project1-fresheats.md](/Users/aa/allforai/myskills/docs/test-prompts/codex-test-project1-fresheats.md)
+- [codex-test-project1-fresheats.md](/Users/me/allforai/myskills/docs/test-prompts/codex-test-project1-fresheats.md)
 
 Fixes applied:
 - Removed the non-existent `feature-prune` requirement from the Codex product-design expectation
@@ -52,7 +52,7 @@ Current assessment:
 ### 2. TeamPulse
 
 Files:
-- [codex-test-project2-teampulse.md](/Users/aa/allforai/myskills/docs/test-prompts/codex-test-project2-teampulse.md)
+- [codex-test-project2-teampulse.md](/Users/me/allforai/myskills/docs/test-prompts/codex-test-project2-teampulse.md)
 
 Fixes applied:
 - Added the minimal `.allforai/product-map/` bootstrap required by current `dev-forge`
@@ -66,7 +66,7 @@ Current assessment:
 ### 3. Replication
 
 Files:
-- [codex-test-project3-replication.md](/Users/aa/allforai/myskills/docs/test-prompts/codex-test-project3-replication.md)
+- [codex-test-project3-replication.md](/Users/me/allforai/myskills/docs/test-prompts/codex-test-project3-replication.md)
 
 Fixes applied:
 - Replaced exact artifact counts with lower-bound assertions:
@@ -81,7 +81,7 @@ Current assessment:
 ### 4. PulseCRM UI Restore
 
 Files:
-- [codex-test-project4-pulsecrm-ui.md](/Users/aa/allforai/myskills/docs/test-prompts/codex-test-project4-pulsecrm-ui.md)
+- [codex-test-project4-pulsecrm-ui.md](/Users/me/allforai/myskills/docs/test-prompts/codex-test-project4-pulsecrm-ui.md)
 
 Fixes applied:
 - Added a dedicated prompt for `ui-forge`
@@ -94,7 +94,7 @@ Current assessment:
 ### 5. MarketHub Demo Forge
 
 Files:
-- [codex-test-project5-markethub-demo.md](/Users/aa/allforai/myskills/docs/test-prompts/codex-test-project5-markethub-demo.md)
+- [codex-test-project5-markethub-demo.md](/Users/me/allforai/myskills/docs/test-prompts/codex-test-project5-markethub-demo.md)
 
 Fixes applied:
 - Added a dedicated prompt for `demo-forge`

@@ -15,7 +15,7 @@
   "synced_main_sha": "fa2447b20199fa6f8199cdbbe2c05692e283f08c",
   "synced_integration_sha": "6e509173",
   "retained_candidate_after_sync": "c1893395b8ea49084a6bbb9a63c671868d236a56",
-  "integration_ref": "j08069099777/grillstorm-meta-intent",
+  "integration_ref": "user/grillstorm-meta-intent",
   "tasks": {
     "T9": {
       "status": "escalated",
@@ -26,7 +26,7 @@
       "dependencies": [],
       "orca_task": "task_41c0e6f17ea6",
       "dispatch": "ctx_823a0469b439",
-      "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+      "worktree": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
       "base_sha": "cadac5525abf2407fdcd0588252336cba8f60a01",
       "candidate_sha": "459022e02f5bf1dc98e37d3b40d38c69c59513e3",
       "supervisor_dispatch": "ctx_18f246fe41f2",

@@ -114,7 +114,7 @@
  "blind_reproduction": {
   "date": "2026-09-17",
   "subject_text": "installed clone (uncommitted local edits), not repository HEAD",
-  "adapter_path": "/Users/aa/.pi/agent/git/github.com/allforai/myskills/pi/cross-exam/skills/keep-code-simple/SKILL.md",
+  "adapter_path": "/Users/me/.pi/agent/git/github.com/allforai/myskills/pi/cross-exam/skills/keep-code-simple/SKILL.md",
   "adapter_sha256": "8f9ea70e5d3e77a59b503a15e94ec793a331fbbcd37d0bffe5da3d658d473724",
   "protocol_sha256": "d6da2b2306e51d86f3683615b724f44fbfa7c35edde5495e8712f98344802b04",
   "packet_r1_sha256": "5da148265dfd0035f2af57f8e480a2366aae49c2c2e4edaad455714c057ce3ad",

@@ -858,7 +858,7 @@ def test_experience_coverage_rejects_missing_experience_priority(tmp_path, host,
 
 @pytest.mark.parametrize("host", HOSTS)
 def test_experience_coverage_rejects_workflow_without_design_node(tmp_path, host):
-    """The ink-scent incident: a product route plans screens and designs none of them."""
+    """The learning-app incident: a product route plans screens and designs none of them."""
     bdir = _experience_project(tmp_path, nodes=[_ui_implementation_node(hard_blocked_by=[])])
 
     findings = _coverage_findings(host, bdir)

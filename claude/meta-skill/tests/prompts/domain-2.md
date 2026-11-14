@@ -2,7 +2,7 @@
 ## 负责 capabilities：feature-gap、ui-design
 
 读取以下文件：
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/ui-design.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/ui-design.md`
 
 注意：feature-gap 可能没有独立的 capability `.md` 文件，若不存在，从 product-analysis.md 与 ui-design.md 推断其契约，并在 b2_findings 中注明。
 

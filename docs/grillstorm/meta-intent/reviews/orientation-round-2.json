@@ -69,7 +69,7 @@
       "raw_evidence_checked": [
         "git rev-parse HEAD returned 81acdddca29ab6dde95a1ab72decc2067f3a0f9a; git diff --stat empty; git status --short showed only ?? docs/grillstorm/ before verdict persistence",
         "git log -3 --oneline includes the latest cross-exam device-axis and screenshot changes",
-        "git -C /Users/aa/workspace/myskills status --short returned no changes",
+        "git -C /Users/me/workspace/myskills status --short returned no changes",
         "orca status --json: runtime ready/reachable, appVersion 1.4.197",
         "Installed grillstorm/scripts/install_official_skills.py status returned missing_required=[] without installing anything",
         "claude --version returned 2.1.263; codex --version returned codex-cli 0.153.4",

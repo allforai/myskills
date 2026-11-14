@@ -33,7 +33,7 @@
         "openai-codex/gpt-6-astra"
       ],
       "tool_calls": [],
-      "session_path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/fbfb4497-0982-44a2-87d9-d4daa7bde47a/run-0/session.jsonl",
+      "session_path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/fbfb4497-0982-44a2-87d9-d4daa7bde47a/run-0/session.jsonl",
       "session_sha256": "80c29705f3a7a664ea2029830713c5c94712e7482d75328211489b39ff4628c6",
       "answer_sha256": "6689012fab1094787b5165b7d1cc2ea2c38255eddb261ec7f9bc3057810f6876",
       "verdict": "pass"
@@ -47,7 +47,7 @@
         "openai-codex/gpt-6-astra"
       ],
       "tool_calls": [],
-      "session_path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6fd5d468-8f08-431f-9b2a-9c83b00c2520/run-0/session.jsonl",
+      "session_path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6fd5d468-8f08-431f-9b2a-9c83b00c2520/run-0/session.jsonl",
       "session_sha256": "0a2f0e20dcf2957c0a5d98189469c22daae704a225a877b7f00a4927e3aff510",
       "answer_sha256": "56d39fd04265a9a40befa036c00055b5beddf4e0d411b1f290ac95254145bf6d",
       "verdict": "pass"
@@ -61,7 +61,7 @@
         "openai-codex/gpt-6-astra"
       ],
       "tool_calls": [],
-      "session_path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6d49a79b-5d80-4223-ad88-66a67398230c/run-0/session.jsonl",
+      "session_path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6d49a79b-5d80-4223-ad88-66a67398230c/run-0/session.jsonl",
       "session_sha256": "a9e8c48c088566c2f1914e963263d4ede2584913ddc84fb5c4b2652059dd8acd",
       "answer_sha256": "373fecc35db01bb8caff1d920f9b39814201e5b56ebe901d6274cf4bcf374a4a",
       "verdict": "pass"

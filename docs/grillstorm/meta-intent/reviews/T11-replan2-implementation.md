@@ -1,6 +1,6 @@
 # Revised #11 implementation evidence
 
-Scope: revised issue #11 only, based on accepted producer `3f66d7acc367cdb39ee12ae10827c8d81298ae0a` and documentation HEAD `88e7becaf30522ef29dd2fa168b62045affcb782`, in the assigned `j08069099777/grillstorm-meta-intent` checkout. Independent two-axis review and integration belong to the coordinator.
+Scope: revised issue #11 only, based on accepted producer `3f66d7acc367cdb39ee12ae10827c8d81298ae0a` and documentation HEAD `88e7becaf30522ef29dd2fa168b62045affcb782`, in the assigned `user/grillstorm-meta-intent` checkout. Independent two-axis review and integration belong to the coordinator.
 
 ## Delivered behavior
 

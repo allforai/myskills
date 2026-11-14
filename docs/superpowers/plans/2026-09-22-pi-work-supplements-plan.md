@@ -45,7 +45,7 @@
 
 Dispatch one read-only subagent, model `sonnet`, with exactly this prompt:
 
-> You are an executor subagent of the meta-skill plugin in /Users/aa/workspace/myskills, running the experience-map design node for a product. Read-only: do not create or edit any file; return your output as text.
+> You are an executor subagent of the meta-skill plugin in /Users/me/workspace/myskills, running the experience-map design node for a product. Read-only: do not create or edit any file; return your output as text.
 >
 > Read these first and follow them as your method:
 > - claude/meta-skill/knowledge/experience-map-schema.md

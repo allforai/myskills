@@ -15,7 +15,7 @@ runbook 出处：[`docs/superpowers/plans/2026-09-18-regression-parity-plan.md`]
 
 ## 执行前须知
 
-- **不要**在 `/Users/aa/workspace/ink-scent` 里操作：本轮的授权信封禁止写入该目录。重跑用新建的空目录。
+- **不要**在 `/Users/me/workspace/learning-app` 里操作：本轮的授权信封禁止写入该目录。重跑用新建的空目录。
 - 待验收的是本分支（`product-experience-overhaul`）的插件版本：meta-skill 0.20.0 / superstorm 0.43.0。
 - 对话里**不要**提示宿主"要做体验设计"、"要有设计节点"之类。三个症状要在不被提示的情况下自己消失才算数。
 - 一次会话跑不完可以分次，但每次都要把宿主版本与日期记进 `## 环境`。
@@ -23,8 +23,8 @@ runbook 出处：[`docs/superpowers/plans/2026-09-18-regression-parity-plan.md`]
 ## 步骤
 
 1. 安装本分支版本的插件（meta-skill 0.20.0 / superstorm 0.43.0），在 Claude Code 里确认 `/bootstrap` 可用。
-2. 新建一个空目录（如 `~/workspace/ink-scent-rerun`），`git init`，在其中开启新的 Claude Code 会话。
-3. 把 ink-scent 当初的**原始请求原文**（取自 ink-scent 2026-09-14 的会话记录）粘贴给 `/bootstrap`。正常对话，不要提示它"要做体验设计"。
+2. 新建一个空目录（如 `~/workspace/learning-app-rerun`），`git init`，在其中开启新的 Claude Code 会话。
+3. 把 learning-app 当初的**原始请求原文**（取自 learning-app 2026-09-14 的会话记录）粘贴给 `/bootstrap`。正常对话，不要提示它"要做体验设计"。
 4. 观察并记录 bootstrap 对话：
    - 是否在讨论体验之前先给出 2–3 条体验方向提案并标明推荐；提案是否回答"谁 / 什么情境 / 什么感受 / 为何回来"，
      而不是把"碎片化学习"直译成时长选择器 / 题型清单（**症状 1**）；
@@ -46,8 +46,8 @@ runbook 出处：[`docs/superpowers/plans/2026-09-18-regression-parity-plan.md`]
 | 插件版本 | 待人工填写（meta-skill 0.20.0 / superstorm 0.43.0，以实测为准） |
 | 受测 commit | 待人工填写（分支 `product-experience-overhaul` 的具体 commit） |
 | 日期 | 待人工填写 |
-| 重跑目录 | 待人工填写（**不得**是 `/Users/aa/workspace/ink-scent`） |
-| 原始请求来源 | 待人工填写（ink-scent 2026-09-14 会话记录的位置） |
+| 重跑目录 | 待人工填写（**不得**是 `/Users/me/workspace/learning-app`） |
+| 原始请求来源 | 待人工填写（learning-app 2026-09-14 会话记录的位置） |
 
 ## 症状对照
 

@@ -3,7 +3,7 @@
 Implemented only revised issue #10 after coordinator supplied accepted #9 producer
 `ea046abc8e0a479d736d332e5e5d15514d3ff294`, integrated at
 `54ba9127a07506024700fde12ddd273f3690b963`, and assigned this checkout on
-`j08069099777/grillstorm-meta-intent`. Read revised issue, parent #8 source,
+`user/grillstorm-meta-intent`. Read revised issue, parent #8 source,
 CLAUDE/CONTEXT, Codex AGENTS, ADR1–3, implement and TDD instructions first.
 Coordinator-owned `replan-2/execution.json` is excluded from the commit.
 

@@ -2,8 +2,8 @@
 ## 负责 capabilities：test-verify、product-verify
 
 读取以下文件：
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/test-verify.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-verify.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/test-verify.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/product-verify.md`
 
 ## Contract 表
 

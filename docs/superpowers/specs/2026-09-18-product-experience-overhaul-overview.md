@@ -9,7 +9,7 @@
 系统性改造 myskills 中与产品相关的 skill，使 meta-skill 在无人值守的 `/run` 下，
 产出体验良好的应用或游戏，而不是"功能正确但设计低级"的交付。
 
-## 触发证据（ink-scent，2026-09-14 至 09-16 的 new-product 运行）
+## 触发证据（learning-app，2026-09-14 至 09-16 的 new-product 运行）
 
 - 工作流 13 个节点：契约、内容库、6 个 implement、若干 verify/repair；**零个体验/界面设计节点**。
 - `goals = [create, implement, product-verify, quality-checks]`；`knowledge/capabilities/` 下没有 `create.md`，
@@ -34,7 +34,7 @@
 | 真实宿主下的 bootstrap 对话质量 | absent | 无法在本环境自动证明"真实 LLM 宿主按新协议产出好的体验方向"；属 reality gate 候选 |
 | 远端 `git@github.com:allforai/myskills.git` | 未探测 | 是否允许 push 由授权信封决定 |
 
-机器：18 核 / 128 GB。目标仓库不是会话 cwd（会话在 `ink-scent`），**worktree 隔离无效**，
+机器：18 核 / 128 GB。目标仓库不是会话 cwd（会话在 `learning-app`），**worktree 隔离无效**，
 冲突组对主树串行写入。
 
 ### 测试基线（改造前，干净 main @ 6a59fe44）
@@ -74,7 +74,7 @@
   M2 的体验方向话题对游戏同样适用；M3 的确定性校验强制创意评审节点存在并阻断收尾。
   游戏创意评审 skill 自身的内容与 schema 本轮不改。
 - 修复上述 4 个既有失败测试。
-- 用改造后的 meta-skill 重跑 ink-scent 并返工其首页循环与设置页（属产品仓库的工作，不属本仓库）。
+- 用改造后的 meta-skill 重跑 learning-app 并返工其首页循环与设置页（属产品仓库的工作，不属本仓库）。
 
 ## 探查补充的事实（2026-09-18，三个只读探查）
 

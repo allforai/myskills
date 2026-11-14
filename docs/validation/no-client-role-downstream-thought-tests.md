@@ -8,11 +8,11 @@ This file tracks five runs, in order: an invalid non-isolated baseline (Run 1); 
 
 ## Run 1 — invalid (contaminated)
 
-**Why it is invalid**: the subject ran inside the repository (`/Users/aa/workspace/myskills`) rather than against an isolated packet. Its output reproduced the field name `non_screen_tasks[]` with the exact three keys (`task_id`, `role`, `reason`) that the *plan* (not yet applied to the schema at that point) specified for the fix — meaning the subject had, directly or indirectly, read the plan rather than deriving the design from the schema text alone. A "PASS" reached this way proves nothing about whether the schema's existing text actually carries the constraint.
+**Why it is invalid**: the subject ran inside the repository (`/Users/me/workspace/myskills`) rather than against an isolated packet. Its output reproduced the field name `non_screen_tasks[]` with the exact three keys (`task_id`, `role`, `reason`) that the *plan* (not yet applied to the schema at that point) specified for the fix — meaning the subject had, directly or indirectly, read the plan rather than deriving the design from the schema text alone. A "PASS" reached this way proves nothing about whether the schema's existing text actually carries the constraint.
 
 **Original prompt** (verbatim, as dispatched):
 
-> You are an executor subagent of the meta-skill plugin in /Users/aa/workspace/myskills, running the experience-map design node for a product. Read-only: do not create or edit any file; return your output as text.
+> You are an executor subagent of the meta-skill plugin in /Users/me/workspace/myskills, running the experience-map design node for a product. Read-only: do not create or edit any file; return your output as text.
 >
 > Read these first and follow them as your method:
 > - claude/meta-skill/knowledge/experience-map-schema.md

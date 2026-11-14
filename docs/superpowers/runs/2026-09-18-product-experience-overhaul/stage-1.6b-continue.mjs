@@ -7,7 +7,7 @@ export const meta = {
   ],
 }
 
-const REPO = '/Users/aa/workspace/myskills'
+const REPO = '/Users/me/workspace/myskills'
 const RUN = REPO + '/docs/superpowers/runs/2026-09-18-product-experience-overhaul'
 const CAP = 3
 const EXECUTOR_MODEL = 'opus'
@@ -46,7 +46,7 @@ const TASKS = [
  },
  {
   "id": "T-M5-16",
-  "title": "Real-host acceptance: rerun the original ink-scent request through /bootstrap, /run, /product-review and record the three symptoms",
+  "title": "Real-host acceptance: rerun the original learning-app request through /bootstrap, /run, /product-review and record the three symptoms",
   "touched_paths": [
    "docs/validation/product-experience-host-run.md"
   ],

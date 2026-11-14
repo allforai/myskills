@@ -2,12 +2,12 @@
 ## 负责 capabilities：concept-contract、app-design、game-design（新增字段）、bootstrap（新增字段）
 
 读取以下文件：
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/concept-contract.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/app-design.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/game-design.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/skills/bootstrap/SKILL.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/orchestrator-template.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/scripts/orchestrator/check_artifacts.py`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/concept-contract.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/app-design.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/game-design.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/skills/bootstrap/SKILL.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/orchestrator-template.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/scripts/orchestrator/check_artifacts.py`
 
 ## Contract 表（来自 Codex 改进 spec）
 

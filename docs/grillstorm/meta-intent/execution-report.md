@@ -8,7 +8,7 @@ Approved source: issue #8; task set #9–#18. No task is semantically verified.
 ## Outcome and blocker
 
 T9 has an isolated implementation candidate at `405705f97213397c4f8c53d7eb2e27c1df6c44ca`
-in `/Users/aa/orca/workspaces/myskills/meta-intent-t9`.
+in `/Users/me/orca/workspaces/myskills/meta-intent-t9`.
 Its cumulative base is `cadac5525abf2407fdcd0588252336cba8f60a01`.
 The candidate contains initial commit `f00c61b1` and repairs `c93fc941`, `405705f9`.
 All 11 cumulative changed paths belong to the frozen T9 contract; the worktree is clean.
@@ -70,8 +70,8 @@ historical “not started” language in those snapshots.
 
 ## Preservation and continuation
 
-Integration branch: `j08069099777/grillstorm-meta-intent`, worktree
-`/Users/aa/orca/workspaces/myskills/grillstorm-meta-intent`.
+Integration branch: `user/grillstorm-meta-intent`, worktree
+`/Users/me/orca/workspaces/myskills/grillstorm-meta-intent`.
 Its production content still matches starting commit
 `81acdddca29ab6dde95a1ab72decc2067f3a0f9a`; only run-owned planning/evidence/control
 documents are committed there. The terminal evidence commit is identified by

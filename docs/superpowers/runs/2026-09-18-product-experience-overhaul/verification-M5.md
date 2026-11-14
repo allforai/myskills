@@ -88,9 +88,9 @@ python3 -m pytest -q shared/scripts/orchestrator shared/keep-code-simple pi/cros
 ERROR collecting pi/cross-exam/test_contract.py
 import file mismatch:
 imported module 'test_contract' has this __file__ attribute:
-  /Users/aa/workspace/myskills/shared/keep-code-simple/test_contract.py
+  /Users/me/workspace/myskills/shared/keep-code-simple/test_contract.py
 which is not the same as the test file we want to collect:
-  /Users/aa/workspace/myskills/pi/cross-exam/test_contract.py
+  /Users/me/workspace/myskills/pi/cross-exam/test_contract.py
 ```
 
 `shared/keep-code-simple/test_contract.py` 与 `pi/cross-exam/test_contract.py` 同名且两个目录都没有

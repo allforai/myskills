@@ -23,7 +23,7 @@
    `.codex/commands/run.md`；Pi 无 `AskUserQuestion`（Pi bootstrap 适配器里既有的 `${CLAUDE_PLUGIN_ROOT}` 说明句是合法且被钉住的，不要动）。
 4. pytest 只点名文件；绝不 `pytest pi/meta-skill` 或 `pytest codex/meta-skill`；`claude/superstorm/scripts` 与
    `codex/cross-exam-skill/scripts` 不得同一次调用。meta-skill 全量套件只有 T-M5-14 能跑。
-5. 授权信封：不调用 codex/pi CLI，不 push，不写 `/Users/aa/workspace/ink-scent`，不改 4 个既有失败测试，不删既有测试/夹具。
+5. 授权信封：不调用 codex/pi CLI，不 push，不写 `/Users/me/workspace/learning-app`，不改 4 个既有失败测试，不删既有测试/夹具。
 6. 版本字符串原地精确替换，不 `json.load/dump` 重序列化。
 
 ## 任务图
@@ -159,17 +159,17 @@ python3 -m pytest --co -q shared/scripts/orchestrator/test_codex_contract_checks
 
 ---
 
-## T-M5-06 ink-scent 形状的 bad-workflow 夹具 + "三门皆拒"用例（U1 前半，R-M5-01）
+## T-M5-06 learning-app 形状的 bad-workflow 夹具 + "三门皆拒"用例（U1 前半，R-M5-01）
 
 **行为。** 新增重放输入夹具（不是静态 `.allforai/` 快照）`claude/meta-skill/tests/fixtures/consumer-learning-app/`：
-- `README.md`：来源（ink-scent 2026-09-14~16 new-product 运行的**形状**，非内容拷贝）；"显式产物，不是语义规划器替身"。
+- `README.md`：来源（learning-app 2026-09-14~16 new-product 运行的**形状**，非内容拷贝）；"显式产物，不是语义规划器替身"。
 - `bad-workflow/profile.json`：`task_goal`、`architecture_pattern`、`modules`（Expo 移动端 + Node 服务端，键名取
   `_profile_has_mobile_ui_module` 能识别的形状，移动模块 `role` 为 `mobile`/`frontend`、路径 `mobile/`）、`experience_priority {mode:"consumer", reason}`。
 - `bad-workflow/dialogue.json`：有序 `product_intent.py` 请求数组 `draft`（route `new-product`、`origin: user-request`、六个旧话题；
   "碎片化学习"被直译为"2/5/10 分钟时长选择 + 题型清单"的 `acceptance`）→ `decide`（全 `confirm`，动作键 `operation`）→
   `freeze`（以理由 `exclude` 体验方向缺口；确切 gap id 取 M2 落地后 `resume` 的输出）。
 - `bad-workflow/plan.json`：`plan` 请求，**恰 13 个节点**（1 契约、1 内容库、6 implement、其余 verify/repair）；实现节点把 `experience` 写进自己的
-  `responsibilities`（ink-scent 正是这样让阶段全覆盖通过）；无节点 `exit_artifacts` 以 `.allforai/app-design/` 开头；无节点引用
+  `responsibilities`（learning-app 正是这样让阶段全覆盖通过）；无节点 `exit_artifacts` 以 `.allforai/app-design/` 开头；无节点引用
   `experience-quality-critique`；每节点 `body` ≥ `ATTENTION_CONTRACT_BODY` 的术语；移动端实现节点的 goal/`body` 写出 `screen` 与 `mobile/`，
   使 M1 的界面实现节点识别函数与 M3 触发条件认得出它（否则期望码不出现是夹具形状问题而非上游缺陷）。
   每个冻结意图都有消费节点，且这些节点的 `responsibilities` 并集覆盖六阶段。
@@ -189,7 +189,7 @@ def codes(root) -> dict[str, set[str]]   # 每门一次；三种输出各自的�
 `force_past_front_door=True`：**先断言**带 consumer profile 的 `plan` 被拒且 stdout 含 `ui_product_without_experience_direction`（前门也关着），
 再临时让 `experience_priority` 不生效、`plan`、写回 `consumer`。
 
-**测试意图。** `test_ink_scent_shaped_workflow_is_refused_at_every_public_gate[host]`：三门 `returncode == 1`；三门码**并集** ⊇
+**测试意图。** `test_learning_app_shaped_workflow_is_refused_at_every_public_gate[host]`：三门 `returncode == 1`；三门码**并集** ⊇
 `{missing_experience_design_node, missing_experience_gate, ui_product_without_experience_direction}`；readiness 报告**单独** ⊇ 同一集合
 （只有它不被 scope 短路）；`check_decision_inputs` 的码含 `ui_product_without_experience_direction`；工作流节点数 == 13 且无
 `.allforai/app-design/` 产物（守住夹具自身形状）。任何 `invoke`/`publish_contract` 非零即带 `(stdout, stderr)` 断言失败；期望码缺失时失败信息打印三门完整码集。
@@ -197,7 +197,7 @@ def codes(root) -> dict[str, set[str]]   # 每门一次；三种输出各自的�
 
 **Acceptance.**
 ```bash
-python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_regression.py | grep -q 'test_ink_scent_shaped_workflow_is_refused_at_every_public_gate\[codex\]' && python3 -m pytest -q claude/meta-skill/tests/unit/test_consumer_product_regression.py && python3 -c 'import json; p=json.load(open("claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/plan.json")); s=json.dumps(p); assert ".allforai/app-design/" not in s and "experience-quality-critique" not in s'
+python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_regression.py | grep -q 'test_learning_app_shaped_workflow_is_refused_at_every_public_gate\[codex\]' && python3 -m pytest -q claude/meta-skill/tests/unit/test_consumer_product_regression.py && python3 -c 'import json; p=json.load(open("claude/meta-skill/tests/fixtures/consumer-learning-app/bad-workflow/plan.json")); s=json.dumps(p); assert ".allforai/app-design/" not in s and "experience-quality-critique" not in s'
 ```
 **Write set.** `claude/meta-skill/tests/fixtures/consumer-learning-app/README.md`、
 `…/bad-workflow/profile.json`、`…/bad-workflow/dialogue.json`、`…/bad-workflow/plan.json`、`…/bad-workflow/readiness-spec.json`、
@@ -243,7 +243,7 @@ python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_reg
 
 **行为。** 四个静态文件（仓库里无读取方，与 `specialization` 那一对同性质）：
 - `claude/meta-skill/tests/prompts/new-product-consumer-app.md`：结构对齐 `prompts/specialization.md`（标题 / 角色句 / 输入 / 执行步骤 / 严格输出 schema）；
-  角色"你是 bootstrap skill"；输入为空仓库 + 一段用户请求（消费级语言学习应用、Expo + 服务端、"碎片化时间学习"，**不出现 ink-scent 专名**）；
+  角色"你是 bootstrap skill"；输入为空仓库 + 一段用户请求（消费级语言学习应用、Expo + 服务端、"碎片化时间学习"，**不出现 learning-app 专名**）；
   要读的文件用 `claude/meta-skill/...` 仓库相对路径（含 `claude/meta-skill/skills/bootstrap/SKILL.md`）；输出 schema 只含答案键核对的字段：
   `profile.task_route`、`profile.experience_priority.mode`、`loaded_knowledge[]`、`experience_direction{proposed_count, recommended, user_action}`、
   `workflow.nodes[]{node_id, exit_artifacts[], hard_blocked_by[], skill_refs[]}`、`required_repair_loops[]`。
@@ -257,7 +257,7 @@ python3 -m pytest --co -q claude/meta-skill/tests/unit/test_consumer_product_reg
 
 **Acceptance.**
 ```bash
-python3 -c 'import json; P="claude/meta-skill/tests/expected/new-product-consumer-app"; docs=[json.load(open(P+s)) for s in ("-expected.json","-codex-expected.json")]; need={".allforai/app-design/spec/user-flow-spec.json",".allforai/app-design/spec/screen-requirements-spec.json",".allforai/app-design/qa/experience-quality-critique-design.json",".allforai/app-design/qa/experience-quality-critique-runtime.json"}; assert all(need<=set(d["some_node_exit_artifacts_include"]) and d["profile"]["task_route"]=="new-product" and d["profile"]["experience_priority.mode"]=="consumer" and "assert by node_id" in d["forbidden"] and set(d["experience_direction"]["user_action_in"])=={"select","delegate"} for d in docs)' && grep -rq --exclude-dir=tests 'experience-quality-critique-design.json' claude/meta-skill && grep -rq --exclude-dir=tests 'experience-quality-critique-runtime.json' claude/meta-skill && grep -q 'claude/meta-skill/skills/bootstrap/SKILL.md' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'codex/meta-skill/skills/bootstrap.md' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -qi 'ink-scent' claude/meta-skill/tests/prompts/new-product-consumer-app.md claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\|AskUserQuestion' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md
+python3 -c 'import json; P="claude/meta-skill/tests/expected/new-product-consumer-app"; docs=[json.load(open(P+s)) for s in ("-expected.json","-codex-expected.json")]; need={".allforai/app-design/spec/user-flow-spec.json",".allforai/app-design/spec/screen-requirements-spec.json",".allforai/app-design/qa/experience-quality-critique-design.json",".allforai/app-design/qa/experience-quality-critique-runtime.json"}; assert all(need<=set(d["some_node_exit_artifacts_include"]) and d["profile"]["task_route"]=="new-product" and d["profile"]["experience_priority.mode"]=="consumer" and "assert by node_id" in d["forbidden"] and set(d["experience_direction"]["user_action_in"])=={"select","delegate"} for d in docs)' && grep -rq --exclude-dir=tests 'experience-quality-critique-design.json' claude/meta-skill && grep -rq --exclude-dir=tests 'experience-quality-critique-runtime.json' claude/meta-skill && grep -q 'claude/meta-skill/skills/bootstrap/SKILL.md' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'codex/meta-skill/skills/bootstrap.md' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app.md && grep -q 'experience_priority' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -qi 'learning-app' claude/meta-skill/tests/prompts/new-product-consumer-app.md claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md && ! grep -q 'CLAUDE_PLUGIN_ROOT\|AskUserQuestion' claude/meta-skill/tests/prompts/new-product-consumer-app-codex.md
 ```
 **Write set.** 上述四个文件。
 **depends_on.** 上游汇点 T-M1-07、T-M2-10、T-M3-10、T-M4-07、T-M4-08、T-M6-03、T-M6-04、T-M6-05（见全局约束 1）
@@ -440,11 +440,11 @@ F=docs/superpowers/runs/2026-09-18-product-experience-overhaul/release-commit-me
 
 ### Runbook: real-host bootstrap run
 
-人工步骤（由仓库所有者执行；**不要**在 `/Users/aa/workspace/ink-scent` 里操作——授权信封禁止写入该目录）：
+人工步骤（由仓库所有者执行；**不要**在 `/Users/me/workspace/learning-app` 里操作——授权信封禁止写入该目录）：
 
 1. 安装本分支版本的插件（meta-skill 0.20.0 / superstorm 0.43.0），在 Claude Code 里确认 `/bootstrap` 可用。
-2. 新建一个空目录（如 `~/workspace/ink-scent-rerun`），`git init`，在其中开启新的 Claude Code 会话。
-3. 把 ink-scent 当初的**原始请求原文**（取自 ink-scent 2026-09-14 的会话记录）粘贴给 `/bootstrap`。正常对话，不要提示它"要做体验设计"。
+2. 新建一个空目录（如 `~/workspace/learning-app-rerun`），`git init`，在其中开启新的 Claude Code 会话。
+3. 把 learning-app 当初的**原始请求原文**（取自 learning-app 2026-09-14 的会话记录）粘贴给 `/bootstrap`。正常对话，不要提示它"要做体验设计"。
 4. 观察并记录 bootstrap 对话：
    - 是否在讨论体验之前先给出 2–3 条体验方向提案并标明推荐；提案是否回答"谁/什么情境/什么感受/为何回来"，而不是把"碎片化学习"直译成时长选择器/题型清单（症状 1）；
    - 你选定或说"你定"之后，它记的是 `select` 还是 `delegate`；你沉默时它是否自行确认。

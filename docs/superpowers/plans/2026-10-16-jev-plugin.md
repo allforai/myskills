@@ -358,7 +358,7 @@ def test_append_route_log_appends_lines():
 
 
 def test_transcript_dir_encodes_project_path(tmp_path):
-    assert C.transcript_dir("/Users/aa/workspace/my.skills") == tmp_path / "claude" / "projects" / "-Users-aa-workspace-my-skills"
+    assert C.transcript_dir("/Users/me/workspace/my.skills") == tmp_path / "claude" / "projects" / "-Users-me-workspace-my-skills"
 ```
 
 - [ ] **Step 4: 运行，确认失败**
@@ -3053,7 +3053,7 @@ Expected: 全部 passed
 ```bash
 claude plugin list 2>/dev/null | grep -i 'jev@' && echo "已装同名插件会遮住 --plugin-dir：先停下问用户" || true
 cd "$SCRATCH" && mkdir -p routecheck && cd routecheck && git init -q
-JEV=/Users/aa/workspace/myskills/claude/jev
+JEV=/Users/me/workspace/myskills/claude/jev
 python3 "$JEV/scripts/jev_ctl.py" on --cwd "$PWD"
 claude -p --plugin-dir "$JEV" --model opus --output-format json "Say hello in one word." > turn1.json
 SID=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['session_id'])" turn1.json)
@@ -3076,8 +3076,8 @@ Expected：
 用本仓库最近 30 条提交信息做样例（是用户自己的仓库；临时目录加进放行清单，跑完再移除）：
 
 ```bash
-W="$SCRATCH/batchcheck"; mkdir -p "$W"; B=/Users/aa/workspace/myskills/claude/jev/scripts/jev_batch.py
-git -C /Users/aa/workspace/myskills log -30 --format='%h%x09%s' | python3 -c "
+W="$SCRATCH/batchcheck"; mkdir -p "$W"; B=/Users/me/workspace/myskills/claude/jev/scripts/jev_batch.py
+git -C /Users/me/workspace/myskills log -30 --format='%h%x09%s' | python3 -c "
 import json,sys
 for line in sys.stdin:
     h, s = line.rstrip('\n').split('\t', 1)
@@ -3119,7 +3119,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- CLAUDE.md docs/super
 先运行 `claude plugin --help` 与 `claude plugin marketplace --help`，按当时列出的子命令确认下面的写法。把这几条命令给用户，**用户同意后**再执行安装：
 
 ```bash
-claude plugin marketplace add /Users/aa/workspace/myskills/claude/jev
+claude plugin marketplace add /Users/me/workspace/myskills/claude/jev
 claude plugin install jev@jev
 # 改版后：先改 plugin.json 与 marketplace.json 的 version，再
 claude plugin marketplace update jev

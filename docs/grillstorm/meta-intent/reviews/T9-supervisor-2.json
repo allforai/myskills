@@ -6,7 +6,7 @@
   "verified": false,
   "fixed_candidate": "c93fc9419db540277aa6925aae0b588f3b7a6128",
   "fixed_base": "cadac5525abf2407fdcd0588252336cba8f60a01",
-  "worktree": "/Users/aa/orca/workspaces/myskills/meta-intent-t9",
+  "worktree": "/Users/me/orca/workspaces/myskills/meta-intent-t9",
   "scope": {
     "requirements": [
       "R01",
@@ -86,70 +86,70 @@
       {
         "host": "claude",
         "name": "product_intent.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
         "sha256": "eac6454de23d61ea97d1260be7bfaf2d78f8874fd7013ae7478da2b5dc3cd664",
         "copy_matches": true
       },
       {
         "host": "claude",
         "name": "validate_bootstrap.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
         "sha256": "58765c502521eba705971dfe6c33677249b69f43fa7d9e505b6456cd5f8a72eb",
         "copy_matches": true
       },
       {
         "host": "claude",
         "name": "validate_unattended_readiness.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
         "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
         "copy_matches": true
       },
       {
         "host": "claude",
         "name": "check_artifacts.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/check_artifacts.py",
         "sha256": "4791d59a2d8a2084bf5cd46247ebe2cce1f13eca33f1d002d59b944d50e3721d",
         "copy_matches": true
       },
       {
         "host": "claude",
         "name": "check_decision_inputs.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
         "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
         "copy_matches": true
       },
       {
         "host": "codex",
         "name": "product_intent.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/product_intent.py",
         "sha256": "eac6454de23d61ea97d1260be7bfaf2d78f8874fd7013ae7478da2b5dc3cd664",
         "copy_matches": true
       },
       {
         "host": "codex",
         "name": "validate_bootstrap.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_bootstrap.py",
         "sha256": "58765c502521eba705971dfe6c33677249b69f43fa7d9e505b6456cd5f8a72eb",
         "copy_matches": true
       },
       {
         "host": "codex",
         "name": "validate_unattended_readiness.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/validate_unattended_readiness.py",
         "sha256": "22fb5b5dca3c0c813b85efc71c245c4f5af99f3a70083066976670468abaf767",
         "copy_matches": true
       },
       {
         "host": "codex",
         "name": "check_artifacts.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/check_artifacts.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/orchestrator/check_artifacts.py",
         "sha256": "4791d59a2d8a2084bf5cd46247ebe2cce1f13eca33f1d002d59b944d50e3721d",
         "copy_matches": true
       },
       {
         "host": "codex",
         "name": "check_decision_inputs.py",
-        "resolved_source": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
+        "resolved_source": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts/check_decision_inputs.py",
         "sha256": "9a420ad0cd16b3827b1bbbff735d43a1b71f2b7cfb501e7fe08ff3b05e653d29",
         "copy_matches": true
       }
@@ -217,7 +217,7 @@
     "scope": "Raw synthetic generated-project contracts; no executor fixture imports or host role-play.",
     "records": [
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "valid-local",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -230,7 +230,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "valid-local",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -243,7 +243,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "valid-local",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -270,7 +270,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "incomplete-confirmation",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -283,7 +283,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "incomplete-confirmation",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -296,7 +296,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "incomplete-confirmation",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -333,7 +333,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "confirmation-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -346,7 +346,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "confirmation-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -359,7 +359,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "confirmation-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -386,7 +386,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": null}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -399,7 +399,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": null}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -412,7 +412,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": null}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -453,7 +453,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -466,7 +466,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -479,7 +479,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -506,7 +506,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [null]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -519,7 +519,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [null]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -532,7 +532,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [null]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -559,7 +559,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -572,7 +572,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -585,7 +585,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -612,7 +612,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [\"bad\"]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -625,7 +625,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [\"bad\"]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -638,7 +638,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [\"bad\"]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -665,7 +665,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -678,7 +678,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -691,7 +691,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -718,7 +718,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-unscoped-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -731,7 +731,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-unscoped-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -744,7 +744,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-unscoped-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -782,7 +782,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "retained-completed-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -795,7 +795,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "retained-completed-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -808,7 +808,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "retained-completed-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -835,7 +835,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-unscoped-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -848,7 +848,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-unscoped-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -861,7 +861,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-unscoped-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -899,7 +899,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "retained-completed-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -912,7 +912,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "retained-completed-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -925,7 +925,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "retained-completed-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -952,7 +952,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "product-reconstruction-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -965,7 +965,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "product-reconstruction-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -978,7 +978,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "product-reconstruction-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1020,7 +1020,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-product-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1033,7 +1033,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-product-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1046,7 +1046,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/claude/meta-skill/scripts",
         "case": "new-product-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1088,7 +1088,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "valid-local",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1101,7 +1101,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "valid-local",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1114,7 +1114,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "valid-local",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1141,7 +1141,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "incomplete-confirmation",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1154,7 +1154,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "incomplete-confirmation",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1167,7 +1167,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "incomplete-confirmation",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1204,7 +1204,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "confirmation-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1217,7 +1217,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "confirmation-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1230,7 +1230,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "confirmation-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1257,7 +1257,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": null}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1270,7 +1270,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": null}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1283,7 +1283,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": null}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1324,7 +1324,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1337,7 +1337,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1350,7 +1350,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1377,7 +1377,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [null]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1390,7 +1390,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [null]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1403,7 +1403,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [null]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1430,7 +1430,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1443,7 +1443,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1456,7 +1456,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1483,7 +1483,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [\"bad\"]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1496,7 +1496,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [\"bad\"]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1509,7 +1509,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-{\"nodes\": [\"bad\"]}",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1536,7 +1536,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1549,7 +1549,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1562,7 +1562,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "malformed-corrected-reentry",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1589,7 +1589,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-unscoped-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1602,7 +1602,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-unscoped-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1615,7 +1615,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-unscoped-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1653,7 +1653,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "retained-completed-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1666,7 +1666,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "retained-completed-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1679,7 +1679,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "retained-completed-absent",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1706,7 +1706,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-unscoped-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1719,7 +1719,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-unscoped-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1732,7 +1732,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-unscoped-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1770,7 +1770,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "retained-completed-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1783,7 +1783,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "retained-completed-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1796,7 +1796,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "retained-completed-empty",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1823,7 +1823,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "product-reconstruction-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1836,7 +1836,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "product-reconstruction-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1849,7 +1849,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "product-reconstruction-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1891,7 +1891,7 @@
         }
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-product-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1904,7 +1904,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-product-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",
@@ -1917,7 +1917,7 @@
         "protected_unchanged": true
       },
       {
-        "host_asset_path": "/Users/aa/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
+        "host_asset_path": "/Users/me/orca/workspaces/myskills/meta-intent-t9/codex/meta-skill/scripts",
         "case": "new-product-unconfirmed",
         "command": [
           "/opt/homebrew/opt/python@3.14/bin/python3.14",

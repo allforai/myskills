@@ -6,7 +6,7 @@
 - 分支 `main`；提交 `1d238237ed144ea9c8f091c50470556681f3e507`。调查时间：2026-09-10 10:18–10:21 UTC。开始及派发结束后的 Git 查询均仅有未跟踪 `.pi/`，暂存及未暂存 tracked diff 为空；目标无已发现版本漂移。随后主会话仅新建本报告，不覆盖既有报告。
 - 已发现并完整加载的 skill：`/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-2v5evcm7/packages/pi/skills/keep-code-simple/SKILL.md`。
 - 已完整加载的协议：`/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-2v5evcm7/packages/pi/skills/keep-code-simple/protocol.md`。
-- 已加载安装版 `/Users/aa/.pi/agent/npm/node_modules/pi-subagents/skills/pi-subagents/SKILL.md` 及 `references/{prompting-and-roles,execution-controls,review-and-validation,constraints-and-recipes}.md`，并读取项目代理与设置。未调用 cross-exam 或其他审查 skill。
+- 已加载安装版 `/Users/me/.pi/agent/npm/node_modules/pi-subagents/skills/pi-subagents/SKILL.md` 及 `references/{prompting-and-roles,execution-controls,review-and-validation,constraints-and-recipes}.md`，并读取项目代理与设置。未调用 cross-exam 或其他审查 skill。
 - 明确需求：`README.md:3–11`。Catalog 保留 CSV 字段中的逗号、引号与换行；Search 仅裁剪外侧空白并转小写，内部空白有意义；Billing 每张发票仅收一次、同键重试复用回执、记账供对账。README 明确为无真实客户、网关和凭据的夹具，无用量指标；不能把夹具当生产运行证据。
 - 全库地图在派发前完成：主会话完整读取 README、全部六个 Python 文件（Catalog 两个、Search/Billing/Shared/Tests 各一个）；跨 `src` 搜索导出、规范化、收款及公共实现符号。入口为各模块函数，仓库内调用证据仅测试和 history→shared；未发现应用入口、其他指导/spec/ADR、依赖声明或锁文件。标准库约束依据 README 与源码 import，不是安装环境检测。
 - 分区覆盖：Billing 已深入独立静态调查并由主会话合并；Catalog、Search 已由主会话在摸底时完整读源码及相关测试，但委派调查失败，独立调查与等价性复核未完成。它们的下述候选仅为派发前证据形成的待证假设，不是失败后的串行替代执行。Shared/Tests 已读；`.pi/` 仅检查调度配置；Git 对象、hooks、缓存、生成物、秘密文件不作业务审查。仓库外调用者、部署、真实存储与网关未查。

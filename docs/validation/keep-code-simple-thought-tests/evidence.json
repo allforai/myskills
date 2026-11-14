@@ -79,14 +79,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "bb30c2318189144d6149136d539a72af1206b53b6b1ca99c3ba938c79ca56199",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T01.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T01.md",
       "output_sha256": "956cf13c1dfaba54025b0c7edd22c2bd51a1ab72f0996f131dc1e0b93e72d374",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/80a15c1c-bda0-4891-8898-62c57649c423/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/80a15c1c-bda0-4891-8898-62c57649c423/run-0/session.jsonl",
       "session_sha256": "3594fc4ace16bad87dcb9ba8d821bcbb260f7141ebbd8e2f387397d46f09fb26",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T01.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T01.md"
         }
       ],
       "verdict": "pass"
@@ -101,14 +101,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "9464df1e5dec6848ec374b1f7f056fe33cd7366136113127aa7050b4cb49a636",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T02.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T02.md",
       "output_sha256": "ffcd21fb681ddc1e5bb59704fa5a00e452d552dd562a4093bdf0468032e04dd0",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/af17b2a0-f306-4104-8332-fe506d5720be/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/af17b2a0-f306-4104-8332-fe506d5720be/run-0/session.jsonl",
       "session_sha256": "36621c2e072db52981eb811352699b659317a5f5aa5c2f2213ff7f6b964ac5dd",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T02.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T02.md"
         }
       ],
       "verdict": "pass_after_rubric_correction"
@@ -123,14 +123,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "94e55d85df17c605154c7005c3af65a0770b5ec47e0c5bb57f3147e0316d1a73",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T03.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T03.md",
       "output_sha256": "db2f0ca5d21c4e798b4ad712ed550f34ebb3a32ec5edec71cfce37488625c350",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/7a7e5774-e7fa-4e3a-b477-d91cd05755db/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/7a7e5774-e7fa-4e3a-b477-d91cd05755db/run-0/session.jsonl",
       "session_sha256": "3b79ddfd65f91da5fbed7b795051ac6c835aa461aa183c90643ad48fb393a686",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T03.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T03.md"
         }
       ],
       "verdict": "pass"
@@ -145,18 +145,18 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "f83657d9d2f19bfca6c41fb59305c95f1c147adce1ac0b089ce1f37df71dfec7",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T04.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T04.md",
       "output_sha256": "81b8fde1aa8ef2544d77b4962ddfb96d71ed23cbb388df5a4cc9d489070e770d",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6c3f6772-b03b-491f-932e-2fe96be8aa52/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/6c3f6772-b03b-491f-932e-2fe96be8aa52/run-0/session.jsonl",
       "session_sha256": "da0626f863c031b57fc2fe87cf8a41cd4e1e0a01129cabbda5fc17e26d324bc0",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T04.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T04.md"
         },
         {
           "name": "edit",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T04.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T04.md"
         }
       ],
       "verdict": "pass"
@@ -171,18 +171,18 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "648bcdcff14eeeef6e6025298df08a51065e8ce1a9d9faa9a339bcdf02d08ac0",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T05.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T05.md",
       "output_sha256": "8be90456e220712e7f11ae63d6bd9d7df21b8a569fd4dc9d5433f998002cb99f",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/9803c845-25f2-499d-beec-c166a9f03ce2/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/9803c845-25f2-499d-beec-c166a9f03ce2/run-0/session.jsonl",
       "session_sha256": "5f1b678624453e76bee11e60e582ce87ab20e7f98917f59dead3dbbe0948c1e8",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T05.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T05.md"
         },
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T05.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T05.md"
         }
       ],
       "verdict": "pass"
@@ -197,14 +197,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "1407431c2c8fbc302b01258ddc2bfe9b6043cf76a981cf002936ad13a6d9bbe4",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T06.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T06.md",
       "output_sha256": "649d36ab9e9a6d1e1fac78931a17e3c9eb0955a1ce5f839862035719f220fee4",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/dac5a488-8a20-4520-a064-3a9bb20eedd5/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/dac5a488-8a20-4520-a064-3a9bb20eedd5/run-0/session.jsonl",
       "session_sha256": "57d07ef175a47fc21e44c1190a21baa9d2bc5a4503fae6913be5b801f9aab657",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T06.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T06.md"
         }
       ],
       "verdict": "pass"
@@ -219,14 +219,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "0a8e39177ed5fc12c220c92b7991ba09443116975ae4a815f1bc363ccf627102",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T07.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T07.md",
       "output_sha256": "8275582f66a7e1af282d4f5dfdc68c0b29a25cf402b712b81ecec2de437ed3a3",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/03c5a503-9261-4c9c-9716-7b7cf9c265ea/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/03c5a503-9261-4c9c-9716-7b7cf9c265ea/run-0/session.jsonl",
       "session_sha256": "13daa56851fe0a5b2a878a0f6daf7a1935fa94a9a987f728653bd0edc6f625c2",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T07.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T07.md"
         }
       ],
       "verdict": "pass"
@@ -241,14 +241,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "4a97070ca26fb3d554336b3742ea3fde24f512bd41d50facfebe1786d41ad628",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T08.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T08.md",
       "output_sha256": "1232cdd7a1613ff655da2878aee819a7bcfa164ee187a3e408eaa5dc7b9a1226",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/5f5c95de-d33b-47cf-b89e-29ef32e2c1da/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/5f5c95de-d33b-47cf-b89e-29ef32e2c1da/run-0/session.jsonl",
       "session_sha256": "f0f1cd09765f59ee30172e8c35d9f82e057f3c1f2c49087effd02a00f9b25e2f",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T08.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T08.md"
         }
       ],
       "verdict": "pass"
@@ -263,14 +263,14 @@
         "openai-codex/gpt-6-astra"
       ],
       "prompt_sha256": "b1f77761f3bdf5c1294e82a0265ea7d62a47811bae667d679723b1abbe635d31",
-      "output_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T09.md",
+      "output_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T09.md",
       "output_sha256": "5594bc317ab2ab21538dff3effe36c5d6ec2e492a55ab2446f042b37ca16a50f",
-      "session_source": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/87883f48-3155-4116-ac9e-94d231895ff6/run-0/session.jsonl",
+      "session_source": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/2026-09-10T03-54-06-670Z_01a08973-8dce-7059-97d8-cdadbf95f1d2/87883f48-3155-4116-ac9e-94d231895ff6/run-0/session.jsonl",
       "session_sha256": "0b6dc1f61306f753ebb5509cb1bb7ae24c3bccb1087f6acb823008045c16a33d",
       "observed_tool_calls": [
         {
           "name": "write",
-          "path": "/Users/aa/.pi/agent/sessions/--Users-aa-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T09.md"
+          "path": "/Users/me/.pi/agent/sessions/--Users-me-orca-workspaces-myskills-keep_is_simple--/subagent-artifacts/outputs/c138909a-4b0d-4fb1-9834-1d2c91668eac/T09.md"
         }
       ],
       "verdict": "pass"

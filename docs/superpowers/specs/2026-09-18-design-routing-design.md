@@ -434,7 +434,7 @@ M1 由三层构成，层间只靠两个数据契约耦合：
 |---|---|---|
 | `test_experience_coverage_passes_with_design_node_blocking_ui_implementation` | 基准图，`mode=consumer` | `[]` |
 | `test_experience_coverage_rejects_missing_experience_priority` | 参数化 3 形：缺字段 / `mode="premium"` / 缺 `reason` | 仅 `missing_experience_priority` |
-| `test_experience_coverage_rejects_workflow_without_design_node` | 去掉设计节点（ink-scent 形状） | `missing_experience_design_node`，消息含 user-flow 与 screen-requirements 路径 |
+| `test_experience_coverage_rejects_workflow_without_design_node` | 去掉设计节点（learning-app 形状） | `missing_experience_design_node`，消息含 user-flow 与 screen-requirements 路径 |
 | `test_experience_coverage_rejects_ui_implementation_not_blocked_by_design` | 设计节点在，但 `implement-mobile.hard_blocked_by=[]`；另加经中间节点传递依赖的 `implement-web` | 仅 `implement-mobile` 被报，`node_id` 正确 |
 | `test_experience_coverage_rejects_experience_not_applicable_on_ui_product` | 基准图 + `not_applicable={"experience": "skip"}`，`mode=admin` | `experience_not_applicable_on_ui_product` |
 | `test_experience_coverage_ignores_local_change` | 无设计节点、无 `experience_priority`，`route="local-change"` | `[]` |
@@ -458,7 +458,7 @@ M1 由三层构成，层间只靠两个数据契约耦合：
 - 误判方向的取舍：界面实现节点靠词项识别，可能把提到 "screen" 的后端实现节点算进来。后果是要求它
   也依赖设计节点——代价是一条 `hard_blocked_by` 边，方向安全。漏判的兜底是第 8 步：只要识别出任一
   界面实现节点，缺设计节点就被拒。
-- 已 bootstrap 的旧产品路线项目（如 ink-scent）在下次 `/run` 会得到 `missing_experience_priority`，
+- 已 bootstrap 的旧产品路线项目（如 learning-app）在下次 `/run` 会得到 `missing_experience_priority`，
   消息指向交互式 `/bootstrap`。这是需求的本意（R-M1-07 要求注册进 `structural_gate_blockers`），
   需在 M5 的发布说明里披露。
 - 知识文本侧：§3.5.0b 缺口为阻断并就地自修；`validate_meta_contracts.py` 在措辞被后续模块改掉时失败。
@@ -500,7 +500,7 @@ M1 由三层构成，层间只靠两个数据契约耦合：
 
 在临时副本（已删除）里按 U7 写了原型并实测：
 
-- 对真实的 `ink-scent/.allforai/bootstrap/`（13 节点、零设计节点）：原样 → `missing_experience_priority`；
+- 对真实的 `learning-app/.allforai/bootstrap/`（13 节点、零设计节点）：原样 → `missing_experience_priority`；
   给 profile 补 `mode=consumer` 后 → 两条 `missing_experience_design_node`（user-flow、screen-requirements）。
   即本次改造的触发事故会被确定性拒绝。
 - 原型 + `project()` 夹具一行：`test_validate_bootstrap`、`test_validate_unattended_readiness`、

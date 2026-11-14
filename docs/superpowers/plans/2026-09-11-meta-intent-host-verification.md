@@ -62,7 +62,7 @@ Cell counts: T15 14 (7 scenes × 2 hosts), T16 14, T17 16, T18 16 — 60 cells.
 - [ ] **Step 1: Pin the candidate and verify the tree is what the audit proved**
 
 ```bash
-cd /Users/aa/workspace/myskills
+cd /Users/me/workspace/myskills
 git fetch -q origin && test "$(git log --oneline HEAD..origin/main | wc -l)" = 0
 CANDIDATE=$(git rev-parse HEAD)          # 01146b70 at plan time; the audit proved this tree
 echo "$CANDIDATE"

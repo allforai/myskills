@@ -5,7 +5,7 @@
 - repo/cwd：`/private/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g/pi`。
 - 调查时间：2026-09-10 18:27–18:30（+08:00）；分支 `main`，提交 `1d238237ed144ea9c8f091c50470556681f3e507`。开始及合并前均仅有未跟踪 `.pi/`；`git diff -- src README.md` 为空，HEAD 未变。无目标版本漂移。唯一主动新增的项目文件为本报告；宿主日志另由宿主管理。
 - 实际使用已发现入口：`/var/folders/yk/1lzd8nn12m50n2l4gd8r28340000gp/T/keep-code-simple-native-retry-25ohcm2g/packages/pi/skills/keep-code-simple/SKILL.md`（本次用户消息完整加载）。主会话完整读取同目录 `protocol.md`。
-- 派发适配：完整读取 `/Users/aa/.pi/agent/npm/node_modules/pi-subagents/skills/pi-subagents/SKILL.md` 及其 `references/{prompting-and-roles,execution-controls,review-and-validation,constraints-and-recipes}.md`；执行能力发现、模型发现，读取 `.pi/settings.json`，未安装或更改任何配置。
+- 派发适配：完整读取 `/Users/me/.pi/agent/npm/node_modules/pi-subagents/skills/pi-subagents/SKILL.md` 及其 `references/{prompting-and-roles,execution-controls,review-and-validation,constraints-and-recipes}.md`；执行能力发现、模型发现，读取 `.pi/settings.json`，未安装或更改任何配置。
 - 明确需求：`README.md:3–11`，synthetic fixture，无真实客户、凭据、网关；Catalog 保留字段中的逗号/引号/换行并使用共享 CSV 接口；Search 只清理外部空白并转小写，保留内部空白；Billing 同一发票只收一次、同 key 重试复用结果、记录供对账。README 是本次需求依据，不把源码现状当需求。
 - 全局摸底先于派发：枚举全仓库，读取 README、全部六个 Python 文件和配置。已深入三个业务区（Catalog、Search、Billing）、共享实现及唯一测试文件；主会话对 `src` 搜索导出/标准化/收款符号及 ledger/gateway 调用。除合同测试外未发现这些公共入口的调用方。未发现额外 spec/ADR/项目指导或依赖声明/锁文件；README 声明仅 Python 标准库。没有为消除小重复引入三方库。
 - 仅枚举/排除：`.git` 内部文件、宿主配置以外的运行元数据；不审生成物、缓存、二进制或秘密内容。未查：仓库外调用方、Python 运行版本、真实网关/账本及生产恢复机制；不存在用量指标，用户量、频率、统计时间范围未知。

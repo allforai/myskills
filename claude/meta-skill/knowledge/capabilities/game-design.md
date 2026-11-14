@@ -503,7 +503,7 @@ Specialized skill generation rules:
 - If runtime validation is required but cannot run, the specialized skill must
   block with a clear status rather than substituting a weaker fallback.
 
-For path-connection matching projects such as Glow Island, the bootstrap-time
+For path-connection matching projects, the bootstrap-time
 specialization should generate project-local guidance for tile-family
 readability, board path-feedback readability, and solver/difficulty QA derived
 from the project's puzzle spec and runtime matcher.

@@ -67,7 +67,7 @@ roots, but the canonical reusable standard lives under `.allforai/visual-qa/`.
 ```json
 {
   "schema_version": "1.0",
-  "project_id": "glow-island",
+  "project_id": "sample-game",
   "criteria_id": "runtime-production-visual-v1",
   "scope": "game_art | game_ui | game_runtime | app_ui | html_gate | generated_image | mixed",
   "visual_promise": {

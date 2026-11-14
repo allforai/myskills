@@ -4,7 +4,7 @@ export const meta = {
   phases: [{ title: 'Reverse review', detail: 'two fresh critics split by module group, then a cross-module pass' }],
 }
 
-const REPO = '/Users/aa/workspace/myskills'
+const REPO = '/Users/me/workspace/myskills'
 const SPECS = REPO + '/docs/superpowers/specs'
 const PLANS = REPO + '/docs/superpowers/plans'
 const RUN = REPO + '/docs/superpowers/runs/2026-09-18-product-experience-overhaul'
@@ -33,7 +33,7 @@ function prompt(scope, focus) {
     '- Designs (frozen requirements on top, `## Detailed design` below): ' + SPECS + '/2026-09-18-*-design.md',
     '- Plans: ' + PLANS + '/2026-09-18-*-plan.md',
     '- Machine-readable task contracts (what the executor and the DAG actually consume): ' + RUN + '/tasks/M1.json … M6.json',
-    '- Task validator: python3 /Users/aa/.claude/plugins/cache/myskills/superstorm/0.42.2/scripts/validate_plan_tasks.py <tasks.json> ' + RUN + '/registry.json',
+    '- Task validator: python3 /Users/me/.claude/plugins/cache/myskills/superstorm/0.42.2/scripts/validate_plan_tasks.py <tasks.json> ' + RUN + '/registry.json',
     '',
     'Your scope: ' + scope,
     '',

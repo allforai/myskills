@@ -1,6 +1,6 @@
 # T12 corrupt-read corrections (#12 recheck C2)
 
-Worker checkout `/Users/aa/orca/workspaces/myskills/meta-intent-t12`, candidate
+Worker checkout `/Users/me/orca/workspaces/myskills/meta-intent-t12`, candidate
 `90257b15`, uncommitted. Corrects C2 from `T11-T12-spec-recheck.md`: the copied
 freshness CLI raised an uncaught `AttributeError` when
 `.allforai/bootstrap/observed-input-dependencies.json` (the dynamic-read

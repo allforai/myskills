@@ -2,10 +2,10 @@
 ## 负责 capabilities：demo-forge、quality-checks、code-tuner、launch-prep
 
 读取以下文件：
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/demo-forge.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/quality-checks.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/tune.md`
-- `/Users/aa/workspace/myskills/claude/meta-skill/knowledge/capabilities/launch-prep.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/demo-forge.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/quality-checks.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/tune.md`
+- `/Users/me/workspace/myskills/claude/meta-skill/knowledge/capabilities/launch-prep.md`
 
 ## Contract 表
 

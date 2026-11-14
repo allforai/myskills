@@ -73,4 +73,4 @@ def test_append_route_log_appends_lines():
 
 
 def test_transcript_dir_encodes_project_path(tmp_path):
-    assert C.transcript_dir("/Users/aa/workspace/my.skills") == tmp_path / "claude" / "projects" / "-Users-aa-workspace-my-skills"
+    assert C.transcript_dir("/Users/me/workspace/my.skills") == tmp_path / "claude" / "projects" / "-Users-me-workspace-my-skills"

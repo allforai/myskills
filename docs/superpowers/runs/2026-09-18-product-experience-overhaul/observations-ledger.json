@@ -554,7 +554,7 @@
  {
   "task_id": "T-M5-10",
   "scope": "task:T-M5-10",
-  "finding": "The raw stream-json traces and packets that prove isolation exist only in a session scratchpad outside the repo: /private/tmp/claude-502/-Users-aa-workspace-ink-scent/3f958959-d533-4f80-8a70-ea565e9d002a/scratchpad/pxt. They are not committed, so later auditors cannot re-verify observed_tool_calls once that directory is cleaned up. The contract does not require committing them.",
+  "finding": "The raw stream-json traces and packets that prove isolation exist only in a session scratchpad outside the repo: /private/tmp/claude-502/-Users-me-workspace-learning-app/3f958959-d533-4f80-8a70-ea565e9d002a/scratchpad/pxt. They are not committed, so later auditors cannot re-verify observed_tool_calls once that directory is cleaned up. The contract does not require committing them.",
   "evidence": "ls of scratchpad/pxt shows raw-E1..E9.jsonl, pe-packet-E*.md and void-E5-run1.jsonl; evidence.json records the paths as '<scratchpad>/pe-packet-E<n>.md'."
  },
  {

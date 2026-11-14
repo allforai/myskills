@@ -1,6 +1,6 @@
 # T12 admission downgrade corrections (#12 legacy-downgrade holes)
 
-Worker checkout `/Users/aa/orca/workspaces/myskills/meta-intent-t12`, starting HEAD
+Worker checkout `/Users/me/orca/workspaces/myskills/meta-intent-t12`, starting HEAD
 `5cab4f8f`, on top of the uncommitted T12 correction tree. Follows
 `T12-admission-corrections.md`. Owned files: `check_artifacts.py`, new
 `tests/unit/test_freshness_downgrade.py`, this report. `evidence_freshness.py`,
