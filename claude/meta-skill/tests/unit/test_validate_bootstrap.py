@@ -1758,3 +1758,96 @@ def test_producers_of_parallel_parts_may_share_one_acceptance_list(tmp_path):
     nodes = _reviewed_graph()
     nodes[0]["acceptance"] = nodes[2]["acceptance"]
     assert _inline_errors(tmp_path, nodes) == []
+
+
+# Use-case authoring (planning Must #10): how the product is tested is decided while it is
+# built. The rule is about the graph only — a producer of the cases exists, it does not wait
+# for the code, product-verify waits for it, and on a designed interface it waits for the design.
+
+USE_CASE_TREE = ".allforai/use-case/use-case-tree.json"
+_USE_CASE_DRIVER = _COVERAGE_DRIVER.replace("experience_design_coverage_findings",
+                                            "use_case_authoring_findings")
+
+
+def _use_case_codes(host, bdir):
+    scripts = Path(__file__).resolve().parents[4] / host / "meta-skill/scripts/orchestrator"
+    result = subprocess.run([sys.executable, "-c", _USE_CASE_DRIVER, str(scripts), str(bdir)],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    findings = json.loads(result.stdout)
+    assert all(RETURN_TO_BOOTSTRAP in f["message"] for f in findings), findings
+    return _codes(findings)
+
+
+def _use_case_node(**overrides):
+    node = _base_node(node_id="use-cases", capability="use-case",
+                      goal="Write the acceptance cases from the design",
+                      exit_artifacts=[USE_CASE_TREE], hard_blocked_by=["experience-design"])
+    node.update(overrides)
+    return node
+
+
+def _verify_node(**overrides):
+    node = _base_node(node_id="product-verify-mobile", capability="product-verify",
+                      goal="Walk every acceptance case",
+                      exit_artifacts=[".allforai/product-verify/verify-report.json"],
+                      hard_blocked_by=["implement-mobile", "use-cases"])
+    node.update(overrides)
+    return node
+
+
+def _use_case_project(tmp_path, *extra, cases=None, verify=None, **kwargs):
+    nodes = [_design_node(EXPERIENCE_DESIGN_ARTIFACTS), _ui_implementation_node(),
+             cases if cases is not None else _use_case_node(),
+             verify if verify is not None else _verify_node(), *extra]
+    return _experience_project(tmp_path, nodes=[n for n in nodes if n], **kwargs)
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_use_cases_written_beside_implementation_pass(tmp_path, host):
+    assert _use_case_codes(host, _use_case_project(tmp_path)) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_product_verify_without_a_use_case_node_is_refused(tmp_path, host):
+    bdir = _use_case_project(tmp_path, cases=False, verify=_verify_node(hard_blocked_by=["implement-mobile"]))
+    assert _use_case_codes(host, bdir) == ["missing_use_case_node"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_cases_that_wait_for_the_code_are_refused(tmp_path, host):
+    bdir = _use_case_project(tmp_path, cases=_use_case_node(
+        hard_blocked_by=["experience-design", "implement-mobile"]))
+    assert _use_case_codes(host, bdir) == ["use_case_node_after_implementation"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_verify_that_does_not_wait_for_the_cases_is_refused(tmp_path, host):
+    bdir = _use_case_project(tmp_path, verify=_verify_node(hard_blocked_by=["implement-mobile"]))
+    assert _use_case_codes(host, bdir) == ["verify_not_blocked_by_use_cases"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_interface_cases_wait_for_the_experience_design(tmp_path, host):
+    bdir = _use_case_project(tmp_path, cases=_use_case_node(hard_blocked_by=[]))
+    assert _use_case_codes(host, bdir) == ["use_cases_not_blocked_by_experience_design"]
+    # no designed interface, nothing to wait for
+    headless = _use_case_project(tmp_path / "headless", cases=_use_case_node(hard_blocked_by=[]),
+                                 priority={"mode": "none", "reason": "A batch job"})
+    assert _use_case_codes(host, headless) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_use_case_rule_is_silent_without_product_verify_or_off_the_product_route(tmp_path, host):
+    design_only = _experience_project(tmp_path / "a")   # design + implementation, nobody to read cases
+    local = _use_case_project(tmp_path / "b", cases=False, route="local-change",
+                              verify=_verify_node(hard_blocked_by=["implement-mobile"]))
+    assert _use_case_codes(host, design_only) == [] and _use_case_codes(host, local) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_main_registers_the_use_case_rule(tmp_path, host):
+    bdir = _use_case_project(tmp_path, cases=False, verify=_verify_node(hard_blocked_by=["implement-mobile"]))
+    _write(bdir / "node-specs", "implement-mobile.md", "Implement the mobile screen stack\n")
+    returncode, report = _main_report(host, bdir)
+    assert returncode == 1 and any(e.startswith("missing_use_case_node: ") for e in report["errors"]), report

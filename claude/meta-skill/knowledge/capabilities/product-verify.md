@@ -288,9 +288,11 @@ of acceptance is the case, and its evidence is what a person standing behind the
 seen. Parity checks and screen visits above show the product is assembled; only a walked case shows
 it does what was asked.
 
-The cases are product-analysis's: `.allforai/use-case/use-case-tree.json`, `cases[]`, each with an
-`id` and a Given / When / Then (schema: `product-analysis.md`). This node is the one that walks
-them. What must hold when it finishes:
+The cases were written before this node started, from the design, beside the implementation
+(`use-case.md`; planning Must #10): `.allforai/use-case/use-case-tree.json`, `cases[]`, each with
+an `id` and a Given / When / Then (schema: `product-analysis.md`). Deciding what to walk is not
+this node's job, and that is deliberate — a walk list made up in front of the finished product
+covers what the product shows and misses what it lacks. This node is the one that walks them. What must hold when it finishes:
 
 - **Every case is walked, under its own id.** For each case there is at least one evidence entry
   (the ledger shape above) carrying `case: "<cases[].id>"`, written from one continuous walk of the
@@ -300,7 +302,9 @@ them. What must hold when it finishes:
   not be made, with the reason file the engine asks for. A case carrying `deferred_by` is out of
   this delivery and needs no entry. There is no other way for a case to be absent.
 - **The cases are not this node's to edit.** A missing file, a case without an id or a clause, a
-  flow with no case, a Then nobody could observe: return `UPSTREAM_DEFECT` naming product-analysis.
+  flow with no case, a Then nobody could observe: return `UPSTREAM_DEFECT` naming the node that
+  produced the tree. A walk that turns up something no case covers is reported the same way, as a
+  case still owed, and recorded in `observations[]`.
   Never invent a case to have something to walk, reword one until it passes, merge two into one
   walk's verdict, or verify "what is there" in place of the cases.
 - **A case with an interface is shown, not described.** When the case's `screen_refs` is non-empty,
@@ -427,7 +431,7 @@ The experience-quality critique's `audience_leak` dimension
 4. **Evidence-based**: Each check records screenshot or response body as proof.
 5. **Screenshot-backed UI acceptance**: UI modules require screenshots plus reviewer one visual review. DOM-only or assertion-only product verification is incomplete.
 6. **Audience isolation**: an end-user surface shows `end-user` items only. An operator or developer item reachable by the end-user role is a finding — `contract_gaps` when the spec never named its audience, `code_gaps` when the spec did and the build ignored it.
-7. **Use-case acceptance**: every case in `use-case-tree.json` is walked under its own id; a case with an interface is shown in frames (and a recording when its Then happens in time), and the human report is the one `check_use_case_evidence.py` renders. The cases are product-analysis's — never invented, reworded or dropped here.
+7. **Use-case acceptance**: every case in `use-case-tree.json` is walked under its own id; a case with an interface is shown in frames (and a recording when its Then happens in time), and the human report is the one `check_use_case_evidence.py` renders. The cases are their producer's — never invented, reworded or dropped here.
 
 ## Knowledge References
 

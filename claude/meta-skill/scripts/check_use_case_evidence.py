@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """product-verify gate — every use case is walked, and the walk is shown (ADR-0010 receiver guard).
 
-product-analysis writes the acceptance cases (`.allforai/use-case/use-case-tree.json`, Given / When /
-Then); product-verify is the node that walks them. This gate joins the two: a case nobody walked is
+The use-case node writes the acceptance cases beside the implementation
+(`.allforai/use-case/use-case-tree.json`, Given / When / Then); product-verify is the node that walks them. This gate joins the two: a case nobody walked is
 named, a case with an interface is admitted only with frames a person can look at — the state it
 started from and the outcome it ended in — and a recording never stands in for frames, because the
 reviewer judged stills. It then renders the human report from the same records, so the report cannot
@@ -26,7 +26,7 @@ ENTRIES_DIR = "evidence-entries"
 CLAUSES = ("given", "when", "then")
 KINDS = ("happy", "exception", "boundary")
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".gif"}
-UPSTREAM = "上游缺陷（product-analysis）："
+UPSTREAM = "上游缺陷（用例生产节点）："
 # worst first: a case walked on several clients shows the worst of them
 VERDICT_ORDER = ("gap", "drift", "unprovable", "done")
 LABELS = {"done": "通过", "gap": "未通过", "drift": "与设计不一致", "unprovable": "无法验证",

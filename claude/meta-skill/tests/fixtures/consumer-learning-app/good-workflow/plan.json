@@ -132,6 +132,32 @@
       "body": "\n## Attention Contract\n- Primary outcome: every must-fix the design review recorded is answered in the specifications\n- Non-goals / out-of-scope: do not close a finding by narrowing the direction that produced it.\n- Must-read inputs: the design review report and the specifications it judged.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: is each must-fix closed in the specification, or only argued with?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
     },
     {
+      "node_id": "write-acceptance-cases",
+      "capability": "use-case",
+      "goal": "Write the acceptance cases, interface cases included, from the reviewed design while the code is being written",
+      "intent_ids": [
+        "target-users",
+        "scenarios",
+        "core-problem",
+        "value-proposition",
+        "business-loop",
+        "tradeoffs",
+        "experience-direction-steady-drip"
+      ],
+      "responsibilities": [
+        "verification"
+      ],
+      "source_inputs": [],
+      "exit_artifacts": [
+        ".allforai/use-case/use-case-tree.json"
+      ],
+      "hard_blocked_by": [
+        "review-experience-design",
+        "repair-experience-design"
+      ],
+      "body": "\n## Attention Contract\n- Primary outcome: the journeys of the steady-drip direction, and what each screen owes them\n- Non-goals / out-of-scope: do not decide how a screen is built here; this node decides what it must do.\n- Must-read inputs: the product contract, the chosen experience direction and its acceptance.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does every job a learner comes with reach a flow, and every flow a specified screen?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
+    },
+    {
       "node_id": "implement-mobile-screens",
       "capability": "implement",
       "goal": "Implement the mobile/ screens of the steady-drip pass: home, session and progress, exactly as the screen requirements specify them",
@@ -209,7 +235,8 @@
       ],
       "hard_blocked_by": [
         "implement-mobile-screens",
-        "implement-service-api"
+        "implement-service-api",
+        "write-acceptance-cases"
       ],
       "body": "\n## Attention Contract\n- Primary outcome: a run that proves each confirmed acceptance line on the built product\n- Non-goals / out-of-scope: do not accept a criterion on a described behaviour instead of a run.\n- Must-read inputs: the product contract and every implementation node's report.\n- Optional inputs: none.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: is each acceptance line proved by an observed effect?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
     },
@@ -234,7 +261,8 @@
         ".allforai/quality-checks/react-native-ui-test-report.json"
       ],
       "hard_blocked_by": [
-        "implement-mobile-screens"
+        "implement-mobile-screens",
+        "write-acceptance-cases"
       ],
       "body": "\n## Attention Contract\n- Primary outcome: a detox run of each learner flow, interruption included, with its runner evidence kept\n- Non-goals / out-of-scope: do not replace the automated run with documented manual scenarios.\n- Must-read inputs: the journey specification and the mobile implementation report.\n- Optional inputs: report BLOCKED_ENV when no simulator or device is available.\n- Context budget: read the frozen scope and this node's own inputs, nothing else.\n- Quality questions: does the react-native-ui-test-report cover every flow, or only the shortest pass?\n- Stop conditions: stop when a required input is missing or unconfirmed.\n- Repair targets: code_gaps, quality_gaps.\n"
     },

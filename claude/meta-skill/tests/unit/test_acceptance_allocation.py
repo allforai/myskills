@@ -58,7 +58,10 @@ def plan_request(*, owner="release-verification", acceptance_node_ids=TOPICS):
     return {"operation": "plan", "not_applicable": {
         "experience": "Operator CLI in this scope has no user interface"}, "nodes": [
         node("build-claim-flow", "implement", "Build the durable atomic claim",
-             ["product", "technical", "implementation"], EFFECT),
+             ["product", "technical", "implementation"], EFFECT,
+             # the claim cases are written with the claim flow: a product-verify node needs a producer
+             exit_artifacts=[".allforai/bootstrap/build-claim-flow.json",
+                             ".allforai/use-case/use-case-tree.json"]),
         node("operator-documentation", "generate-artifacts", "Document the claim rule as built",
              ["documentation"], DOC_EFFECT, hard_blocked_by=["build-claim-flow"],
              required_documents=[GUIDE], downstream_effect_owner=owner,

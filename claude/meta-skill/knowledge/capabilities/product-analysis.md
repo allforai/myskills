@@ -164,7 +164,9 @@ names a state the product can be put in, `then` names something visible on a scr
 an output. `screen_refs` decides how product-verify must show the walk — frames for a case with an
 interface, output files for one without — so `[]` is a statement that the case has no interface,
 never a field left empty. A case that is out of this delivery stays in the tree with `deferred_by`;
-deleting it would make the deferral invisible.
+deleting it would make the deferral invisible. When the plan carries a use-case node
+(`use-case.md`), the cases written here are its starting set: it keeps every `id` and adds the
+interface cases once the screens are designed.
 
 `tasks[].id`, `roles[].id` and `cases[].id` are foreign key roots for all downstream capabilities.
 Every capability that references a task, role or case MUST use these IDs.

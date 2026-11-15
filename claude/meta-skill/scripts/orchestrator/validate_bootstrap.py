@@ -2517,6 +2517,107 @@ def validate_experience_design_coverage(bdir: str) -> list:
     return _rendered(experience_design_coverage_findings(bdir))
 
 
+USE_CASE_TREE_PATH = ".allforai/use-case/use-case-tree.json"
+USE_CASE_VERIFY_CAPABILITY = "product-verify"
+
+
+def use_case_authoring_findings(bdir: str) -> list:
+    """How the product will be tested is decided while it is built, not when testing starts.
+
+    A verify node that first asks "what should I walk?" after the code exists walks what
+    the code happens to do, and the paths nobody thought of stay unwalked. So a product
+    route that plans a product-verify node also plans the acceptance cases it walks: a
+    node produces the use-case tree, it does not wait for any implementation node (cases
+    written after the code read the code), and every product-verify node waits for it. Where the product
+    has a designed interface, a producer of the cases is held behind the experience
+    design — a UI case names real screens, and before the design there are none.
+
+    The cases may be written earlier than the code; the rule only refuses later. Legacy
+    and local-change inputs, and graphs with no product-verify node (nothing would read
+    the cases), are out of scope.
+    """
+    findings = []
+    workflow_path = os.path.join(bdir, "workflow.json")
+    profile_path = os.path.join(bdir, "bootstrap-profile.json")
+    if not os.path.exists(workflow_path) or not os.path.exists(profile_path):
+        return findings
+    try:
+        workflow = _load_json(workflow_path)
+        profile = _load_json(profile_path)
+    except Exception:
+        return findings
+    if not isinstance(workflow, dict) or not isinstance(profile, dict):
+        return findings
+    if profile.get("task_route") not in PRODUCT_ROUTES:
+        return findings
+
+    nodes = _addressable_nodes(workflow.get("nodes"))
+    builders = sorted(node_id for node_id, node in nodes.items() if _is_implementation_node(node))
+    verifiers = sorted(node_id for node_id, node in nodes.items()
+                       if node.get("capability") == USE_CASE_VERIFY_CAPABILITY)
+    if not verifiers:
+        return findings
+    producers = sorted(node_id for node_id, node in nodes.items()
+                       if _produces(node, USE_CASE_TREE_PATH))
+    if not producers:
+        _structural(
+            findings, "missing_use_case_node",
+            f"workflow.json plans product verification ({verifiers}) but no node produces "
+            f"{USE_CASE_TREE_PATH}; plan a use-case node beside the implementation nodes so "
+            f"the cases product-verify walks are written from the design while the code is "
+            f"being written — {RETURN_TO_BOOTSTRAP}")
+        return findings
+
+    for producer in producers:
+        behind = [b for b in builders if b != producer and _downstream_of(nodes, b, producer)]
+        if behind:
+            _structural(
+                findings, "use_case_node_after_implementation",
+                f"workflow.json {producer} produces the acceptance cases but waits for "
+                f"implementation ({behind}); cases written after the code describe the code — "
+                f"let it read the design alone and run beside the implementation nodes — "
+                f"{RETURN_TO_BOOTSTRAP}",
+                node_id=producer)
+
+    for node_id in verifiers:
+        if node_id in producers:
+            continue
+        if not any(_downstream_of(nodes, producer, node_id) for producer in producers):
+            _structural(
+                findings, "verify_not_blocked_by_use_cases",
+                f"workflow.json {node_id} verifies the product but no hard_blocked_by path "
+                f"reaches a producer of {USE_CASE_TREE_PATH} ({producers}); a verify node that "
+                f"starts without the cases decides what to walk on the spot — "
+                f"{RETURN_TO_BOOTSTRAP}",
+                node_id=node_id)
+
+    priority = profile.get("experience_priority")
+    mode = priority.get("mode") if isinstance(priority, dict) else None
+    specs_dir = os.path.join(bdir, "node-specs")
+    if mode not in EXPERIENCE_DESIGN_MODES or not _ui_implementation_nodes(workflow, specs_dir, profile):
+        return findings
+    groups = ([GAME_EXPERIENCE_DESIGN_DOC_PATHS] if profile.get("is_game_project") is True
+              else [(path,) for path in APP_EXPERIENCE_DESIGN_REQUIRED])
+    designers = [sorted(node_id for node_id, node in nodes.items()
+                        if any(_produces(node, path) for path in group)) for group in groups]
+    if not all(designers):
+        return findings   # the missing design is experience_design_coverage's finding
+    if not any(all(producer in group or any(_downstream_of(nodes, d, producer) for d in group)
+                   for group in designers) for producer in producers):
+        _structural(
+            findings, "use_cases_not_blocked_by_experience_design",
+            f"workflow.json plans a user interface but no producer of {USE_CASE_TREE_PATH} "
+            f"({producers}) waits for the experience design; a UI case names the screens it "
+            f"passes through, and before the design there are none to name — "
+            f"{RETURN_TO_BOOTSTRAP}")
+    return findings
+
+
+def validate_use_case_authoring(bdir: str) -> list:
+    """Rendered use-case authoring errors for the bootstrap validator CLI."""
+    return _rendered(use_case_authoring_findings(bdir))
+
+
 # A0 decision coverage (ADR-0011). The audit's own artifact used to be checked for shape
 # only, so a hand-written `missing: []` and a thorough audit were indistinguishable. Coverage
 # now records the passes that produced it, and this gate recomputes what they read: an
@@ -2940,6 +3041,7 @@ def structural_gate_blockers(project_root) -> list:
         return shape
     return (repair_loop_declaration_findings(bdir) + effect_stage_ownership_findings(bdir)
             + experience_design_coverage_findings(bdir) + experience_gate_flow_findings(bdir)
+            + use_case_authoring_findings(bdir)
             + decision_coverage_findings(bdir))
 
 
@@ -2988,6 +3090,7 @@ def main():
             errors.extend(validate_app_design_flow(bdir))
             errors.extend(validate_experience_design_coverage(bdir))
             errors.extend(validate_experience_gate_flow(bdir))
+            errors.extend(validate_use_case_authoring(bdir))
             errors.extend(validate_decision_coverage(bdir))
             errors.extend(validate_game_2d_production_flow(bdir))
             errors.extend(validate_canvas2d_game_client_profile_flow(bdir))
@@ -3046,6 +3149,8 @@ __all__ = [
     "validate_experience_design_coverage",
     "experience_design_coverage_findings",
     "validate_experience_gate_flow",
+    "validate_use_case_authoring",
+    "use_case_authoring_findings",
     "experience_gate_flow_findings",
     "validate_decision_coverage",
     "decision_coverage_findings",
