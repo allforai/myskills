@@ -221,6 +221,7 @@ Output: `.allforai/product-verify/verify-report.json` + `.allforai/product-verif
   ],
   "screenshots": ["<string — file path, required for UI modules>"],
   "ui_screenshot_manifest": ".allforai/product-verify/ui-screenshot-manifest.json",
+  "use_case_report": ".allforai/product-verify/use-case-report.html",
   "visual_review_1": ".allforai/product-verify/visual-review-1.json"
 }
 ```
@@ -278,6 +279,81 @@ what the node must not author and refuses a draft that fails; `check_evidence.py
 
 `evidence_freshness` binds the entries file and every file the entries cite as this node's outputs:
 an edited screenshot or a removed entry is drift routed to this node, not a still-valid verification.
+
+### Use-Case Acceptance (用例验收)
+
+A requirement is accepted when someone has watched the product do it. A line that says "UC-012
+passed" asks the reader to trust the node; the frames of the walk let the reader look. So the unit
+of acceptance is the case, and its evidence is what a person standing behind the user would have
+seen. Parity checks and screen visits above show the product is assembled; only a walked case shows
+it does what was asked.
+
+The cases are product-analysis's: `.allforai/use-case/use-case-tree.json`, `cases[]`, each with an
+`id` and a Given / When / Then (schema: `product-analysis.md`). This node is the one that walks
+them. What must hold when it finishes:
+
+- **Every case is walked, under its own id.** For each case there is at least one evidence entry
+  (the ledger shape above) carrying `case: "<cases[].id>"`, written from one continuous walk of the
+  running product that started in the Given state, did the When, and looked for the Then. The
+  entry's `verdict` is the case's result: `done` — the Then was observed; `gap` — it was not;
+  `drift` — the product did something other than what the case says; `unprovable` — the walk could
+  not be made, with the reason file the engine asks for. A case carrying `deferred_by` is out of
+  this delivery and needs no entry. There is no other way for a case to be absent.
+- **The cases are not this node's to edit.** A missing file, a case without an id or a clause, a
+  flow with no case, a Then nobody could observe: return `UPSTREAM_DEFECT` naming product-analysis.
+  Never invent a case to have something to walk, reword one until it passes, merge two into one
+  walk's verdict, or verify "what is there" in place of the cases.
+- **A case with an interface is shown, not described.** When the case's `screen_refs` is non-empty,
+  its entry carries `frames`: the screenshots of that walk in the order they happened, each
+  `{image, clause, caption}` — `image` one of the entry's `images`, `clause` the part of the case
+  the frame shows (`given | when | then`), `caption` what a person sees in it. A `done` needs a
+  `given` frame and a `then` frame at least: without the starting state nobody can tell the outcome
+  came from this walk; and every outcome the Then names has a frame that shows it — two outcomes
+  on two screens are two frames. A caption is read off the frame after looking at it, never the
+  case's clause restated: a frame nobody opened shows nothing, and no verdict is `done` on frames
+  not yet looked at. A frame is from this walk and this case; a screenshot borrowed from another
+  run, another case, or a design preview is not a frame. The same file may also be listed in the
+  screenshot manifest — do not capture twice.
+- **A Then that happens in time is recorded.** When what the Then promises is a change no single
+  still shows — an animation, a transition, a drag, a live update arriving, gameplay — record the
+  walk and name the file in the entry's `video` (inside `evidence.dir`). Recording any other case
+  is welcome. A recording never replaces frames: reviewer one judges stills, so the frames that
+  carry the verdict are stills taken during the walk or cut from the recording. Where the
+  environment cannot record, say so in `key_observation` and bracket the change with frames; a
+  time-based Then that no frame shows is `unprovable`, never `done`. `unprovable` is what
+  remains after the frames the environment allows were taken, not a way to skip taking them.
+- **A case without an interface** (`screen_refs: []` — a CLI command, an API call, a job) needs no
+  frames; its entry's captured output is the evidence, and it is still one entry per case.
+- **A case that did not pass is a finding.** Every `gap` or `drift` case is an `issues[]` entry
+  naming the case id, `critical` for a `happy` case and at least `major` otherwise, so the existing
+  verdict rule applies unchanged. An `unprovable` case is an `issues[]` entry too, at least
+  `major`: it is covered, not accepted, and must not read as a pass to whoever opens the report.
+
+```json
+{
+  "case": "UC-012",
+  "q": "购物车有商品时提交订单，是否进入待支付的订单详情？",
+  "medium": "runtime", "verdict": "done",
+  "evidence": {"dir": "evidence/product-verify-web/uc-012/", "key_observation": "订单详情显示「待支付」和 2 件商品"},
+  "images": ["01-cart.png", "02-submit.png", "03-order.png"],
+  "frames": [
+    {"image": "01-cart.png", "clause": "given", "caption": "购物车里有 2 件商品"},
+    {"image": "02-submit.png", "clause": "when", "caption": "点击「提交订单」"},
+    {"image": "03-order.png", "clause": "then", "caption": "订单详情，状态为待支付"}
+  ],
+  "video": "walk.webm"
+}
+```
+
+**The report is rendered, never written.**
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check_use_case_evidence.py --run .allforai/product-verify`
+checks the above against the tree and writes `.allforai/product-verify/use-case-report.html`: every
+case in its own words beside its frames in order and its recording, with the result, openable from
+disk in a browser. This is the report a person reads to accept the requirements. Do not hand-edit
+it and do not restate it in `verify-report.md` — link to it. **The gate is not passed while this
+check refuses**: a case nobody walked, an interface case without frames, a recording offered in
+place of frames, an entry naming a case that does not exist. The check decides coverage and shape;
+whether a walked case passed is the entry's verdict and this node's `issues[]`.
 
 ### Multi-Client Feature Parity Verification
 
@@ -351,6 +427,7 @@ The experience-quality critique's `audience_leak` dimension
 4. **Evidence-based**: Each check records screenshot or response body as proof.
 5. **Screenshot-backed UI acceptance**: UI modules require screenshots plus reviewer one visual review. DOM-only or assertion-only product verification is incomplete.
 6. **Audience isolation**: an end-user surface shows `end-user` items only. An operator or developer item reachable by the end-user role is a finding — `contract_gaps` when the spec never named its audience, `code_gaps` when the spec did and the build ignored it.
+7. **Use-case acceptance**: every case in `use-case-tree.json` is walked under its own id; a case with an interface is shown in frames (and a recording when its Then happens in time), and the human report is the one `check_use_case_evidence.py` renders. The cases are product-analysis's — never invented, reworded or dropped here.
 
 ## Knowledge References
 
@@ -391,6 +468,13 @@ node runs `./gradlew connectedAndroidTest` (Espresso or Compose UI tests) or rec
 blocking environment failure. A manual checklist is not a substitute for this node.
 The same rule applies to iOS, Flutter, React Native, and HarmonyOS with their
 platform-native UI runners.
+
+Use-case coverage is a property of the whole run, not of one node. `check_use_case_evidence.py`
+run plainly refuses any case nobody walked, and that is how a product-verify node runs it. The one
+exception is a split: a node whose node-spec names another product-verify node still to run after
+it walks the cases its client can reach and passes `--partial` (shape checked, report rendered,
+cases still unwalked do not fail it). The node that runs last, a single node, and a node that
+cannot tell all run it without the flag — `--partial` is never a way past a refusal.
 
 ### Split Static vs Dynamic
 For large apps: static verification as one node, dynamic as another.

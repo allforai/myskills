@@ -138,8 +138,36 @@ Write the counts you produced and why they are complete for this input; numbers 
 }
 ```
 
-`tasks[].id` and `roles[].id` are foreign key roots for all downstream capabilities.
-Every capability that references a task or role MUST use these IDs.
+**use-case-tree.json field schema** (`.allforai/use-case/use-case-tree.json`, minimum required fields):
+```json
+{
+  "cases": [
+    {
+      "id": "<string — unique, stable. product-verify binds each walk to it (evidence entry `case`)>",
+      "title": "<string — what the user gets done, in the user's words>",
+      "kind": "<enum: happy | exception | boundary>",
+      "flow_ref": "<string — MUST match a flows[].id in business-flows.json>",
+      "task_refs": ["<string — tasks[].id the case exercises>"],
+      "role_ref": "<string — roles[].id of the role that walks it>",
+      "screen_refs": ["<string — experience-map screens[].id the case passes through; [] when it involves no interface>"],
+      "given": "<string — the state the walk starts from, observable in the running product>",
+      "when": "<string — what the role does>",
+      "then": "<string — the outcome the role can see or read back; never an internal state nobody can observe>",
+      "deferred_by": "<string, optional — the post-launch feature that defers this case; present only when the case is out of this delivery>"
+    }
+  ]
+}
+```
+
+A case is an acceptance case only when someone can walk it and see whether `then` happened: `given`
+names a state the product can be put in, `then` names something visible on a screen or readable in
+an output. `screen_refs` decides how product-verify must show the walk — frames for a case with an
+interface, output files for one without — so `[]` is a statement that the case has no interface,
+never a field left empty. A case that is out of this delivery stays in the tree with `deferred_by`;
+deleting it would make the deferral invisible.
+
+`tasks[].id`, `roles[].id` and `cases[].id` are foreign key roots for all downstream capabilities.
+Every capability that references a task, role or case MUST use these IDs.
 
 ### Optional Outputs (LLM decides based on project type)
 
@@ -161,7 +189,7 @@ Every capability that references a task or role MUST use these IDs.
 | `task-inventory.json` | `tasks[].id`, `tasks[].role_ref` | feature-gap | required | 外键引用，下游必须用这些 ID 保持一致性 |
 | `business-flows.json` | `flows` | ui-design, generate-artifacts | required | 用户旅程定义 UI 结构和功能实现顺序 |
 | `experience-map.json` | `screens` | ui-design, generate-artifacts, product-verify | required | 屏幕契约是 UI 设计和验收的基础 |
-| `use-case-tree.json` | `cases` | test-verify, product-verify | required | 验收用例来自 Given/When/Then |
+| `use-case-tree.json` | `cases[].id`, `given`, `when`, `then`, `screen_refs`, `deferred_by` | product-verify | required | 每条用例由 product-verify 逐条走查并出图；缺文件或缺字段是上游缺陷 |
 | `journey-emotion-map.json` | `stages` | ui-design | optional | 仅 consumer 产品有此产物；缺失时跳过情感设计维度 |
 
 ### Required Quality

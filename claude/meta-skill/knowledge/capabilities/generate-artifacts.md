@@ -17,7 +17,7 @@ that downstream nodes (translate, rebuild, demo-forge, ui-design) consume.
 | `product-map.json` | Unified view: roles → tasks → flows → screens | all downstream |
 | `view-objects.json` | Per-role UI bindings (what each screen shows for each role) | translate, rebuild, ui-design |
 | `entity-model.json` | Data model with entities, fields, relationships, constraints | rebuild, demo-forge |
-| `use-case-tree.json` | Finalized 4-layer use case tree (if not already complete) | test-verify |
+| `use-case-tree.json` | Finalized acceptance cases, in product-analysis's `cases[]` schema (if not already complete) | product-verify |
 
 ### Required Quality
 
@@ -62,7 +62,7 @@ that downstream nodes (translate, rebuild, demo-forge, ui-design) consume.
 | `product-map.json` | all fields | translate, ui-design | required | Unified view of roles/tasks/flows drives implementation and UI design |
 | `view-objects.json` | `screens[].bindings` | translate, ui-design | required | Per-role UI bindings specify what each screen shows and what data it needs |
 | `entity-model.json` | `entities[]`, `relationships[]` | translate, demo-forge | required | Data model is the foundation for API schema, ORM, and seed data |
-| `use-case-tree.json` | `cases[].given_when_then` | test-verify, product-verify | required | 4-layer use case tree provides acceptance test specifications |
+| `use-case-tree.json` | `cases[].id`, `given`, `when`, `then`, `screen_refs`, `deferred_by` | product-verify | required | Acceptance cases product-verify walks one by one (schema: product-analysis.md) |
 
 ## Knowledge References
 

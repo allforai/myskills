@@ -68,6 +68,10 @@ and artifact files instead of exercising the real product. This protocol makes
    visual-verify's entries judge captures of a frozen matrix: its gate is
    `check_visual_evidence.py --run <run> --node <id>`, which runs the entries check and then the
    device-axis, readback and reviewer-binding rules its capability text states (#61).
+   product-verify's entries also carry the acceptance cases: every case in `use-case-tree.json` is
+   walked under its id (`case`), shown in `frames` when it has an interface, and its gate adds
+   `check_use_case_evidence.py --run <run>`, which refuses an unwalked case and renders the human
+   report `use-case-report.html` from the same entries.
 
 ## Anti-fabrication: capture, don't author (L1) + reproduce (L2)
 
