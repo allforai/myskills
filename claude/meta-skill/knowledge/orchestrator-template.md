@@ -328,17 +328,18 @@ never waive, downgrade, or hide a gap.
    a. Read `hardFailures` (always non-empty — a stuck graph carries a synthesized `deadlock`
       finding) + `workflow.json` `diagnosis_history`.
    b. GLOBAL cap (fix L1): run `python3 .allforai/bootstrap/scripts/record_run_event.py . --diagnosis-budget`.
-      It counts the `diagnosis_history` entries recorded since this invocation's `run_started`;
-      if it prints `"capped": true` (5 or more), mark UNRESOLVED and stop — this catches
-      oscillating root causes the per-cause cap misses. Entries of earlier invocations are
-      history and never count.
+      It counts the diagnoses recorded in `diagnosis_history` since this invocation's
+      `run_started` — entries that name a `root_cause`. The engine's own `kind: "failure"`
+      records of the same failures do not count. If it prints `"capped": true` (5 or more),
+      mark UNRESOLVED and stop — this catches oscillating root causes the per-cause cap
+      misses. Entries of earlier invocations are history and never count.
    c. Run `.allforai/bootstrap/protocols/diagnosis.md`: locate the root-cause node
       (use `suspected_root_node` when present). This is autonomous — never ask the user.
    d. Per-cause cap (the policy unit-tested as engine-core `convergenceCheck`): if the same root
       cause already appears ≥2 times among this invocation's entries (`this_invocation` in the
       output above), mark it UNRESOLVED, write best-effort output + TODO, and stop.
    e. Otherwise apply the repair plan WITH CASCADE (fix C2). Append the diagnosis to
-      `diagnosis_history`, then write each repair-plan step's action (and any prevention
+      `diagnosis_history` with its `root_cause` (the shape in `diagnosis.md`), then write each repair-plan step's action (and any prevention
       hint for that node) to `.allforai/bootstrap/diagnosis-corrections/<node_id>.json` as
       `{node_id, diagnosis, corrections: [...]}`. Do not edit node-specs during `/run`: a
       changed node-spec stales A0's decision coverage, and the next readiness check stops

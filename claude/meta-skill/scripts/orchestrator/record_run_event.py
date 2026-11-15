@@ -60,12 +60,20 @@ def _diagnosis_history(project_root: Path) -> list:
     return history if isinstance(history, list) else []
 
 
+def _is_diagnosis(entry) -> bool:
+    return isinstance(entry, dict) and entry.get("kind") != "failure" and bool(entry.get("root_cause"))
+
+
 def diagnosis_budget(project_root: Path) -> dict:
     """How many diagnoses this invocation has recorded, against its cap.
 
     The invocation's `run_started` event recorded how long `diagnosis_history` was when it
     began; everything after that position belongs to this invocation. A log with no such
     record counts the whole history, which is the bound that applied before invocations.
+
+    Only a diagnosis counts: an entry that names a root cause. The engine also appends a
+    record of each hard failure before anyone has diagnosed it, and one failure must not
+    spend the allowance twice.
     """
     project_root = project_root.resolve()
     history = _diagnosis_history(project_root)
@@ -82,15 +90,17 @@ def diagnosis_budget(project_root: Path) -> dict:
         if isinstance(event, dict) and event.get("event") == "run_started":
             at_start = event.get("diagnosis_entries_at_start")
             start = at_start if isinstance(at_start, int) and 0 <= at_start <= len(history) else 0
-    current = history[start:]
+    recorded = history[start:]
+    current = [entry for entry in recorded if _is_diagnosis(entry)]
     return {
         "cap": DIAGNOSIS_CAP,
         "entries_total": len(history),
         "entries_this_invocation": len(current),
+        "failure_records_this_invocation": len(recorded) - len(current),
         "capped": len(current) >= DIAGNOSIS_CAP,
         "this_invocation": [
             {"failed_node": entry.get("failed_node"), "root_cause": entry.get("root_cause")}
-            for entry in current if isinstance(entry, dict)
+            for entry in current
         ],
     }
 

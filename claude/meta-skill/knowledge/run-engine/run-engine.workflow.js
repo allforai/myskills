@@ -650,8 +650,11 @@ function ledgerBlocker(nodeId, detail) {
 
 function commitFailuresPrompt(hardFailures) {
   return [
-    'Append these hard failures to .allforai/bootstrap/workflow.json diagnosis_history',
-    `(failed_node + blocking_findings): ${JSON.stringify((hardFailures || []).map(h => h.node_id))}.`
+    'Append these hard failures to .allforai/bootstrap/workflow.json diagnosis_history,',
+    'one entry each as {kind: "failure", failed_node, blocking_findings} and nothing else:',
+    `${JSON.stringify((hardFailures || []).map(h => h.node_id))}.`,
+    'This records the failure only. Do not add root_cause: that field belongs to the diagnosis',
+    'the orchestrator records afterwards, and only a diagnosis counts toward the diagnosis cap.'
   ].join(' ')
 }
 

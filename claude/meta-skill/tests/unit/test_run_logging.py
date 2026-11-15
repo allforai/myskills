@@ -92,3 +92,28 @@ def test_diagnosis_budget_counts_only_what_this_invocation_recorded(tmp_path):
                                          {"failed_node": "n9", "root_cause": "same"}]
     history(13)
     assert run("--diagnosis-budget")["capped"] is True
+
+
+def test_diagnosis_budget_does_not_count_the_engine_failure_records(tmp_path):
+    import subprocess
+    from pathlib import Path
+    script = Path(__file__).resolve().parents[2] / "scripts/orchestrator/record_run_event.py"
+    workflow = tmp_path / ".allforai/bootstrap/workflow.json"
+    workflow.parent.mkdir(parents=True)
+    failure = {"kind": "failure", "failed_node": "qa", "blocking_findings": [{"type": "stale"}]}
+    legacy_failure = {"failed_node": "qa", "blocking_findings": [{"type": "stale"}]}
+    mislabelled = {"kind": "failure", "failed_node": "qa", "root_cause": {"node": "spec"}}
+    diagnosis = {"failed_node": "qa", "root_cause": {"node": "spec", "description": "stale"}}
+    # Two ordinary cycles, each with two failed nodes recorded by the engine and one diagnosis.
+    workflow.write_text(json.dumps({"nodes": [], "diagnosis_history": [
+        failure, legacy_failure, diagnosis, failure, mislabelled, diagnosis, "not an entry"]}))
+
+    result = subprocess.run([sys.executable, str(script), str(tmp_path), "--diagnosis-budget"],
+                            capture_output=True, text=True, check=True)
+    budget = json.loads(result.stdout)
+
+    assert budget["entries_total"] == 7
+    assert budget["entries_this_invocation"] == 2
+    assert budget["failure_records_this_invocation"] == 5
+    assert budget["capped"] is False
+    assert [item["root_cause"]["node"] for item in budget["this_invocation"]] == ["spec", "spec"]

@@ -64,6 +64,8 @@ test('commitPrompt records verification verbatim (no upgrade)', () => {
 
 test('commitFailuresPrompt references diagnosis_history', () => {
   assert.match(core.commitFailuresPrompt([{ node_id: 'c' }]), /diagnosis_history/)
+  assert.match(core.commitFailuresPrompt([{ node_id: 'c' }]), /kind: "failure"/)
+  assert.match(core.commitFailuresPrompt([{ node_id: 'c' }]), /Do not add root_cause/)
 })
 
 // The project-root argument is a bare `.`. Written at the end of a sentence it reads as
