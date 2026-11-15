@@ -59,14 +59,14 @@
     },
     {
       "id": "run-delegations-disclosure",
-      "rule": "Completion discloses every decision the user delegated to the model.",
+      "rule": "Completion discloses every decision made for the user: those they delegated, those the run took on its own recommendation, and the Run Policy left at its defaults.",
       "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
-                    "require": ["product_intent.py . --delegations", "No delegated decisions."]},
+                    "require": ["product_intent.py . --delegations", "No delegated decisions.", "run_decisions", "run_policy_defaults"]},
       "copies": [
         {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["product_intent.py . --delegations", "No delegated decisions."]},
+         "require": ["product_intent.py . --delegations", "No delegated decisions.", "run_decisions", "run_policy_defaults"]},
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["product_intent.py . --delegations", "No delegated decisions."]}
+         "require": ["product_intent.py . --delegations", "No delegated decisions.", "run_decisions", "run_policy_defaults"]}
       ]
     },
     {
@@ -118,14 +118,14 @@
     },
     {
       "id": "run-product-decision-gap",
-      "rule": "A structured unresolved product decision parks only its own subgraph; the run ends needs_product_decision and sends the user to interactive bootstrap, never diagnosis or a policy choice.",
+      "rule": "A run never stops for a product decision: the node that owns it takes its recommended option and records it in run-decisions for disclosure; only a workflow bootstrapped earlier still parks a subgraph and ends needs_product_decision.",
       "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
-                    "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision"]},
+                    "require": ["run-decisions/<node_id>.json", "product-decision-gaps/<node_id>.json", "needs_product_decision"]},
       "copies": [
         {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision", "exit 7"]},
+         "require": ["run-decisions/<node_id>.json", "product-decision-gaps/<node_id>.json", "needs_product_decision", "exit 7"]},
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["product-decision-gaps/<node_id>.json", "needs_product_decision"]}
+         "require": ["run-decisions/<node_id>.json", "product-decision-gaps/<node_id>.json", "needs_product_decision"]}
       ]
     },
     {

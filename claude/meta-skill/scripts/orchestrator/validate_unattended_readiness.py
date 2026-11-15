@@ -196,13 +196,15 @@ PRODUCT_DECISION_GAPS = "product-decision-gaps"
 
 
 def _product_decision_gap_blockers(bootstrap_root: Path, blockers: list[dict]) -> None:
-    """A product decision a node could not make waits for the user, not for another run.
+    """A product decision a node parked waits for the user, not for another run.
 
-    A node that met a user-visible rule nobody settled records it in
-    `product-decision-gaps/<node_id>.json` (ADR-0011). The record stays until interactive
-    bootstrap asks it, wires the answer into that node's `decision_inputs` and removes
-    it, so its presence alone blocks the next unattended run. A record that cannot be
-    read is still an unanswered claim, never an absent one.
+    A workflow bootstrapped under ADR-0011 has its node record a user-visible rule nobody
+    settled in `product-decision-gaps/<node_id>.json` and fail. The record stays until
+    interactive bootstrap asks it, wires the answer into that node's `decision_inputs`
+    and removes it, so its presence alone blocks the next unattended run. A record that
+    cannot be read is still an unanswered claim, never an absent one. A choice a node took
+    on its own recommendation (`run-decisions/`, ADR-0018) is a disclosure, not a blocker,
+    and is not read here.
     """
     directory = bootstrap_root / PRODUCT_DECISION_GAPS
     if not directory.is_dir():

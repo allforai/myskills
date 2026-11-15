@@ -374,10 +374,14 @@ Fold every `missing` entry into the Phase A decision queue (and set `decision_mo
 
 Resolve any remaining decisions after A0, as the final interactive step of `/bootstrap`. Iterate the decision
 queue = (nodes with `decision_mode: "brainstorm"`) ∪ (A0 `missing`) ∪ (G0 restructure
-confirmations) ∪ (every record in `.allforai/bootstrap/product-decision-gaps/` — decisions
-an earlier `/run` met and parked, ADR-0011). A gap record is answered like any decision:
-write the decision artifact, wire it into that node's `decision_inputs`, then delete the
-record; readiness refuses the next run while one remains. Its node-spec usually changes
+confirmations) ∪ (every record in `.allforai/bootstrap/run-decisions/` — choices an
+earlier `/run` took on its own recommendation, ADR-0018 — and in
+`.allforai/bootstrap/product-decision-gaps/` — decisions a run bootstrapped under ADR-0011
+parked). Either record is answered like any decision: show what was taken or recommended,
+write the decision artifact from the user's answer, wire it into that node's
+`decision_inputs`, then delete the record. A taken choice the user overturns makes that
+node's output stale, so the node runs again; one they confirm changes nothing. Readiness
+refuses the next run only while a parked `product-decision-gaps/` record remains. Its node-spec usually changes
 with the answer, so re-rehearse that node and append its A0 pass.
 
 Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`: group independent decisions
@@ -447,7 +451,7 @@ provenance, a malformed recorded graph, a rewritten history) and `unconfirmed_pl
 
 Generation-before: each decision is gathered BEFORE the node that consumes it (the node
 references it via `decision_inputs`). When the queue is empty, every decision artifact is
-on disk and wired — proceed to the final invariant gate. `/run` asks its Run Policy questions once before the first node and is fully autonomous after that.
+on disk and wired — proceed to the final invariant gate. `/run` asks nothing: every question is asked here, and a run goes from its first line to its report unattended (ADR-0018).
 
 ---
 

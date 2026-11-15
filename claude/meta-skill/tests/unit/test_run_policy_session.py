@@ -23,15 +23,22 @@ def publish_evidence(root):
 
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
-def test_policy_is_collected_once_reused_and_never_confirms_product_requirements(tmp_path, host):
+def test_policy_defaults_itself_is_changed_only_by_answers_and_never_confirms_product_requirements(tmp_path, host):
     project(tmp_path, host=host)
-    required = invoke(tmp_path, {"operation": "run-policy"})
-    assert required.returncode == 1
-    assert json.loads(required.stdout)["status"] == "needs_run_policy"
+    # ADR-0018: a run asks nothing. No policy on record is the defaults, marked as nobody's choice.
+    defaulted = invoke(tmp_path, {"operation": "run-policy"})
+    assert defaulted.returncode == 0, defaulted.stdout
+    assert json.loads(defaulted.stdout) == {"status": "run_policy_ready", "questions": [], "policy": {
+        "on_repeated_failure": "continue", "on_needs_iteration": "halt_with_report",
+        "on_safety_warning": "continue", "chosen_by": "default"}}
+    disclosed = json.loads(invoke(tmp_path, {"operation": "delegations"}).stdout)
+    assert disclosed["run_policy_defaults"] == {"on_repeated_failure": "continue",
+                                                "on_needs_iteration": "halt_with_report", "on_safety_warning": "continue"}
     before = (tmp_path / ".allforai/bootstrap/local-requirements.json").read_bytes()
     saved = invoke(tmp_path, {"operation": "run-policy", "answers": POLICY, "user_reference": "run entry user turn"})
     assert saved.returncode == 0, saved.stdout
     policy_bytes = (tmp_path / ".allforai/bootstrap/run-policy.json").read_bytes()
+    assert json.loads(invoke(tmp_path, {"operation": "delegations"}).stdout)["run_policy_defaults"] == {}
     resumed = invoke(tmp_path, {"operation": "run-policy"})
     assert resumed.returncode == 0
     assert json.loads(resumed.stdout)["policy"] == POLICY
@@ -49,7 +56,7 @@ def test_policy_is_collected_once_reused_and_never_confirms_product_requirements
 
 
 @pytest.mark.parametrize("choice,expected", [("continue", 2), ("halt", 3)])
-def test_generated_driver_requires_policy_and_consumes_repeated_failure_choice(tmp_path, choice, expected):
+def test_generated_driver_consumes_repeated_failure_choice(tmp_path, choice, expected):
     project(tmp_path, confirmed=True, host="codex")
     driver = tmp_path / ".allforai/codex/flow.py"
     driver.parent.mkdir(parents=True)
@@ -72,9 +79,6 @@ def test_generated_driver_requires_policy_and_consumes_repeated_failure_choice(t
     def run():
         return subprocess.run([sys.executable, str(driver), "Deliver export", "1"], cwd=tmp_path,
                               env=env, text=True, capture_output=True)
-    blocked = run()
-    assert blocked.returncode == 6, (blocked.stdout, blocked.stderr)
-    assert not (bin_dir / "host-calls.txt").exists()
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_repeated_failure=choice),
                              "user_reference": "Run entry choice"}).returncode == 0
     result = run()
@@ -182,7 +186,6 @@ const pipeline=async (items,...steps)=>Promise.all(items.map(async x=>{for(const
         result = subprocess.run(["node", str(runner), str(shell), sys.executable], cwd=tmp_path, text=True, capture_output=True)
         assert result.returncode == 0, result.stderr
         return json.loads(result.stdout)
-    assert run()["count"] == 0
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_repeated_failure=choice), "user_reference": "run entry"}).returncode == 0
     result = run()
     assert result["count"] == count
@@ -250,3 +253,38 @@ def test_codex_driver_consumes_recorded_nonblocking_safety_warning(tmp_path, cho
     assert invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_safety_warning=choice), "user_reference": "run entry"}).returncode == 0
     result = subprocess.run([sys.executable, str(driver), "Export orders", "1"], cwd=tmp_path, text=True, capture_output=True)
     assert result.returncode == expected, (result.stdout, result.stderr)
+
+
+def test_generated_driver_starts_without_a_recorded_policy_and_asks_nothing(tmp_path):
+    """ADR-0018: a missing Run Policy is the defaults, never a stop before the first node."""
+    project(tmp_path, confirmed=True, host="codex")
+    driver = tmp_path / ".allforai/codex/flow.py"
+    driver.parent.mkdir(parents=True)
+    shutil.copy2(Path(__file__).resolve().parents[4] / "codex/meta-skill/knowledge/flow-template.py", driver)
+    workflow = json.loads((tmp_path / ".allforai/bootstrap/workflow.json").read_text())
+    workflow["expanders"] = []
+    write(tmp_path, ".allforai/bootstrap/workflow.json", workflow)
+    bin_dir = tmp_path.parent / (tmp_path.name + "-host")
+    bin_dir.mkdir()
+    host = bin_dir / "codex"
+    host.write_text("#!" + sys.executable + "\nfrom pathlib import Path\n"
+                    "Path(__file__).with_name('host-calls.txt').write_text('called')\nraise SystemExit(1)\n")
+    host.chmod(0o755)
+    env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ["PATH"])
+    result = subprocess.run([sys.executable, str(driver), "Deliver export", "1"], cwd=tmp_path,
+                            env=env, text=True, capture_output=True)
+    assert "Run Policy" not in result.stderr, result.stderr
+    assert (bin_dir / "host-calls.txt").exists(), (result.stdout, result.stderr)
+    assert json.loads((tmp_path / ".allforai/bootstrap/run-policy.json").read_text())["chosen_by"] == "default"
+
+
+def test_decisions_a_run_took_are_disclosed_and_an_unreadable_record_is_still_named(tmp_path):
+    project(tmp_path, host="claude")
+    taken = {"decision_id": "scope-a-b", "needed_decision": "Shared across instances or kept per instance?",
+             "options": ["shared", "per-instance"], "recommended": "per-instance", "taken": "per-instance",
+             "why": "matches the frozen intent", "blocking_intent_ids": ["REQ-1"]}
+    write(tmp_path, ".allforai/bootstrap/run-decisions/design-rules.json", {"node_id": "design-rules", "decisions": [taken]})
+    (tmp_path / ".allforai/bootstrap/run-decisions/broken.json").write_text("{not json")
+    disclosed = json.loads(invoke(tmp_path, {"operation": "delegations"}).stdout)["run_decisions"]
+    assert disclosed == [{"node_id": "broken", "unreadable": ".allforai/bootstrap/run-decisions/broken.json"},
+                         {"node_id": "design-rules", **taken}]

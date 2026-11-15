@@ -4,6 +4,8 @@ status: accepted
 
 # Product decisions are mined before the run, not discovered during it
 
+> D's rule that a run parks an unanswered product decision is reversed by ADR-0018: the node takes its recommended option and the run discloses it. A, B and C stand.
+
 An unattended `/run` stopped overnight at its second wave. Bootstrap had passed every gate: decision coverage, decision-input wiring, DAG, unattended readiness, node-spec audit. The product intent was frozen. Then a design node returned `unresolved_product_decision`. It needed a user-visible rule the frozen intent did not settle: whether one stateful thing the user owns is shared across a dimension the product has several instances of, or kept separately per instance. Its upstream concept node had correctly said this node must not choose. The engine treated the failure as `needs_diagnosis` and the whole run stopped, unrelated branches included. Nobody was there to answer.
 
 Every part behaved as written. The fault was in what bootstrap never asked:

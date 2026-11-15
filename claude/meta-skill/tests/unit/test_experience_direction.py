@@ -598,7 +598,7 @@ def test_delegate_records_auto_decision_and_is_disclosed(tmp_path, host):
     disclosed = cli(tmp_path, "--delegations")
     assert disclosed.returncode == 0, (disclosed.stdout, disclosed.stderr)
     assert not disclosed.stderr
-    assert json.loads(disclosed.stdout) == {"status": "delegations", "delegations": [handed]}
+    assert json.loads(disclosed.stdout) == {"status": "delegations", "delegations": [handed], "run_decisions": [], "run_policy_defaults": {}}
     assert all((tmp_path / path).read_bytes() == content for path, content in before.items()), \
         "disclosure reads the record and never writes to it"
 
@@ -615,7 +615,7 @@ def test_delegate_records_auto_decision_and_is_disclosed(tmp_path, host):
     project(picked, host=host)
     absent = cli(picked, "--delegations")
     assert absent.returncode == 0, (absent.stdout, absent.stderr)
-    assert json.loads(absent.stdout) == {"status": "delegations", "delegations": []}, \
+    assert json.loads(absent.stdout) == {"status": "delegations", "delegations": [], "run_decisions": [], "run_policy_defaults": {}}, \
         "a session with no concept yet has nothing to disclose"
     (picked / "orders.py").unlink()
     assert invoke(picked, new_product_draft()).returncode == 0
@@ -758,7 +758,7 @@ def test_pre_existing_concept_and_journal_read_without_drift(tmp_path, host):
     disclosed = cli(tmp_path, "--delegations")
     assert disclosed.returncode == 0, (disclosed.stdout, disclosed.stderr)
     assert not disclosed.stderr
-    assert json.loads(disclosed.stdout) == {"status": "delegations", "delegations": []}, \
+    assert json.loads(disclosed.stdout) == {"status": "delegations", "delegations": [], "run_decisions": [], "run_policy_defaults": {}}, \
         "a run that predates delegation has nothing to disclose"
     assert all((tmp_path / name).read_bytes() == content for name, content in before.items()), \
         "reading an old record never rewrites it"
@@ -1019,7 +1019,7 @@ def test_protocol_text_names_the_new_topic_and_actions():
         assert anti_pattern in section, anti_pattern
     assert "fragmented learning" in section, \
         "the no-literal-translation rule keeps its worked example"
-    assert "--delegations" in section and "--delegations" in protocol.split("At the interactive run entry", 1)[1], \
+    assert "--delegations" in section and "--delegations" in protocol.split("Before the first node the run entry reads", 1)[1], \
         "delegation disclosure is named both as an obligation and as a CLI entry"
 
     for line in protocol.splitlines():

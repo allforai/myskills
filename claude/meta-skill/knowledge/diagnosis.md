@@ -85,7 +85,8 @@ After diagnosis returns:
    prevention rule that must outlive this run goes into the node-spec at the next
    interactive `/bootstrap`, where rehearsal covers it.
 4. A correction refines how a node meets its spec. It never settles a user-visible rule. A
-   root cause that needs one is an unresolved product decision (Pattern I), not a repair.
+   root cause that needs one is a product decision: the node that owns the rule takes its
+   recommended option and records it in `run-decisions/` (Pattern I), which is not a repair.
 5. Reset the closure with `compute_reset_closure.py <workflow.json> --apply --diagnosis <ref> <root...>`;
    it marks completed transitions `superseded` and keeps them. Never rewrite `transition_log` by hand.
 6. **After each successful repair step**, orchestrator appends to `workflow.json corrections_applied[]`:

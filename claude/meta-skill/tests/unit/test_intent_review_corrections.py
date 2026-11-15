@@ -240,7 +240,7 @@ INVALID = {"wrong-value": {"on_repeated_failure": "retry", "on_needs_iteration":
 
 @pytest.mark.parametrize("host", ["claude", "codex"])
 @pytest.mark.parametrize("kind", ["wrong-value", "missing-key", "not-an-object", "not-json"])
-def test_invalid_run_policy_is_repaired_only_by_explicit_user_answers_with_audit(tmp_path, host, kind):
+def test_invalid_run_policy_is_replaced_by_defaults_or_answers_with_audit(tmp_path, host, kind):
     project(tmp_path, confirmed=True, host=host)
     target = tmp_path / RUN_POLICY
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -249,15 +249,7 @@ def test_invalid_run_policy_is_repaired_only_by_explicit_user_answers_with_audit
     else:
         write(tmp_path, RUN_POLICY, INVALID[kind])
     broken = target.read_bytes()
-    asked = cli(tmp_path, "--run-policy")
-    assert asked.returncode == 1 and not asked.stderr, (asked.stdout, asked.stderr)
-    output = json.loads(asked.stdout)
-    assert output["status"] == "needs_run_policy" and output["questions"] == {
-        "on_repeated_failure": ["continue", "halt"], "on_needs_iteration": ["halt_with_report", "auto_fix_once", "accept"],
-        "on_safety_warning": ["continue", "halt"]}
-    assert "invalid" in json.dumps(output).lower()
-    event = cli(tmp_path, "--policy-event", "on_needs_iteration")
-    assert event.returncode == 1 and json.loads(event.stdout)["status"] == "blocked"
+    # Answers are never guessed into place: a malformed submission leaves the file as it was.
     for request in ({"operation": "run-policy", "answers": POLICY},
                     {"operation": "run-policy", "answers": dict(POLICY, on_safety_warning="ignore"), "user_reference": "run entry"},
                     {"operation": "run-event", "event": "on_needs_iteration", "answers": POLICY, "user_reference": "run entry"}):
@@ -265,19 +257,25 @@ def test_invalid_run_policy_is_repaired_only_by_explicit_user_answers_with_audit
         assert rejected.returncode == 1 and json.loads(rejected.stdout)["status"] == "blocked", (request, rejected.stdout)
         assert target.read_bytes() == broken
         assert not (tmp_path / REPAIRS).exists()
-    repaired = invoke(tmp_path, {"operation": "run-policy", "answers": POLICY, "user_reference": "run entry user turn"})
-    assert repaired.returncode == 0, repaired.stdout
-    assert json.loads(repaired.stdout) == {"status": "run_policy_ready", "policy": POLICY, "questions": []}
-    assert json.loads(target.read_text()) == POLICY
+    # ADR-0018: the run asks nothing; an unusable policy becomes the defaults, and the audit keeps what it replaced.
+    asked = cli(tmp_path, "--run-policy")
+    assert asked.returncode == 0 and not asked.stderr, (asked.stdout, asked.stderr)
+    defaults = {"on_repeated_failure": "continue", "on_needs_iteration": "halt_with_report",
+                "on_safety_warning": "continue", "chosen_by": "default"}
+    assert json.loads(asked.stdout) == {"status": "run_policy_ready", "policy": defaults, "questions": []}
     audit = json.loads((tmp_path / REPAIRS).read_text())
-    assert len(audit) == 1 and audit[0]["answers"] == POLICY and audit[0]["user_reference"] == "run entry user turn"
+    assert len(audit) == 1 and audit[0]["answers"] == defaults and audit[0]["user_reference"] == "default"
     assert audit[0]["previous"] == (broken.decode() if kind == "not-json" else INVALID[kind])
     assert audit[0]["reason"]
+    assert json.loads(cli(tmp_path, "--policy-event", "on_needs_iteration").stdout)["action"] == "halt_with_report"
+    # The user's explicit answers replace it, audited again; the same answers a second time change nothing.
+    for _ in range(2):
+        chosen = invoke(tmp_path, {"operation": "run-policy", "answers": POLICY, "user_reference": "run entry user turn"})
+        assert chosen.returncode == 0, chosen.stdout
+        assert json.loads(chosen.stdout) == {"status": "run_policy_ready", "policy": POLICY, "questions": []}
+    assert json.loads(target.read_text()) == POLICY
+    audit = json.loads((tmp_path / REPAIRS).read_text())
+    assert len(audit) == 2 and audit[1]["previous"] == defaults and audit[1]["user_reference"] == "run entry user turn"
     assert json.loads(cli(tmp_path, "--run-policy").stdout)["policy"] == POLICY
     assert json.loads(cli(tmp_path, "--policy-event", "on_repeated_failure").stdout)["action"] == "continue"
-    # A valid recorded policy is never silently replaced by later answers.
-    again = invoke(tmp_path, {"operation": "run-policy", "answers": dict(POLICY, on_repeated_failure="halt"),
-                              "user_reference": "second attempt"})
-    assert again.returncode == 0 and json.loads(again.stdout)["policy"] == POLICY
-    assert json.loads(target.read_text()) == POLICY and len(json.loads((tmp_path / REPAIRS).read_text())) == 1
     assert not (tmp_path / JOURNAL).exists()

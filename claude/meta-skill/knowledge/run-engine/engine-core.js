@@ -190,11 +190,12 @@ function qaReportUsable(result) {
   return (result.artifacts_written || []).length > 0
 }
 
-// ADR-0011: a node that met a user-visible rule nobody settled, and may not choose it,
-// fails with nothing but structured `unresolved_product_decision` findings — the decision
-// it needs and at least two options it saw. That failure blocks the node and its
-// successors, never unrelated branches, and is asked at the next interactive bootstrap.
-// A claim without that structure is not trusted as one: it stays a diagnosis case.
+// ADR-0018: a node takes an unsettled user-visible choice on its own recommendation and
+// records it in `run-decisions/`, so this path is no longer how a run meets one. It
+// stays for a node-spec bootstrapped under ADR-0011, which still tells its node to fail
+// with structured `unresolved_product_decision` findings: that failure blocks the node
+// and its successors, never unrelated branches. A claim without that structure is not
+// trusted as one: it stays a diagnosis case.
 function productDecisionGap(result) {
   if (!result || result.outcome !== 'hard_fail') return false
   const findings = result.blocking_findings || []
@@ -469,7 +470,7 @@ function runNodePrompt(node, strict, delivery = null) {
     'Read that file directly and never register it with the freshness `read`: it is the run\'s instruction, deleted',
     'when this node completes, not a product input.',
     'A correction refines how this node meets its spec; it never settles a user-visible rule. If applying one needs a',
-    'choice your decision inputs do not settle, report it as an unresolved product decision (below), never pick it.',
+    'choice your decision inputs do not settle, take and record it as a run decision (below).',
     deliveryNote(delivery),
     `Project context (profile_slice): ${JSON.stringify(node.profile_slice || {})}.`,
     'Write all exit_artifacts and run their validation_commands to self-check.',
@@ -500,10 +501,11 @@ function runNodePrompt(node, strict, delivery = null) {
     'Return safety_warnings[] for non-blocking warnings. When this node is the concept-acceptance coverage gate, return',
     'missing_mappings[] copied verbatim from .allforai/concept-acceptance/acceptance-report.json — the behaviour mappings',
     'with no evidence; an empty list means every mapping has evidence. Return no score, threshold or verdict.',
-    'Product requirements can only come from recorded user decision_inputs; an unresolved product choice is a hard failure, never an assumed decision.',
-    'Report it as blocking_findings [{type: "unresolved_product_decision", decision_id, needed_decision, options (two or more),',
-    'recommended, blocking_intent_ids}] and write the same list to .allforai/bootstrap/product-decision-gaps/<node_id>.json',
-    'as {node_id, decisions}; it blocks only this node and its successors until the user answers it at interactive bootstrap.',
+    'The run is unattended and never stops for a question (ADR-0018). A user-visible choice this node owns that the recorded',
+    'decision_inputs do not settle is taken here: weigh at least two options, build with the one you recommend, and write',
+    '.allforai/bootstrap/run-decisions/<node_id>.json as {node_id, decisions: [{decision_id, needed_decision, options (two or more),',
+    'recommended, taken, why, blocking_intent_ids}]} so completion can list it and the user can overturn it at the next interactive',
+    'bootstrap. It is not a failure and not a reason to stop. A choice that contradicts a recorded decision_input is never taken.',
     strict || ''
   ].filter(Boolean).join(' ')
 }
@@ -864,7 +866,7 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   phase('Load')
   const recorded = await agent(
     'Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy` and return its JSON verbatim. ' +
-    'Missing or invalid policy blocks execution; return to the interactive run entry, never ask or choose defaults here.',
+    'The script records the defaults itself when no usable policy exists; never ask the user and never choose values here.',
     { label: 'run-policy', schema: { type: 'object', required: ['status'], properties: {
       status: { type: 'string' }, policy: { type: 'object' }
     } } })

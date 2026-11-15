@@ -142,3 +142,13 @@ test('wavePrompt runs the freshness helper with the exact request', () => {
     /'\{"operation":"begin-wave","node_ids":\["a","b"\]\}' \| python3 \.allforai\/bootstrap\/scripts\/evidence_freshness\.py \./)
   assert.match(core.wavePrompt('recover-waves'), /'\{"operation":"recover-waves"\}'/)
 })
+
+// ADR-0018: `/run` is unattended. A node takes an unsettled user-visible choice on its
+// recommendation and records it for disclosure; it is not told to fail and wait.
+test('runNodePrompt: an unsettled product choice is taken, recorded and never a stop', () => {
+  const p = core.runNodePrompt({ node_id: 'n', node_spec_path: 's.md' }, '')
+  assert.match(p, /run-decisions\/<node_id>\.json/)
+  assert.match(p, /recommended, taken, why/)
+  assert.match(p, /not a failure and not a reason to stop/)
+  assert.doesNotMatch(p, /unresolved_product_decision|product-decision-gaps/)
+})

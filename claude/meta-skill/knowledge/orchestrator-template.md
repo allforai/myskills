@@ -88,32 +88,34 @@ blocked until reconstructed.
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
-## Run Policy (the only questions `/run` asks, and only before the first node)
+## Run Policy (recorded, never asked)
 
-Everything a human could be asked mid-run is asked here instead, once, in one
-`AskUserQuestion`, and written to `.allforai/bootstrap/run-policy.json` through
-the shared copied CLI. First run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
-If it returns `run_policy_ready`, reuse the validated policy without asking.
-For `needs_run_policy`, collect the three answers and submit JSON operation
-`run-policy` with `answers` and the actual `user_reference`. Invalid policy blocks
-for interactive repair. Three decisions, each with a displayed default (never
-submitted automatically):
+`/run` asks nothing — not before the first node and not after it. The user answers
+questions at `/bootstrap`; a run goes from its first line to its report unattended
+(ADR-0018). The three choices a run needs are read from
+`.allforai/bootstrap/run-policy.json`: run
+`python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy` before the
+first node. With no usable policy on record the script records the defaults itself and
+marks them `chosen_by: default`, so completion can say they were nobody's choice; it
+never returns a question.
 
-| key | question | options (first = default) |
+| key | when it is read | options (first = default) |
 |---|---|---|
 | `on_repeated_failure` | The same node fails 3 times, the diagnosis is neither out-of-scope nor converged. | `continue` (keep diagnosing until the caps below stop it) / `halt` (stop and report on the third failure) |
-| `on_needs_iteration` | The concept-acceptance coverage gate names behaviour mappings without evidence (`missing_mappings` non-empty; an empty list proceeds and asks nothing). | `halt_with_report` (write acceptance-report.md, stop; the fix / re-bootstrap / accept choice is made by the human afterwards) / `auto_fix_once` (the missing list becomes one bounded QA repair request through the gate's declared repair loop and the ledger; the gate reruns, then the run stops either way) / `accept` (record `accepted_with_gaps` in assumed-decisions.json and finish the run) |
+| `on_needs_iteration` | The concept-acceptance coverage gate names behaviour mappings without evidence (`missing_mappings` non-empty; an empty list proceeds). | `halt_with_report` (write acceptance-report.md, stop; the fix / re-bootstrap / accept choice is made by the human afterwards) / `auto_fix_once` (the missing list becomes one bounded QA repair request through the gate's declared repair loop and the ledger; the gate reruns, then the run stops either way) / `accept` (record `accepted_with_gaps` in assumed-decisions.json and finish the run) |
 | `on_safety_warning` | A non-blocking safety warning fires (see safety.md). | `continue` (log the warning and go on) / `halt` (stop at the first warning) |
 
-After this section there are no more questions: every later branch reads
-`run-policy.json`, and a branch that would need a fourth answer halts with a report instead.
+A user who wants another choice says so outside a run — in the `/run` goal text or at
+`/bootstrap` — and it is submitted as JSON operation `run-policy` with `answers` and the
+actual `user_reference`; what it replaces is kept in `run-policy-repairs.json`. Every
+later branch reads `run-policy.json`, and a branch that would need a fourth answer
+halts with a report instead.
 The Workflow engine checks this policy before loading the DAG and reads
 `product_intent.py . --policy-event on_needs_iteration` when the gate fires; that
 read charges nothing. The one repair `auto_fix_once` grants is an attempt the
 repair-authorization ledger charges against the gate's declared loop, so no second
-accounting of it exists. Run Policy is never a product decision: unresolved
-decision_inputs return to interactive bootstrap and cannot be approved by
-continue/accept.
+accounting of it exists. Run Policy is never a product decision: `continue` and
+`accept` confirm no requirement.
 
 ### Dynamic preflight reconciliation
 
@@ -296,7 +298,7 @@ never waive, downgrade, or hide a gap.
 
 ## Phase B execution (CC: Workflow engine)
 
-`/run` is fully autonomous after the Run Policy section — no further questions, no human stops. Drive it as:
+`/run` is fully autonomous from its first line — no questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
    `.allforai/bootstrap/run-engine/run-engine.workflow.js`.
@@ -379,15 +381,19 @@ never waive, downgrade, or hide a gap.
    of what is still open — the QA node downstream judges it; it is not a failure to
    diagnose. In the final report, name every node whose review ended `open`.
 
-3b. On `needs_product_decision`:
+3b. A product decision nobody settled:
    <!-- clause-begin:run-product-decision-gap -->
-   A node met a user-visible rule the frozen intent does not settle and recorded it in
-   `.allforai/bootstrap/product-decision-gaps/<node_id>.json`. Only that node and its
-   successors waited; unrelated branches ran to the end. This is not a defect to diagnose
-   and no policy chooses it for the user (ADR-0011). Record `run_halted` with status
-   `needs_product_decision`, then list every decision in the report — node, question,
-   options, recommendation — and tell the user to answer them at interactive `/bootstrap`,
-   which asks them in Phase A and clears each record once it is wired. Never ask here.
+   `/run` never stops for a product decision (ADR-0018). A node that owns a user-visible
+   rule the frozen intent does not settle weighs at least two options, builds with the one
+   it recommends and records the choice in
+   `.allforai/bootstrap/run-decisions/<node_id>.json`. It then passes or fails on its work
+   like any other node, completion lists the choice, and the user overturns it at
+   interactive `/bootstrap`, which asks it in Phase A. A node never takes a choice that
+   contradicts a recorded decision. A workflow bootstrapped before this may still park a
+   node with `.allforai/bootstrap/product-decision-gaps/<node_id>.json` and end
+   `needs_product_decision`: record `run_halted` with that status, list every decision —
+   node, question, options, recommendation — and say that rerunning `/bootstrap` answers
+   them and brings the workflow to the unattended rule. Never ask here.
    <!-- clause-end:run-product-decision-gap -->
 
 4. Repeat until `complete`, `needs_product_decision` or an UNRESOLVED stop.
@@ -477,12 +483,18 @@ so an interrupted run needs no cleanup by hand.
 0b. **Disclose delegated decisions:**
    <!-- clause-begin:run-delegations-disclosure -->
    Run `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations`.
-   In the completion text, under the heading `Decisions you delegated to the model`,
-   print every returned entry: its id, the proposal title, the user turn that handed
-   the decision over, and the reason. If the list is empty, print `No delegated decisions.`
+   The completion text prints what it returns, each list under its own heading:
+   - `Decisions you delegated to the model` — every `delegations` entry: its id, the
+     proposal title, the user turn that handed the decision over, and the reason. If the
+     list is empty, print `No delegated decisions.`
+   - `Decisions this run took on its own recommendation` — every `run_decisions` entry:
+     the node, the question, the options it weighed, the one it took and why. If the list
+     is empty, print `No decisions taken by the run.`
+   - `Run Policy left at its defaults` — every `run_policy_defaults` key with its value;
+     leave the heading out when the object is empty.
    <!-- clause-end:run-delegations-disclosure -->
-   The user must be able to see which product decisions the model made for them without
-   opening a file. Do not ask the user anything here.
+   The user must be able to see every decision that was made for them without opening a
+   file. Do not ask the user anything here.
 
 1. **Mark concept drift resolved (if applicable):**
    If `.allforai/product-concept/concept-drift.json` exists AND `resolved = false`

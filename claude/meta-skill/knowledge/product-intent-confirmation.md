@@ -65,7 +65,11 @@ displayed default nobody answered stays a proposal. A delegated direction is
 marked `auto_decided` (the naming of `defensive-patterns.md` Pattern H) and is
 disclosed back to the user at run completion through
 `product_intent.py . --delegations`. Deciding for the user is allowed only
-because it is later visible as having been decided for them.
+because it is later visible as having been decided for them. That holds at
+bootstrap, where the user is present to be asked. Inside `/run` nobody is: a node
+that owns a rule the frozen intent does not settle takes its recommended option
+and records it (`defensive-patterns.md` Pattern I, ADR-0018), and the same
+disclosure lists it.
 
 ## Executable persistence boundary
 
@@ -239,25 +243,26 @@ semantically sufficient. Independent host tests must establish those properties;
 scripted JSON tests are not real-host dialogue evidence.
 
 Input declarations are a reading minimum; additional relevant reads are allowed,
-but reading facts never expands authorization. Preserve main's one-time Run Policy
-questions before execution, autonomous execution thereafter, ADR3 independent
+but reading facts never expands authorization. Preserve a run that asks nothing
+(ADR-0018), ADR3 independent
 visual-review semantics, and the 2D/2.5D limit disclosure: no revived 3D route choice.
 
-At the interactive run entry, check `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
-`needs_run_policy` exits 1 and returns the three recorded-policy questions and
-options; collect actual responses together before the first node. Persist via
+Before the first node the run entry reads `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`.
+It never returns a question: an existing valid policy is returned as it is, and with
+none on record — or an unusable one — the CLI records the first option of each event,
+marked `chosen_by: default`. The user changes a choice with
 `{operation: "run-policy", answers: {on_repeated_failure, on_needs_iteration,
-on_safety_warning}, user_reference}`. Existing valid policy returns no questions;
-invalid policy returns the questions with its invalidity reason for interactive
-repair, never defaults. Explicit answers and the actual user response reference
-repair it while retaining the prior content in `run-policy-repairs.json`.
-Unattended policy events cannot collect or repair these choices. These operations
+on_safety_warning}, user_reference}` — explicit answers and the actual user response
+reference. Whatever a write replaces is retained in `run-policy-repairs.json`.
+Policy events only read these choices and take no answers. Unattended policy events cannot collect or repair these choices. These operations
 never write the product journal or requirement confirmations. Runtime consumers
 use `--policy-event <key>` as a read of the recorded choice.
 `python3 .allforai/bootstrap/scripts/product_intent.py . --delegations` is the
 other read-only entry: it lists every confirmed direction the user delegated, with
-the proposal, the user turn and the reason. It writes nothing, asks nothing, and
-the run's completion text reports what it returns. The one repair
+the proposal, the user turn and the reason; `run_decisions`, every choice a node took
+on its own recommendation during a run (`run-decisions/<node_id>.json`); and
+`run_policy_defaults`, the Run Policy choices nobody made. It writes nothing, asks
+nothing, and the run's completion text reports what it returns. The one repair
 `auto_fix_once` grants is an attempt charged in the repair-authorization ledger
 against the concept-acceptance gate's declared loop, so interruption cannot grant
 a second repair and no second accounting exists. Accepted gaps are an explicitly

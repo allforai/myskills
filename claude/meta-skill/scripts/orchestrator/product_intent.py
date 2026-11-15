@@ -387,6 +387,12 @@ POLICY_OPTIONS = {
 }
 
 
+# What an unattended `/run` records when nobody chose: the first option of each event.
+POLICY_DEFAULTS = {key: options[0] for key, options in POLICY_OPTIONS.items()}
+POLICY_DEFAULTED = {"chosen_by": "default"}  # Marks a policy the run recorded itself, for disclosure.
+RUN_DECISIONS = ".allforai/bootstrap/run-decisions"
+
+
 def _policy_invalid(policy):
     return not isinstance(policy, dict) or any(policy.get(k) not in options for k, options in POLICY_OPTIONS.items())
 
@@ -409,35 +415,32 @@ def _recorded_policy(root):
 def run_policy(root, request):
     """Run choices are separate from the product journal and never approve intent.
 
-    Only the interactive run entry collects or repairs a policy, with explicit
-    answers and an actual user reference. A repair records the invalid prior
-    content in an audit file; unattended events never rewrite the policy.
+    `/run` asks nothing (ADR-0018): with no usable policy on record it records the
+    defaults, marked as chosen by default so completion can say so. The user changes a
+    choice with explicit answers and an actual user reference, at any time outside a
+    run. Whatever a write replaces — an unusable file or an earlier choice — is kept in
+    an audit file. A run event only reads; it never takes answers.
     """
     policy, previous, problem = _recorded_policy(root)
-    if policy is None:
-        if request["operation"] != "run-policy":
-            if problem:
-                raise ValueError(f"Invalid Run Policy; repair it at the interactive entry without guessing answers ({problem})")
-            if "answers" in request:
-                raise ValueError("Run events consume a recorded Run Policy; they never collect or repair one")
-        if "answers" not in request:
-            result = {"status": "needs_run_policy", "questions": POLICY_OPTIONS,
-                      "return_to": "interactive run entry before the first node"}
-            if problem:
-                result["invalid_policy"] = f"{problem}; repair it at the interactive entry without guessing answers"
-            return result
+    if request["operation"] != "run-policy" and "answers" in request:
+        raise ValueError("Run events consume a recorded Run Policy; they never take answers")
+    answered = "answers" in request
+    if answered:
         if not _text(request.get("user_reference")):
-            raise ValueError("Run Policy requires an actual user response")
-        policy = request["answers"]
-        if _policy_invalid(policy):
-            raise ValueError("Invalid Run Policy; repair it at the interactive entry without guessing answers")
-        if problem:
+            raise ValueError("Run Policy answers require an actual user response")
+        if _policy_invalid(request["answers"]):
+            raise ValueError("Invalid Run Policy answers; every event takes one of its listed options")
+    if answered and request["answers"] != policy or policy is None:
+        chosen = request["answers"] if answered else {**POLICY_DEFAULTS, **POLICY_DEFAULTED}
+        if previous is not None:
             repairs = _read(root, RUN_POLICY_REPAIRS, [])
             if not isinstance(repairs, list):
                 raise ValueError("Run Policy repair audit must stay a list")
-            repairs.append({"previous": previous, "reason": problem, "answers": policy,
-                            "user_reference": request["user_reference"]})
+            repairs.append({"previous": previous, "reason": problem or "replaced by the user's answers",
+                            "answers": chosen,
+                            "user_reference": request["user_reference"] if answered else "default"})
             _write(root, RUN_POLICY_REPAIRS, repairs)
+        policy = chosen
         _write(root, RUN_POLICY, policy)
     if request["operation"] == "run-event":
         event = request["event"]
@@ -1192,7 +1195,34 @@ def delegations(root):
                           "proposal_title": titles.get(item.get("proposal_id")),
                           "user_reference": confirmation.get("user_reference"),
                           "reason": confirmation.get("reason")})
-    return {"status": "delegations", "delegations": disclosed}
+    return {"status": "delegations", "delegations": disclosed,
+            "run_decisions": _run_decisions(Path(root)), "run_policy_defaults": _defaulted_policy(Path(root))}
+
+
+def _run_decisions(root):
+    """Every user-visible choice a node took on its own recommendation during `/run`.
+
+    A node writes `run-decisions/<node_id>.json` when the frozen intent does not settle
+    a rule it owns (ADR-0018). A record that cannot be read is still disclosed, by
+    path, so a choice is never hidden by a malformed file.
+    """
+    disclosed = []
+    directory = root / RUN_DECISIONS
+    for path in sorted(directory.glob("*.json")) if directory.is_dir() else []:
+        try:
+            decisions = json.loads(path.read_text(encoding="utf-8"))["decisions"]
+            disclosed += [{"node_id": path.stem, **decision} for decision in decisions]
+        except (OSError, ValueError, KeyError, TypeError):
+            disclosed.append({"node_id": path.stem, "unreadable": f"{RUN_DECISIONS}/{path.name}"})
+    return disclosed
+
+
+def _defaulted_policy(root):
+    """The Run Policy choices nobody made, or {} when the user chose them."""
+    policy = _recorded_policy(root)[0] or {}
+    if policy.get("chosen_by") != POLICY_DEFAULTED["chosen_by"]:
+        return {}
+    return {key: policy[key] for key in POLICY_OPTIONS}
 
 
 def _external_change(root, request):
@@ -1656,8 +1686,6 @@ if __name__ == "__main__":
                    else json.load(sys.stdin))
         result = session(Path(sys.argv[1]).resolve(), request)
         print(json.dumps(result, ensure_ascii=False))
-        if result.get("status") == "needs_run_policy":
-            sys.exit(1)
     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError, StopIteration) as exc:
         print(json.dumps({"status": "blocked", "error": str(exc)}))
         sys.exit(1)

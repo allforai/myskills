@@ -55,11 +55,12 @@ def _delegated(project_root: Path) -> tuple[list, str | None]:
     reports nothing delegated would be worse than one that admits it cannot look.
     """
     if _delegations is None:
-        return [], _delegations_unavailable
+        return {"delegations": []}, _delegations_unavailable
     try:
-        return list(_delegations(project_root)["delegations"]), None
+        answer = _delegations(project_root)
+        return dict(answer, delegations=list(answer["delegations"])), None
     except (OSError, ValueError, TypeError, KeyError, AttributeError, IndexError) as exc:
-        return [], str(exc)
+        return {"delegations": []}, str(exc)
 
 
 def summarize(project_root: Path) -> dict:
@@ -100,7 +101,10 @@ def summarize(project_root: Path) -> dict:
         "failure_count": len(failures),
         "blockers": blockers[-20:],
         "failures": failures[-20:],
-        "delegations": delegated,
+        "delegations": delegated["delegations"],
+        # ADR-0018: what the run chose because nobody was there to ask.
+        "run_decisions": delegated.get("run_decisions", []),
+        "run_policy_defaults": delegated.get("run_policy_defaults", {}),
     }
     if delegations_error is not None:
         summary["delegations_error"] = delegations_error
@@ -142,6 +146,16 @@ def write_reports(project_root: Path, summary: dict) -> tuple[Path, Path]:
             f"reason=`{item.get('blocking_reason') or item.get('message')}`"
         )
     if not summary["failures"]:
+        lines.append("- none")
+    lines.extend(["", "## Decisions The Run Took"])
+    for item in summary.get("run_decisions", []):
+        lines.append(
+            f"- node=`{item.get('node_id')}` `{item.get('needed_decision') or item.get('unreadable')}` "
+            f"options=`{item.get('options')}` taken=`{item.get('taken')}` why=`{item.get('why')}`"
+        )
+    for key, value in summary.get("run_policy_defaults", {}).items():
+        lines.append(f"- run policy `{key}` left at its default `{value}`")
+    if not summary.get("run_decisions") and not summary.get("run_policy_defaults"):
         lines.append("- none")
     lines.extend(["", "## Delegated Decisions"])
     for item in summary.get("delegations", []):
