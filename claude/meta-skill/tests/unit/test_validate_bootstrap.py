@@ -1385,6 +1385,28 @@ def test_coverage_gate_loop_names_the_repair_and_rerun_nodes():
     assert coverage_gate_loop([{"node_id": "design", "capability": "game-design"}]) is None
 
 
+def test_source_writing_node_spec_must_anchor_the_simplicity_patterns(tmp_path):
+    _write_workflow(tmp_path, [_base_node(node_id='build', parallel_write_scopes=['src/**']),
+                               _base_node(node_id='design')])
+    (tmp_path / 'node-specs').mkdir()
+    spec = tmp_path / 'node-specs/build.md'
+    head = '---\nnode_id: build\nexit_artifacts: [.allforai/out.json]\nparallel_write_scopes: [src/**]\n---\n'
+    (tmp_path / 'node-specs/design.md').write_text(
+        '---\nnode_id: design\nexit_artifacts: [.allforai/out.json]\n---\n' + ATTENTION_CONTRACT_BODY)
+
+    def missing():
+        return [e for e in validate_node_spec_contracts(str(tmp_path)) if e.startswith('missing_simplicity_anchor')]
+
+    spec.write_text(head + ATTENTION_CONTRACT_BODY)
+    assert len(missing()) == 2 and all('node-specs/build.md' in e for e in missing())
+    # One anchor is half the criterion: deferral without reuse, or reuse without deferral.
+    spec.write_text(head + ATTENTION_CONTRACT_BODY + '\nknowledge/defensive-patterns.md#pattern-k\n')
+    assert len(missing()) == 1 and 'pattern-l' in missing()[0]
+    spec.write_text(head + ATTENTION_CONTRACT_BODY
+                    + '\nknowledge/defensive-patterns.md#pattern-k\nknowledge/defensive-patterns.md#pattern-l\n')
+    assert missing() == []
+
+
 @pytest.mark.parametrize('spec_scopes', ['', 'parallel_write_scopes: [other/**]\n'])
 def test_parallel_write_scopes_require_matching_node_spec(tmp_path, spec_scopes):
     _write_workflow(tmp_path, [_base_node(node_id='build', parallel_write_scopes=['src/**'])])

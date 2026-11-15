@@ -391,7 +391,7 @@ Both run engines park that node and its successors, let unrelated branches finis
 - This pattern never removes or weakens a guard on data, money, security, permissions or compliance. A reuse that cannot be shown to hold that line is not taken.
 - "Search found nothing" is a finding about where the search looked. Say where; do not turn an unsearched area into "does not exist".
 - Mechanisms added for an imagined scenario are Pattern K's subject; structure and duplication are this pattern's. A speculative abstraction layer fails both.
-- A node that builds something an existing implementation covers, or adds structure that pays nothing yet, has a `quality_gaps` entry, not a style note.
+- A node that builds something an existing implementation covers, or adds structure that pays nothing yet, has a `quality_gaps` entry, not a style note. The reverse is not a gap: choosing the native control, keeping two functions apart, or declining a requested abstraction is a decision the node reports (in a run, NODE_RESULT `assumed_decisions`), and reporting it in a gap field would block the node for doing the right thing.
 
 **Example**:
 

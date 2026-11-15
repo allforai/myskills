@@ -163,7 +163,13 @@ correctness, and guards on data, money, security, permissions and compliance are
 deferred. From Pattern L: nothing is built that the project's shared code, the standard
 library, the platform's native capability or an installed dependency already provides;
 the codebase's existing pattern is followed; an abstraction is admitted only for what it
-makes simpler today. A violation of either is a `quality_gaps` entry.>
+makes simpler today. What the node chose not to build is a decision, not a defect: each
+deferral is returned in NODE_RESULT `assumed_decisions` (`decision` names the mechanism,
+`default_chosen` is `deferred`, `rationale` carries what it would have prevented and the
+real occurrence that brings it back), as is a behaviour difference accepted by using a
+native or existing implementation where the upstream artifacts are silent. It never goes
+in a gap field — every gap field blocks completion. `quality_gaps` is for the violation
+itself: the node built what these patterns exclude, or weakened a guard to share it.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.

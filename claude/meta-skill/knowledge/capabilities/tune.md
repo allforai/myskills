@@ -113,6 +113,7 @@ consumed by launch-prep as a baseline reference.
 6. **Over-abstraction detection**: Simultaneously check "should abstract" and "shouldn't have abstracted".
 7. **Know why it exists before proposing to remove or merge it**: commit messages, blame and linked issues are requirement sources, and often the only record of why a guard, special case or repeated check is there. Cite the reason when found. When it cannot be established, the task is `conditional` and says so — "no reason found" is never read as "no reason".
 8. **Data and money are not simplification material**: a finding whose change could touch data integrity, money, security, permissions or a compliance obligation keeps the existing protection and is reported as a risk to verify, never scored as a duplication or abstraction win.
+9. **Coverage trade-offs are a separate kind of finding**: a task may propose dropping low-value convenience, compatibility or automatic retry/recovery, but it is never mixed with implementation-equivalent simplification. It states the business result kept, the behaviour reduced and the scenarios affected, with affected users × frequency evidence (time range and source) or 未知; without usage data it is `conditional`. The audit never concludes "nobody uses it" on its own, and checks why the coverage was added (rule 7) first — a branch with no caller may exist for one known customer or one past incident.
 
 ## Downstream Consumers
 

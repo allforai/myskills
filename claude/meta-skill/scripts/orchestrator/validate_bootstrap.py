@@ -1329,6 +1329,12 @@ def validate_node_spec_coverage(bdir: str) -> list:
     return errors
 
 
+SOURCE_WRITING_NODE_ANCHORS = (
+    "defensive-patterns.md#pattern-k",
+    "defensive-patterns.md#pattern-l",
+)
+
+
 def validate_node_spec_contracts(bdir: str) -> list:
     """Ensure node-spec frontmatter mirrors workflow node contracts."""
     errors = []
@@ -1405,6 +1411,17 @@ def validate_node_spec_contracts(bdir: str) -> list:
                 errors.append(
                     f"node-specs/{node_id}.md: missing attention contract term {term!r}"
                 )
+
+        # A node that writes product source is where reuse and speculative structure are
+        # decided. The template asks for both anchors; a spec generated without them hands
+        # the executor no simplicity criterion at all, so the receiving side refuses it.
+        if _string_list(node.get("parallel_write_scopes")):
+            for anchor in SOURCE_WRITING_NODE_ANCHORS:
+                if anchor not in text:
+                    errors.append(
+                        f"missing_simplicity_anchor: node-specs/{node_id}.md: node writes product "
+                        f"source (parallel_write_scopes) but does not anchor {anchor}; rerun /bootstrap"
+                    )
 
     return errors
 
