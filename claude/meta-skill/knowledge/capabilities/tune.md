@@ -10,9 +10,11 @@ abstraction, validation. Output: scored report + task list.
 
 ## Core Principle
 
-Same functionality, less code = higher quality. Five measurement dimensions:
-duplication rate, abstraction level, cross-layer call depth, file scatter,
-validation placement correctness.
+Same functionality, less total burden = higher quality. Burden is implementation,
+callers, configuration, dependencies, tests and migration together — not line count;
+fewer lines through compression or deleted necessary tests is not simpler. Five
+measurement dimensions: duplication rate, abstraction level, cross-layer call depth,
+file scatter, validation placement correctness.
 
 ## Phases
 
@@ -38,14 +40,29 @@ validation placement correctness.
 ### Phase 2: Duplication Detection
 
 - 4-layer scan: API/Entry, Service/Business, Data/Query, Utility
-- >70% structural similarity = candidate duplicate
+- >70% structural similarity = candidate duplicate — a candidate, not a finding
+- A candidate becomes a finding only when the blocks change for the same reason. Compare
+  meaning, calling convention and reason for change, not text. If merging them would need
+  mode parameters or branches to tell the callers apart, the local repetition is the
+  simpler code: record it as examined and kept, not as a duplicate
+- A self-built implementation of something the project's shared code, the standard
+  library, the platform's native capability or an installed dependency already provides
+  is duplication too (`defensive-patterns.md#pattern-l`)
 - Output: `.allforai/code-tuner/phase2-duplicates.json`
 
 ### Phase 3: Abstraction Analysis
 
 - Vertical: similar classes -> base class opportunity
 - Horizontal: scattered code -> shared method opportunity
-- Over-abstraction: 1 impl + 1 call site + transparent passthrough = over-engineered
+- Over-abstraction: 1 impl + 1 call site + transparent passthrough = over-engineered.
+  The test is what the structure makes simpler today, not its shape: a second
+  implementation that exists, a test double in use, or an extension point the framework
+  requires is a payoff; "we might swap it later" is not (`defensive-patterns.md#pattern-l`)
+- A shared-method opportunity must leave every existing site simpler, and the shared
+  condition must be as strict for each caller as its own was; a guard loosened until it
+  fits all callers is a weakened guard, reported as such, never as a simplification
+- A mechanism built for an imagined scenario (limit, retry, fallback, cache, compatibility
+  branch with no caller) is judged by `defensive-patterns.md#pattern-k`, not by this phase
 - Output: `.allforai/code-tuner/phase3-abstractions.json`
 
 ### Phase 4: Synthesis
@@ -70,7 +87,8 @@ validation placement correctness.
       "phase": "<enum: compliance | duplication | abstraction | validation | data-model>",
       "severity": "<enum: critical | major | minor>",
       "description": "<string>",
-      "file": "<string — file:line>"
+      "file": "<string — file:line>",
+      "basis": "<enum: verified | conditional — verified = proven by the source and history read in this run; conditional = depends on something not established (why it exists, an external contract, usage), named in the description>"
     }
   ]
 }
@@ -93,6 +111,8 @@ consumed by launch-prep as a baseline reference.
 4. **Pre-launch vs maintenance**: Each finding carries both aggressive and conservative variants.
 5. **Responsibility over naming**: Layer assignment by dependency patterns and code responsibility, not folder names.
 6. **Over-abstraction detection**: Simultaneously check "should abstract" and "shouldn't have abstracted".
+7. **Know why it exists before proposing to remove or merge it**: commit messages, blame and linked issues are requirement sources, and often the only record of why a guard, special case or repeated check is there. Cite the reason when found. When it cannot be established, the task is `conditional` and says so — "no reason found" is never read as "no reason".
+8. **Data and money are not simplification material**: a finding whose change could touch data integrity, money, security, permissions or a compliance obligation keeps the existing protection and is reported as a risk to verify, never scored as a duplication or abstraction win.
 
 ## Downstream Consumers
 
@@ -109,6 +129,7 @@ consumed by launch-prep as a baseline reference.
 ### Phase-Specific:
 - governance-styles.md: governance compliance checking
 - design-audit-dimensions.md: pattern and behavioral consistency
+- defensive-patterns.md: **#pattern-l (Reuse Before Build)** — the criteria behind the duplication and abstraction phases; **#pattern-k (Unhit Defense Deferral)** — the admission rule for speculative mechanisms found in the audited code
 
 ## Composition Hints
 
