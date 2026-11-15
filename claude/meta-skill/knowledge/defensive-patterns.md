@@ -334,6 +334,7 @@ Both run engines park that node and its successors, let unrelated branches finis
 | Daily reminder time | `end-user` | none — genuine end-user preference on the settings screen |
 | Self-hosted server URL | `end-user` | exception, `requirement_ref: REQ-012` (confirmed self-hosting requirement) |
 
+<a id="pattern-k"></a>
 ## Pattern K: Unhit Defense Deferral
 
 **Trigger condition**: A design or implementation node is about to add a mechanism **for a scenario it imagines** — a rate limit or quota, a retry with backoff, a degradation or fallback path, a cache or batch sized for load, a compatibility branch with no caller, a recovery flow for a "just in case", an abstraction layer that only pays off at a hypothetical scale — and the failure it defends against has **no instance in this system**.
@@ -367,3 +368,38 @@ Both run engines park that node and its successors, let unrelated branches finis
 | Auto-resume for a monthly export | Re-running a report | none; re-export is cheap | Defer — recoverable, re-run costs one click |
 | `if err != nil` on a network write | Undefined behaviour on a documented failure | branch never fired | Build — correctness, out of scope (see Trigger condition) |
 | Retry on a queue whose delivery path has no metrics | Lost job | cannot tell — nothing is recorded | Unknown, not deferred — step 2 stops here |
+
+---
+
+<a id="pattern-l"></a>
+## Pattern L: Reuse Before Build
+
+**Trigger condition**: A node that writes product source is about to add something the codebase or its platform may already provide — a helper, a component, a validation, a cache, a client wrapper, a new dependency — or is about to add structure around code: an interface, a factory, a wrapper layer, a config key, an injection point.
+
+**What the delivered code must satisfy** (how to get there is the executor's call):
+
+1. **Nothing is built that is already available.** Before a new implementation is accepted, the project's shared code, the standard library, the native capability of the platform / runtime / database, and the dependencies already installed have been searched for it. Native capability is the one most often missed, and a self-built component is frequently its substitute: a native form control instead of a custom picker, CSS instead of scripted animation, a unique index instead of an application-level duplicate check, HTTP cache semantics instead of a hand-rolled cache. A new third-party dependency comes after all four, and only with its API, version compatibility, licence and maintenance checked against the official source rather than recalled.
+2. **The existing pattern is followed.** When the codebase already solves this kind of problem one way, the new code solves it the same way. A second way of doing the same thing is a cost every later reader pays. The exception is a pattern that is itself the defect: unifying on a bad pattern is not the goal, and replacing it is a separate, declared piece of work, not a side effect of this node.
+3. **The familiar solution wins a tie.** When two approaches meet the requirement at similar total cost, the one the target stack's community commonly uses is chosen over a personal preference or a newer technique. A mature library that removes a large amount of code to maintain is worth using; a small problem does not need a large framework.
+4. **Every abstraction pays now.** Structure is admitted only for what it makes simpler today: a second implementation that actually exists, a test double that is actually used, an extension point the framework requires. An interface with one implementation, a factory producing one product, a wrapper that only forwards, a config key nothing sets, an injection point reserved for "we might swap it later" do not qualify — write the direct code. Conversely, the same guard or transformation written out in several callers belongs in the function they all pass through, provided the shared condition is exactly as strict for each caller as its own was; a condition loosened until it fits all of them is a weakened guard, not a shared one.
+5. **Similar text is not shared meaning.** Two blocks are merged only when they change for the same reason. If merging needs mode parameters or branches to tell the callers apart, the local repetition is the simpler code and stays.
+6. **A difference in behaviour is a cost, not a detail.** Switching to a native capability or an existing implementation counts what changes with it — cross-browser or cross-version behaviour, accessibility, how much the styling can be controlled, how errors are presented. When the difference touches something an upstream artifact promised, the promise wins and the choice is escalated, not made silently.
+
+**Key principles**:
+
+- The measure is total burden — implementation, callers, configuration, dependencies, tests, migration — not line count. Fewer lines through compression, deleted necessary tests, or complexity moved into configuration is not simpler.
+- This pattern never removes or weakens a guard on data, money, security, permissions or compliance. A reuse that cannot be shown to hold that line is not taken.
+- "Search found nothing" is a finding about where the search looked. Say where; do not turn an unsearched area into "does not exist".
+- Mechanisms added for an imagined scenario are Pattern K's subject; structure and duplication are this pattern's. A speculative abstraction layer fails both.
+- A node that builds something an existing implementation covers, or adds structure that pays nothing yet, has a `quality_gaps` entry, not a style note.
+
+**Example**:
+
+| About to write | Already there | Verdict |
+|---|---|---|
+| A date-range picker component | The platform's native date input meets the screen spec | Use native; note the styling limits against the UI spec |
+| An in-memory cache in front of a read endpoint | HTTP caching headers; no observed load | Neither — Pattern K defers it; if load arrives, headers first |
+| `PaymentGateway` interface with one Stripe implementation | Nothing swaps it; tests use the real sandbox | Call the client directly |
+| `PaymentGateway` interface with one implementation and a fake used by 30 tests | The fake is the second implementation | Keep — it pays now |
+| One `formatMoney` for invoices and for analytics exports | Invoices round per currency rules, exports keep raw precision | Keep two — they change for different reasons |
+| The same ownership check copied into five handlers | All five pass through one service method | Move it there, as strict as the strictest caller needed |

@@ -536,6 +536,39 @@ def validate_spec_gap_discipline_contract(errors: list[str]) -> None:
                 errors.append(f"{rel}: missing spec-gap discipline term {term}")
 
 
+def validate_code_simplicity_contract(errors: list[str]) -> None:
+    # Patterns K and L only reach the code if the node-spec template makes every source-writing
+    # node anchor them. The patterns written but the template silent is the half-landing this pins.
+    pins = (
+        (
+            "knowledge/defensive-patterns.md",
+            (
+                '<a id="pattern-k"></a>',
+                "## Pattern K: Unhit Defense Deferral",
+                '<a id="pattern-l"></a>',
+                "## Pattern L: Reuse Before Build",
+            ),
+        ),
+        (
+            "knowledge/node-spec-template.md",
+            (
+                "defensive-patterns.md#pattern-k",
+                "defensive-patterns.md#pattern-l",
+                "`parallel_write_scopes`",
+            ),
+        ),
+    )
+    for rel, terms in pins:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for term in terms:
+            if term not in text:
+                errors.append(f"{rel}: missing code-simplicity term {term}")
+
+
 def validate_experience_gate_contract(errors: list[str]) -> None:
     # Must #9 spans three files: the bootstrap corpus plans the gate, concept-acceptance names both
     # critiques it waits on, and the app-design PACK carries the sub-skill. A half-landed gate (the
@@ -599,6 +632,7 @@ def main() -> int:
     validate_rebootstrap_reconciliation_contract(errors)
     validate_public_entrypoint_surface(errors)
     validate_spec_gap_discipline_contract(errors)
+    validate_code_simplicity_contract(errors)
     validate_experience_gate_contract(errors)
     if errors:
         for error in errors:

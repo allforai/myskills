@@ -148,7 +148,22 @@ nothing for it and no placeholder, appends a `contract_gaps` entry of kind
 the resulting `check_artifacts.py` failure is the intended outcome, not something to
 dodge by emptying the field. From Pattern J: every configuration item carries exactly
 one audience, only `end-user` items may appear on an end-user surface, and an item whose
-audience nobody has decided is escalated through Pattern I rather than guessed.>
+audience nobody has decided is escalated through Pattern I rather than guessed.
+
+A node that writes product source (it declares `parallel_write_scopes`) additionally
+anchors `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-k` and
+`${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-l`, each with its own two
+or three load-bearing sentences, and names where this project's shared code lives (from
+discovery or the profile) so "already available" has somewhere concrete to be looked for.
+From Pattern K: a mechanism for an imagined scenario — a limit, retry, fallback, cache or
+compatibility branch whose failure has no instance in this system and whose consequence
+is a recoverable degradation — is not built, and is recorded as deferred with the real
+occurrence that would bring it back; handling a failure the called contract documents is
+correctness, and guards on data, money, security, permissions and compliance are never
+deferred. From Pattern L: nothing is built that the project's shared code, the standard
+library, the platform's native capability or an installed dependency already provides;
+the codebase's existing pattern is followed; an abstraction is admitted only for what it
+makes simpler today. A violation of either is a `quality_gaps` entry.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.
