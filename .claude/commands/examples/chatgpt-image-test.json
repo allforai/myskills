@@ -1,7 +1,0 @@
-{
-  "outputDir": "./chatgpt-images-test",
-  "categories": {
-    "landscapes": ["a misty mountain at sunrise"],
-    "portraits": ["a samurai warrior in armor, dramatic lighting"]
-  }
-}

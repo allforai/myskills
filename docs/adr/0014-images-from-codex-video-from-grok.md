@@ -29,4 +29,4 @@ Thought testing (seven Sonnet scenarios, isolated packet) checked the slim contr
 
 - Projects need a working `codex` for images and a logged-in `grok` on a plan with video for video. Neither is installed automatically.
 - Grok video is unavailable while the account has zero data retention on; enabling it means opting in to coding-data sharing via `/privacy` or configuring a user-owned bucket.
-- The user's own `shared/mcp-image-batch` server and `.claude/commands/chatgpt-image-gen.md` stay in the repo as personal tools; no pipeline skill references them.
+- The `shared/mcp-image-batch` server and `.claude/commands/chatgpt-image-gen.md` were kept at first as personal tools that no pipeline skill referenced, and were removed from the repo on 2026-11-15.
