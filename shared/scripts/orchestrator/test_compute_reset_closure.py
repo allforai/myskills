@@ -87,5 +87,81 @@ class TestApplyReset(unittest.TestCase):
             self.assertEqual(json.loads(path.read_text()), _workflow())
 
 
+
+class TestRouteDefects(unittest.TestCase):
+    """A defect a node reported in another node's output goes back to that node, once."""
+
+    def project(self, warnings):
+        root = Path(tempfile.mkdtemp())
+        workflow = {"nodes": [dict(n) for n in NODES], "transition_log": [
+            {"node_id": n["node_id"], "status": "completed"} for n in NODES]}
+        (root / "workflow.json").write_text(json.dumps(workflow))
+        (root / "run-warnings.json").write_text(json.dumps({"warnings": warnings}))
+        return root
+
+    def route(self, root):
+        result = subprocess.run([sys.executable, str(SCRIPT), str(root / "workflow.json"), "--route-defects"],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
+
+    def statuses(self, root):
+        log = json.loads((root / "workflow.json").read_text())["transition_log"]
+        return {e["node_id"]: e["status"] for e in log}
+
+    def test_a_reported_defect_reopens_its_owner_and_what_was_built_on_it(self):
+        root = self.project(["defect in n2: docs/api.md — the label is misspelled",
+                             "building block chosen by n1: sqlite (already used)"])
+        out = self.route(root)
+        self.assertEqual(out["routed"], [{"owner": "n2", "defect": "docs/api.md — the label is misspelled"}])
+        self.assertEqual(out["reset"], ["n2", "n3"])
+        self.assertEqual(self.statuses(root), {"n1": "completed", "n2": "superseded",
+                                               "n3": "superseded", "x": "completed"})
+        correction = json.loads((root / "diagnosis-corrections/n2.json").read_text())
+        self.assertEqual(correction["node_id"], "n2")
+        self.assertIn("the label is misspelled", correction["corrections"][0]["action"])
+
+    def test_a_defect_is_routed_once(self):
+        root = self.project(["defect in x: data.json — two periods"])
+        self.assertEqual(len(self.route(root)["routed"]), 1)
+        before = (root / "workflow.json").read_bytes()
+        self.assertEqual(self.route(root), {"routed": [], "kept": [], "reset": [], "diagnosis": None})
+        self.assertEqual((root / "workflow.json").read_bytes(), before)
+
+    def test_nothing_reported_changes_nothing(self):
+        root = self.project(["review required"])
+        before = (root / "workflow.json").read_bytes()
+        self.assertEqual(self.route(root)["routed"], [])
+        self.assertEqual((root / "workflow.json").read_bytes(), before)
+        self.assertFalse((root / "diagnosis-corrections").exists())
+        self.assertFalse((root / "routed-defects.json").exists())
+
+    def test_a_defect_naming_no_node_of_the_plan_stays_a_warning(self):
+        root = self.project(["defect in vendor-lib: README — typo"])
+        out = self.route(root)
+        self.assertEqual(out["routed"], [])
+        self.assertIn("no node of the plan", out["kept"][0]["reason"])
+
+    def test_an_owner_is_sent_back_a_bounded_number_of_times(self):
+        root = self.project([])
+        for round_number in range(_mod.ROUTE_LIMIT):
+            (root / "run-warnings.json").write_text(json.dumps(
+                {"warnings": [f"defect in x: data.json — wording {round_number}", f"defect in x: other {round_number}"]}))
+            self.assertEqual(len(self.route(root)["routed"]), 2, "one round carries every defect of the owner")
+        (root / "run-warnings.json").write_text(json.dumps({"warnings": ["defect in x: data.json — reworded again"]}))
+        out = self.route(root)
+        self.assertEqual(out["routed"], [])
+        self.assertIn("already sent back", out["kept"][0]["reason"])
+
+    def test_corrections_already_pending_for_the_owner_are_kept(self):
+        root = self.project(["defect in x: data.json — two periods"])
+        (root / "diagnosis-corrections").mkdir()
+        (root / "diagnosis-corrections/x.json").write_text(json.dumps(
+            {"node_id": "x", "diagnosis": "d1", "corrections": [{"action": "use the tenant key"}]}))
+        self.route(root)
+        actions = [c["action"] for c in json.loads((root / "diagnosis-corrections/x.json").read_text())["corrections"]]
+        self.assertEqual(len(actions), 2)
+        self.assertEqual(actions[0], "use the tenant key")
+
 if __name__ == "__main__":
     unittest.main()

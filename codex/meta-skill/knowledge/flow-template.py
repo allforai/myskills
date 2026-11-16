@@ -1815,6 +1815,24 @@ def independent_artifact_gate(project_root: Path, node_id: str) -> bool:
                 and isinstance(payload.get("artifacts"), list) and payload["artifacts"])
 
 
+def route_reported_defects(project_root: Path) -> list[dict]:
+    """Send defects nodes reported in each other's output back to their owners; what was routed.
+
+    Called when nothing is left to run, so every defect reported so far travels in one pass
+    and a file's consumers rerun once. The helper routes a defect once and bounds how often
+    an owner is sent back; an empty answer, or no answer, means the run is finished.
+    """
+    result = run_script(project_root, "compute_reset_closure.py",
+                        [str(project_root / ".allforai/bootstrap/workflow.json"), "--route-defects"])
+    if result is None or result.returncode != 0:
+        return []
+    try:
+        routed = json.loads(result.stdout).get("routed")
+    except (ValueError, AttributeError):
+        return []
+    return routed if isinstance(routed, list) else []
+
+
 def run_post_checks(project_root: Path) -> bool:
     bootstrap_dir = project_root / ".allforai/bootstrap"
     result = run_script(project_root, "validate_bootstrap.py", [str(bootstrap_dir)])
@@ -1966,7 +1984,7 @@ Requirements:
 9. Record non-blocking safety warnings as a warnings array of strings in `.allforai/bootstrap/run-warnings.json`; the supervisor applies the recorded Run Policy. Hard safety or unresolved product requirements remain failures, never warnings. A building block this node needs that the existing code does not already use and its inputs do not name (an engine, framework, library, data store, storage or other service) is not a failure: pick the option that fits the existing code and settled inputs, and record a warning `building block chosen by {node_id}: <choice> (<why>)` so the person sees it.
    The run is unattended and never stops for a question. A user-visible choice this node owns that the frozen intent and decision journal do not settle is taken here: weigh at least two options, build with the one you recommend, and record it in `.allforai/bootstrap/run-decisions/{node_id}.json` as `{{"node_id", "decisions": [{{"decision_id", "needed_decision", "options" (two or more), "recommended", "taken", "why", "blocking_intent_ids"}}]}}` so completion can list it and the user can overturn it at the next interactive bootstrap. It is not a failure. Never take a choice that contradicts a recorded decision input.
 10. If `.allforai/bootstrap/diagnosis-corrections/{node_id}.json` exists, read it before starting: it holds corrections a diagnosis of an earlier failure assigned to this node, and they bind this run as the node-spec does. A correction refines how this node meets its spec; it never settles a user-visible rule — a choice it needs that the decision inputs do not settle is a product decision, taken and recorded under item 9. Read that file directly and never register it with the freshness `read`: it is the run's instruction, deleted when this node completes, not a product input.
-11. Write only what this node owns: its exit artifacts, its required documents and the files its declared `parallel_write_scopes` cover. Never create, edit or delete any other file another node produces, with one exception: when this node is the `repair_node_id` of a loop in `unattended-run-readiness-spec.json.required_repair_loops` and that loop's QA node has failed, it may also change an exit artifact or required document of a node that QA node is `hard_blocked_by`, directly or transitively — only a file a QA finding requires changed, and never a decision input. Changing such a file stales the evidence of the node that produced it, and a stale producer withholds the QA rerun and this node alike: before you finish, each node whose file you changed must have valid evidence again — observe it, run its own declared validation commands and publish it through the freshness helper; if its validation fails on your change, the change is wrong. Outside that exception, if another node's file is wrong or missing, write `failed` naming the producing node as repair owner so its owner repairs it. A file another node produces is an input only along a declared dependency, once that node has published it in this run: when the freshness `read` answers `unpublished_producer` (a leftover or unfinished work) or `producer_outside_graph` (a node the plan does not order before this one), do not consume the file in any way; if this node cannot be done without it, write `failed` naming the missing dependency.
+11. Write only what this node owns: its exit artifacts, its required documents and the files its declared `parallel_write_scopes` cover. Never create, edit or delete any other file another node produces, with one exception: when this node is the `repair_node_id` of a loop in `unattended-run-readiness-spec.json.required_repair_loops` and that loop's QA node has failed, it may also change an exit artifact or required document of a node that QA node is `hard_blocked_by`, directly or transitively — only a file a QA finding requires changed, and never a decision input. Changing such a file stales the evidence of the node that produced it, and a stale producer withholds the QA rerun and this node alike: before you finish, each node whose file you changed must have valid evidence again — observe it, run its own declared validation commands and publish it through the freshness helper; if its validation fails on your change, the change is wrong. Outside that exception, a defect in another node's file fails this node only when it keeps this node from meeting its own acceptance — the file is what this node judges, or an input it cannot work from: then write `failed` naming the producing node as repair owner so its owner repairs it. A defect that leaves this node's own acceptance met — a typo, a wording or style slip, something this node merely noticed — is not a failure: finish the node and record a warning `defect in <producing node>: <file> — <what is wrong>` under item 9; the run sends it back to that node to fix once every node has run. A file another node produces is an input only along a declared dependency, once that node has published it in this run: when the freshness `read` answers `unpublished_producer` (a leftover or unfinished work) or `producer_outside_graph` (a node the plan does not order before this one), do not consume the file in any way; if this node cannot be done without it, write `failed` naming the missing dependency.
 12. Follow `.allforai/bootstrap/protocols/input-freshness.md`: after implementation settles, observe current inputs, register additional reads, refresh required documents, and publish the evidence observation with the actual acceptance command. Reobserve and reverify stale input; contract-only publication cannot prove completion. The independent artifact gate consumes this freshness state.
 
 Do not ask for acceptance. Execute the work directly."""
@@ -2690,6 +2708,12 @@ def main() -> int:
                     return 7
                 print(json.dumps(payload), file=sys.stderr)
                 return 6
+        if node is None:
+            routed = route_reported_defects(project_root)
+            if routed:
+                print(json.dumps({"event": "reported_defects_routed", "routed": routed}, ensure_ascii=False),
+                      flush=True)
+                continue
         # The coverage gate's policy is applied whenever the gate, its declared repair node
         # or the run's end comes up: the declared loop would otherwise route the gate's
         # failure past a recorded halt_with_report, and a routed repair must still be the

@@ -3228,3 +3228,46 @@ def test_a_declared_output_is_imported_even_when_the_project_ignores_it(tmp_path
     (copy / 'dist/app.js').write_text('the declared build\n')
     assert flow.import_parallel_changes(root, copy, baseline, node) == ['dist/app.js']
     assert (root / 'dist/app.js').read_text() == 'the declared build\n'
+
+
+# --- a defect one node reported in another's output goes back to its owner ---
+
+def test_a_reported_defect_sends_its_owner_back_before_the_run_finishes(tmp_path, monkeypatch, capsys):
+    nodes = [{'node_id': 'strings', 'exit_artifacts': ['strings.json']},
+             {'node_id': 'screen', 'exit_artifacts': ['screen.json'], 'hard_blocked_by': ['strings']}]
+    path = tmp_path / '.allforai/bootstrap/workflow.json'
+    write(path, {'nodes': nodes, 'transition_log': [{'node': n['node_id'], 'status': 'completed'} for n in nodes]})
+    write(tmp_path / '.allforai/bootstrap/run-warnings.json',
+          {'warnings': ['defect in strings: strings.json — label misspelled "Notifcations"']})
+    scripts = tmp_path / '.allforai/bootstrap/scripts'
+    scripts.mkdir(parents=True)
+    flow.shutil.copy2(ORCHESTRATOR.parent / 'compute_reset_closure.py', scripts)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py', 'goal', '6'])
+    monkeypatch.setattr(flow, 'run_preflight', lambda *a: 0)
+    monkeypatch.setattr(flow, 'run_expanders', lambda *a: True)
+    monkeypatch.setattr(flow, 'run_post_checks', lambda *a: True)
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'ready' if event is None else 'continue')
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
+    monkeypatch.setattr(flow, 'delegation_disclosure', lambda *a: {})
+    monkeypatch.setattr(flow, 'safety_halt_required', lambda *a: False)
+    dispatched = []
+
+    def worker(project_root, prompt):
+        node_id = re.search(r'Selected node: (\S+)', prompt)[1]
+        correction = project_root / flow.DIAGNOSIS_CORRECTIONS / f'{node_id}.json'
+        dispatched.append((node_id, json.loads(correction.read_text())['corrections'][0]['gaps']
+                           if correction.exists() else None))
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
+    assert flow.main() == 0
+    assert dispatched == [('strings', ['strings.json — label misspelled "Notifcations"']), ('screen', None)], \
+        'the owner reruns under the correction, then what was built on it'
+    assert not (tmp_path / flow.DIAGNOSIS_CORRECTIONS / 'strings.json').exists()
+    assert capsys.readouterr().out.count('reported_defects_routed') == 1, 'a defect is routed once'
+
+
+def test_a_run_with_no_routing_helper_or_no_defect_finishes_as_before(tmp_path):
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': []})
+    assert flow.route_reported_defects(tmp_path) == []

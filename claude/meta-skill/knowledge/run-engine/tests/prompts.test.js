@@ -119,6 +119,10 @@ test('a node and its repair write only their own outputs and report an upstream 
     assert.match(p, /producer_outside_graph/)
     assert.match(p, /declared parallel_write_scopes cover/)
     assert.match(p, /unless this dispatch names you the repair of a failed QA node/)
+    // A defect it merely noticed is reported, not a reason to fail.
+    assert.match(p, /fails this node only when it keeps this node from\s+meeting its own acceptance/)
+    assert.match(p, /is not a failure: finish the node and return\s+it in safety_warnings/)
+    assert.match(p, /the run sends\s+it back to that node to fix once every node has run/)
   }
 })
 

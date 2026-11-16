@@ -115,7 +115,7 @@ All plugins read/write to a project-local `.allforai/` directory. This is the in
 ├── translate/               # translation-manifest.json
 ├── launch-prep/             # competitive-research, compliance-checklist, launch-checklist
 └── bootstrap/               # workflow.json, bootstrap-profile.json, plan-confirmation.json,
-                             # plan-confirmation-journal.json, repair-authorizations.json, run-policy.json, run-decisions/<node>.json, flow-writes.json,
+                             # plan-confirmation-journal.json, repair-authorizations.json, run-policy.json, run-decisions/<node>.json, flow-writes.json, routed-defects.json,
                              # safety-quarantine.json, node-specs/, scripts/, learned/
 ```
 

@@ -349,9 +349,14 @@ const OWN_OUTPUTS_RULE = [
   'Write only what this node owns: its exit_artifacts, its required_documents and the files its',
   'declared parallel_write_scopes cover. Never create, edit or delete any other file another node',
   'produces, unless this dispatch names you the repair of a failed QA node, which grants exactly',
-  'what it states. If one is wrong or missing, stop and report',
+  'what it states. A defect in such a file fails this node only when it keeps this node from',
+  'meeting its own acceptance — the file is what this node judges, or an input it cannot work',
+  'from: then stop and report',
   'blocking_findings [{type: "cross_node", detail, suspected_root_node: <the producing node>}] so',
-  'its owner repairs it.',
+  'its owner repairs it. A defect that leaves this node\'s own acceptance met — a typo, a wording',
+  'or style slip, something this node merely noticed — is not a failure: finish the node and return',
+  'it in safety_warnings as "defect in <producing node>: <file> — <what is wrong>"; the run sends',
+  'it back to that node to fix once every node has run.',
   'A file another node produces is an input only along a declared dependency, once that node has',
   'published it in this run: when the freshness `read` answers unpublished_producer (a leftover or',
   'unfinished work) or producer_outside_graph (a node the plan does not order before this one),',
@@ -719,7 +724,9 @@ async function runNode(node, agent, policy = {}, deliveryOnly = null, note = '')
         blocking_findings: [{ type: 'invalid_artifact_gate', detail: 'executor result missing or names a different node' }] }
     }
     if ((r.safety_warnings || []).length) {
-      await agent(`Record these safety warnings without asking a question: ${JSON.stringify(r.safety_warnings)}.`, { label: `safety-report:${node.node_id}` })
+      await agent('Append these strings to the `warnings` array of .allforai/bootstrap/run-warnings.json ' +
+        '(create {"warnings": []} when the file is missing; keep every entry already there, add no duplicate) ' +
+        `without asking a question: ${JSON.stringify(r.safety_warnings)}.`, { label: `safety-report:${node.node_id}` })
       if (policy.on_safety_warning !== 'continue') return { ...r, outcome: 'hard_fail',
         blocking_findings: [{ type: 'safety_warning', detail: 'Recorded Run Policy requires halt' }] }
     }

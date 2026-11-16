@@ -309,7 +309,9 @@ never waive, downgrade, or hide a gap.
    - `{ status: "needs_diagnosis", hardFailures: [...] }`
    - `{ status: "needs_product_decision", decisions: [...] }`
 
-2. On `complete`: run the learning-protocol extraction, then produce the Phase C report:
+2. On `complete`: first send reported defects back (§ Reported defects go back to their owner);
+   if any was routed, RESUME the engine and return to this step when it next reports. Otherwise
+   run the learning-protocol extraction, then produce the Phase C report:
    a. **Evidence-anchored completeness (verification honesty).** Run
       `python3 .allforai/bootstrap/scripts/compute_completeness.py <base>` — it derives each
       node's TRUE state from its recorded `verification` evidence and writes
@@ -439,6 +441,23 @@ so an interrupted run needs no cleanup by hand.
     the TODO list, and stops. Never ask here.
 - 5 iterations with no new artifacts → output current state + TODO list
 - Single node running > 10 minutes → warn but don't kill
+
+## Reported defects go back to their owner
+
+A node that notices a defect in a file another node owns does not fail over it and does not
+edit the file: it finishes and reports the warning `defect in <producing node>: <file> — <what
+is wrong>` in `safety_warnings`, which the engine
+appends to `.allforai/bootstrap/run-warnings.json`. When no node is left to run, and before the success report, run
+`python3 .allforai/bootstrap/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json --route-defects`.
+For each such warning not routed before, it writes the defect into
+`diagnosis-corrections/<owner>.json`, resets the owner and what was built on it, and records
+the routing in `routed-defects.json`. If `routed` is not empty, RESUME the engine: the owner fixes
+its own file under the correction, and its consumers are judged again. If `routed` is empty
+the run is finished. Run it once per completion, never per node: a file is changed, and its
+consumers rerun, once for every defect reported so far. A defect is routed once and an owner
+is sent back at most twice; what the command returns under `kept` stays a warning and is
+listed in the final report with its reason. This is not a diagnosis and spends none of its
+budget.
 
 ## Termination
 

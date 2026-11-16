@@ -149,8 +149,14 @@ publish freshness or edit the ledger.
   and the repair alike: before the worker finishes, each node whose file it changed must
   have valid evidence again (observe it, run its own declared validation commands,
   publish it); a validation that fails on the change means the change is wrong. Outside
-  that exception a defect in another node's file is returned as a finding naming the producing node, and the
-  orchestrator records a failed transition with that node as repair owner. A file
+  that exception a defect in another node's file fails the worker's node only when it keeps that node from
+  meeting its own acceptance — the file is what the node judges, or an input it cannot work from: it is then
+  returned as a finding naming the producing node, and the orchestrator records a failed transition with that
+  node as repair owner. A defect that leaves the node's own acceptance met — a typo, a wording or style slip,
+  something the worker merely noticed — is not a failure: the worker finishes and returns it as a warning
+  `defect in <producing node>: <file> — <what is wrong>`, which the orchestrator records in
+  `.allforai/bootstrap/run-warnings.json` and the run later sends back to that node
+  (§ Reported defects go back to their owner). A file
   another node produces is an input only along a declared dependency: when `read`
   answers `unpublished_producer` (a leftover or unfinished work) or
   `producer_outside_graph` (a node the plan does not order before this one) it is not
@@ -555,6 +561,23 @@ interrupted run needs no cleanup by hand.
   completed node on the next start. `halt_fenced` states whether that fence is in place.
 - 5 iterations with no new artifacts: stop and output current best state plus TODOs
 - Single node running too long: warn, do not silently discard work
+
+## Reported defects go back to their owner
+
+A node that notices a defect in a file another node owns does not fail over it and does not
+edit the file: it finishes and reports the warning `defect in <producing node>: <file> — <what
+is wrong>`, which the orchestrator records in
+`.allforai/bootstrap/run-warnings.json`. When no node is left to run, and before the success report, run
+`python3 .allforai/bootstrap/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json --route-defects`.
+For each such warning not routed before, it writes the defect into
+`diagnosis-corrections/<owner>.json`, resets the owner and what was built on it, and records
+the routing in `routed-defects.json`. If `routed` is not empty, continue the Core Loop: the owner fixes
+its own file under the correction, and its consumers are judged again. If `routed` is empty
+the run is finished. Run it once per completion, never per node: a file is changed, and its
+consumers rerun, once for every defect reported so far. A defect is routed once and an owner
+is sent back at most twice; what the command returns under `kept` stays a warning and is
+listed in the final report with its reason. This is not a diagnosis and spends none of its
+budget.
 
 ## Termination
 
