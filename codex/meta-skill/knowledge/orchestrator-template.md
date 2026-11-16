@@ -123,6 +123,10 @@ Before every execution wave, run every idempotent expander declared by `workflow
    - import preflights the entire draft against its write scopes and checks every
      declared read and write against the batch snapshot, including additions/deletions.
      Out-of-scope edits or input drift reject that draft before any files are copied.
+     The patch is judged by the project's own source inventory, the one freshness uses:
+     output the project's ignore rules call generated (a build the draft ran) is neither
+     imported nor an out-of-scope edit, a declared path is imported whatever the ignore
+     rules say, and a tracked file an ignore rule matches is source.
      Main-workspace publication stays serial and independently revalidates; changes
      there to another draft's inputs also invalidate that later draft.
    - the Codex driver defaults to 2 parallel nodes (`max_parallel_nodes` in
@@ -135,7 +139,9 @@ Before every execution wave, run every idempotent expander declared by `workflow
    - QA, repair, acceptance, retries, undeclared/unsafe scopes, and source symlinks
      stay serial. Independent DAG edges alone do not establish safe concurrency
    - private copies include local dependencies (symlinks are dereferenced), exclude
-     Git internals, and consume extra disk space. Each eligible node has a draft
+     Git history, and consume extra disk space. A copy of a Git project carries an index
+     of the same tracked files and the project's local excludes and nothing else, so the
+     freshness helper inside the draft reads the same inventory as in the main workspace. Each eligible node has a draft
      worker plus a serial verification worker; parallelism is not a speed guarantee.
      Failed drafts remain in the reported temporary directory for diagnosis
    - skip a node only when the same independent artifact gate passes on current project state
@@ -189,7 +195,16 @@ this loop apply it:
 
     Only the driver writes this. It also keeps its own entry as the node's latest
     transition, dropping any the worker appended behind it: the process being judged does
-    not get to file the evidence. A transition with no `qa_evidence` — an older log, or one
+    not get to file the evidence. The worker's entry is still read first, as its report of
+    this attempt, and it can only withhold: a clean exit and artifacts that pass the gate do
+    not complete an attempt whose worker wrote no terminal transition, wrote `failed` or
+    `blocked`, or wrote `completed` beside an `error` / `blockers`. Artifacts left by an
+    earlier attempt would otherwise complete the node over the worker's own verdict and
+    delete a diagnosis correction it never applied. The driver records such an attempt
+    `failed` with `withheld_by_worker`, and the node stays pending until an attempt reports
+    completion; so does a node that still has a `diagnosis-corrections/<node_id>.json`.
+    This is separate from repair delivery: a withheld attempt that wrote new content is
+    still measured as delivered. A transition with no `qa_evidence` — an older log, or one
     written by something else — carries no proof and does not qualify.
 
     One case cannot be decided from outside: content that did not change while something

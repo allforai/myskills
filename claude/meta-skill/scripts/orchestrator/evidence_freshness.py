@@ -22,11 +22,14 @@ READS = '.allforai/bootstrap/observed-input-dependencies.json'
 EXTERNAL = '.allforai/bootstrap/external-changes.json'
 # The nodes of the wave a driver is running now, with what each had recorded before it.
 IN_FLIGHT = '.allforai/bootstrap/in-flight-wave.json'
+# What the flow itself wrote while a driver had a wave open: the delivery that accounts
+# for a change, so a file a node rewrote is not read back as an edit from outside the flow.
+FLOW_WRITES = '.allforai/bootstrap/flow-writes.json'
 # The run's own bookkeeping. It changes on every committed transition, so a node that
 # registered it as a dependency would find its evidence stale after each commit the
 # engine records — including its own — and every consumer would wait on it forever.
 ORCHESTRATION_STATE = frozenset({
-    WORKFLOW, STATE, READS, EXTERNAL, IN_FLIGHT,
+    WORKFLOW, STATE, READS, EXTERNAL, IN_FLIGHT, FLOW_WRITES,
     '.allforai/bootstrap/run-log.jsonl',
     '.allforai/bootstrap/repair-authorizations.json',
     '.allforai/bootstrap/run-policy.json',
@@ -718,13 +721,30 @@ def carried_resolution(entry, binding):
     return resolution, history
 
 
+def flow_written(root, path):
+    """Whether the flow itself wrote the content ``path`` has now.
+
+    A driver brackets what it dispatches, and what changed inside a bracket is the
+    work of the nodes it was running: a repair rewriting the source its QA node judged,
+    a producer republishing an artifact. Consumers of that file are stale and rerun —
+    inherited staleness, owned by the flow — but nobody outside the flow edited
+    anything, so there is no product question to put to the user. The record names
+    content, not a path: an edit made after the bracket closed is different content
+    and is external again.
+    """
+    record = read_json(root, FLOW_WRITES, {})
+    written = record.get('written') if isinstance(record, dict) else None
+    return isinstance(written, dict) and path in written and written[path] == fingerprint(root, path)
+
+
 def detect_external_changes(root):
-    """Source changed since a node published its evidence, keyed by content.
+    """Source changed outside the flow since a node published its evidence, keyed by content.
 
     This is a boundary comparison, not a watcher: it reads the recorded
     observation and the current source, and never runs or decides anything.
     Each change carries the confirmed baseline version and the node's selected
     requirement content as provenance for the decision recorded against it.
+    Content the flow wrote itself (``flow_written``) is not an external change.
     """
     workflow = read_json(root, WORKFLOW, {})
     state = read_json(root, STATE, {'nodes': {}})
@@ -740,7 +760,8 @@ def detect_external_changes(root):
         if not record:
             continue
         current = snapshot(root, node, record.get('extra', []))
-        files = input_diff(record['inputs'], current).get('files', {})
+        files = {path: kind for path, kind in input_diff(record['inputs'], current).get('files', {}).items()
+                 if not flow_written(root, path)}
         if not files:
             continue
         detected.append({'change_id': change_identity(node['node_id'],
@@ -749,6 +770,7 @@ def detect_external_changes(root):
                          'requirement_binding': current['requirements'],
                          'impact': change_impact(root, node, workflow, files)})
     unmapped, tasks = unmapped_changes(root, workflow, state)
+    unmapped = {path: kind for path, kind in unmapped.items() if not flow_written(root, path)}
     if unmapped:
         # Source no node declares carries no confirmed requirement of its own.
         detected.append({'change_id': change_identity(None, {p: fingerprint(root, p) for p in sorted(unmapped)}),
@@ -1113,6 +1135,48 @@ def unconsumable_producer(root, node, workflow, path):
     return producer, 'producer_outside_graph' if published else 'unpublished_producer'
 
 
+def _consumable(root):
+    """Fingerprint of everything a node can consume: product source and what nodes produce."""
+    produced = {item['path'] if isinstance(item, dict) else item
+                for node in read_json(root, WORKFLOW, {}).get('nodes', [])
+                for item in [*node.get('exit_artifacts', []), *node.get('required_documents', [])]}
+    return {**source_tree(root), **{path: fingerprint(root, path) for path in sorted(produced)}}
+
+
+def _record_flow_writes(root, operation, was_open, still_open):
+    """Keep the content that changed while a wave was open (see ``flow_written``).
+
+    The first ``begin-wave`` takes the baseline; every ``end-wave`` records what differs
+    from it and moves it forward while other nodes are still running. A wave nobody saw
+    end records nothing: ``recover-waves`` drops the baseline, because what changed
+    between a dead driver and the next start cannot be told from an outside edit.
+    Bookkeeping that cannot be taken is skipped, never an error of the wave: the change
+    is then reported as external, which is what happened before this record existed.
+    """
+    record = read_json(root, FLOW_WRITES, None)
+    if record is None and operation == 'recover-waves':
+        return
+    record = record if isinstance(record, dict) else {}
+    baseline = record.get('baseline') if isinstance(record.get('baseline'), dict) else None
+    written = record.get('written') if isinstance(record.get('written'), dict) else {}
+    if operation == 'recover-waves':
+        baseline = None
+    else:
+        try:
+            current = _consumable(root)
+        except (OSError, ValueError):
+            current = None
+        if operation == 'begin-wave':
+            # Nodes already running keep the older baseline: their writes are in it.
+            baseline = baseline if was_open and baseline is not None else current
+        else:
+            if baseline is not None and current is not None:
+                written.update({path: current.get(path) for path in set(baseline) | set(current)
+                                if baseline.get(path) != current.get(path)})
+            baseline = current if still_open else None
+    write_json(root, FLOW_WRITES, {'schema_version': '1.0', 'baseline': baseline, 'written': written})
+
+
 def wave(root, request):
     """Bracket the nodes a driver is running, and undo a wave that never closed.
 
@@ -1159,10 +1223,12 @@ def wave(root, request):
             for path in (root / OBSERVATIONS).glob('*.json'):
                 path.unlink(missing_ok=True)
                 pruned += 1
+            _record_flow_writes(root, operation, bool(marker), False)
             return {'status': 'ok', 'recovered': recovered, 'pruned_observations': pruned}
         node_ids = request.get('node_ids')
         if not isinstance(node_ids, list) or not all(isinstance(n, str) and n for n in node_ids):
             raise ValueError(operation + ' requires node_ids, a list of node ids')
+        was_open = bool(marker)
         if operation == 'begin-wave':
             transitions = len(read_json(root, WORKFLOW, {}).get('transition_log') or [])
             for node_id in node_ids:
@@ -1175,6 +1241,7 @@ def wave(root, request):
             for node_id in node_ids:
                 marker.pop(node_id, None)
         write_json(root, IN_FLIGHT, marker)
+        _record_flow_writes(root, operation, was_open, bool(marker))
         return {'status': 'ok', 'open': sorted(marker)}
 
 

@@ -1245,15 +1245,27 @@ def pending_product_decisions(project_root: Path, workflow: dict) -> list[dict]:
             .get("decisions", [])]
 
 
-def diagnosis_reset(workflow: dict, node_id: str) -> bool:
-    """A diagnosis reset this node (`compute_reset_closure.py --apply`) and it has not run since.
+def correction_pending(project_root: Path, node_id: str) -> bool:
+    """A diagnosis assigned this node a correction it has not completed under yet.
 
-    The reset supersedes the node's completed transitions; its artifacts may still pass the
-    gate, but they are what the diagnosis found wrong, so they do not count as done.
+    The file is deleted when the node completes, so its presence means the artifacts on
+    disk predate the correction: they may pass the gate and are still what it corrects.
+    """
+    return (project_root / DIAGNOSIS_CORRECTIONS / f"{node_id}.json").is_file()
+
+
+def diagnosis_reset(workflow: dict, node_id: str) -> bool:
+    """The node's artifacts are on disk and are known not to be its completion.
+
+    Either a diagnosis reset it (`compute_reset_closure.py --apply`) and it has not run
+    since — the reset supersedes its completed transitions, and its artifacts are what the
+    diagnosis found wrong — or its own worker reported the latest attempt unfinished
+    (`worker_veto`). Both may still pass the gate; neither counts as done until an attempt
+    reports completion.
     """
     latest = next((entry for entry in reversed(workflow.get("transition_log", []) or [])
                    if isinstance(entry, dict) and entry.get("node", entry.get("node_id")) == node_id), None)
-    return bool(latest) and latest.get("status") == "superseded"
+    return bool(latest) and (latest.get("status") == "superseded" or latest.get("withheld_by_worker") is True)
 
 
 def _pending_state(project_root: Path, workflow: dict, candidates: list | None = None) -> tuple[dict | None, list[str]]:
@@ -1275,6 +1287,7 @@ def _pending_state(project_root: Path, workflow: dict, candidates: list | None =
         # first dispatch, not when the affected repair node comes up.
         return None, [node_identity(n) for n in nodes]
     complete = {node_identity(n): not diagnosis_reset(workflow, node_identity(n))
+                and not correction_pending(project_root, node_identity(n))
                 and independent_artifact_gate(project_root, node_identity(n)) for n in nodes}
     routed = open_repair_loops(project_root, workflow, complete)
     repair_nodes = {str(loop["repair_node_id"]) for loop in routed.values()}
@@ -1383,6 +1396,7 @@ def append_transition_if_missing(
     artifacts_created: list[str],
     error: str | None = None,
     qa_evidence: dict | None = None,
+    withheld_by_worker: bool = False,
 ) -> None:
     # Recording the transition is this driver observing how the attempt ended.
     wave(workflow_path.parents[2], "end-wave", [node_id])
@@ -1412,6 +1426,9 @@ def append_transition_if_missing(
             entry.pop("qa_evidence", None)
         else:
             entry["qa_evidence"] = qa_evidence
+        entry.pop("withheld_by_worker", None)
+        if withheld_by_worker:
+            entry["withheld_by_worker"] = True
         _keep_last_transition(transition_log, node_id, entry)
         save_json(workflow_path, workflow)
         return
@@ -1427,9 +1444,44 @@ def append_transition_if_missing(
         entry["error"] = error
     if qa_evidence is not None:
         entry["qa_evidence"] = qa_evidence
+    if withheld_by_worker:
+        entry["withheld_by_worker"] = True
     transition_log.append(entry)
     _keep_last_transition(transition_log, node_id, entry)
     save_json(workflow_path, workflow)
+
+
+def worker_veto(workflow_path: Path, before_count: int, node_id: str, required: bool = True) -> str | None:
+    """Why the worker's own terminal report forbids recording this attempt completed.
+
+    The executor's exit status says it ran, and the artifact gate says the artifacts on
+    disk pass. Neither says this attempt finished the node: a worker that stopped at a
+    blocker still exits 0, and proof left by an earlier attempt still passes the gate, so
+    the two together would record `completed` over the worker's own `failed` and delete a
+    correction it never applied. The transition the worker appended in this dispatch
+    window is its statement about this attempt. It can only withhold: completion stays
+    the gate's to grant. Read before the driver records its own transition over it.
+
+    `required=False` is for a private draft whose records are not imported: only an
+    explicit failure counts there, since the publication attempt reports for the node.
+    """
+    try:
+        log = load_json(workflow_path).get("transition_log", [])
+    except (OSError, ValueError):
+        return "workflow.json could not be read after the attempt"
+    mine = [entry for entry in log[before_count:]
+            if isinstance(entry, dict) and entry.get("node", entry.get("node_id")) == node_id]
+    if not mine:
+        return ("the worker left no terminal transition for this attempt, so nothing says it "
+                "finished the node; existing artifacts are not proof of this attempt") if required else None
+    report = mine[-1]
+    status = report.get("status") or report.get("event")
+    stated = next((str(report[key]) for key in ("error", "blockers", "blocked_by") if report.get(key)), "")
+    if status != "completed":
+        return f"the worker reported `{status}` for this attempt" + (": " + stated if stated else "")
+    if stated:
+        return "the worker reported completion with unresolved blockers: " + stated
+    return None
 
 
 def append_diagnosis_entry(
@@ -1866,7 +1918,8 @@ FINALIZE_EVIDENCE_NOTE = """
 FINALIZATION ONLY. This node already delivered its exit artifacts, and the QA node it
 repairs has since passed against the current source. Do NOT modify any source file and do
 NOT redo the repair: doing so would invalidate the verification that just passed. Observe
-and publish this node's evidence for the delivery already on disk, then stop. If that
+and publish this node's evidence for the delivery already on disk, append a `completed`
+`transition_log` entry for this node to `.allforai/bootstrap/workflow.json`, then stop. If that
 delivery no longer satisfies the node, write a failed transition naming the blocker rather
 than changing sources.
 """
@@ -1906,7 +1959,7 @@ Requirements:
 2. Read `.allforai/bootstrap/node-specs/{node_id}.md`.
 3. Complete exactly this node end-to-end. Do not stop after planning.
 4. Create or update any project files required to satisfy the node's exit artifacts.
-5. Append a `transition_log` entry to `.allforai/bootstrap/workflow.json` with `completed` or `failed`.
+5. Append a `transition_log` entry for this node to `.allforai/bootstrap/workflow.json` with `completed` or `failed`. It is this attempt's report: the supervisor does not record the node completed without it, and never over a `failed` one or one that names a blocker — artifacts left by an earlier attempt do not stand in for it.
 6. Do not write `completed` when any exit artifact says `conditional_pass`, `partial`, `accepted_with_gaps`, `accepted_with_warnings`, `passed_with_warnings`, `blocked_by_*`, or contains unresolved `gaps`, `code_gaps`, `asset_gaps`, `audio_gaps`, `remaining_gaps`, `blockers`, `major_findings`, `unresolved_findings`, or `missing_mappings`. Continue repairing and rerunning validation inside this node when it owns the fix; otherwise write `failed` with the exact blocker and repair owner.
 7. If the node fails, write a one-line `error` field explaining the blocker.
 8. Stop only after this node is truly completed or a failed transition has been written.
@@ -2061,6 +2114,7 @@ def run_inline_review(project_root: Path, node: dict, node_id: str, goal: str,
         best = count if best is None else min(best, count)
         if stalls >= INLINE_REVIEW_STALLS or round_number == INLINE_REVIEW_ROUNDS:
             return True
+        revision_start = len(load_json(project_root / ".allforai/bootstrap/workflow.json").get("transition_log", []))
         revised = run_codex(project_root, build_prompt(node_id, goal) + (
             f"\n\nInline review {round_number}: an independent reviewer found blocking findings in what "
             f"you delivered. Read `{INLINE_REVIEW_DIR}/{node_id}.json` directly (never register it with the "
@@ -2069,6 +2123,7 @@ def run_inline_review(project_root: Path, node: dict, node_id: str, goal: str,
         warnings = read_safety_warnings(project_root)
         if (revised.returncode != 0 or warnings is None
                 or safety_halt_required(project_root, warnings)
+                or worker_veto(project_root / ".allforai/bootstrap/workflow.json", revision_start, node_id)
                 or not independent_artifact_gate(project_root, gate_node_id)):
             return False
     return True
@@ -2302,6 +2357,61 @@ def parallel_snapshot(root: Path, include_control: bool = False) -> dict[str, st
     return result
 
 
+def project_git(root: Path, args: list[str], stdin: bytes = b"") -> subprocess.CompletedProcess | None:
+    """Ask Git about this project alone; None when Git cannot be run."""
+    # An ambient GIT_DIR/GIT_WORK_TREE would point the question at another repository.
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    try:
+        return subprocess.run(["git", "-C", str(root), *args], input=stdin, capture_output=True,
+                              timeout=120, env=env)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def carry_source_inventory(root: Path, copy: Path) -> bool:
+    """Give an isolated draft the project's own statement of what is source.
+
+    The freshness helper reads that statement from Git: tracked files plus untracked ones
+    the ignore rules do not cover. A copy without Git metadata answers with a directory
+    walk instead, so an ignored build tree reappears inside the draft as product source
+    and every record published against the real inventory looks stale there. The draft
+    gets an index naming the same tracked files (a tracked file an ignore rule matches
+    stays source) and the project's local excludes; `.gitignore` files travel with the
+    tree. No history and no objects are copied. False leaves the draft as it was.
+    """
+    tracked = project_git(root, ["ls-files", "--cached", "-z"])
+    if tracked is None or tracked.returncode != 0:
+        return False
+    present = b"".join(name + b"\0" for name in tracked.stdout.split(b"\0")
+                       if name and (copy / os.fsdecode(name)).is_file())
+    exclude = project_git(root, ["rev-parse", "--git-path", "info/exclude"])
+    try:
+        ok = (getattr(project_git(copy, ["init", "-q"]), "returncode", 1) == 0
+              and getattr(project_git(copy, ["update-index", "--add", "--info-only", "-z", "--stdin"],
+                                      present), "returncode", 1) == 0)
+        if ok and exclude is not None and exclude.returncode == 0:
+            source = root / os.fsdecode(exclude.stdout.strip())
+            if source.is_file():
+                (copy / ".git/info").mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, copy / ".git/info/exclude")
+    except OSError:
+        ok = False
+    if not ok:
+        shutil.rmtree(copy / ".git", ignore_errors=True)
+    return ok
+
+
+def project_ignored(root: Path, paths: list[str]) -> set[str]:
+    """The paths the project's ignore rules call generated; a tracked file never is."""
+    if not paths:
+        return set()
+    result = project_git(root, ["check-ignore", "-z", "--stdin"],
+                         b"".join(os.fsencode(path) + b"\0" for path in paths))
+    if result is None or result.returncode != 0:      # 1: none ignored; 128: not a repository
+        return set()
+    return {os.fsdecode(name) for name in result.stdout.split(b"\0") if name}
+
+
 def scoped_change(path: str, scopes: list[str]) -> bool:
     return any(path == scope or path.startswith(scope.rstrip("/") + "/")
                or fnmatch.fnmatchcase(path, scope) for scope in scopes)
@@ -2315,6 +2425,13 @@ def import_parallel_changes(root: Path, copy: Path, baseline: dict, node: dict) 
     scopes = parallel_scopes(node)
     if not scopes:
         raise ValueError("invalid parallel write declaration")
+    # The patch is what the draft did to the project's source, by the same inventory
+    # freshness uses. A build it ran leaves ignored output behind: that is not an edit
+    # outside its scope and is not imported either. A declared path is imported whatever
+    # the ignore rules say, and a change to a tracked file outside the scope still refuses
+    # the whole patch.
+    generated = project_ignored(root, [p for p in changes if not scoped_change(p, scopes)])
+    changes = [p for p in changes if p not in generated]
     for path in baseline.keys() | current.keys():
         if scoped_change(path, scopes + parallel_reads(node)) and current.get(path) != baseline.get(path):
             raise ValueError("parallel source input changed: " + path)
@@ -2351,11 +2468,13 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
     copies = []
     started = now_iso()
     workflow_path = root / ".allforai/bootstrap/workflow.json"
+    draft_start = len(load_json(workflow_path).get("transition_log", []))
     try:
         for index, node in enumerate(nodes):
             copy = batch_dir / str(index)
             shutil.copytree(root, copy, symlinks=False,
                             ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache"))
+            carry_source_inventory(root, copy)
             copies.append(copy)
     except (OSError, shutil.Error) as exc:
         print(json.dumps({"error": "could not prepare isolated copies: " + str(exc),
@@ -2372,6 +2491,7 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
             "\nThis is an isolated parallel implementation draft. Do not operate on any other workspace. "
             "Only change these declared project paths: " + json.dumps(parallel_scopes(node)) +
             ". Your workflow/freshness records are private and will NOT be imported. "
+            "This copy carries no Git history: do not use git to inspect, diff or record changes. "
             "The driver will publish evidence and independently verify in the main workspace.")
         try:
             return run_codex(copy, prompt)
@@ -2421,11 +2541,18 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
         before_count = len(load_json(workflow_path).get("transition_log", []))
         error = ""
         all_ready = False
+        draft_veto = report_veto = None
         try:
             if result.returncode in {124, 130}:
                 raise ValueError("parallel draft timed out or was interrupted; revalidate on resume")
             import_parallel_changes(root, copy, baseline, node)
-            if result.returncode == 0:
+            # The draft's own report: a draft that stopped at a blocker is not published
+            # as if it had finished, whatever its exit status.
+            draft_veto = worker_veto(copy / ".allforai/bootstrap/workflow.json", draft_start, node_id,
+                                     required=False) if result.returncode == 0 else None
+            if draft_veto:
+                error = draft_veto
+            elif result.returncode == 0:
                 # Never import copy-bound observations. Reobserve merged inputs and
                 # refresh documents serially, then run the SAME independent gate.
                 result = run_codex(root, build_prompt(node_id, goal) +
@@ -2438,15 +2565,19 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
                     append_transition_if_missing(workflow_path, before_count, node_id, "failed", started, [],
                                                  "run-wide safety halt during parallel publication")
                     return 6 if post is None else 4
-                all_ready = result.returncode == 0 and independent_artifact_gate(root, node_id)
-            if not all_ready:
+                report_veto = worker_veto(workflow_path, before_count, node_id) if result.returncode == 0 else None
+                all_ready = (result.returncode == 0 and report_veto is None
+                             and independent_artifact_gate(root, node_id))
+                error = report_veto or ""
+            if not all_ready and not error:
                 error = (result.stderr or result.stdout or "independent artifact gate failed")[-600:]
         except (OSError, ValueError) as exc:
             error = str(exc)
         batch_passed = batch_passed and all_ready
         artifacts = [artifact_path(a) for a in node.get("exit_artifacts", []) if artifact_ready(root, artifact_path(a))]
         append_transition_if_missing(workflow_path, before_count, node_id,
-                                     "completed" if all_ready else "failed", started, artifacts, error or None)
+                                     "completed" if all_ready else "failed", started, artifacts, error or None,
+                                     withheld_by_worker=bool(draft_veto or report_veto))
         if all_ready:
             clear_diagnosis_corrections(root, node_id)
         print(json.dumps({"event": "parallel_node_verified", "node": node_id,
@@ -2745,7 +2876,8 @@ def main() -> int:
             if artifact_ready(project_root, artifact_path(path))
         ]
         gate_node_id = str(node.get("node_id") or node_id)
-        all_ready = result.returncode == 0 and independent_artifact_gate(
+        report_veto = worker_veto(workflow_path, before_count, node_id) if result.returncode == 0 else None
+        all_ready = result.returncode == 0 and report_veto is None and independent_artifact_gate(
             project_root, gate_node_id
         )
         if all_ready and grant is None and node.get("inline_review"):
@@ -2794,6 +2926,8 @@ def main() -> int:
             error_line = "; ".join(readiness_errors)[:300] if readiness_errors else (
                 lines[-1][:300] if lines else "Codex stopped before satisfying ready exit artifacts."
             )
+            if report_veto:
+                error_line = (report_veto + ("; " + "; ".join(readiness_errors) if readiness_errors else ""))[:600]
             qa_evidence = attempt_evidence(
                 reports_before,
                 deliverable_state(project_root, node),
@@ -2817,6 +2951,7 @@ def main() -> int:
                 artifacts_created,
                 error_line,
                 qa_evidence,
+                bool(report_veto),
             )
             if is_qa_node and qa_report_usable(project_root, node, load_json(workflow_path)):
                 record_qa_verdict(project_root, node)

@@ -637,7 +637,18 @@ def _validate_repair_loop_spec(spec: dict, nodes: list[dict], blockers: list[dic
                 )
 
 
-def _stale_evidence_blocks_start(node: dict, freshness: dict) -> bool:
+def _reset_nodes(workflow: dict) -> set:
+    """Nodes a diagnosis reset (`compute_reset_closure.py --apply`) that have not run since."""
+    latest: dict = {}
+    log = workflow.get("transition_log") if isinstance(workflow, dict) else None
+    for entry in log if isinstance(log, list) else []:
+        node_id = entry.get("node_id", entry.get("node")) if isinstance(entry, dict) else None
+        if isinstance(node_id, str):
+            latest[node_id] = entry.get("status")
+    return {node_id for node_id, status in latest.items() if status == "superseded"}
+
+
+def _stale_evidence_blocks_start(node: dict, freshness: dict, reset: bool = False) -> bool:
     """Whether a node's stale record must stop the run before it starts.
 
     A node that has published nothing has no contract or evidence to invalidate, so it
@@ -648,7 +659,13 @@ def _stale_evidence_blocks_start(node: dict, freshness: dict) -> bool:
     decision file, another node's output — the plan is stale and running this node does
     not repair it), and published evidence exists at all (a completion claim is at risk
     however the input is declared).
+
+    A node a diagnosis reset claims nothing: the run withdrew its completion and will run
+    it again, and that rerun is the repair. Its old evidence is what the diagnosis found
+    wrong, so it cannot be why the run that would replace it may not start.
     """
+    if reset:
+        return False
     diff = freshness.get("diff") if isinstance(freshness.get("diff"), dict) else {}
     if diff.get("contract") == "unpublished":
         return False
@@ -731,6 +748,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
              if well_formed else {})
     if well_formed:
         _dependency_outside_graph_blockers(project_root, by_id, blockers)
+    reset = _reset_nodes(workflow)
     for node_id, freshness in (freshness_states(project_root, workflow) if well_formed else {}).items():
         admission = freshness.get("admission")
         if admission == "invalid":
@@ -742,7 +760,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
             _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
         elif (freshness.get("readiness_status") != "valid"
-              and _stale_evidence_blocks_start(by_id.get(node_id, {}), freshness)):
+              and _stale_evidence_blocks_start(by_id.get(node_id, {}), freshness, node_id in reset)):
             message = freshness.get("reason") or "Reconcile inputs and reverify affected evidence"
             repair = freshness.get("repair") if isinstance(freshness.get("repair"), dict) else None
             if repair:

@@ -1,6 +1,7 @@
 """Driver contract tests: no paid CLI calls and no installed-skill mutations."""
 import importlib.util
 import json
+import re
 import os
 import subprocess
 import sys
@@ -18,6 +19,27 @@ spec.loader.exec_module(flow)
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value))
+
+
+def reporting(worker, node_id=None):
+    """A worker that honours the contract: it appends this attempt's terminal transition.
+
+    The fakes below model what an attempt does to the project; unless a fake writes its
+    own report, it reports `completed` — the gate, not the report, then decides.
+    """
+    def run(project_root, prompt, *rest):
+        path = Path(project_root) / '.allforai/bootstrap/workflow.json'
+        before = len(flow.load_json(path).get('transition_log', [])) if path.exists() else 0
+        result = worker(project_root, prompt, *rest)
+        selected = node_id or (re.search(r'Selected node: (\S+)', prompt) or [None, None])[1]
+        if result.returncode == 0 and selected and path.exists():
+            current = flow.load_json(path)
+            log = current.setdefault('transition_log', [])
+            if not any(e.get('node', e.get('node_id')) == selected for e in log[before:]):
+                log.append({'node': selected, 'status': 'completed'})
+                flow.save_json(path, current)
+        return result
+    return run
 
 
 @pytest.mark.parametrize("result", [None, subprocess.CompletedProcess([], 1, '{"all_exist":true}'),
@@ -1040,7 +1062,7 @@ def test_an_executor_that_only_touches_the_report_does_not_dispatch_repair(tmp_p
         os.utime(project_root / 'verify.json', None)     # the whole of the "run"
         return subprocess.CompletedProcess([], 0, '', '')
 
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     flow.main()
 
     current = flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')
@@ -1141,7 +1163,7 @@ def drive_real_routing(tmp_path, monkeypatch, executor, failing_nodes=frozenset(
     monkeypatch.setattr(flow, 'run_post_checks', lambda *a: True)
     monkeypatch.setattr(flow, 'run_diagnosis', lambda *a: subprocess.CompletedProcess([], 0, '', ''))
     monkeypatch.setattr(flow, 'first_pending_node', spy)
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     flow.main()
     return selected, executed
 
@@ -1514,7 +1536,7 @@ def test_a_worker_cannot_supply_its_own_attempt_evidence(tmp_path, monkeypatch):
         flow.save_json(path, current)
         return subprocess.CompletedProcess([], 0, '', '')
 
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     flow.main()
 
     log = [e for e in flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')['transition_log']
@@ -1555,7 +1577,7 @@ def test_the_driver_records_what_a_qa_attempt_produced(tmp_path, monkeypatch):
             write(project_root / 'verify.json', {'status': 'failed', 'gaps': ['orders export column']})
         return subprocess.CompletedProcess([], 0, '', '')
 
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     flow.main()
 
     log = [e for e in flow.load_json(tmp_path / '.allforai/bootstrap/workflow.json')['transition_log']
@@ -2514,7 +2536,7 @@ def test_parallel_workers_overlap_but_publication_and_gates_are_serial(tmp_path,
     def gate(root, name):
         events.append(('gate', name))
         return name == 'b'
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     monkeypatch.setattr(flow, 'independent_artifact_gate', gate)
     assert flow.run_parallel_batch(tmp_path, workflow, nodes, 'test') is None
     assert set(events[:2]) == {('draft', 'a'), ('draft', 'b')}
@@ -2532,7 +2554,7 @@ def test_parallel_warning_halts_every_branch_before_import(tmp_path, monkeypatch
         if name == 'b':
             write(root / flow.SAFETY_WARNINGS, {'warnings': ['review required']})
         return subprocess.CompletedProcess([], 0, '', '')
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     monkeypatch.setattr(flow, 'safety_halt_required', lambda root, warnings: bool(warnings))
     assert flow.run_parallel_batch(tmp_path, {'nodes': nodes}, nodes, 'test') == 4
     assert flow.safety_halted(tmp_path)
@@ -2584,7 +2606,7 @@ def test_parallel_does_not_share_dependency_symlinks(tmp_path, monkeypatch):
             (root / 'node_modules/.bin/tool').write_text('private change')
         write(root / f'{name}/report.json', {'status': 'passed'})
         return subprocess.CompletedProcess([], 0, '', '')
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
     assert flow.run_parallel_batch(tmp_path, {'nodes': nodes}, nodes, 'test') is None
     assert target.read_text() == 'original'
@@ -2610,7 +2632,7 @@ def test_main_dispatches_default_parallel_wave_then_finishes(tmp_path, monkeypat
             barrier.wait(timeout=5)
         write(root / f'{name}/report.json', {'status': 'passed'})
         return subprocess.CompletedProcess([], 0, '', '')
-    monkeypatch.setattr(flow, 'run_codex', worker)
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
     assert flow.main() == 0
     assert set(calls[:2]) == {(False, 'a'), (False, 'b')}
     assert calls[2:] == [(True, 'a'), (True, 'b')]
@@ -2972,8 +2994,10 @@ def scripted_review(tmp_path, monkeypatch, counts, revision_ok=True):
             return subprocess.CompletedProcess([], 0, '', '')
         calls.append('revise')
         assert '.allforai/bootstrap/inline-review/design.json' in prompt
-        return subprocess.CompletedProcess([], 0 if revision_ok else 1, '', '')
+        return reporting(lambda *a: subprocess.CompletedProcess([], 0 if revision_ok else 1, '', ''),
+                         'design')(project_root, prompt)
 
+    write(tmp_path / '.allforai/bootstrap/workflow.json', {'nodes': [reviewed_node()]})
     monkeypatch.setattr(flow, 'run_codex', worker)
     monkeypatch.setattr(flow, 'build_prompt', lambda *a, **k: 'run the node')
     monkeypatch.setattr(flow, 'read_safety_warnings', lambda *a: [])
@@ -3010,3 +3034,197 @@ def test_the_inline_reviewer_is_told_to_judge_and_touch_nothing(tmp_path):
     assert 'You did not produce its output and you change none of it.' in prompt
     assert 'specs/design.md' in prompt and 'Node `critique` will judge this output later' in prompt
     assert '.allforai/bootstrap/inline-review/design.json' in prompt and 'and nothing else' in prompt
+
+
+# --- the worker's own report can withhold completion (feedback: old proof over a blocked verdict) ---
+
+def stale_proof_project(tmp_path, monkeypatch, report):
+    """One node whose artifact from an earlier attempt still passes the gate, and a correction
+    a diagnosis assigned it. `report` is what this attempt's worker appends, or None."""
+    node = {'node_id': 'n1', 'exit_artifacts': ['done.json']}
+    path = tmp_path / '.allforai/bootstrap/workflow.json'
+    write(path, {'nodes': [node], 'transition_log': [{'node': 'n1', 'status': 'superseded'}]})
+    write(tmp_path / 'done.json', {'status': 'passed'})
+    correction = tmp_path / flow.DIAGNOSIS_CORRECTIONS / 'n1.json'
+    write(correction, {'corrections': ['use the tenant-scoped key']})
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', ['flow.py', 'goal', '1'])
+    monkeypatch.setattr(flow, 'run_preflight', lambda *a: 0)
+    monkeypatch.setattr(flow, 'run_expanders', lambda *a: True)
+    monkeypatch.setattr(flow, 'run_post_checks', lambda *a: True)
+    monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'ready' if event is None else 'halt')
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
+
+    def worker(project_root, prompt):
+        if report is not None:
+            current = flow.load_json(path)
+            current['transition_log'].append(dict(report, node='n1'))
+            flow.save_json(path, current)
+        return subprocess.CompletedProcess([], 0, 'done', '')
+
+    monkeypatch.setattr(flow, 'run_codex', worker)
+    flow.main()
+    return flow.load_json(path), correction
+
+
+@pytest.mark.parametrize('report, said', [
+    (None, 'no terminal transition'),
+    ({'status': 'failed', 'error': 'blocked: the schema owner must add the column'}, 'the schema owner'),
+    ({'status': 'blocked'}, 'reported `blocked`'),
+    ({'status': 'completed', 'blockers': ['migration not applied']}, 'unresolved blockers'),
+])
+def test_old_proof_and_a_clean_exit_do_not_complete_an_attempt_its_worker_did_not(tmp_path, monkeypatch, report, said):
+    workflow, correction = stale_proof_project(tmp_path, monkeypatch, report)
+    latest = workflow['transition_log'][-1]
+    assert latest['status'] == 'failed' and latest['withheld_by_worker'] is True, latest
+    assert said in latest['error']
+    assert correction.exists(), 'the correction the attempt never applied is still pending'
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'n1', 'old proof does not skip it'
+
+
+def test_an_attempt_its_worker_reports_completed_passes_on_the_gate(tmp_path, monkeypatch):
+    workflow, correction = stale_proof_project(tmp_path, monkeypatch, {'status': 'completed'})
+    latest = workflow['transition_log'][-1]
+    assert latest['status'] == 'completed' and 'withheld_by_worker' not in latest
+    assert not correction.exists()
+    assert flow.first_pending_node(tmp_path, workflow) is None
+
+
+def test_a_pending_correction_keeps_a_node_pending_whatever_its_old_proof_says(tmp_path, monkeypatch):
+    node = {'node_id': 'n1', 'exit_artifacts': ['done.json']}
+    workflow = {'nodes': [node], 'transition_log': [{'node': 'n1', 'status': 'completed'}]}
+    write(tmp_path / '.allforai/bootstrap/workflow.json', workflow)
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
+    assert flow.first_pending_node(tmp_path, workflow) is None
+    write(tmp_path / flow.DIAGNOSIS_CORRECTIONS / 'n1.json', {'corrections': ['x']})
+    assert flow.first_pending_node(tmp_path, workflow)['node_id'] == 'n1'
+
+
+def test_a_failed_repair_attempt_that_delivered_is_still_measured_as_delivered():
+    """Delivery accounting is not completion: a withheld attempt keeps its measured delivery."""
+    entry = {'node': 'repair', 'status': 'failed', 'withheld_by_worker': True,
+             'qa_evidence': {'ran': True, 'binding': 'b', 'produced': {'fix.json': 'd'}}}
+    assert flow.repair_delivered(entry) is True
+    assert flow.repair_delivered(dict(entry, qa_evidence={'ran': True, 'binding': 'b', 'produced': {}})) is False
+
+
+def test_a_parallel_draft_that_reports_failure_is_not_published_as_finished(tmp_path, monkeypatch):
+    nodes = [parallel_node('a'), parallel_node('b')]
+    path = tmp_path / '.allforai/bootstrap/workflow.json'
+    write(path, {'nodes': nodes})
+    published = []
+
+    def worker(root, prompt):
+        name = 'a' if 'Selected node: a\n' in prompt else 'b'
+        if root == tmp_path:
+            published.append(name)
+        elif name == 'a':
+            draft = Path(root) / '.allforai/bootstrap/workflow.json'
+            state = flow.load_json(draft)
+            state.setdefault('transition_log', []).append(
+                {'node': 'a', 'status': 'failed', 'error': 'blocked on a missing contract'})
+            flow.save_json(draft, state)
+        write(Path(root) / f'{name}/report.json', {'status': 'passed'})
+        return subprocess.CompletedProcess([], 0, '', '')
+
+    monkeypatch.setattr(flow, 'run_codex', reporting(worker))
+    monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
+    assert flow.run_parallel_batch(tmp_path, {'nodes': nodes}, nodes, 'test') is None
+    assert published == ['b'], 'the blocked draft got no publication attempt'
+    by_node = {e['node']: e for e in flow.load_json(path)['transition_log']}
+    assert by_node['a']['status'] == 'failed' and 'missing contract' in by_node['a']['error']
+    assert by_node['a']['withheld_by_worker'] is True
+    assert by_node['b']['status'] == 'completed'
+
+
+# --- an isolated draft keeps the project's source inventory (feedback: Git metadata omitted) ---
+
+def git_project(tmp_path):
+    """A Git project with an ignored build tree, a tracked file an ignore rule matches,
+    and a local exclude."""
+    root = tmp_path / 'project'
+    root.mkdir()
+    def git(*args):
+        subprocess.run(['git', '-C', str(root), *args], check=True, capture_output=True)
+    git('init', '-q')
+    (root / '.gitignore').write_text('dist/\n*.gen.ts\n')
+    (root / 'a').mkdir()
+    (root / 'a/main.ts').write_text('export const a = 1\n')
+    (root / 'schema.gen.ts').write_text('// generated once, kept under version control\n')
+    (root / 'dist').mkdir()
+    (root / 'dist/app.js').write_text('built\n')
+    (root / '.git/info/exclude').write_text('scratch/\n')
+    (root / 'scratch').mkdir()
+    (root / 'scratch/notes.txt').write_text('local\n')
+    git('add', '.gitignore', 'a/main.ts')
+    git('add', '-f', 'schema.gen.ts')
+    return root
+
+
+def inventory_of(root):
+    listed = subprocess.run(['git', '-C', str(root), 'ls-files', '--cached', '--others',
+                             '--exclude-standard'], capture_output=True, text=True, check=True)
+    return sorted(listed.stdout.split())
+
+
+def test_an_isolated_draft_answers_the_inventory_question_as_the_project_does(tmp_path):
+    root = git_project(tmp_path)
+    copy = tmp_path / 'draft'
+    flow.shutil.copytree(root, copy, ignore=flow.shutil.ignore_patterns('.git'))
+    assert flow.carry_source_inventory(root, copy) is True
+    assert inventory_of(copy) == inventory_of(root) == ['.gitignore', 'a/main.ts', 'schema.gen.ts']
+    # What the draft builds or adds is classified by the same rules.
+    (copy / 'dist/chunk.js').write_text('built in the draft\n')
+    (copy / 'a/new.ts').write_text('export const b = 2\n')
+    assert inventory_of(copy) == ['.gitignore', 'a/main.ts', 'a/new.ts', 'schema.gen.ts']
+    assert not list((copy / '.git/objects').rglob('*.pack')), 'no history travels with the draft'
+
+
+def test_a_project_outside_git_gets_a_draft_outside_git(tmp_path):
+    root, copy = tmp_path / 'project', tmp_path / 'draft'
+    (root / 'a').mkdir(parents=True)
+    (copy / 'a').mkdir(parents=True)
+    assert flow.carry_source_inventory(root, copy) is False
+    assert not (copy / '.git').exists()
+
+
+def draft_of(root, tmp_path, node):
+    baseline = flow.parallel_snapshot(root, include_control=True)
+    copy = tmp_path / 'draft'
+    flow.shutil.copytree(root, copy, ignore=flow.shutil.ignore_patterns('.git'))
+    return baseline, copy
+
+
+def test_ignored_build_output_is_neither_imported_nor_an_out_of_scope_edit(tmp_path):
+    root = git_project(tmp_path)
+    node = dict(parallel_node('a'), parallel_write_scopes=['a/**'])
+    baseline, copy = draft_of(root, tmp_path, node)
+    (copy / 'a/main.ts').write_text('export const a = 2\n')
+    (copy / 'dist/app.js').write_text('rebuilt by the draft\n')
+    (copy / 'scratch/notes.txt').write_text('draft-local\n')
+    assert flow.import_parallel_changes(root, copy, baseline, node) == ['a/main.ts']
+    assert (root / 'a/main.ts').read_text() == 'export const a = 2\n'
+    assert (root / 'dist/app.js').read_text() == 'built\n'
+    assert (root / 'scratch/notes.txt').read_text() == 'local\n'
+
+
+@pytest.mark.parametrize('path', ['schema.gen.ts', 'README.md'])
+def test_a_true_out_of_scope_edit_still_refuses_the_whole_patch(tmp_path, path):
+    """A tracked file an ignore rule matches is source; so is a new file no rule covers."""
+    root = git_project(tmp_path)
+    node = dict(parallel_node('a'), parallel_write_scopes=['a/**'])
+    baseline, copy = draft_of(root, tmp_path, node)
+    (copy / 'a/main.ts').write_text('export const a = 2\n')
+    (copy / path).write_text('changed by the draft\n')
+    with pytest.raises(ValueError, match='outside declared scope: ' + re.escape(path)):
+        flow.import_parallel_changes(root, copy, baseline, node)
+    assert (root / 'a/main.ts').read_text() == 'export const a = 1\n', 'nothing is written from a refused patch'
+
+
+def test_a_declared_output_is_imported_even_when_the_project_ignores_it(tmp_path):
+    root = git_project(tmp_path)
+    node = dict(parallel_node('a'), parallel_write_scopes=['a/**', 'dist/**'])
+    baseline, copy = draft_of(root, tmp_path, node)
+    (copy / 'dist/app.js').write_text('the declared build\n')
+    assert flow.import_parallel_changes(root, copy, baseline, node) == ['dist/app.js']
+    assert (root / 'dist/app.js').read_text() == 'the declared build\n'

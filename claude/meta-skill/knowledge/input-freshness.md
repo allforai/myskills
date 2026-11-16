@@ -109,6 +109,15 @@ completed transition was recorded for it since: an attempt nobody saw finish pro
 nothing, and its residue must not block the restart. The same call removes every file
 under `input-observations/`: no attempt survives to a start, so none can still publish.
 
+The bracket is also the flow's account of its own writes. `begin-wave` fingerprints what a
+node can consume — product source and what nodes produce — and `end-wave` records, in
+`flow-writes.json`, the content of every such file that changed while the wave was open. A
+node whose recorded input now holds that content is stale and reruns, and its repair owner is
+the node: a repair rewrote what its QA node judged, or a producer republished. It is not an
+external change, because nobody outside the flow edited anything and there is no product
+question to put to the user. The record names content, so an edit made after the wave closed
+is external again, and a wave nobody saw end records nothing.
+
 A snapshot records each upstream node as the identity (digest) of that node's snapshot,
 not a copy of it. A record written before this embeds the upstream snapshots whole; it
 still compares equal while nothing changed and is rewritten in the current shape the
@@ -243,6 +252,10 @@ are run choices: `accept` there is not acceptance of a changed product behavior.
 Unattended execution reports unresolved conflicts and refuses the affected work; it
 never interviews and never assumes acceptance. Resolution returns to the
 interactive bootstrap entry and continues from the retained conflict.
+
+A node a diagnosis reset — its latest transition is `superseded` — claims no completion:
+the readiness `stale_evidence` blocker does not hold it, because the rerun the reset ordered
+is the repair. The artifact gate still withholds it until it republishes.
 
 Every withheld completion is an explicit difference with a repair owner, never a
 bare warning. `check`, `check_artifacts.py`, the readiness `stale_evidence`

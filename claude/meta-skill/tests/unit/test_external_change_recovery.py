@@ -971,3 +971,93 @@ def test_a_verified_fact_update_survives_synchronizing_the_document_it_requires(
     assert code == 0 and published["status"] == "valid", published
     assert _readiness(tmp_path)[1]["status"] == "ready"
     _unrelated_is_valid(tmp_path)
+
+
+FLOW_WRITES = ".allforai/bootstrap/flow-writes.json"
+
+
+def _wave(root, operation, *node_ids):
+    request = {"node_ids": list(node_ids)} if node_ids else {}
+    result, report = freshness(root, operation, **request)
+    assert result.returncode == 0, result.stderr
+    return report
+
+
+def _external_codes(root):
+    return sorted({b["code"] for b in _readiness(root)[1]["blockers"] if "external_change" in b["code"]})
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_what_the_flow_wrote_while_a_wave_was_open_is_not_an_external_change(tmp_path, host):
+    """A repair rewrites source a completed consumer judged, and its QA rerun then fails.
+
+    The consumer is stale and reruns: inherited staleness, owned by the flow. Nobody
+    edited anything outside the flow, so there is no product question — demanding one
+    would leave the user to approve a defect the run already knows about, or block the
+    repair of it."""
+    drift_project(tmp_path, host)
+    journal_before = (tmp_path / JOURNAL).read_bytes()
+
+    _wave(tmp_path, "begin-wave", "repair")
+    (tmp_path / "orders.py").write_text(CONFLICTING)          # the repair's own, still failing, edit
+    _wave(tmp_path, "end-wave", "repair")
+
+    assert _external_codes(tmp_path) == []
+    stale = _artifacts(tmp_path)
+    assert stale["all_exist"] is False, "the consumer's proof judged other content and is still withheld"
+    assert stale["freshness"]["repair"]["owner"] == NODE
+    assert "external" not in stale["freshness"]
+    result, report = external(tmp_path)
+    assert result.returncode == 0 and report == {"status": "clear", "changes": []}
+    assert (tmp_path / JOURNAL).read_bytes() == journal_before
+    _unrelated_is_valid(tmp_path)
+
+    # Content is what the record names: a later edit from outside is external again.
+    (tmp_path / "orders.py").write_text(CONFLICTING + "# edited after the run\n")
+    assert _external_codes(tmp_path) == ["unverified_external_change"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+@pytest.mark.parametrize("when", ["no wave open", "wave never closed"])
+def test_a_change_no_closed_wave_accounts_for_stays_external(tmp_path, host, when):
+    drift_project(tmp_path, host)
+    if when == "wave never closed":
+        _wave(tmp_path, "begin-wave", "repair")
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    if when == "wave never closed":
+        # The driver died; what changed before the next start cannot be told from an outside edit.
+        _wave(tmp_path, "recover-waves")
+        assert json.loads((tmp_path / FLOW_WRITES).read_text())["baseline"] is None
+    assert _external_codes(tmp_path) == ["unverified_external_change"]
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_wave_records_every_write_made_while_any_of_its_nodes_ran(tmp_path, host):
+    drift_project(tmp_path, host)
+    _wave(tmp_path, "begin-wave", "first", "second")
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    assert _wave(tmp_path, "end-wave", "first")["open"] == ["second"]
+    (tmp_path / "orders.py").write_text(CONFLICTING + "# second node\n")
+    _wave(tmp_path, "end-wave", "second")
+    record = json.loads((tmp_path / FLOW_WRITES).read_text())
+    assert record["baseline"] is None and set(record["written"]) == {"orders.py"}
+    assert _external_codes(tmp_path) == []
+
+
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_reset_node_is_not_kept_from_rerunning_by_the_evidence_the_reset_withdrew(tmp_path, host):
+    """`compute_reset_closure.py --apply` supersedes a node's completion; the rerun is the repair."""
+    drift_project(tmp_path, host)
+    _wave(tmp_path, "begin-wave", "repair")
+    (tmp_path / "orders.py").write_text(CONFLICTING)
+    _wave(tmp_path, "end-wave", "repair")
+    assert NODE in [b["node_id"] for b in _readiness(tmp_path)[1]["blockers"] if b["code"] == "stale_evidence"]
+
+    workflow = json.loads((tmp_path / WORKFLOW).read_text())
+    for entry in workflow["transition_log"]:
+        if entry.get("node_id", entry.get("node")) == NODE and entry.get("status") == "completed":
+            entry["status"] = "superseded"
+    write(tmp_path, WORKFLOW, workflow)
+    blockers = _readiness(tmp_path)[1]["blockers"]
+    assert not [b for b in blockers if b["node_id"] == NODE and b["code"] == "stale_evidence"], blockers
+    assert _artifacts(tmp_path)["all_exist"] is False, "the gate still withholds the node until it reruns"

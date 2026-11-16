@@ -212,6 +212,32 @@ the project-local `.allforai/bootstrap/learned/blind-spots.md`.
 - **Status**: `closed`
 - **First reported in**: 2026-04-14 retrospective
 
+## 2026-11-15 — An identity key audited through only some of its declarations
+
+- **Class**: a uniqueness or idempotency key is changed or audited by reading one
+  kind of declaration, while the schema language has several; and the key's scope
+  is assumed to be its origin when the row is addressed to someone else.
+- **Missed**: a tenant-scoped client operation identifier (Go service, PostgreSQL).
+  The audit enumerated primary keys and explicit unique indexes and missed a
+  uniqueness written inline on a column, so the old global scope survived the
+  change. Separately, an audit entry's recipient account differed from the account
+  the operation originated in: two origins sharing one public operation identifier
+  and one recipient collided, and the upgrade could not tell which origin older
+  rows belonged to.
+- **Why missed**: the implementing node checked the declarations it thought of; no
+  verify node asked for the complete set, and tests used one origin per recipient.
+- **Minimum prevention**: a node that changes or audits an identity key (a) lists
+  every form the schema language can declare uniqueness in — primary key, table
+  constraint, unique index including partial and expression indexes, inline column
+  constraint — and accounts for each occurrence; (b) states the key's scope as a
+  tuple naming who originates and who receives; (c) proves fan-in: several origins,
+  one public identifier, one recipient; (d) on upgrade refuses a historical row
+  whose provenance is ambiguous instead of assigning it one.
+- **Capability added**: none yet — the node that owns the key carries the four
+  checks in its acceptance.
+- **Status**: `open`
+- **First reported in**: anonymous run feedback, 2026-11-15
+
 ## 2026-09-17 — A pass with no denominator (the check was never seen to fail)
 
 - **Class**: a check reports "pass" without establishing what it could have
