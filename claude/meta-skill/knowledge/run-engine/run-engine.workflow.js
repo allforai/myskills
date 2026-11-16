@@ -908,6 +908,11 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
   // Closing that residual gap is a separate decision: it costs one gate run per completed node.
   const nodeById = new Map((dag.nodes || []).map(n => [n.node_id, n]))
   const measured = new Set()
+  // Completions this start found wrong: the gate refused them, or they were built on one it
+  // refused. A node that is simply not done is not in it — a node sent back for a reported
+  // defect (`--route-defects`) arrives reset together with exactly the nodes its change
+  // reaches, and a completed node that only waits for it keeps evidence that is still valid.
+  const refused = new Set()
   for (let changed = true; changed;) {
     changed = false
     // every completion a not-yet-done node depends on, asked about once
@@ -922,16 +927,18 @@ async function runEngine({ agent, pipeline, log = () => {}, phase = () => {} }) 
       })
       if (!gate || gate.node_id !== id || gate.status !== 'passed') {
         done.delete(id)
+        refused.add(id)
         changed = true
         log(`inherited completion of ${id} did not pass the gate; it will run again`)
       }
     }
-    // What was built on a completion that must rerun is suspect too: a completed node with a
-    // dependency that is no longer done is not done either. Each removal makes a node
-    // "remaining", so the next pass also asks about what that node depends on.
+    // What was built on a completion the gate refused is suspect too: a completed node with
+    // such a dependency is not done either. Each removal makes a node "remaining", so the
+    // next pass also asks about what that node depends on.
     for (const n of dag.nodes || []) {
-      if (done.has(n.node_id) && (n.hard_blocked_by || []).some(dep => nodeById.has(dep) && !done.has(dep))) {
+      if (done.has(n.node_id) && (n.hard_blocked_by || []).some(dep => refused.has(dep))) {
         done.delete(n.node_id)
+        refused.add(n.node_id)
         changed = true
         log(`${n.node_id} was built on a completion that must rerun; it will run again`)
       }

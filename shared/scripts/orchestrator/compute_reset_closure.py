@@ -10,7 +10,9 @@ Usage:
       audit trail stays, and no reader of `completed` needs to know about resets.
   compute_reset_closure.py <workflow.json> --route-defects
       send each defect a node reported in another node's output back to that node: its
-      correction is written, its closure reset, and the defect recorded as routed. Prints
+      correction is written, the nodes the change reaches are reset (the owner, the nodes
+      that recorded reading the file, and what depends on those), and the defect recorded
+      as routed. Prints
       {"routed": [...], "kept": [...]}; an empty `routed` changed nothing.
 """
 import json
@@ -36,13 +38,17 @@ def reset_closure(nodes, root_ids):
     return list(reset)
 
 
-def apply_reset(workflow, root_ids, diagnosis_ref, now=None):
-    """Supersede the closure's completed transitions in place; return (closure, count)."""
+def apply_reset(workflow, root_ids, diagnosis_ref, now=None, members=None):
+    """Supersede the closure's completed transitions in place; return (closure, count).
+
+    `members` names the nodes to reset when the caller knows which ones the change reaches;
+    without it the closure is every node downstream of the roots.
+    """
     known = {n.get("node_id") for n in workflow.get("nodes", [])}
     unknown = sorted(set(root_ids) - known)
     if unknown:
         raise ValueError(f"unknown root node(s): {', '.join(unknown)}")
-    closure = reset_closure(workflow.get("nodes", []), root_ids)
+    closure = sorted(members) if members is not None else reset_closure(workflow.get("nodes", []), root_ids)
     members = set(closure)
     at = now or datetime.now(timezone.utc).isoformat()
     count = 0
@@ -69,9 +75,8 @@ def route_defects(workflow, warnings, routed, corrections_of, now=None):
     """Decide which reported defects go back to their owner. Pure: returns what to write.
 
     A defect is routed once, to a node the plan has, while that node is under ROUTE_LIMIT.
-    Each routed owner gets a correction — binding on its next run like a diagnosis
-    correction — and its closure is reset, because what was built on a file that is about
-    to change has to be judged again. Returns (new routed entries, kept warnings,
+    Each routed owner gets a correction, binding on its next run like a diagnosis
+    correction; which nodes are reset with it is the caller's (`reached_by`). Returns (new routed entries, kept warnings,
     {owner: corrections file content}, diagnosis ref).
     """
     at = now or datetime.now(timezone.utc).isoformat()
@@ -102,10 +107,66 @@ def route_defects(workflow, warnings, routed, corrections_of, now=None):
                 previous.get("corrections"), list) else {"node_id": owner, "corrections": []})
             content["diagnosis"] = ref
             content["corrections"].append({
-                "action": "Fix this defect in your own output: " + defect,
+                "action": "Fix this defect in your own output, changing no other file you produce "
+                          "unless the fix cannot be made without it: " + defect,
                 "root_cause": "another node reported a defect in a file this node produces",
                 "gaps": [defect]})
     return new, kept, files, ref
+
+
+def defect_file(defect):
+    """The file a reported defect names: the text before the dash in `<file> — <what is wrong>`."""
+    head = re.split(r"\s+[—–-]\s+", defect, maxsplit=1)
+    path = head[0].strip().strip("`") if len(head) == 2 else ""
+    return path if path and not re.search(r"\s", path) else None
+
+
+def reached_by(workflow, consumed, owner, path):
+    """The nodes a change to `path` reaches, or None when that cannot be told.
+
+    Freshness stales a node when a file it consumed changes, and then every node that
+    depends on a stale one — through `hard_blocked_by` or by consuming its output. That is
+    the set that has to run again and the only one: a node that waits for the owner
+    without reading the file keeps valid evidence. `consumed` is what each node recorded
+    reading ({node_id: paths}); None means no record exists, and the caller falls back to
+    everything downstream of the owner.
+    """
+    if consumed is None or path is None:
+        return None
+    nodes = workflow.get("nodes", [])
+    producer = {(item.get("path") if isinstance(item, dict) else item): n.get("node_id")
+                for n in nodes for item in [*(n.get("exit_artifacts") or []), *(n.get("required_documents") or [])]}
+    depends = {n.get("node_id"): set(n.get("hard_blocked_by") or [])
+               | {producer[p] for p in consumed.get(n.get("node_id"), ()) if p in producer}
+               for n in nodes}
+    reached = {node_id for node_id, paths in consumed.items() if path in paths and node_id != owner}
+    changed = True
+    while changed:
+        changed = False
+        for node_id, deps in depends.items():
+            if node_id not in reached and node_id != owner and deps & reached:
+                reached.add(node_id)
+                changed = True
+    return reached | {owner}
+
+
+def recorded_consumption(base):
+    """{node_id: paths it recorded reading} from the freshness state, or None without one."""
+    state = _read(os.path.join(base, "evidence-freshness.json"), None)
+    if not isinstance(state, dict):
+        return None
+    consumed = {}
+    for bucket in ("nodes", "contracts"):
+        records = state.get(bucket)
+        for node_id, record in records.items() if isinstance(records, dict) else []:
+            inputs = record.get("inputs") if isinstance(record, dict) else None
+            files = inputs.get("files") if isinstance(inputs, dict) else None
+            consumed.setdefault(node_id, set()).update(files if isinstance(files, dict) else ())
+            consumed[node_id].update(p for p in record.get("extra") or [] if isinstance(p, str))
+    reads = _read(os.path.join(base, "observed-input-dependencies.json"), {})
+    for node_id, paths in reads.items() if isinstance(reads, dict) else []:
+        consumed.setdefault(node_id, set()).update(p for p in paths or [] if isinstance(p, str))
+    return consumed
 
 
 def _read(path, default):
@@ -135,7 +196,15 @@ def apply_routed_defects(workflow_path):
         os.makedirs(directory, exist_ok=True)
         for owner, content in files.items():
             _write_atomic(os.path.join(directory, owner + ".json"), content)
-        reset, _ = apply_reset(workflow, sorted(files), ref)
+        # Only what the change reaches runs again. Where that cannot be told for a defect —
+        # no freshness record, or no file named — everything downstream of its owner does.
+        consumed = recorded_consumption(base)
+        members = set()
+        for entry in new:
+            reached = reached_by(workflow, consumed, entry["owner"], defect_file(entry["defect"]))
+            members |= reached if reached is not None else set(
+                reset_closure(workflow.get("nodes", []), [entry["owner"]]))
+        reset, _ = apply_reset(workflow, sorted(files), ref, members=members)
         _write_atomic(workflow_path, workflow)
         _write_atomic(ledger_path, routed + new)
     return {"routed": [{"owner": r["owner"], "defect": r["defect"]} for r in new],

@@ -450,9 +450,12 @@ is wrong>` in `safety_warnings`, which the engine
 appends to `.allforai/bootstrap/run-warnings.json`. When no node is left to run, and before the success report, run
 `python3 .allforai/bootstrap/scripts/compute_reset_closure.py .allforai/bootstrap/workflow.json --route-defects`.
 For each such warning not routed before, it writes the defect into
-`diagnosis-corrections/<owner>.json`, resets the owner and what was built on it, and records
-the routing in `routed-defects.json`. If `routed` is not empty, RESUME the engine: the owner fixes
-its own file under the correction, and its consumers are judged again. If `routed` is empty
+`diagnosis-corrections/<owner>.json`, resets the nodes the change reaches, and records the
+routing in `routed-defects.json`. Those nodes are the owner, every node that recorded reading
+the named file, and what depends on those; a node that only waits for the owner keeps its
+completion. Where the reach cannot be told — the warning names no file, or no freshness record
+exists — everything downstream of the owner is reset. If `routed` is not empty, RESUME the engine: the owner fixes
+its own file under the correction, and the nodes that read it are judged again. If `routed` is empty
 the run is finished. Run it once per completion, never per node: a file is changed, and its
 consumers rerun, once for every defect reported so far. A defect is routed once and an owner
 is sent back at most twice; what the command returns under `kept` stays a warning and is

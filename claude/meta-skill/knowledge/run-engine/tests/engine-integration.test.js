@@ -256,6 +256,23 @@ test('runEngine: a failed inherited dependency takes its completed consumers wit
   assert.deepEqual(order, ['a', 'b', 'c'])   // b was done and passed its own gate, but a must rerun
 })
 
+test('runEngine: a completed node that only waits for a node sent back is not rerun', async () => {
+  // `--route-defects` reset `strings` and `screen`, which read the file; `icons` waits for
+  // `strings` without reading it and keeps its completion.
+  const dag = { nodes: [
+    { node_id: 'strings', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+    { node_id: 'screen', capability: 'x', hard_blocked_by: ['strings'], exit_artifacts: [] },
+    { node_id: 'icons', capability: 'x', hard_blocked_by: ['strings'], exit_artifacts: [] }
+  ], completed: ['icons'] }
+  const order = []
+  const ran = id => () => { order.push(id); return passed(id) }
+  const agent = makeFakeAgent({ 'load-dag': dag, strings: ran('strings'), screen: ran('screen'),
+    icons: ran('icons'), 'commit:strings': {}, 'commit:screen': {} })
+  const res = await core.runEngine({ agent, pipeline })
+  assert.equal(res.status, 'complete')
+  assert.deepEqual(order, ['strings', 'screen'])
+})
+
 test('runEngine: a completed node nothing remaining depends on is not re-measured', async () => {
   const dag = { nodes: [
     { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },

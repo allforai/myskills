@@ -22,7 +22,7 @@ Four pieces of anonymous run feedback arrived on 2026-11-15. One is domain knowl
 
 **E. A defect a node merely noticed is reported, not a failure.** The thought test of C showed a node failing itself over a typo in a file another node owns, because ADR-0015 B told it to fail on any wrong file it may not edit. A defect in another node's file now fails a node only when it keeps that node from meeting its own acceptance: the file is what the node judges, or an input it cannot work from. Anything else is returned as a warning, `defect in <producing node>: <file> — <what is wrong>`, and the node completes. The node still never edits the file.
 
-**F. A reported defect goes back to its owner once every node has run.** `compute_reset_closure.py <workflow.json> --route-defects` reads the warnings in `run-warnings.json`. For each `defect in <node>: …` not routed before, it adds a correction to `diagnosis-corrections/<node>.json`, resets that node and its closure, and records the routing in `routed-defects.json`. The run calls it when no node is left to run and continues if anything was routed. A defect is routed once and one node is sent back at most twice; the rest stays a warning with the reason.
+**F. A reported defect goes back to its owner once every node has run.** `compute_reset_closure.py <workflow.json> --route-defects` reads the warnings in `run-warnings.json`. For each `defect in <node>: …` not routed before, it adds a correction to `diagnosis-corrections/<node>.json`, resets the nodes the change reaches, and records the routing in `routed-defects.json`. The reach is the owner, every node that recorded reading the named file (freshness state and registered reads), and every node that depends on one of those through `hard_blocked_by` or by reading its output. That is the set freshness stales once the file changes, so nothing narrower would leave valid evidence and nothing wider is needed. When the warning names no file or no freshness record exists, everything downstream of the owner is reset. The run calls it when no node is left to run and continues if anything was routed. A defect is routed once and one node is sent back at most twice; the rest stays a warning with the reason.
 
 ## Alternatives rejected
 
@@ -31,7 +31,8 @@ Four pieces of anonymous run feedback arrived on 2026-11-15. One is domain knowl
 - Accepting the external change on the user's behalf, or exempting the consumer from its acceptance. The first invents an approval; the second weakens the gate. Under A the consumer still has to rerun and pass.
 - Exempting every node whose latest transition is `failed` from `stale_evidence`. A failed QA node recovers by observing its contract, which already works; only the reset had no path.
 - Routing a defect as soon as it is reported. The owner's consumers would rerun once per defect instead of once per pass.
-- Resetting only the owner and leaving its consumers to freshness. The Claude engine reruns everything built on a completion that must rerun, so the hosts would disagree; the closure is what a diagnosis reset already uses.
+- Resetting only the owner and leaving its consumers to freshness. Codex would rerun them, since it measures every node on every pass; the Claude engine takes completions from the log and would finish with stale ones.
+- Resetting everything downstream of the owner, as a diagnosis reset does. A typo in an early design file would rerun most of the graph, including nodes that never read it.
 - Letting the reporting node fix the file. A node writes only what it owns (ADR-0015 B).
 - Letting a worker's `completed` complete a node. The gate would stop being independent.
 - Accepting an attempt with no terminal transition when its artifacts changed. The run prompt already requires the transition, and one rule is simpler than two.
@@ -45,7 +46,7 @@ Four pieces of anonymous run feedback arrived on 2026-11-15. One is domain knowl
 | C | Not needed: a worker returns a structured result and the engine records completion from it | `worker_veto` in `flow.py`, serial, parallel and inline-review revision | Not needed: the orchestrator reads the worker's reply |
 | D | No isolated copies | `carry_source_inventory` and `project_ignored` in `flow.py` | No isolated copies |
 | E | `OWN_OUTPUTS_RULE`; the warning is returned in `safety_warnings` and the engine appends it to `run-warnings.json` | `build_prompt` item 11; the warning goes to `run-warnings.json` | Pi Dispatch worker rule; the orchestrator records the warning |
-| F | Run template step 2 runs the command on `complete` and resumes the engine | `flow.py` runs it when no node is pending | Template section; the orchestrator runs it before the success report |
+| F | Run template step 2 runs the command on `complete` and resumes the engine; at its start the engine now reruns a completed node only when a dependency's completion was refused by the gate, not merely because a dependency is pending | `flow.py` runs it when no node is pending | Template section; the orchestrator runs it before the success report |
 
 ## Consequences
 
@@ -55,7 +56,9 @@ Four pieces of anonymous run feedback arrived on 2026-11-15. One is domain knowl
 - On Pi the record exists only when the orchestrator sends the bracket calls its template asks for.
 - A Codex worker that finishes its node and forgets the transition fails that attempt and is dispatched again.
 - E is prompt-level on all three hosts. A run whose Run Policy halts on warnings halts on these too, before anything is routed.
-- F reruns the owner and every node downstream of it, so a typo in an early design file costs a pass over most of the graph. It happens at most twice per owner.
+- F reruns the owner, the nodes that read the file and what depends on them, at most twice per owner. A node that waits for the owner without reading the file is not rerun.
+- The correction tells the owner to change only the named file. If it changes another of its outputs, the readers of that one are stale without having been reset: Codex and Pi rerun them on the next pass, while on Claude they are reported as `stale_evidence` at the next start.
+- On Claude a completed node whose dependency is pending for any other reason is no longer rerun at engine start either. A diagnosis reset is unaffected, because it supersedes the whole closure itself.
 - F is a script on Codex and a template step the orchestrator has to follow on Claude and Pi.
 - A defect whose owner the reporter named wrongly, or that names no node, is never routed.
 - A draft worker that runs `git diff` in its copy gets an error, since the index has no objects. The draft prompt tells it not to use Git.

@@ -163,5 +163,56 @@ class TestRouteDefects(unittest.TestCase):
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[0], "use the tenant key")
 
+
+class TestRouteReach(TestRouteDefects):
+    """Only what the change reaches runs again: the owner, readers of the file, their dependents."""
+
+    GRAPH = [
+        {"node_id": "strings", "exit_artifacts": ["strings.ts", "strings.md"]},
+        {"node_id": "screen", "hard_blocked_by": ["strings"], "exit_artifacts": ["screen.json"]},
+        {"node_id": "verify", "hard_blocked_by": ["screen"]},
+        {"node_id": "icons", "hard_blocked_by": ["strings"]},            # waits, never reads strings.ts
+        {"node_id": "docs", "hard_blocked_by": []},                      # reads screen.json, no edge
+        {"node_id": "other", "hard_blocked_by": []},
+    ]
+
+    def reach(self, warning, state):
+        root = Path(tempfile.mkdtemp())
+        (root / "workflow.json").write_text(json.dumps({"nodes": self.GRAPH, "transition_log": [
+            {"node_id": n["node_id"], "status": "completed"} for n in self.GRAPH]}))
+        (root / "run-warnings.json").write_text(json.dumps({"warnings": [warning]}))
+        if state is not None:
+            (root / "evidence-freshness.json").write_text(json.dumps(state))
+        return self.route(root)["reset"]
+
+    STATE = {"nodes": {"screen": {"inputs": {"files": {"strings.ts": "a"}}},
+                       "docs": {"inputs": {"files": {}}, "extra": ["screen.json"]},
+                       "icons": {"inputs": {"files": {"strings.md": "b"}}},
+                       "other": {"inputs": {"files": {}}}}}
+
+    def test_a_node_that_waits_for_the_owner_without_reading_the_file_is_left_alone(self):
+        reset = self.reach("defect in strings: strings.ts — label misspelled", self.STATE)
+        self.assertEqual(reset, ["docs", "screen", "strings", "verify"])
+
+    def test_a_file_nobody_recorded_reading_resets_only_its_owner(self):
+        self.assertEqual(self.reach("defect in strings: unread.ts — typo", self.STATE), ["strings"])
+
+    def test_without_a_freshness_record_everything_downstream_reruns(self):
+        self.assertEqual(self.reach("defect in strings: strings.ts — label misspelled", None),
+                         ["icons", "screen", "strings", "verify"])
+
+    def test_a_defect_that_names_no_file_reruns_everything_downstream(self):
+        self.assertEqual(self.reach("defect in strings: the labels are inconsistent", self.STATE),
+                         ["icons", "screen", "strings", "verify"])
+
+    def test_a_read_registered_during_the_run_counts(self):
+        root = Path(tempfile.mkdtemp())
+        (root / "workflow.json").write_text(json.dumps({"nodes": self.GRAPH, "transition_log": [
+            {"node_id": n["node_id"], "status": "completed"} for n in self.GRAPH]}))
+        (root / "run-warnings.json").write_text(json.dumps({"warnings": ["defect in strings: strings.ts — typo"]}))
+        (root / "evidence-freshness.json").write_text(json.dumps({"nodes": {}}))
+        (root / "observed-input-dependencies.json").write_text(json.dumps({"other": ["strings.ts"]}))
+        self.assertEqual(self.route(root)["reset"], ["other", "strings"])
+
 if __name__ == "__main__":
     unittest.main()
