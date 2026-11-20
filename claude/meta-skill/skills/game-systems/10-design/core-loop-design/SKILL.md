@@ -7,11 +7,6 @@ description: Define the primary game loop, session structure, goals, failure/ret
 
 > Internal sub-skill for game-systems pipelines. Status: bundled.
 
-## Overview
-
-Defines the primary game loop, session structure, goals, failure/retry rules,
-player decisions, rewards, and mode boundaries.
-
 ## Input Contract
 
 Required: concept and gameplay intent. Optional: UI flow, level flow, genre,

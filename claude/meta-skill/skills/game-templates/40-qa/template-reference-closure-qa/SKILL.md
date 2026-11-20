@@ -7,11 +7,6 @@ description: Validate that template schemas and instances are closed over source
 
 > Internal sub-skill for game-templates pipelines. Status: bundled.
 
-## Overview
-
-Validates that template schemas and instances are closed over source refs,
-resource refs, consumers, inheritance, defaults, and repair targets.
-
 ## Input Contract
 
 Required: template registry, schemas, inheritance spec, reference map, and

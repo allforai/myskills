@@ -7,12 +7,6 @@ description: Define seeded procedural content rules, constraints, distributions,
 
 > Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
-## Overview
-
-Defines seeded procedural content rules, constraints, distributions, rejection
-rules, validation criteria, and repair loops for maps, runs, loot, encounters,
-quests, or factions.
-
 ## Input Contract
 
 Required: content taxonomy and target procedural content type.

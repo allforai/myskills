@@ -7,11 +7,6 @@ description: Define product-level data entities, fields, relationships, lifecycl
 
 > Internal sub-skill for app-design pipelines. Status: bundled.
 
-## Overview
-
-Defines product-level data entities, fields, relationships, lifecycle,
-ownership, permissions, and API implications.
-
 ## Input Contract
 
 Required: job story spec, information architecture spec, and screen

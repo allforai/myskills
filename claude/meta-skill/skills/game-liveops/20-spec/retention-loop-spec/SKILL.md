@@ -7,11 +7,6 @@ description: Define daily, weekly, monthly, comeback, streak, social, and collec
 
 > Internal sub-skill for game-liveops pipelines. Status: bundled.
 
-## Overview
-
-Defines daily, weekly, monthly, comeback, streak, social, and collection hooks
-that motivate return sessions.
-
 ## Input Contract
 
 Required: core loop, progression spec, and player experience contract.

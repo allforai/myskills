@@ -7,11 +7,6 @@ description: Define quest, objective, tutorial, reward, error, and progression t
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled.
 
-## Overview
-
-Defines quest, objective, tutorial, reward, error, and progression text
-contracts with variables, states, and UI length limits.
-
 ## Input Contract
 
 Required: gameplay objectives or progression context plus narrative tone.

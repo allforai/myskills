@@ -7,11 +7,6 @@ description: Define content entities, voice, microcopy, empty/error/loading copy
 
 > Internal sub-skill for app-design pipelines. Status: bundled.
 
-## Overview
-
-Defines content entities, voice, microcopy, empty/error/loading copy,
-localization hooks, and editorial ownership.
-
 ## Input Contract
 
 Required: audience positioning spec, information architecture spec, and screen

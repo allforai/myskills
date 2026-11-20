@@ -7,11 +7,6 @@ description: Define account, consent, permissions, privacy controls, notificatio
 
 > Internal sub-skill for app-design pipelines. Status: bundled.
 
-## Overview
-
-Defines account, consent, permissions, privacy controls, notifications,
-settings, preference management, and trust-sensitive flows.
-
 ## Input Contract
 
 Required: job story spec, data model spec when available, and target platforms.

@@ -7,11 +7,6 @@ description: Define dialogue nodes, speakers, triggers, variables, branches, emo
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled.
 
-## Overview
-
-Defines dialogue nodes, speakers, triggers, variables, branches, emotion states,
-and UI constraints before dialogue generation.
-
 ## Input Contract
 
 Required: narrative tone and speaker/context list. Optional: quest specs,

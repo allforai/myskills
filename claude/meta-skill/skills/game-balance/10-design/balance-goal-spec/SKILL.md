@@ -7,10 +7,6 @@ description: Define numeric design goals for pacing, difficulty, economy pressur
 
 > Internal sub-skill for game-balance pipelines. Status: bundled.
 
-## Overview
-
-Defines numeric design goals for pacing, difficulty, economy pressure, fairness, skill expression, and tuning tolerance.
-
 ## Input Contract
 
 Required: player experience contract, core loop, and balance registry.

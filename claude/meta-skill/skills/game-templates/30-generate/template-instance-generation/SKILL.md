@@ -7,11 +7,6 @@ description: Generate concrete template instances from approved schemas, inherit
 
 > Internal sub-skill for game-templates pipelines. Status: bundled.
 
-## Overview
-
-Generates concrete template instances from approved schemas, inheritance rules,
-reference bindings, and upstream content/system requirements.
-
 ## Input Contract
 
 Required: template registry, template schemas, inheritance rules, reference

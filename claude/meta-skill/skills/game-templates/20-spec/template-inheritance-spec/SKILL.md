@@ -7,11 +7,6 @@ description: Define base templates, variants, inheritance, override rules, merge
 
 > Internal sub-skill for game-templates pipelines. Status: bundled.
 
-## Overview
-
-Defines base templates, variants, inheritance, override rules, merge policy,
-reference override policy, and cycle prevention.
-
 ## Input Contract
 
 Required: template registry and template schemas.

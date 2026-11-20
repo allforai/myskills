@@ -7,11 +7,6 @@ description: Validate narrative, dialogue, quest, tutorial, UI, and reward text 
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled.
 
-## Overview
-
-Validates narrative, dialogue, quest, tutorial, UI, and reward text for tone,
-terminology, variable safety, length, continuity, and localization readiness.
-
 ## Input Contract
 
 Required: text manifest or specs. Optional: narrative tone, UI layout, dialogue

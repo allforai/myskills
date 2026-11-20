@@ -7,11 +7,6 @@ description: Define level order, pacing, objectives, failure/retry flow, unlocks
 
 > Internal sub-skill for game-level pipelines. Status: bundled.
 
-## Overview
-
-Defines level order, pacing, objectives, failure/retry flow, unlocks, and
-difficulty beats before layout generation.
-
 ## Input Contract
 
 Required: level registry or level list plus core loop. Optional: progression

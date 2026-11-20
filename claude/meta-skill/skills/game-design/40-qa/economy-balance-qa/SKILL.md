@@ -7,11 +7,6 @@ description: Validate economy source/sink closure, affordability, inflation, exp
 
 > Internal sub-skill for game-design pipelines. Status: bundled.
 
-## Overview
-
-Validates economy source/sink closure, affordability, inflation, exploit loops,
-resource deadlocks, and monetization constraints.
-
 ## Input Contract
 
 Required: economy spec and core game loop spec.

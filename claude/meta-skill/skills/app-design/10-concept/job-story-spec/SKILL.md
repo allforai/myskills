@@ -7,11 +7,6 @@ description: Turn app intent into concrete jobs, use cases, triggers, desired ou
 
 > Internal sub-skill for app-design pipelines. Status: bundled.
 
-## Overview
-
-Turns app intent into concrete jobs, use cases, triggers, desired outcomes,
-success signals, and failure/recovery expectations.
-
 ## Input Contract
 
 Required: audience positioning spec and product concept baseline.

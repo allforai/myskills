@@ -7,11 +7,6 @@ description: Define factions, relations, reputation, diplomacy, territory, confl
 
 > Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
-## Overview
-
-Defines factions, relations, reputation, diplomacy, territory, conflict,
-resource behavior, and narrative/system consequences.
-
 ## Input Contract
 
 Required: content taxonomy or world bible with faction candidates.

@@ -7,11 +7,6 @@ description: Validate level blockouts for reachability, pacing, collisions, obje
 
 > Internal sub-skill for game-level pipelines. Status: bundled.
 
-## Overview
-
-Validates level blockouts for reachability, pacing, collisions, objectives,
-enemy/resource placement, camera bounds, and known failure cases.
-
 ## Input Contract
 
 Required: level blockout or layout spec. Optional: runtime screenshots,

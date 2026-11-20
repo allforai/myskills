@@ -7,11 +7,6 @@ description: Define character motivations, relationships, arcs, state changes, v
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled.
 
-## Overview
-
-Defines character motivations, relationships, arcs, state changes, voice needs,
-portrait needs, and quest/story dependencies.
-
 ## Input Contract
 
 Required: world bible or narrative tone plus character/content list.

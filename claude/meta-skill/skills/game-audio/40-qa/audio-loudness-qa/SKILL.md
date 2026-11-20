@@ -7,11 +7,6 @@ description: Validate audio outputs for loudness, clipping, silence, duration, l
 
 > Internal sub-skill for game-audio pipelines. Status: bundled.
 
-## Overview
-
-Validates audio outputs for loudness, clipping, silence, duration, loopability,
-mix priority, and event alignment.
-
 ## Input Contract
 
 Required: audio manifest or SFX/music files. Optional: audio style, SFX spec,

@@ -7,11 +7,6 @@ description: Validate content cadence, repetition, coverage, dependency order, n
 
 > Internal sub-skill for game-content pipelines. Status: bundled.
 
-## Overview
-
-Validates content cadence, repetition, coverage, dependency order, novelty, and
-fatigue risk.
-
 ## Input Contract
 
 Required: content roadmap and content pack plan manifest.

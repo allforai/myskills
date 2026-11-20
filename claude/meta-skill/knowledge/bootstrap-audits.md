@@ -384,12 +384,10 @@ node's output stale, so the node runs again; one they confirm changes nothing. R
 refuses the next run only while a parked `product-decision-gaps/` record remains. Its node-spec usually changes
 with the answer, so re-rehearse that node and append its A0 pass.
 
-Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`: group independent decisions
-by topic, one message per topic, each decision with 2–3 options, tradeoffs and a recommended
-default; serialize only dependent forks → incremental confirm →
-(building blocks are asked by layer — engine and client, server, storage, UI style — with
-a block others depend on asked before them: state management after the framework) →
-write `.allforai/<domain>/decision-<id>.json` and validate it:
+Follow `${CLAUDE_PLUGIN_ROOT}/knowledge/brainstorming-lite.md`. Ask building-block
+decisions by layer (engine and client, server, storage, UI style) and ask prerequisites
+first, such as the framework before state management. Write each decision to
+`.allforai/<domain>/decision-<id>.json`, then validate it with:
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_audit_outputs.py decision .allforai/<domain>/decision-<id>.json`
 
 **Wire it (fix C4):** after writing each decision artifact, set the `consumer_node`'s

@@ -7,11 +7,6 @@ description: Define resources, currencies, sinks, sources, prices, rewards, inve
 
 > Internal sub-skill for game-systems pipelines. Status: bundled.
 
-## Overview
-
-Defines resources, currencies, sinks, sources, prices, rewards, inventory
-constraints, shop/crafting rules, and economy events.
-
 ## Input Contract
 
 Required: core loop or economy context. Optional: progression spec, UI registry,

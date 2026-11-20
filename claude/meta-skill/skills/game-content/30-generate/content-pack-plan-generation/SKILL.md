@@ -7,11 +7,6 @@ description: Generate concrete content pack plans from roadmap, quest, activity,
 
 > Internal sub-skill for game-content pipelines. Status: bundled.
 
-## Overview
-
-Generates concrete content pack plans from roadmap, quest, activity, level,
-narrative, economy, and art/UI/audio requirements.
-
 ## Input Contract
 
 Required: content roadmap spec and content registry.

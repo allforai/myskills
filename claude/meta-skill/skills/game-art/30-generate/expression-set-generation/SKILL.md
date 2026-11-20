@@ -7,11 +7,6 @@ description: Generate character expression sets for dialogue portraits, UI react
 
 > Internal sub-skill for game art pipelines. Status: bundled.
 
-## Overview
-
-Generates character expression sets for dialogue portraits, UI reactions, NPC
-states, and cutscene thumbnails.
-
 ## Input Contract
 
 Required: character id, base portrait/reference, expression list, style, output

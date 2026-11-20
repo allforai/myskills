@@ -7,11 +7,6 @@ description: Define time-limited events, seasons, rotations, eligibility, reward
 
 > Internal sub-skill for game-liveops pipelines. Status: bundled.
 
-## Overview
-
-Defines time-limited events, seasons, rotations, eligibility, rewards, content
-needs, schedule, and operational risks.
-
 ## Input Contract
 
 Required: content roadmap and retention loop spec.

@@ -7,11 +7,6 @@ description: Define how levels teach mechanics through layout, enemy placement, 
 
 > Internal sub-skill for game-level pipelines. Status: bundled.
 
-## Overview
-
-Defines how levels teach mechanics through layout, enemy placement, hazards,
-repetition, and safe practice.
-
 ## Input Contract
 
 Required: level flow design and mechanics/onboarding specs.

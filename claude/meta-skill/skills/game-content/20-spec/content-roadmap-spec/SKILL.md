@@ -7,11 +7,6 @@ description: Define content sequence, scope, release order, dependency plan, cov
 
 > Internal sub-skill for game-content pipelines. Status: bundled.
 
-## Overview
-
-Defines content sequence, scope, release order, dependency plan, coverage, and
-cadence for campaign, live, or staged content.
-
 ## Input Contract
 
 Required: content registry and core loop/progression context.

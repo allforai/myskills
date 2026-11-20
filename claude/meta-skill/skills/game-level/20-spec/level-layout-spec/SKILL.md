@@ -7,11 +7,6 @@ description: Define layout grammar for maps, rooms, lanes, platforms, grids, rou
 
 > Internal sub-skill for game-level pipelines. Status: bundled.
 
-## Overview
-
-Defines layout grammar for maps, rooms, lanes, platforms, grids, routes,
-spawns, goals, hazards, checkpoints, and collision metadata.
-
 ## Input Contract
 
 Required: level registry and level flow. Optional: tileset spec, prop manifest,

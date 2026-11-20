@@ -7,10 +7,6 @@ description: Register numeric tables, curves, formulas, balance entities, owners
 
 > Internal sub-skill for game-balance pipelines. Status: bundled.
 
-## Overview
-
-Registers numeric tables, curves, formulas, balance entities, owners, states, and downstream consumers.
-
 ## Input Contract
 
 Required: game design registry or selected system specs.

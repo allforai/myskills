@@ -7,10 +7,6 @@ description: Generate JSON/CSV balance tables from validated numeric specs; writ
 
 > Internal sub-skill for game-balance pipelines. Status: bundled.
 
-## Overview
-
-Generates JSON/CSV balance tables from validated numeric specs.
-
 ## Input Contract
 
 Required: validated numeric specs and balance registry.

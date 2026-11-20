@@ -7,11 +7,6 @@ description: Define affinity, trust, romance, rivalry, loyalty, gifts, dialogue 
 
 > Internal sub-skill for game-genre-common pipelines. Status: bundled.
 
-## Overview
-
-Defines affinity, trust, romance, rivalry, loyalty, gifts, dialogue thresholds,
-relationship events, and consequences.
-
 ## Input Contract
 
 Required: character arc spec or content taxonomy with relationship candidates.

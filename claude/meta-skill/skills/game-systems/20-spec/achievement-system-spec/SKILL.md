@@ -7,11 +7,6 @@ description: Define achievements, challenges, trophies, milestones, tracking con
 
 > Internal sub-skill for game-systems pipelines. Status: bundled.
 
-## Overview
-
-Defines achievements, challenges, trophies, milestones, tracking conditions,
-rewards, visibility, hidden rules, and UI/content ownership.
-
 ## Input Contract
 
 Required: core loop or content taxonomy.

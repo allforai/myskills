@@ -7,11 +7,6 @@ description: Define app navigation, screen hierarchy, route taxonomy, entry poin
 
 > Internal sub-skill for app-design pipelines. Status: bundled.
 
-## Overview
-
-Defines app navigation, screen hierarchy, route taxonomy, entry points, and
-information grouping.
-
 ## Input Contract
 
 Required: job story spec, product concept baseline, and target platforms.

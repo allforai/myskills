@@ -7,11 +7,6 @@ description: Define narrative triggers, conditions, flags, variables, rewards, U
 
 > Internal sub-skill for game-narrative pipelines. Status: bundled.
 
-## Overview
-
-Defines narrative triggers, conditions, flags, variables, rewards, UI cues, and
-runtime handoff for story and quest events.
-
 ## Input Contract
 
 Required: story structure or quest chain spec.

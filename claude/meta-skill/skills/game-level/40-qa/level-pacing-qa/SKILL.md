@@ -7,11 +7,6 @@ description: Validate level pacing across teaching, encounters, rewards, rest po
 
 > Internal sub-skill for game-level pipelines. Status: bundled.
 
-## Overview
-
-Validates level pacing across teaching, encounters, rewards, rest points,
-difficulty spikes, psychological curve, and objective progress.
-
 ## Input Contract
 
 Required: level flow design, level layout spec, teaching beats, encounter
