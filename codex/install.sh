@@ -7,14 +7,6 @@ CODEX_SKILLS="$CODEX_ROOT_DIR/skills"
 
 echo "Installing myskills for Codex..."
 
-# Build MCP gateway if needed
-MCP_DIR="$SCRIPT_DIR/../shared/mcp-ai-gateway"
-if [ -d "$MCP_DIR" ] && [ ! -d "$MCP_DIR/node_modules" ]; then
-  echo "Building MCP AI Gateway..."
-  cd "$MCP_DIR"
-  npm install && npm run build
-fi
-
 # Link skills with a SKILL.md entry into Codex's native skills directory.
 mkdir -p "$CODEX_SKILLS"
 if [ -f "$SCRIPT_DIR/cross-exam-skill/SKILL.md" ]; then
@@ -49,4 +41,4 @@ for plugin in meta-skill superstorm-skill cross-exam-skill grillstorm; do
   fi
 done
 echo ""
-echo "Optional env vars: OPENROUTER_API_KEY, GOOGLE_API_KEY. Video generation needs the Grok CLI (grok login)."
+echo "Optional env vars: OPENROUTER_API_KEY (script cross-model checks), GOOGLE_API_KEY (Lyria music). Video generation needs the Grok CLI (grok login)."

@@ -2,7 +2,7 @@
 name: setup
 description: >
   Detect and configure optional external capabilities for the Pi meta-skill adapter
-  (gateway build, API keys, browser automation). User-invoked only via /skill:setup
+  (agent CLIs, API keys, browser automation). User-invoked only via /skill:setup
   or /skill:meta-skill setup; never invoke it yourself.
 ---
 
@@ -15,7 +15,7 @@ description: >
 - 无参数: 完整检测与补救引导
 - `check`: 只报告状态
 - `reset`: 清除假定，从头评估
-- `update`: 重建本地 gateway 并刷新安装说明
+- `update`: 刷新安装说明
 - `impact [from_ref]`: 分析 meta-skill 变更，建议当前项目哪些节点应重跑
 
 ## Capability Model
@@ -27,9 +27,10 @@ description: >
 | Capability | Pi check | Purpose |
 |------------|----------|---------|
 | browser automation | 当前会话是否已有 Playwright/浏览器工具 | UI verification |
-| ai-gateway | `../../mcp-ai-gateway/dist/index.js` 存在 | search / TTS / model gateway |
 
-### 生成 CLI
+### Agent CLI
+
+交叉验证不需要专门的服务：Pi 直接换一个模型跑，或交给本机装着的另一家 agent CLI；都没有就用新上下文的子代理。
 
 | Capability | Pi check | Purpose |
 |------------|----------|---------|
@@ -41,8 +42,7 @@ description: >
 | Capability | Env var |
 |------------|---------|
 | OpenRouter | `OPENROUTER_API_KEY` |
-| Google AI | `GOOGLE_API_KEY` |
-| Brave Search | `BRAVE_API_KEY` |
+| Google AI（Lyria 配乐生成） | `GOOGLE_API_KEY` |
 
 ### Built-in fallback
 
@@ -53,22 +53,15 @@ description: >
 
 不要自动安装扩展、MCP 服务器或另一套 harness。
 
-## Step 0: Build Check
-
-1. 检查 `../../mcp-ai-gateway/dist/index.js`
-2. 缺失时：`cd ../../mcp-ai-gateway && npm install && npm run build`
-3. 报告构建是否就绪。构建失败则说明 MCP 工具不可用，预置脚本仍可用，继续。
-
 ## Step 1: Status Dashboard
 
-至少报告：gateway 构建、浏览器自动化、Codex 与 Grok CLI、三个 API key。
-附降级说明：无浏览器则跳过动态 UI 验证；无搜索 key 则用已有搜索或用户材料；无 Codex 则生图请求阻塞（`blocked_by_missing_image_cli`），无 Grok 则生视频请求阻塞（`blocked_by_missing_video_cli`），二者都没有替代源。
+至少报告：浏览器自动化、Codex 与 Grok CLI、两个 API key。
+附降级说明：无浏览器则跳过动态 UI 验证；无 Codex 则生图请求阻塞（`blocked_by_missing_image_cli`），无 Grok 则生视频请求阻塞（`blocked_by_missing_video_cli`），二者都没有替代源。
 
 `check` 模式在仪表板后停止。
 
 ## Step 2: Remediation
 
-- 缺 gateway build：执行或说明构建步骤
 - 缺 env：请用户提供，不要编造 key
 - 缺浏览器：说明前提和降级路径，不要代装
 

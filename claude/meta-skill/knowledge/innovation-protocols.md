@@ -9,7 +9,7 @@
 A four-role protocol for generating breakthrough innovation concepts. The value is in the
 roles and their independence, not in which vendor plays them: each role runs in its own
 context, sees only its inputs, and never reads another role's draft. Roles may run on external
-models through the ai-gateway `ask_model` routing or on fresh-context sub-agents of the session
+models — another platform's agent CLI installed on this machine, or another model the host can switch to — or on fresh-context sub-agents of the session
 model; which model actually ran is recorded in the output's `source_model`, never prescribed
 here (model names and temperatures age faster than any protocol).
 
@@ -126,11 +126,10 @@ The Archaeologist searches for cross-domain analogues based on the problem essen
 
 ### Single-Model Fallback Protocol
 
-When OpenRouter is unavailable:
+When no second model is reachable (no other agent CLI, no model switch, no OPENROUTER_API_KEY for the script channel):
 - Skip multi-model adversarial generation
-- Claude alone performs assumption zeroing and innovation exploration
+- The session model alone performs assumption zeroing and innovation exploration
 - Output `multi-model XV unavailable` message
-- Script-based XV may still be available if OPENROUTER_API_KEY is set
 
 ---
 
@@ -293,6 +292,6 @@ gateway's `task_type` routing picks the model, and `source_model` records which 
 
 ### XV Availability & Fallback
 
-- If `openrouter_mcp` available: use MCP tool `ask_model` for XV
-- If only `openrouter_script` available (API key set): use script-based XV
-- If neither available: skip XV silently, output `XV cross-validation unavailable`
+- Another platform's agent CLI is installed, or the host can switch models: run XV there
+- Otherwise, if `openrouter_script` is available (API key set): use script-based XV
+- If neither is available: skip XV, output `XV cross-validation unavailable`

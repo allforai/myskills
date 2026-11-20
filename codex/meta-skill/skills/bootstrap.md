@@ -183,7 +183,7 @@ adapter explicitly substitutes them.
 Examples:
 
 - `<canonical-root>/knowledge/...` and `<canonical-root>/skills/...` for canonical text
-- `./scripts/...` or `./mcp-ai-gateway/...` for Codex-local runtime helpers
+- `./scripts/...` for Codex-local runtime helpers
 
 ### 2. Generated Run Entry
 

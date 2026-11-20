@@ -64,7 +64,7 @@ def main() -> int:
             if not (bundle / rel).exists():
                 errors.append(f"installed bundle missing {rel}")
 
-        for rel in ["knowledge/capabilities", "scripts", "tests", "mcp-ai-gateway"]:
+        for rel in ["knowledge/capabilities", "scripts", "tests"]:
             path = bundle / rel
             if path.is_symlink():
                 errors.append(f"installed bundle retains source link {rel}")

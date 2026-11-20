@@ -1,5 +1,5 @@
 ---
-description: "检测和配置外部能力（Playwright、Codex 生图与 Grok 生视频 CLI、OpenRouter、Brave Search、Google AI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
+description: "检测和配置外部能力（Playwright、Codex 生图与 Grok 生视频 CLI、OpenRouter、Google AI），状态仪表板加引导配置加一键更新。仅由用户 /setup 显式调用，模型不得自行调用。"
 argument-hint: "[check|reset|update|impact]"
 allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 ---
@@ -17,7 +17,7 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 - **无参数** → 完整引导：检测 → 获取 Key → 验证 → 持久化
 - **`check`** → 仅检测当前状态（全部外部能力的可用性仪表板）
 - **`reset`** → 清除已有配置，重新引导
-- **`update`** → 更新所有已安装的插件、MCP 服务器和技能（见 Step 5）
+- **`update`** → 更新所有已安装的插件和技能（见 Step 5）
 - **`impact [from_ref]`** → 根据 meta-skill 更新内容，分析当前项目哪些节点/环节需要重跑（见 Step 6）
 
 ## 外部能力总览
@@ -30,49 +30,31 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 |------|---------|------|
 | Playwright | `mcp__playwright__browser_navigate` 或 `mcp__plugin_playwright_playwright__browser_navigate` 可用性（任一可用即就绪） | UI 自动化：验证、E2E 测试、死链扫描 |
 
-### 生成 CLI（图片与视频的唯一生成源）
+### Agent CLI（生成，以及换一个模型看）
 
 | 能力 | 探测方式 | 用途 |
 |------|---------|------|
-| Codex CLI | `command -v codex` | 生图（文生图、按参考图编辑），见 game-art `image-generation-contract` |
-| Grok CLI | `command -v grok` + `grok --no-auto-update models` 显示已登录 | 生视频（`image_to_video` / `reference_to_video`）；需订阅含视频，账号零数据保留（ZDR）时视频不可用 |
+| Codex CLI | `command -v codex` | 生图（文生图、按参考图编辑），见 game-art `image-generation-contract`；也可作交叉验证的第二平台 |
+| Grok CLI | `command -v grok` + `grok --no-auto-update models` 显示已登录 | 生视频（`image_to_video` / `reference_to_video`）；需订阅含视频，账号零数据保留（ZDR）时视频不可用；也可作交叉验证的第二平台 |
+
+交叉验证（XV）不需要专门的服务：把摘要交给本机装着的另一家 agent CLI，没有就用新上下文的子代理（见 `knowledge/cross-phase-protocols.md`）。
 
 ### API Key 服务（需配置密钥）
 
 | 能力 | Key 格式 | 用途 | 备注 |
 |------|---------|------|------|
-| OpenRouter | `sk-or-...` | XV 交叉验证 | Key 写入 ai-gateway env |
-| Google AI | `AIza...` | Cloud TTS 语音合成 | Key 写入 ai-gateway env |
-| Brave Search | `BSA...` | 媒体搜索（网页/图片/视频） | Key 写入 ai-gateway env |
+| OpenRouter | `sk-or-...` | 脚本通道的交叉验证 | 脚本直接读环境变量 |
+| Google AI | `AIza...` | 配乐生成（game-audio 的 Lyria） | 缺失时该节点返回 `blocked_by_missing_google_key` |
 
 ### 内置工具（始终可用）
 
 | 能力 | 用途 |
 |------|------|
-| WebSearch | 搜索驱动设计、媒体搜索降级 |
+| WebSearch | 搜索驱动设计、媒体搜索 |
 
 **所有外部能力均为可选 — 未配置时技能正常运行，跳过对应增强功能或走降级链。**
 
 ## 执行流程
-
-### Step 0: MCP 服务器构建检测
-
-在检测 Key 之前，先确保 MCP 服务器已构建（所有模式均执行此步）：
-
-服务器由 `mcp-ai-gateway/launch.mjs` 启动：插件升级后的新目录没有 `node_modules`，它在首次启动时自己安装运行时依赖，所以正常情况下这里无事可做。本步骤只在它没能自愈时兜底。
-
-1. **检查构建产物和依赖是否都在**（`dist/` 随插件发布，`node_modules` 不随插件发布，两个都要看）：
-   ```bash
-   ls ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/node_modules/@modelcontextprotocol/sdk
-   ```
-
-2. **任一缺失** → 修复：
-   - 依赖缺失 → 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway && npm install`
-   - `dist/index.js` 缺失或 < 100 bytes → 再运行 `npm run build` 并验证它已生成
-   - 成功 → 报告「MCP 服务器已修复」
-   - 失败 → 报告错误，提示「MCP 修复失败，MCP 工具不可用，但预置脚本不受影响」，继续执行
-
-3. **都在** → 报告「MCP 服务器已就绪」，继续
 
 ### Step 1: 检测当前状态
 
@@ -95,33 +77,11 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 
 #### 1b. OpenRouter
 
-1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_ai-gateway__ask_model`
-   - 可用 → MCP XV 就绪
-   - 不可用 → MCP XV 未就绪（可能需要重启 Claude Code）
-
-2. **脚本通道**：检查 `OPENROUTER_API_KEY` 环境变量
-   - 已设置 → 脚本 XV 就绪
-   - 未设置 → 脚本 XV 未就绪
-
-#### 1c. Brave Search
-
-1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_ai-gateway__brave_web_search`
-   - 可用 → Brave MCP 就绪（ai-gateway 已加载且 BRAVE_API_KEY 已配置）
-   - 不可用 → Brave MCP 未就绪
-
-2. **脚本通道**：检查 `BRAVE_API_KEY` 环境变量
-   - 已设置 → Brave Key 就绪
-   - 未设置 → Brave 未就绪
+检查 `OPENROUTER_API_KEY` 环境变量：已设置 → 脚本 XV 就绪；未设置 → 未就绪。
 
 #### 1d. Google AI
 
-1. **MCP 工具通道**：在激活工具列表和 `<available-deferred-tools>` 中查找 `mcp__plugin_meta-skill_ai-gateway__text_to_speech`
-   - 可用 → Google AI MCP 就绪（ai-gateway 已加载且 GOOGLE_API_KEY 已配置）
-   - 不可用 → Google AI MCP 未就绪
-
-2. **脚本通道**：检查 `GOOGLE_API_KEY` 环境变量
-   - 已设置 → Google AI Key 就绪
-   - 未设置 → Google AI 未就绪
+检查 `GOOGLE_API_KEY` 环境变量：已设置 → 就绪；未设置 → 未就绪。
 
 #### 1e. 生成 CLI（Codex 生图 / Grok 生视频）
 
@@ -144,20 +104,14 @@ Claude Code 使用**延迟加载（deferred tools）**机制：MCP 工具可能�
 | 能力 | 类型 | 状态 | 用途 |
 |------|------|------|------|
 | Playwright | 用户级 MCP | {✅ 就绪 / ❌ 未安装} | UI 自动化 |
-| Codex CLI | 生成 CLI | {✅ 就绪 / ❌ 未安装} | 生图 |
-| Grok CLI | 生成 CLI | {✅ 已登录 / ⚠️ 未登录 / ❌ 未安装} | 生视频 |
-| OpenRouter (MCP) | AI Gateway | {就绪/未就绪} | XV 交叉验证 |
-| Google AI (MCP) | AI Gateway | {就绪/未就绪} | TTS |
-| Brave Search (MCP) | AI Gateway | {就绪/未就绪} | 媒体搜索（网页/图片/视频） |
-| OpenRouter (Script) | Key | {就绪/未就绪} | XV 交叉验证 |
-| Google AI (Key) | Key | {就绪/未就绪} | TTS |
-| Brave Search (Key) | Key | {就绪/未就绪} | 媒体搜索 |
+| Codex CLI | Agent CLI | {✅ 就绪 / ❌ 未安装} | 生图；交叉验证的第二平台 |
+| Grok CLI | Agent CLI | {✅ 已登录 / ⚠️ 未登录 / ❌ 未安装} | 生视频；交叉验证的第二平台 |
+| OpenRouter | Key | {就绪/未就绪} | 脚本通道的交叉验证 |
+| Google AI | Key | {就绪/未就绪} | 配乐生成 |
 | WebSearch | 内置 | 就绪 | 搜索 |
-| MCP 服务器 | 构建产物 | {已构建/未构建} | AI Gateway（OpenRouter + Google AI + Brave） |
 
 降级链:
-  Brave 不可用 → WebSearch → AI 生成
-  OpenRouter MCP 不可用 → OpenRouter Script → 跳过 XV
+  交叉验证: 另一家 agent CLI → OpenRouter 脚本 → 新上下文子代理（记为同模型）
   生图: 只用 Codex，缺失即阻塞（无降级）
   生视频: 只用 Grok CLI，缺失即阻塞（无降级）
   Playwright 不可用 → 无降级（提示安装）
@@ -244,44 +198,6 @@ OpenRouter 注册步骤：
 
 记录跳过，继续下一个服务。
 
-#### 2b. Brave Search
-
-使用 AskUserQuestion 询问：
-
-**「你是否已有 Brave Search API Key？」**
-
-选项：
-- **已有 Key** — 我已经有 Brave Search API Key，直接配置
-- **需要注册** — 带我去获取一个
-- **跳过** — 暂不配置 Brave Search
-
-##### 选择「需要注册」时：
-
-展示注册步骤：
-
-```
-Brave Search API 注册步骤：
-
-1. 访问 https://brave.com/search/api/
-2. 点击 Get Started，创建账号
-3. 创建 API Key
-4. 复制 Key
-
-提示：
-- Brave Search 有免费额度（2000 queries/month）
-- 足够运行多轮 demo-forge 媒体搜索
-```
-
-然后使用 AskUserQuestion 询问「请粘贴你的 Brave Search API Key」（提供"其他"输入框让用户粘贴）。
-
-##### 选择「已有 Key」时：
-
-使用 AskUserQuestion 询问「请粘贴你的 Brave Search API Key」。
-
-##### 选择「跳过」时：
-
-记录跳过，继续下一个服务。
-
 #### 2c. Google AI
 
 使用 AskUserQuestion 询问：
@@ -311,7 +227,7 @@ Google AI API Key 获取步骤：
 
 提示：
 - 需要 Google Cloud 账号（有免费额度）
-- 用途: Cloud TTS（语音）；生图走 Codex，生视频走 Grok CLI，不用这个 Key
+- 用途: 配乐生成（game-audio 的 Lyria）；生图走 Codex，生视频走 Grok CLI，不用这个 Key
 - 建议限制 Key 仅允许 Vertex AI API 调用
 ```
 
@@ -331,10 +247,7 @@ Google AI API Key 获取步骤：
 
 **存储位置**：用户 shell 配置文件（`~/.zshrc` 或 `~/.bashrc`）的 export 语句。
 
-**原理**：
-- MCP 工具路径：`.mcp.json` 的 env 块使用 `${VAR}` 引用，Claude Code 启动 MCP 服务器时从 shell 环境变量注入
-- Python 脚本路径：直接读环境变量
-- 两条路径统一从环境变量读取，Key 不写入任何 JSON 文件，避免被插件更新/重装覆盖
+**原理**：脚本和节点直接读环境变量，Key 不写入任何 JSON 文件，避免被插件更新/重装覆盖。
 
 **操作流程**：
 
@@ -351,7 +264,6 @@ Google AI API Key 获取步骤：
    # myskills API Keys
    export OPENROUTER_API_KEY="sk-or-..."
    export GOOGLE_API_KEY="AIza..."
-   export BRAVE_API_KEY="BSA..."
    ```
 
 3. **使用 AskUserQuestion 确认**：展示将要追加的内容，请用户确认：
@@ -361,7 +273,6 @@ Google AI API Key 获取步骤：
 
   export OPENROUTER_API_KEY="sk-or-...{后4位}"
   export GOOGLE_API_KEY="AIza...{后4位}"
-  export BRAVE_API_KEY="BSA...{后4位}"
 
 确认写入？
 ```
@@ -370,7 +281,7 @@ Google AI API Key 获取步骤：
 5. **生效方式**：
    - 当前终端：运行 `source ~/.zshrc`（或 `~/.bashrc`）立即生效
    - 新终端：自动生效
-   - MCP 服务器：需**重启 Claude Code**（重新加载环境变量）
+   - 已打开的 Claude Code 会话：需**重启**才能读到新环境变量
 
 ### Step 4: 验证与报告
 
@@ -382,8 +293,7 @@ Google AI API Key 获取步骤：
 | 服务 | Key | 存储位置 | 用途 |
 |------|-----|---------|------|
 | OpenRouter | sk-or-...{后4位} | shell 环境变量 | XV 交叉验证 |
-| Google AI | AIza...{后4位} | shell 环境变量 | TTS |
-| Brave Search | BSA...{后4位} | shell 环境变量 | 媒体搜索 |
+| Google AI | AIza...{后4位} | shell 环境变量 | 配乐生成 |
 
 下一步：运行 source ~/.zshrc 后重启 Claude Code，然后 /setup check 验证连接。
 ```
@@ -401,25 +311,19 @@ Google AI API Key 获取步骤：
 MCP 工具（用户级 claude mcp add -s user）:
   Playwright       {✅ 就绪 / ❌ 未安装}   UI 自动化
 
-生成 CLI:
-  Codex            {✅ 就绪 / ❌ 未安装}   生图
-  Grok             {✅ 已登录 / ⚠️ 未登录 / ❌ 未安装}   生视频
-
-AI Gateway（统一 MCP 服务器）:
-  OpenRouter       {就绪/未就绪}   XV 交叉验证
-  Google AI        {就绪/未就绪}   TTS
-  Brave Search     {就绪/未就绪}   媒体搜索（网页/图片/视频）
+Agent CLI:
+  Codex            {✅ 就绪 / ❌ 未安装}   生图；交叉验证的第二平台
+  Grok             {✅ 已登录 / ⚠️ 未登录 / ❌ 未安装}   生视频；交叉验证的第二平台
 
 API Key（环境变量）:
-  OpenRouter Key   {就绪/未就绪}   XV 交叉验证
-  Google AI Key    {就绪/未就绪}   TTS
-  Brave Key        {就绪/未就绪}   媒体搜索
+  OpenRouter Key   {就绪/未就绪}   脚本通道的交叉验证
+  Google AI Key    {就绪/未就绪}   配乐生成
 
 内置:
   WebSearch        就绪            搜索
 
 {若有未就绪的 MCP 工具或 Key：运行 /setup 进行安装和配置}
-{若 MCP 已安装但工具不可用：需重启 Claude Code 加载 MCP 服务器}
+{若 Playwright 已安装但工具不可用：需重启 Claude Code}
 {注: 所有外部能力均为可选，未配置不影响核心功能}
 ```
 
@@ -431,8 +335,7 @@ API Key（环境变量）:
 | 服务 | Key | 状态 | 用途 |
 |------|-----|------|------|
 | OpenRouter | sk-or-...{后4位} | {已写入 shell / 已跳过 / 已配置} | XV 交叉验证 |
-| Google AI | AIza...{后4位} | {已写入 shell / 已跳过 / 已配置} | TTS |
-| Brave Search | BSA...{后4位} | {已写入 shell / 已跳过 / 已配置} | 媒体搜索 |
+| Google AI | AIza...{后4位} | {已写入 shell / 已跳过 / 已配置} | 配乐生成 |
 
 MCP 工具（Step 1.5 已引导安装）:
   Playwright     {已安装/已跳过/之前已就绪}  UI 自动化
@@ -467,26 +370,7 @@ MCP 工具（Step 1.5 已引导安装）:
    claude plugin update <plugin-name>@<scope>
    ```
 
-4. **MCP 配置保护**：对比更新前后的 `.mcp.json`，如果 server 条目在新版中消失，自动恢复。
-
-5. **汇总报告**：列出每个插件的更新前后版本
-
-#### 5b. 重建 MCP 服务器
-
-1. **读取 MCP 配置**：
-   ```bash
-   cat ~/.claude/settings.json
-   ```
-   提取 `mcpServers` 中的所有服务器
-
-2. **对每个 node 类型的 MCP 服务器**，检查其 `args` 中的入口文件路径，找到对应的 `package.json` 所在目录
-
-3. **重建**：
-   ```bash
-   cd <mcp-server-dir> && npm install && npm run build
-   ```
-
-4. **报告构建结果**
+4. **汇总报告**：列出每个插件的更新前后版本
 
 #### 更新报告
 
@@ -497,10 +381,7 @@ Claude Code 插件:
   meta-skill    0.3.0 → 0.4.0  ✅
   ...
 
-MCP 服务器:
-  ai-gateway        ✅ 重建成功
-
-⚠️ 插件或 MCP 服务器有更新时，必须重启 Claude Code 才能生效。
+⚠️ 插件有更新时，必须重启 Claude Code 才能生效。
    请退出当前会话并重新启动 Claude Code。
 
 下一步建议：重启后在项目目录运行 `/setup impact <更新前版本或 git ref>`，
@@ -509,8 +390,7 @@ MCP 服务器:
 
 **重启提示规则**：
 - 任何插件版本发生变化 → 必须提示重启
-- MCP 服务器重建成功 → 必须提示重启
-- 所有插件均无更新且无 MCP 重建 → 不提示重启
+- 所有插件均无更新 → 不提示重启
 - 提示文案必须包含「请退出当前会话并重新启动 Claude Code」，不能只说"需要重启"
 
 ### Step 6: Skill 更新影响分析（仅 `impact` 模式）
@@ -587,6 +467,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/analyze_skill_update_impact.p
 ## 铁律（强制执行）
 
 1. **Key 不落项目目录** — API Key 不得写入 `.allforai/` 或任何用户项目目录下的文件
-2. **Key 不写入 JSON** — API Key 不写入 `.mcp.json` 或任何 JSON 配置文件。`.mcp.json` 仅使用 `${VAR}` 引用环境变量
+2. **Key 不写入 JSON** — API Key 不写入任何 JSON 配置文件，只放在 shell 环境变量里
 3. **不自动写入** — 写入 shell 配置前必须展示内容并获得用户确认
 4. **不阻塞主流程** — 本命令仅配置增强功能。未配置任何服务不影响技能的核心功能

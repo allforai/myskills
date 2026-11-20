@@ -13,7 +13,7 @@ All paths are relative to `codex/meta-skill/`.
 - no argument: full guided check and remediation
 - `check`: status only
 - `reset`: clear assumptions and re-evaluate from scratch
-- `update`: rebuild local gateway and refresh install guidance
+- `update`: refresh install guidance
 - `impact [from_ref]`: analyze meta-skill changes and recommend which current project nodes should be rerun
 
 ## Capability Model
@@ -25,9 +25,10 @@ Optional capabilities are grouped into three classes:
 | Capability | Codex check | Purpose |
 |------------|-------------|---------|
 | browser automation | look for a Playwright-capable tool in the current session | UI verification and automation |
-| ai-gateway | `.mcp.json` present + `./mcp-ai-gateway/dist/index.js` exists | model gateway for search / TTS / cross-model calls |
 
-### Generation CLIs
+### Agent CLIs
+
+Cross-model validation needs no service of its own: hand the summary to another platform's agent CLI installed on this machine (`claude`, `grok`), or to a fresh-context sub-agent when there is none.
 
 | Capability | Codex check | Purpose |
 |------------|-------------|---------|
@@ -39,8 +40,7 @@ Optional capabilities are grouped into three classes:
 | Capability | Env var |
 |------------|---------|
 | OpenRouter | `OPENROUTER_API_KEY` |
-| Google AI | `GOOGLE_API_KEY` |
-| Brave Search | `BRAVE_API_KEY` |
+| Google AI (Lyria music generation) | `GOOGLE_API_KEY` |
 
 ### Built-in fallback
 
@@ -49,31 +49,18 @@ Optional capabilities are grouped into three classes:
 | search | Codex web/search capability |
 | question flow | normal Codex user-question flow |
 
-## Step 0: Build Check
-
-Before checking keys, verify the gateway build:
-
-1. Check `./mcp-ai-gateway/dist/index.js`
-2. If missing:
-   - run `cd ./mcp-ai-gateway && npm install`
-   - run `cd ./mcp-ai-gateway && npm run build`
-3. Report whether the build is ready
-
 ## Step 1: Status Dashboard
 
 Report at least:
 
-- gateway build status
 - browser automation readiness
 - OpenRouter key readiness
 - Google AI key readiness
 - Grok CLI install and login readiness
-- Brave Search key readiness
 
 Include downgrade guidance:
 
 - no browser automation -> skip dynamic browser verification
-- no Brave Search -> use Codex web search or user-provided references
 - no Grok CLI -> video requests return `blocked_by_missing_video_cli`; there is no other video source
 
 ## Step 2: Remediation Guidance
@@ -82,7 +69,6 @@ If the user is in `check` mode, stop after the dashboard.
 
 Otherwise:
 
-- for missing gateway build: instruct or execute build steps
 - for missing env vars: ask the user to provide or configure them
 - for missing browser automation: explain installation prerequisites and the degraded workflow
 

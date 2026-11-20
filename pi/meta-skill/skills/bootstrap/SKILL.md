@@ -22,7 +22,7 @@ description: >
 
 读完 `<canonical-root>/skills/bootstrap/SKILL.md` 全文，执行该协议，同时应用下面的 Pi 替换。
 canonical 里的 `${CLAUDE_PLUGIN_ROOT}` 一律解析为 `<canonical-root>`。
-本适配里的 `./scripts/`、`./mcp-ai-gateway/`、`../knowledge/` 相对包根目录解析。
+本适配里的 `./scripts/`、`../knowledge/` 相对包根目录解析。
 
 Pi 没有 `AskUserQuestion`。阻塞性信息用纯文本问；不要发明答案，也不要用 Codex 的 assume-and-declare 代替同意。
 

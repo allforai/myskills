@@ -316,7 +316,7 @@ No issues -> pass, proceed to next phase
 
 **Execution**: The verification loop is an LLM-driven process, not a fixed script. The subagent reads phase outputs, applies 4D + 6V + Closure thinking, produces a structured review JSON (issues found), modifies source files, then re-reads outputs and re-reviews. This loop is implemented inline in the node-spec, not via a separate script. (`verify_review.py` was an older reference and is no longer distributed — do not look for it in target projects.)
 
-**XV Enhancement** (optional): Cross-model cross-validation sends output summaries to a second AI model (via the `mcp__plugin_meta-skill_ai-gateway__ask_model` tool or equivalent) for independent opinions. XV enhances the loop; it is not an independent phase.
+**XV Enhancement** (optional): Cross-model cross-validation sends output summaries to a second AI model for independent opinions. What makes the opinion independent is a different model reading only the summary, not a particular service: hand it to another platform's agent CLI installed on this machine (run headless, read-only), or on a host that can switch models, run it on a different one. When neither exists, a fresh-context sub-agent of the session model gives the review and the record says it was the same model. Which model actually ran is recorded with the result. XV enhances the loop; it is not an independent phase.
 
 **Loop round limits**: max 2-3 rounds of generate -> review -> fix -> re-review. If issues persist after 3 rounds, mark as UNRESOLVED and proceed.
 

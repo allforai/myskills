@@ -200,7 +200,7 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B�
 ### Step 3：XV 交叉验证（可选）
 
 ```
-若 mcp__plugin_meta-skill_ai-gateway__ask_model 可用：
+若有第二模型可用（本机装着的另一家 agent CLI，或宿主能切换到的另一个模型）：
   发送 art-pipeline-config.json 摘要（不含 cross_model_review）
   
   审查 prompt：
@@ -212,7 +212,7 @@ Step 1 每问结论确认后，按下表调用结论更新序列（分支 A / B�
   
   将审查结论写入 config.cross_model_review[]（不自动修改其他字段，供用户参考）
 
-若 ask_model 不可用：
+若没有第二模型：
   输出 "XV cross-validation unavailable"，跳过
 ```
 

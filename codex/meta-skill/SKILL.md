@@ -57,7 +57,6 @@ The Codex adapter reuses the Claude meta-skill as its canonical semantic source:
 - `./knowledge/` -> Codex-local extensions plus compatibility links
 - `./scripts/` -> bootstrap/orchestrator helpers
 - `./tests/` -> prompts, expected outputs, and fixtures
-- `./mcp-ai-gateway/` -> MCP-backed optional capability gateway
 
 The installer puts this full bundle under `$CODEX_HOME/skill-bundles/meta-skill/` and
 only a routing SKILL.md plus the original agents metadata under `$CODEX_HOME/skills/meta-skill/`.

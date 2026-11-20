@@ -31,12 +31,12 @@ invoke:  grok -p "<prompt>" --tools image_to_video --allow image_to_video --outp
 缺失时:  blocked_by_missing_video_cli，不回退到其他视频服务
 ```
 
-### ask_model（XV 交叉验证）
+### 第二模型（XV 交叉验证）
 
 ```
-invoke:  MCP tool — mcp__plugin_meta-skill_ai-gateway__ask_model
+invoke:  本机装着的另一家 agent CLI（无头、只读运行），或宿主能切换时换一个模型
 用途:    XV 交叉验证（art-concept Step 3）
-requires_install: false（需 OPENROUTER_API_KEY 环境变量）
+requires_install: false（用已有的；不为此安装任何东西）
 fallback: 跳过 XV，输出 "XV cross-validation unavailable"
 ```
 

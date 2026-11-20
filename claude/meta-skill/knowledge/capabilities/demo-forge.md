@@ -107,6 +107,7 @@ For projects with background task queues (Celery, Bull, Temporal, etc.), demo da
 - **API-driven insertion**: Every data insert is an API call = integration test
 - **Dependency order**: Create parent entities before children
 - **Zero external links**: All media uploaded to app server
+- **Media has a source you can name**: the project's own assets first, then images generated through the image contract (`skills/game-art/30-generate/image-generation-contract`), then material found with the host's web search whose licence allows the use. Record where each file came from in `demo-plan.json`; a file whose origin or licence cannot be stated is not uploaded.
 - **Zero placeholder data**: No "[Dev]" prefixed strings, no "https://dev.example.com" URLs.
   If the real service can produce the data, use it. If not, clearly mark as TODO.
 - **Verify visually**: Navigate screens with Playwright, verify data appears correctly

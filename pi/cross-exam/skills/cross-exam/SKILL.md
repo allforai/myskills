@@ -128,7 +128,7 @@ canonical 的「看图预算」在 Pi 上是硬约束，不是建议：Pi 把图
   observation），副本上的颜色不作数。
 - **一批也有上限**：一次 reviewer 派发（一个原生 Pi 子代理）打开的原图加基线参考图不超过 `MAX_BATCH_IMAGES`
   （`$ROOT/visual/validation.py`），超限 entry 拒渲。一组自己就超上限的，回矩阵拆 state 或抽象，不拆组也不硬派。
-- **截图外发边界**：只进会话模型和定靶时冻结的第二平台 reviewer；不经任何第三方网关（`ask_model` 一类）或
+- **截图外发边界**：只进会话模型和定靶时冻结的第二平台 reviewer；不经任何第三方网关或
   未冻结模型外发。Pi 没有外部平台，也没冻结第二端时就只进会话模型（§2：第二平台 reviewer 一律读作同一会话模型的原生
   fresh-context reviewer）。第二端失败走 `degradation_ref`，不找替身。用户要对本 run 放开，先在定靶安全确认里问清，
   写 ledger 顶层 `image_export: {targets, confirmed_by_user 原话, confirmed_at}` 再发；含真实数据的图外发不在选项里。

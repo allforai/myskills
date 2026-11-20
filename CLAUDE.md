@@ -30,10 +30,9 @@ myskills/
 │   └── cross-exam/           # Pi package: /skill:cross-exam + keep-code-simple (not product-review)
 │
 ├── shared/                   # Platform-agnostic assets
-│   ├── scripts/
-│   │   ├── product-design/   # Python data transform scripts
-│   │   └── code-replicate/   # Python reverse-engineering scripts
-│   └── mcp-ai-gateway/       # Unified MCP gateway (Node)
+│   └── scripts/
+│       ├── product-design/   # Python data transform scripts
+│       └── code-replicate/   # Python reverse-engineering scripts
 │
 ├── CLAUDE.md                 # This file
 └── MIGRATION.md              # Migration guide from old structure
@@ -162,27 +161,16 @@ meta-skill: `/skill:bootstrap [path]`, then `/skill:run [goal]` in the target pr
 
 `keep-code-simple` is also bundled in Claude's superstorm plugin and in the Codex cross-exam folder (nested `keep-code-simple/SKILL.md`). Keep its shared protocol authoritative at `shared/keep-code-simple/protocol.md`; after edits run `python3 shared/keep-code-simple/sync.py`, then `--check`. Committed mirrors make installed packages self-contained.
 
-## Key Dependency: mcp-ai-gateway
+## External Services
 
-`shared/mcp-ai-gateway/` provides OpenRouter (cross-model XV) + Google AI (TTS) + Brave Search in a single process:
+No plugin ships an MCP server (ADR-0020). Cross-model validation (XV) hands a summary to another platform's agent CLI installed on the machine (`codex`, `grok`, `claude`), switches model where the host can (Pi), or falls back to a fresh-context sub-agent recorded as the same model. Web research uses each host's own search. Images come from Codex, video from the Grok CLI (`claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md`).
 
-```bash
-cd shared/mcp-ai-gateway
-npm install
-npm run build        # produces dist/index.js
-```
-
-Requires `OPENROUTER_API_KEY` for cross-model queries. Optionally `GOOGLE_API_KEY` for TTS, `BRAVE_API_KEY` for search. The gateway does not generate images or video: images come from Codex, video from the Grok CLI (`claude/meta-skill/skills/game-art/30-generate/image-generation-contract/SKILL.md`).
-
-## External Service Keys
-
-Three optional API keys enhance plugin capabilities; `/setup` also checks the generation CLIs (Codex for images, Grok for video, which needs `grok login` on a plan that includes video):
+Two optional API keys remain; `/setup` also checks the agent CLIs (Codex for images, Grok for video, which needs `grok login` on a plan that includes video):
 
 | Service | Env Variable | Used By | Purpose |
 |---------|-------------|---------|---------|
-| OpenRouter | `OPENROUTER_API_KEY` | meta-skill capabilities, jev | Cross-model XV; Jev decisions |
-| Brave Search | `BRAVE_API_KEY` | demo-forge capability | Media search (images/videos) |
-| Google AI | `GOOGLE_API_KEY` | demo-forge capability | TTS |
+| OpenRouter | `OPENROUTER_API_KEY` | meta-skill script XV, jev | Script-channel cross-model checks; Jev decisions |
+| Google AI | `GOOGLE_API_KEY` | game-audio | Lyria music generation |
 
 All services are optional — plugins work without them, skipping enhanced features.
 
@@ -213,7 +201,7 @@ Claude plugins also keep a copy in their own `scripts/` directory (since `${CLAU
 | Entry point | SKILL.md (plugin auto-load) | AGENTS.md | `/skill:name` |
 | Interaction | AskUserQuestion (structured) | Assume + declare | Plain-text questions |
 | Tools | `${CLAUDE_PLUGIN_ROOT}` paths | Relative paths | Package-relative + canonical Claude tree |
-| MCP naming | `mcp__plugin_{name}_{server}__*` | Generic descriptions | Optional gateway via `/skill:setup` |
+| Second model for XV | Another agent CLI (`codex`, `grok`), else sub-agent | Another agent CLI (`claude`, `grok`), else sub-agent | Switch model, else another CLI |
 
 ## Recommended Workflow (for users of the plugins)
 

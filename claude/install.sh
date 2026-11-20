@@ -33,16 +33,6 @@ else
   done
 fi
 
-# Build MCP gateway if needed
-MCP_DIR="$SCRIPT_DIR/../shared/mcp-ai-gateway"
-if [ -d "$MCP_DIR" ] && [ ! -d "$MCP_DIR/node_modules" ]; then
-  echo "Building MCP AI Gateway..."
-  cd "$MCP_DIR"
-  npm install && npm run build
-  echo "MCP AI Gateway built at $MCP_DIR/dist/index.js"
-fi
-
 echo ""
 echo "Done. Run 'claude' to start using the plugins."
-echo "Set OPENROUTER_API_KEY for cross-model XV and image generation."
-echo "Optional: GOOGLE_API_KEY (TTS). Images: Codex CLI. Video: Grok CLI (grok login)."
+echo "Optional: OPENROUTER_API_KEY (script cross-model checks, jev), GOOGLE_API_KEY (Lyria music). Images: Codex CLI. Video: Grok CLI (grok login)."

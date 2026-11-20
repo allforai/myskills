@@ -154,7 +154,7 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn("may use supported `model` parameters", text)
 
     def test_runtime_symlinks_resolve_into_canonical_tree(self):
-        for relative in ("scripts", "mcp-ai-gateway"):
+        for relative in ("scripts",):
             path = (PACKAGE / relative).resolve()
             with self.subTest(link=relative):
                 self.assertTrue(path.is_dir(), relative)

@@ -39,10 +39,6 @@ def install(source, entry, bundle):
         shutil.copytree(source, payload, ignore=ignore)
         shutil.copytree(canonical / 'skills', payload / 'canonical/skills', ignore=ignore)
         shutil.copytree(canonical / 'knowledge', payload / 'canonical/knowledge', ignore=ignore)
-        gateway = payload / 'mcp-ai-gateway'
-        if (gateway / 'package.json').is_file():
-            subprocess.run(['npm', 'ci', '--ignore-scripts'], cwd=gateway, check=True, timeout=300)
-            subprocess.run(['npm', 'run', 'build'], cwd=gateway, check=True, timeout=300)
         compile((payload / 'knowledge/flow-template.py').read_text(), 'flow-template.py', 'exec')
         commit = os.environ.get('SOURCE_COMMIT')
         if not commit:

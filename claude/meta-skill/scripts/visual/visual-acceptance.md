@@ -69,7 +69,7 @@ token，模型一个字也没多看见。**预算锚在第二条，不锚在第�
 - **一批也有上限**：一次 reviewer 派发打开的原图加基线参考图不超过 `MAX_BATCH_IMAGES`（VISUAL_ROOT/validation.py
   具名常量）——再多不是看不了，是看了也漏。分批以比较组为界；一个组自己就超上限的，回矩阵拆 state 或抽象，不拆组
   也不硬派，校验器拒渲超限的 entry。
-- **截图只进两处**：会话模型，和定靶时冻结的第二平台 reviewer。不经第三方网关（`ask_model` 一类）或任何未冻结的
+- **截图只进两处**：会话模型，和定靶时冻结的第二平台 reviewer。不经第三方网关或任何未冻结的
   模型外发——第二端失败走 `degradation_ref`，不找替身。用户要对本 run 放开的，写 ledger 顶层
   `image_export: {targets, confirmed_by_user 原话, confirmed_at}` 再发；截图里有真实数据时按步骤 2 先停该项，
   外发不在选项里。

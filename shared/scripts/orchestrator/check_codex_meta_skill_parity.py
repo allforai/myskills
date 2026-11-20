@@ -36,7 +36,6 @@ def main() -> int:
     required_paths = [
         (CODEX_META / "SKILL.md", "SKILL.md"),
         (CODEX_META / "agents" / "openai.yaml", "agents/openai.yaml"),
-        (CODEX_META / ".mcp.json", ".mcp.json"),
         (CODEX_META / "install.sh", "install.sh"),
         (CODEX_META / "install_bundle.py", "install_bundle.py"),
         (CODEX_META / "commands" / "bootstrap.md", "commands/bootstrap.md"),
@@ -53,7 +52,6 @@ def main() -> int:
         (CODEX_META / "knowledge", "knowledge"),
         (CODEX_META / "scripts", "scripts"),
         (CODEX_META / "tests", "tests"),
-        (CODEX_META / "mcp-ai-gateway", "mcp-ai-gateway"),
         (ORCH / "check_product_summary.py", "shared/scripts/orchestrator/check_product_summary.py"),
         (ORCH / "check_structured_node_spec.py", "shared/scripts/orchestrator/check_structured_node_spec.py"),
     ]
@@ -223,22 +221,11 @@ def main() -> int:
     if ".allforai/codex/flow.py" not in skill_text:
         errors.append("SKILL.md does not document the installed Codex non-stop driver")
 
-    # Validate .mcp.json shape.
-    mcp_path = CODEX_META / ".mcp.json"
-    if mcp_path.exists():
-        try:
-            mcp = json.loads(read_text(mcp_path))
-            servers = mcp.get("mcpServers", {})
-            gateway = servers.get("ai-gateway")
-            if not gateway:
-                errors.append(".mcp.json missing mcpServers.ai-gateway")
-            else:
-                if gateway.get("command") != "node":
-                    errors.append(".mcp.json ai-gateway command must be 'node'")
-                if "./mcp-ai-gateway/dist/index.js" not in gateway.get("args", []):
-                    errors.append(".mcp.json ai-gateway args missing ./mcp-ai-gateway/dist/index.js")
-        except Exception as exc:
-            errors.append(f".mcp.json parse failure: {exc}")
+    # The MCP gateway is retired (ADR-0020). A package that brings one back also brings back
+    # an install step nothing else needs.
+    for retired in (".mcp.json", "mcp-ai-gateway"):
+        if (CODEX_META / retired).exists() or (CODEX_META / retired).is_symlink():
+            errors.append(f"{retired}: the ai-gateway MCP server is retired (ADR-0020)")
 
     # Backward compatibility note is acceptable, but primary contract drift is not.
     if "state-machine.json" in skill_text:
