@@ -59,20 +59,20 @@ allowed-tools: ["Read", "Write", "Grep", "Bash", "AskUserQuestion"]
 
 在检测 Key 之前，先确保 MCP 服务器已构建（所有模式均执行此步）：
 
-1. **检查 dist/index.js 是否存在**：
+服务器由 `mcp-ai-gateway/launch.mjs` 启动：插件升级后的新目录没有 `node_modules`，它在首次启动时自己安装运行时依赖，所以正常情况下这里无事可做。本步骤只在它没能自愈时兜底。
+
+1. **检查构建产物和依赖是否都在**（`dist/` 随插件发布，`node_modules` 不随插件发布，两个都要看）：
    ```bash
-   ls ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js
+   ls ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/node_modules/@modelcontextprotocol/sdk
    ```
 
-2. **不存在或文件 < 100 bytes** → 需要构建：
-   - 检查 node_modules 是否存在：`ls ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/node_modules/`
-   - 不存在 → 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway && npm install`
-   - 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway && npm run build`
-   - 验证 `dist/index.js` 已生成
-   - 成功 → 报告「MCP 服务器构建成功」
-   - 失败 → 报告错误，提示「MCP 构建失败，MCP 工具不可用，但预置脚本不受影响」，继续执行
+2. **任一缺失** → 修复：
+   - 依赖缺失 → 运行 `cd ${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway && npm install`
+   - `dist/index.js` 缺失或 < 100 bytes → 再运行 `npm run build` 并验证它已生成
+   - 成功 → 报告「MCP 服务器已修复」
+   - 失败 → 报告错误，提示「MCP 修复失败，MCP 工具不可用，但预置脚本不受影响」，继续执行
 
-3. **已存在** → 报告「MCP 服务器已构建」，继续
+3. **都在** → 报告「MCP 服务器已就绪」，继续
 
 ### Step 1: 检测当前状态
 

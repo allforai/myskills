@@ -25,7 +25,7 @@ shared/mcp-ai-gateway/
   "mcpServers": {
     "ai-gateway": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/dist/index.js"],
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-ai-gateway/launch.mjs"],
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
