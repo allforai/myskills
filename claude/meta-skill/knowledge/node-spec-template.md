@@ -150,8 +150,8 @@ dodge by emptying the field. From Pattern J: every configuration item carries ex
 one audience, only `end-user` items may appear on an end-user surface, and an item whose
 audience nobody has decided is escalated through Pattern I rather than guessed.
 
-A node that writes product source (it declares `parallel_write_scopes`) additionally
-anchors `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-k` and
+A node that writes program code — source, tests, build or deploy configuration —
+additionally anchors `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-k` and
 `${CLAUDE_PLUGIN_ROOT}/knowledge/defensive-patterns.md#pattern-l`, each with its own two
 or three load-bearing sentences, and names where this project's shared code lives (from
 discovery or the profile) so "already available" has somewhere concrete to be looked for.
@@ -172,7 +172,12 @@ in a gap field — every gap field blocks completion. `quality_gaps` is for the 
 itself: the node built what these patterns exclude, or weakened a guard to share it.
 Each deferral also leaves one comment in the source, at the place the mechanism would
 have gone: `deferred: <what was not built>, <the real occurrence that brings it back>`.
-The run record tells this run; the comment tells whoever opens the file later.>
+The run record tells this run; the comment tells whoever opens the file later.
+A write scope alone does not make a node a code-writing node: a node whose
+`parallel_write_scopes` hold only documents, records, design files or generated assets
+writes the single line `Code simplicity: not applicable — this node writes no program code`
+here instead of the two anchors. A node that declares `parallel_write_scopes` and has
+neither is refused as `missing_simplicity_anchor`.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.

@@ -1339,6 +1339,7 @@ SOURCE_WRITING_NODE_ANCHORS = (
     "defensive-patterns.md#pattern-k",
     "defensive-patterns.md#pattern-l",
 )
+NO_PROGRAM_CODE_LINE = "Code simplicity: not applicable — this node writes no program code"
 
 
 def validate_node_spec_contracts(bdir: str) -> list:
@@ -1418,15 +1419,19 @@ def validate_node_spec_contracts(bdir: str) -> list:
                     f"node-specs/{node_id}.md: missing attention contract term {term!r}"
                 )
 
-        # A node that writes product source is where reuse and speculative structure are
-        # decided. The template asks for both anchors; a spec generated without them hands
-        # the executor no simplicity criterion at all, so the receiving side refuses it.
-        if _string_list(node.get("parallel_write_scopes")):
+        # A node that writes program code is where reuse and speculative structure are
+        # decided. A write scope does not say whether a node writes code — a record node
+        # writes docs and an art node writes assets through the same field — so the spec
+        # says which it is: both anchors, or the one line that it writes no program code.
+        # Saying neither is what this refuses; the criterion is not silently dropped.
+        if (_string_list(node.get("parallel_write_scopes"))
+                and NO_PROGRAM_CODE_LINE not in text):
             for anchor in SOURCE_WRITING_NODE_ANCHORS:
                 if anchor not in text:
                     errors.append(
-                        f"missing_simplicity_anchor: node-specs/{node_id}.md: node writes product "
-                        f"source (parallel_write_scopes) but does not anchor {anchor}; rerun /bootstrap"
+                        f"missing_simplicity_anchor: node-specs/{node_id}.md: node declares "
+                        f"parallel_write_scopes but neither anchors {anchor} nor states "
+                        f"{NO_PROGRAM_CODE_LINE!r}; rerun /bootstrap"
                     )
 
     return errors

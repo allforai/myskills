@@ -1427,6 +1427,10 @@ def test_source_writing_node_spec_must_anchor_the_simplicity_patterns(tmp_path):
     spec.write_text(head + ATTENTION_CONTRACT_BODY
                     + '\nknowledge/defensive-patterns.md#pattern-k\nknowledge/defensive-patterns.md#pattern-l\n')
     assert missing() == []
+    # A write scope is not proof of code: a record or art node says so in one line instead.
+    spec.write_text(head + ATTENTION_CONTRACT_BODY
+                    + '\nCode simplicity: not applicable — this node writes no program code\n')
+    assert missing() == []
 
 
 @pytest.mark.parametrize('spec_scopes', ['', 'parallel_write_scopes: [other/**]\n'])
