@@ -1269,14 +1269,20 @@ def validate_game_visual_acceptance_standard_flow(bdir: str) -> list:
         ".allforai/visual-qa/visual-evidence-requirements.json",
     }
     criteria_ids = {node["node_id"] for node in criteria_nodes if node.get("node_id")}
-    for node in criteria_nodes:
-        artifacts = set(_artifact_paths(node.get("exit_artifacts")))
-        missing = sorted(required_artifacts - artifacts)
-        if missing:
-            errors.append(
-                f"workflow.json: {node.get('node_id')} visual criteria node missing "
-                f"required exit_artifacts {missing}"
-            )
+    # The canonical standard has one owner. A workflow may carry several criteria
+    # producers (art assets, then runtime screens); the others publish their standard
+    # under their own paths, because two owners of one path stale each other.
+    owned = {
+        node.get("node_id"): required_artifacts & set(_artifact_paths(node.get("exit_artifacts")))
+        for node in criteria_nodes
+    }
+    if not any(paths == required_artifacts for paths in owned.values()):
+        closest = max(criteria_nodes, key=lambda n: len(owned[n.get("node_id")]))
+        missing = sorted(required_artifacts - owned[closest.get("node_id")])
+        errors.append(
+            f"workflow.json: {closest.get('node_id')} visual criteria node missing "
+            f"required exit_artifacts {missing}"
+        )
 
     for node in visual_qa_nodes:
         node_id = node.get("node_id")

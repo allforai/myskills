@@ -181,6 +181,28 @@ def test_a_write_scope_over_its_own_and_unowned_paths_passes(tmp_path):
     assert not [e for e in errors if e.startswith("write_scope_owns_foreign_artifact:")], errors
 
 
+def test_a_second_criteria_producer_keeps_its_standard_under_its_own_path(tmp_path):
+    canonical = [".allforai/visual-qa/visual-acceptance-criteria.json",
+                 ".allforai/visual-qa/visual-acceptance-criteria.md",
+                 ".allforai/visual-qa/visual-evidence-requirements.json"]
+    art = _base_node(node_id="art-list", capability="game-design",
+                     exit_artifacts=[".allforai/game-art/asset-acceptance-criteria.json"])
+    runtime = _base_node(node_id="runtime-criteria", capability="game-design",
+                         exit_artifacts=canonical)
+    _write_workflow(tmp_path, [art, runtime])
+    _write_node_spec(tmp_path, "art-list",
+                     "Asset standard; the canonical visual-acceptance-criteria belongs to runtime-criteria")
+    assert _validate_bootstrap.validate_game_visual_acceptance_standard_flow(str(tmp_path)) == []
+
+
+def test_a_visual_workflow_with_no_owner_of_the_canonical_standard_fails(tmp_path):
+    art = _base_node(node_id="art-list", capability="game-design",
+                     exit_artifacts=[".allforai/visual-qa/visual-acceptance-criteria.json"])
+    _write_workflow(tmp_path, [art])
+    errors = _validate_bootstrap.validate_game_visual_acceptance_standard_flow(str(tmp_path))
+    assert errors and "art-list visual criteria node missing" in errors[0], errors
+
+
 def test_dependency_reference_to_missing_node_fails(tmp_path):
     path = _write_workflow(
         tmp_path,
