@@ -169,7 +169,10 @@ deferral is returned in NODE_RESULT `assumed_decisions` (`decision` names the me
 real occurrence that brings it back), as is a behaviour difference accepted by using a
 native or existing implementation where the upstream artifacts are silent. It never goes
 in a gap field — every gap field blocks completion. `quality_gaps` is for the violation
-itself: the node built what these patterns exclude, or weakened a guard to share it.>
+itself: the node built what these patterns exclude, or weakened a guard to share it.
+Each deferral also leaves one comment in the source, at the place the mechanism would
+have gone: `deferred: <what was not built>, <the real occurrence that brings it back>`.
+The run record tells this run; the comment tells whoever opens the file later.>
 
 ## Guidance
 <LLM-generated execution guidance based on absorbed knowledge.

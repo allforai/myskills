@@ -303,7 +303,7 @@ exit_artifacts:{_yaml_list(exit_artifacts)}
 - 不允许只凭 JSON、日志、源码阅读或静态截图通过可玩性验收。
 - 输出必须写到 frontmatter 中声明的 `exit_artifacts`。
 - 写或改产品源码时遵循 `${{CLAUDE_PLUGIN_ROOT}}/knowledge/defensive-patterns.md#pattern-l`：项目公共代码、标准库、引擎/平台原生能力或已安装依赖已经提供的东西不再自建；沿用代码库既有套路；抽象只为它现在让什么变简单而存在。
-- 遵循 `${{CLAUDE_PLUGIN_ROOT}}/knowledge/defensive-patterns.md#pattern-k`：为设想场景加的机制（限流、重试、兜底、缓存、无调用方的兼容分支），其防的失败在本系统没有发生过且后果可恢复时不做，记为 deferred 并写明真实触发条件；被调用契约写明的失败属于正确性，数据/资金/安全/权限/合规的防护永不延后。选择不做的东西是决定不是缺陷：写进 NODE_RESULT `assumed_decisions`（`default_chosen: deferred`，`rationale` 写明它防什么、什么真实发生会把它加回来），不写进任何 gap 字段；`quality_gaps` 只记违反本身（做了这两条排除的东西，或为了共用而放宽防护）。
+- 遵循 `${{CLAUDE_PLUGIN_ROOT}}/knowledge/defensive-patterns.md#pattern-k`：为设想场景加的机制（限流、重试、兜底、缓存、无调用方的兼容分支），其防的失败在本系统没有发生过且后果可恢复时不做，记为 deferred 并写明真实触发条件；被调用契约写明的失败属于正确性，数据/资金/安全/权限/合规的防护永不延后。选择不做的东西是决定不是缺陷：写进 NODE_RESULT `assumed_decisions`（`default_chosen: deferred`，`rationale` 写明它防什么、什么真实发生会把它加回来），不写进任何 gap 字段；`quality_gaps` 只记违反本身（做了这两条排除的东西，或为了共用而放宽防护）。每个延后项还要在源码里、该机制本来会出现的位置留一行注释：`deferred: <没做什么>, <什么真实发生时加回来>`。
 
 ## Outputs
 
