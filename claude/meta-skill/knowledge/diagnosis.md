@@ -30,6 +30,18 @@ You are diagnosing a workflow failure.
    node whose output is insufficient? Don't guess — read the actual artifact
    files via Read tool if needed.
 
+   **Baseline first.** A node is the root cause of a failing check only if the
+   check held before this run wrote anything, or the run's own writes are what
+   broke it. Establish which from a recorded earlier state — the base commit, a
+   wave baseline, an earlier evidence entry for the same check — and say what
+   you read. A check that was already failing before any node of this run wrote
+   is `failing_before`: no node of this run caused it, and blaming one spends
+   its repair attempts on a defect it did not make. If a node of this workflow
+   owns the failing code (its `parallel_write_scopes` cover it), that node
+   repairs it and the repair action says the defect is inherited; if none does,
+   the failure is out of scope (see Out-of-Scope Repairs). When no earlier state
+   can be read, the baseline is `unknown` — write that, do not assume either way.
+
 2. **Impact Chain**: List all intermediate nodes between root cause and failure.
 
 3. **Same-Class Expansion**: The specific gap you found — are there similar gaps
@@ -51,6 +63,10 @@ Return JSON:
   "root_cause": {
     "node": "<node-id>",
     "description": "<what's wrong>"
+  },
+  "baseline": {
+    "state": "passing_before | failing_before | unknown",
+    "basis": "<the earlier state read and where — commit, wave baseline, evidence entry — or why none could be read>"
   },
   "impact_chain": ["<node-id>", ...],
   "gaps_found": [
@@ -94,6 +110,25 @@ After diagnosis returns:
    { "node": "<node-id>", "what_was_wrong": "<root_cause.description>", "fix_applied": "<repair action taken>", "timestamp": "<ISO>" }
    ```
 
+<a id="oracle"></a>
+## A repair may not move the oracle
+
+The check that failed is the oracle of its repair: the test's assertions, the lint or
+type-check configuration, the acceptance criterion, the fixture or expected value a
+comparison reads. A repair changes the product until the oracle passes, never the oracle
+until the product passes. Deleting or skipping the failing test, loosening an assertion,
+widening a tolerance, disabling a rule and regenerating an expected value from the
+current output are all the same move, and a check that went green that way has proved
+nothing.
+
+The one exception is an oracle that is itself wrong — it contradicts a confirmed
+requirement, or its harness cannot run on the target platform. That is a finding about
+the oracle, not a repair of the product: the node names the requirement or the platform
+fact the check contradicts, changes only what that justifies, and returns the change in
+NODE_RESULT `assumed_decisions` (what was changed in the check and why), so whoever
+verifies the node judges the change instead of inheriting it unseen. A repair plan step
+whose action is to change a check carries the same justification.
+
 ## Re-Verification
 
 After repair_plan completes:
@@ -129,7 +164,8 @@ Each diagnosis result is appended to `workflow.json diagnosis_history[]` by the 
 
 If the diagnosis identifies a root cause in a node that **does not exist** in the current
 state machine (e.g., demo-forge fails because API is missing, but there is no translate
-node to fix the code), the orchestrator:
+node to fix the code), or a `failing_before` failure in code no node of this workflow
+owns, the orchestrator:
 
 1. Marks the gap as UNRESOLVED
 2. Records it in diagnosis_history with `"out_of_scope": true`

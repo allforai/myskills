@@ -63,7 +63,7 @@ claude/meta-skill/
 │   ├── hooks.json           # PreToolUse Skill gate registration
 │   └── user-only-skills.sh  # Refuses model-side calls to /bootstrap and /setup
 ├── knowledge/
-│   ├── capabilities/        # 15 capability templates (discovery, translate, tune, etc.)
+│   ├── capabilities/        # Capability templates (discovery, translate, tune, etc.)
 │   ├── orchestrator-template.md  # Template for generating run.md
 │   ├── diagnosis.md         # Full-chain diagnosis protocol
 │   ├── learning-protocol.md # Cross-session learning

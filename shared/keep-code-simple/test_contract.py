@@ -111,6 +111,25 @@ class PackageTests(unittest.TestCase):
                                 input=json.dumps({"tool_input": {"skill": "ordinary-skill"}}), timeout=10)
         self.assertEqual(result.returncode, 0)
 
+    def test_user_only_gate_says_so_when_it_cannot_read_the_payload(self):
+        # The gate lets an unreadable payload through — refusing every Skill call would break the
+        # session — but a gate that stops working without a trace is one nobody knows to fix.
+        for plugin, name in (("meta-skill", "bootstrap"), ("superstorm", "superstorm"), ("grillstorm", "grillstorm")):
+            hook = ROOT / "claude" / plugin / "hooks/user-only-skills.sh"
+            for payload in ("not json", "", json.dumps({"toolInput": {"name": name}}),
+                            json.dumps({"tool_input": {"skill": 7}})):
+                with self.subTest(plugin=plugin, payload=payload):
+                    result = subprocess.run(["bash", str(hook)], text=True, capture_output=True,
+                                            input=payload, timeout=10)
+                    self.assertEqual(result.returncode, 0)
+                    self.assertIn("gate did not run", result.stderr)
+            blocked = subprocess.run(["bash", str(hook)], text=True, capture_output=True,
+                                     input=json.dumps({"tool_input": {"skill": f"x:{name}"}}), timeout=10)
+            self.assertEqual(blocked.returncode, 2, plugin)
+            ordinary = subprocess.run(["bash", str(hook)], text=True, capture_output=True,
+                                      input=json.dumps({"tool_input": {"skill": "ordinary-skill"}}), timeout=10)
+            self.assertEqual((ordinary.returncode, ordinary.stderr), (0, ""), plugin)
+
     def test_claude_manifests_advertise_entry_without_version_drift(self):
         plugin = json.loads((ROOT / "claude/superstorm/.claude-plugin/plugin.json").read_text())
         for path in ("claude/superstorm/.claude-plugin/marketplace.json", ".claude-plugin/marketplace.json"):

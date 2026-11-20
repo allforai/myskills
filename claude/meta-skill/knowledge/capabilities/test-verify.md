@@ -119,6 +119,8 @@ Bootstrap sets `min_pass_rate` per layer (default: R2 = 100%, R3 = 90%, R4 = 100
 If actual rate < threshold → fix loop until a cycle fixes nothing new or reintroduces a fixed failure (progress, not a count, ends it).
 If not resolved → surface as UPSTREAM_DEFECT with per-layer breakdown and the per-cycle trajectory.
 
+The fix loop changes the product, not the tests: `${CLAUDE_PLUGIN_ROOT}/knowledge/diagnosis.md#oracle`. A cycle that raised the pass rate by deleting, skipping or loosening a test fixed nothing and is reported as such. A "test file fix" (Failure Routing above) is the stated exception — a harness that cannot run on the target platform — and is returned as a decision with its reason. A test that was already failing before this run's code existed is not this run's regression: `diagnosis.md` "Baseline first".
+
 ## Output Contract
 
 **test-verify-report.json field schema:**

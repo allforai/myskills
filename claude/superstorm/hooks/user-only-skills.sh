@@ -6,12 +6,17 @@
 USER_ONLY="superstorm cross-exam product-review keep-code-simple"
 
 input=$(cat)
-skill=$(printf '%s' "$input" | python3 -c 'import sys, json
-try:
-    v = json.load(sys.stdin).get("tool_input", {}).get("skill", "")
-except Exception:
-    v = ""
-print(str(v).rsplit(":", 1)[-1].strip())' 2>/dev/null)
+# A payload this cannot read still lets the call through: refusing every Skill call because
+# the payload shape changed would break the session. But it says so. A gate that stops
+# working without a trace is one nobody knows to fix.
+if ! skill=$(printf '%s' "$input" | python3 -c 'import sys, json
+v = json.load(sys.stdin)["tool_input"]["skill"]
+if not isinstance(v, str) or not v.strip():
+    raise SystemExit(1)
+print(v.rsplit(":", 1)[-1].strip())' 2>/dev/null); then
+  echo "user-only-skills: could not read the Skill tool payload; the user-only gate did not run for this call." >&2
+  exit 0
+fi
 
 for name in $USER_ONLY; do
   if [ "$skill" = "$name" ]; then
