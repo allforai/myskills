@@ -143,14 +143,14 @@
     },
     {
       "id": "run-model-tiers",
-      "rule": "Before the first node a run with no entry for its host chooses, without asking, which model this host uses for each tier (strong, standard, light), records it per host in model-tiers.json, discloses it at completion, and reuses it until the user edits or deletes it; judges are always strong.",
+      "rule": "Each host's three model levels are chosen by the run without asking; the profile (which level light, standard and strong work use) is asked once with a recommendation and recorded; both live in model-tiers.json and are reused until the user edits or deletes them; judges run on the strong tier.",
       "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
-                    "require": ["model-tiers.json", "choose one", "without asking", "deletes this host's"]},
+                    "require": ["model-tiers.json", "three yourself", "ask the user once", "levels[profile[position of its tier]]"]},
       "copies": [
         {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["model-tiers.json", "choose one", "without asking", "deletes this host's"]},
+         "require": ["model-tiers.json", "three yourself", "ask the user once", "levels[profile[position of its tier]]"]},
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
-         "require": ["model-tiers.json", "choose one", "without asking", "deletes this host's"]}
+         "require": ["model-tiers.json", "three yourself", "ask the user once", "levels[profile[position of its tier]]"]}
       ]
     }
   ]

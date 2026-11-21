@@ -88,7 +88,7 @@ blocked until reconstructed.
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
-## Model tiers (chosen by the run, never asked)
+## Model tiers (the one question before the first node)
 
 <!-- clause-begin:run-model-tiers -->
 Every step runs on a tier, never on a model a skill names: `strong` for work that decides
@@ -97,19 +97,33 @@ reporting what it printed or writing a record. A node runs on the `model_tier` b
 declared for it, `strong` when it declares none; the node gate, reviews, diagnosis and
 repair are `strong` whatever the node declares (ADR-0021).
 
-Before the first node, read `.allforai/bootstrap/model-tiers.json`. When it has no entry for
-this host (`claude`, `codex` or `pi`), look at the models this host can run now, choose one
-for each tier yourself, and write them under this host's key as
-`{"strong": "<name>", "standard": "<name>", "light": "<name>"}` without asking; `strong` is
-never weaker than the session model, and a tier left out runs on the session model. List
-the choice at completion as a choice the run made for the user. An entry that exists is used
-as it is: the user edits the file to change it, or deletes this host's entry to have the
-next run choose again. Never write a model name into a skill or a template.
+Which model runs a tier is set in `.allforai/bootstrap/model-tiers.json`:
+
+```json
+{"profile": "223", "claude": {"1": "<name>", "2": "<name>", "3": "<name>"}}
+```
+
+- **Levels are the run's choice, per host.** When the file has no entry for this host
+  (`claude`, `codex` or `pi`), look at the models this host can run now and choose
+  three yourself, `1` the cheapest that can still run a command and report it faithfully,
+  `3` the strongest available (never weaker than the session model), `2` between them;
+  write them under this host's key without asking.
+- **The profile is the user's choice, for every host.** Its three digits give the level
+  for light, standard and strong work in that order, never decreasing: `123` spends least,
+  `223` keeps light work off the cheapest level, `222` runs everything on the middle level,
+  `333` runs everything on the strongest. When the file has no `profile`, recommend one
+  with a reason and ask the user once — this is the only question a run asks (ADR-0021
+  narrows ADR-0018). When nobody can answer, record the recommendation.
+- A step runs on `levels[profile[position of its tier]]`; a level with no name runs on the
+  session model. List the profile and this host's levels at completion, marking whichever
+  the run chose. An existing value is used as it is: the user edits the file to change
+  it, or deletes the `profile` or this host's entry to have the next run ask or choose
+  again. Never write a model name into a skill or a template.
 <!-- clause-end:run-model-tiers -->
 
 ## Run Policy (recorded, never asked)
 
-`/run` asks nothing — not before the first node and not after it. The user answers
+Apart from the model-tier profile above, `/run` asks nothing — not before the first node and not after it. The user answers
 questions at `/bootstrap`; a run goes from its first line to its report unattended
 (ADR-0018). The three choices a run needs are read from
 `.allforai/bootstrap/run-policy.json`: run
@@ -317,11 +331,13 @@ never waive, downgrade, or hide a gap.
 
 ## Phase B execution (CC: Workflow engine)
 
-`/run` is fully autonomous from its first line — no questions, no human stops. Drive it as:
+`/run` is fully autonomous once the model-tier profile is settled — no further questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
-   `.allforai/bootstrap/run-engine/run-engine.workflow.js`, passing the `claude` entry of
-   `.allforai/bootstrap/model-tiers.json` (§ Model tiers) unchanged as `args.models`.
+   `.allforai/bootstrap/run-engine/run-engine.workflow.js`, passing `args.models` =
+   `{light, standard, strong}`, each the `claude` level that the profile in
+   `.allforai/bootstrap/model-tiers.json` gives that tier (§ Model tiers); omit a tier
+   whose level has no name.
    It reads `workflow.json` plus `unattended-run-readiness-spec.json.required_repair_loops`,
    schedules ready nodes (alignment_refs run in parallel),
    self-heals soft failures, commits each node immediately, and returns one of:

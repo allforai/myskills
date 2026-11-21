@@ -2156,18 +2156,31 @@ def node_tier(node: dict) -> str:
     return tier if tier in MODEL_TIERS else "strong"
 
 
-def tier_model_args(project_root: Path, tier: str) -> list[str]:
-    """`-m <name>` when the user named a Codex model for this tier, else the session model.
+TIER_POSITION = {"light": 0, "standard": 1, "strong": 2}
 
-    `.allforai/bootstrap/model-tiers.json` is the user's, keyed by host then tier; the
-    driver reads only its own host's names and never chooses one (ADR-0021).
+
+def tier_model_args(project_root: Path, tier: str) -> list[str]:
+    """`-m <name>` for the Codex level the profile gives this tier, else the session model.
+
+    `.allforai/bootstrap/model-tiers.json` holds the user's `profile` (three digits, the level
+    for light, standard and strong work, never decreasing) and each host's levels `1`-`3`,
+    which the run entry chose. The driver only looks them up (ADR-0021).
     """
     path = project_root / ".allforai/bootstrap/model-tiers.json"
+    if not path.exists():
+        return []
     try:
-        named = load_json(path).get("codex", {}).get(tier) if path.exists() else None
-    except (OSError, ValueError, AttributeError):
+        data = load_json(path)
+        profile, levels = data.get("profile"), data.get("codex", {})
+        named = levels.get(profile[TIER_POSITION[tier]]) if valid_profile(profile) else None
+    except (OSError, ValueError, AttributeError, KeyError):
         raise ValueError("invalid model-tiers.json")
     return ["-m", named] if isinstance(named, str) and named.strip() else []
+
+
+def valid_profile(profile) -> bool:
+    return (isinstance(profile, str) and len(profile) == 3 and set(profile) <= set("123")
+            and list(profile) == sorted(profile))
 
 
 def run_codex(project_root: Path, prompt: str, tier: str = "strong") -> subprocess.CompletedProcess[str]:

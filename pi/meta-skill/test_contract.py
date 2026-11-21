@@ -147,7 +147,7 @@ class TemplateTests(unittest.TestCase):
         # session model; external CLI runners (another harness) stay out.
         text = (PACKAGE / "knowledge/orchestrator-template.md").read_text(encoding="utf-8")
         for boundary in ("Do not use external CLI", "codex-exec", "claude-code", "cursor-agent",
-                         "runner.available === true", "`pi` entry of `model-tiers.json`",
+                         "runner.available === true", "`pi` level that the profile in `model-tiers.json`",
                          "a tier with no name keeps the", "provider/id",
                          "off/minimal/low/medium/high/xhigh/max", "write unknown"):
             self.assertIn(boundary, text)

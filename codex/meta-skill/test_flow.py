@@ -296,11 +296,20 @@ def test_codex_nodes_run_on_the_model_the_user_named_for_their_tier(tmp_path, mo
     flow.run_codex(tmp_path, 'test', 'light')
     assert '-m' not in calls[-1]                       # nothing named: the session model
     write(tmp_path / '.allforai/bootstrap/model-tiers.json',
-          {'codex': {'light': 'named-light'}, 'claude': {'strong': 'not-ours'}})
+          {'profile': '123', 'codex': {'1': 'c1', '3': 'c3'}, 'claude': {'1': 'not-ours'}})
+    model = lambda: calls[-1][calls[-1].index('-m') + 1] if '-m' in calls[-1] else None
+    for tier, expected in (('light', 'c1'), ('standard', None), ('strong', 'c3')):
+        flow.run_codex(tmp_path, 'test', tier)
+        assert model() == expected, tier              # level 2 has no name: the session model
+    flow.run_codex(tmp_path, 'test')                   # judges default to strong
+    assert model() == 'c3'
+    write(tmp_path / '.allforai/bootstrap/model-tiers.json', {'profile': '333', 'codex': {'1': 'c1', '3': 'c3'}})
     flow.run_codex(tmp_path, 'test', 'light')
-    assert calls[-1][calls[-1].index('-m') + 1] == 'named-light'
-    flow.run_codex(tmp_path, 'test')                   # judges default to strong; none named
-    assert '-m' not in calls[-1]
+    assert model() == 'c3'
+    for bad in ('321', '12', '124', None):             # a decreasing or malformed profile names nothing
+        write(tmp_path / '.allforai/bootstrap/model-tiers.json', {'profile': bad, 'codex': {'1': 'c1', '3': 'c3'}})
+        flow.run_codex(tmp_path, 'test', 'light')
+        assert model() is None, bad
     assert flow.node_tier({'model_tier': 'standard'}) == 'standard'
     assert flow.node_tier({'model_tier': 'tiny'}) == flow.node_tier({}) == 'strong'
 
