@@ -347,6 +347,15 @@ MCP 工具（Step 1.5 已引导安装）:
 
 `update` 模式跳过 Step 1-4，直接执行更新流程。
 
+#### 5.0 先确认读的是当前安装的版本
+
+这份说明来自会话启动时加载的插件目录（`${CLAUDE_PLUGIN_ROOT}`）。会话开着时插件被更新过，就会出现"读的是旧版说明、装的已是新版"：照旧说明执行会去恢复已删除的配置、检查已不存在的服务。
+
+比较 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 的 `version` 与 `~/.claude/plugins/installed_plugins.json` 里 `meta-skill@*` 的 `version`：
+
+- 相同 → 继续 5a。
+- 不同 → 不执行任何更新步骤，只报告两个版本号，并提示：「这个会话加载的是旧版 setup 说明。请退出当前会话并重新启动 Claude Code，再运行 `/meta-skill:setup update`。」
+
 #### 5a. 更新 Claude Code 插件
 
 1. **同步 marketplace git 缓存**（关键步骤）：
