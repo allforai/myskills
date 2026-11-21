@@ -88,7 +88,7 @@ blocked until reconstructed.
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
-## Model tiers (the one question before the first node)
+## Model tiers (chosen by the run, never asked)
 
 <!-- clause-begin:run-model-tiers -->
 Every step runs on a tier, never on a model a skill names: `strong` for work that decides
@@ -98,21 +98,18 @@ declared for it, `strong` when it declares none; the node gate, reviews, diagnos
 repair are `strong` whatever the node declares (ADR-0021).
 
 Before the first node, read `.allforai/bootstrap/model-tiers.json`. When it has no entry for
-this host (`claude`, `codex` or `pi`), list the models this host can run now, recommend one
-for each tier, and ask the user once to accept or change them. Write the answer under this
-host's key as `{"strong": "<name>", "standard": "<name>", "light": "<name>"}`; a tier left
-out runs on the session model. When nobody can answer, write the recommendation and list
-it at completion as a choice the run made for the user. An entry that exists is used as it
-is and is not asked again: the user edits the file to change it, or deletes this host's
-entry to be asked at the next run. Never write a model name into a skill or a template.
+this host (`claude`, `codex` or `pi`), look at the models this host can run now, choose one
+for each tier yourself, and write them under this host's key as
+`{"strong": "<name>", "standard": "<name>", "light": "<name>"}` without asking; `strong` is
+never weaker than the session model, and a tier left out runs on the session model. List
+the choice at completion as a choice the run made for the user. An entry that exists is used
+as it is: the user edits the file to change it, or deletes this host's entry to have the
+next run choose again. Never write a model name into a skill or a template.
 <!-- clause-end:run-model-tiers -->
-
-This is the only question a run asks (ADR-0021 narrows ADR-0018); everything below is
-recorded, never asked.
 
 ## Run Policy (recorded, never asked)
 
-Apart from the model tiers above, `/run` asks nothing — not before the first node and not after it. The user answers
+`/run` asks nothing — not before the first node and not after it. The user answers
 questions at `/bootstrap`; a run goes from its first line to its report unattended
 (ADR-0018). The three choices a run needs are read from
 `.allforai/bootstrap/run-policy.json`: run
@@ -320,7 +317,7 @@ never waive, downgrade, or hide a gap.
 
 ## Phase B execution (CC: Workflow engine)
 
-`/run` is fully autonomous once the model tiers are settled — no further questions, no human stops. Drive it as:
+`/run` is fully autonomous from its first line — no questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
    `.allforai/bootstrap/run-engine/run-engine.workflow.js`, passing the `claude` entry of

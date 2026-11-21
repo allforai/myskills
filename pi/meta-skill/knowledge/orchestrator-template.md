@@ -68,9 +68,9 @@ printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run
 <!-- clause:run-repair-ledger-origin@dac30f1c -->
 A `replayed: true` answer on a resumed run is the same statement, not a reset. If the step was skipped and the workflow already ran nodes but never dispatched a declared repair node, recover with `adopt_history` and evidence `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>", "absence_of": "repair_history", "complete": true}`; the helper verifies the absence against the transition log. If declared repair nodes did run, the same `adopt_history` takes `{"reconstruct_from": "transition_log", "complete": true}` and rebuilds one settled attempt per repair transition, bounded by the declared loops. Any other history stays blocked until reconstructed.
 
-## Model tiers (the one question before the first node)
+## Model tiers (chosen by the run, never asked)
 
-<!-- clause:run-model-tiers@da668040 -->
+<!-- clause:run-model-tiers@d88bfbce -->
 Every step runs on a tier, never on a model a skill names: `strong` for work that decides
 or judges, `standard` for building to a settled spec, `light` for running a command and
 reporting what it printed or writing a record. A node runs on the `model_tier` bootstrap
@@ -78,20 +78,17 @@ declared for it, `strong` when it declares none; the node gate, reviews, diagnos
 repair are `strong` whatever the node declares (ADR-0021).
 
 Before the first node, read `.allforai/bootstrap/model-tiers.json`. When it has no entry for
-this host (`claude`, `codex` or `pi`), list the models this host can run now, recommend one
-for each tier, and ask the user once to accept or change them. Write the answer under this
-host's key as `{"strong": "<name>", "standard": "<name>", "light": "<name>"}`; a tier left
-out runs on the session model. When nobody can answer, write the recommendation and list
-it at completion as a choice the run made for the user. An entry that exists is used as it
-is and is not asked again: the user edits the file to change it, or deletes this host's
-entry to be asked at the next run. Never write a model name into a skill or a template.
-
-This is the only question a run asks (ADR-0021 narrows ADR-0018); everything below is
-recorded, never asked.
+this host (`claude`, `codex` or `pi`), look at the models this host can run now, choose one
+for each tier yourself, and write them under this host's key as
+`{"strong": "<name>", "standard": "<name>", "light": "<name>"}` without asking; `strong` is
+never weaker than the session model, and a tier left out runs on the session model. List
+the choice at completion as a choice the run made for the user. An entry that exists is used
+as it is: the user edits the file to change it, or deletes this host's entry to have the
+next run choose again. Never write a model name into a skill or a template.
 
 ## Run Policy — recorded, never asked
 
-Apart from the model tiers above, the run asks nothing, before the first node or after it; questions belong to
+The run asks nothing, before the first node or after it; questions belong to
 bootstrap (ADR-0018). Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`
 before the first node and use the `run_policy_ready` policy it returns. With no usable
 policy on record the script records the defaults itself — repeated failure `continue`,

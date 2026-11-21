@@ -10,7 +10,7 @@ Since the 2026-09 strong-model audit every step of a run used the session model:
 
 **A. Three tiers, named by what the work does.** `strong` makes a choice nobody made upstream or judges other work; `standard` builds to a spec that already settles every choice; `light` runs a command and reports what it printed, or writes a record. A node declares `model_tier` at bootstrap (absent means strong). The node gate, reviews, diagnosis and repair are strong whatever a node declares, and the validator refuses a lower tier on the QA node of an `inline_review`.
 
-**B. The user maps tiers to models per host, once, with a recommendation.** Before the first node a run reads `.allforai/bootstrap/model-tiers.json`. With no entry for its host (`claude`, `codex`, `pi`) it lists the models the host can run, recommends one per tier, asks once, and records the answer under its host. With nobody to answer it records the recommendation and lists it at completion. An existing entry is reused; the user edits it, or deletes it to be asked again. A tier left out runs on the session model. No skill, template or script names a model. This is the one question a run asks: it narrows ADR-0018, which keeps every other choice recorded rather than asked.
+**B. The run maps tiers to models per host, without asking.** Before the first node a run reads `.allforai/bootstrap/model-tiers.json`. With no entry for its host (`claude`, `codex`, `pi`) it looks at the models the host can run, chooses one per tier itself — `strong` never weaker than the session model — records them under its host and lists the choice at completion. An existing entry is reused; the user edits it, or deletes it to have the next run choose again. A tier left out runs on the session model. No skill, template or script names a model. The run still asks nothing (ADR-0018): which model fits a tier is the model's call, not a product decision.
 
 **C. Each host applies its entry where it dispatches work.** The tier decides the model; nothing else about a step changes.
 
@@ -24,8 +24,8 @@ Since the 2026-09 strong-model audit every step of a run used the session model:
 
 ## Consequences
 
-- A project with no `model-tiers.json` is asked at its next run; until it answers nothing changes.
+- A project with no `model-tiers.json` gets one at its next run, chosen by that run and disclosed at completion.
 - A step given a model too weak for it fails the gate and is repaired on strong, costing more than it saved; the planning rule says to go one tier up when unsure.
 - A relay model that misreports a command's output meets the checks the engine already applies to a verdict's shape and identity; a wrong ledger verdict stops the run rather than passing work.
 - A name the host no longer offers fails the dispatch; the user edits or deletes the entry.
-- This narrows the 2026-09 rule from "never downgrade" to "never downgrade a judge, and use the models the user chose".
+- This narrows the 2026-09 rule from "never downgrade" to "never downgrade a judge; each host chooses its models per tier".
