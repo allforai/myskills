@@ -2137,7 +2137,7 @@ def run_inline_review(project_root: Path, node: dict, node_id: str, goal: str,
             f"\n\nInline review {round_number}: an independent reviewer found blocking findings in what "
             f"you delivered. Read `{INLINE_REVIEW_DIR}/{node_id}.json` directly (never register it with the "
             "freshness `read`) and fix every finding in your own outputs; change nothing the findings do "
-            "not require, then validate and publish as usual."))
+            "not require, then validate and publish as usual."), node_tier(node))
         warnings = read_safety_warnings(project_root)
         if (revised.returncode != 0 or warnings is None
                 or safety_halt_required(project_root, warnings)
@@ -2147,13 +2147,37 @@ def run_inline_review(project_root: Path, node: dict, node_id: str, goal: str,
     return True
 
 
-def run_codex(project_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
+MODEL_TIERS = ("strong", "standard", "light")
+
+
+def node_tier(node: dict) -> str:
+    """The tier bootstrap declared for the node's own work; undeclared work is strong."""
+    tier = node.get("model_tier") if isinstance(node, dict) else None
+    return tier if tier in MODEL_TIERS else "strong"
+
+
+def tier_model_args(project_root: Path, tier: str) -> list[str]:
+    """`-m <name>` when the user named a Codex model for this tier, else the session model.
+
+    `.allforai/bootstrap/model-tiers.json` is the user's, keyed by host then tier; the
+    driver reads only its own host's names and never chooses one (ADR-0021).
+    """
+    path = project_root / ".allforai/bootstrap/model-tiers.json"
+    try:
+        named = load_json(path).get("codex", {}).get(tier) if path.exists() else None
+    except (OSError, ValueError, AttributeError):
+        raise ValueError("invalid model-tiers.json")
+    return ["-m", named] if isinstance(named, str) and named.strip() else []
+
+
+def run_codex(project_root: Path, prompt: str, tier: str = "strong") -> subprocess.CompletedProcess[str]:
     policy = execution_policy(project_root)
     permission = (host_permission_args() if policy["sandbox"] == "inherit"
                   else ["--sandbox", policy["sandbox"]])
     command = [
         "codex",
         "exec",
+        *tier_model_args(project_root, tier),
         *permission,
         "-c", 'approval_policy="never"',
         "-C",
@@ -2512,7 +2536,7 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
             "This copy carries no Git history: do not use git to inspect, diff or record changes. "
             "The driver will publish evidence and independently verify in the main workspace.")
         try:
-            return run_codex(copy, prompt)
+            return run_codex(copy, prompt, node_tier(node))
         except Exception as exc:
             return subprocess.CompletedProcess([], 1, "", "parallel executor failed: " + str(exc))
         finally:
@@ -2576,7 +2600,7 @@ def run_parallel_batch(root: Path, workflow: dict, nodes: list[dict], goal: str)
                 result = run_codex(root, build_prompt(node_id, goal) +
                     "\nImplementation was imported from an isolated draft. Reuse it. "
                     "Reobserve inputs and reverify all acceptance commands here; "
-                    "publish fresh evidence for THIS workspace before finishing.")
+                    "publish fresh evidence for THIS workspace before finishing.", node_tier(node))
                 post = read_safety_warnings(root)
                 if post is None or safety_halted(root) or safety_halt_required(root, post):
                     quarantine_outputs(root, [node_identity(n) for n in nodes], SAFETY_HALT_REASON)
@@ -2863,7 +2887,7 @@ def main() -> int:
                              "durable per-obligation grant",
                     "obligations": routed_obligations}), file=sys.stderr)
                 return 6
-        result = run_codex(project_root, build_prompt(node_id, goal, finalize_evidence))
+        result = run_codex(project_root, build_prompt(node_id, goal, finalize_evidence), node_tier(node))
         # Read before anything this attempt produced can be accepted. Answering a warning
         # on the next iteration would be too late: this node would already be recorded
         # completed and would already have released its successors. Codex cannot cancel an

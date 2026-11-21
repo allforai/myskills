@@ -68,9 +68,30 @@ printf '{"operation":"initialize","run_id":"%s"}' "$(cat .allforai/bootstrap/run
 <!-- clause:run-repair-ledger-origin@dac30f1c -->
 A `replayed: true` answer on a resumed run is the same statement, not a reset. If the step was skipped and the workflow already ran nodes but never dispatched a declared repair node, recover with `adopt_history` and evidence `{"source_path": ".allforai/bootstrap/workflow.json", "source_digest": "<sha256>", "absence_of": "repair_history", "complete": true}`; the helper verifies the absence against the transition log. If declared repair nodes did run, the same `adopt_history` takes `{"reconstruct_from": "transition_log", "complete": true}` and rebuilds one settled attempt per repair transition, bounded by the declared loops. Any other history stays blocked until reconstructed.
 
+## Model tiers (the one question before the first node)
+
+<!-- clause:run-model-tiers@da668040 -->
+Every step runs on a tier, never on a model a skill names: `strong` for work that decides
+or judges, `standard` for building to a settled spec, `light` for running a command and
+reporting what it printed or writing a record. A node runs on the `model_tier` bootstrap
+declared for it, `strong` when it declares none; the node gate, reviews, diagnosis and
+repair are `strong` whatever the node declares (ADR-0021).
+
+Before the first node, read `.allforai/bootstrap/model-tiers.json`. When it has no entry for
+this host (`claude`, `codex` or `pi`), list the models this host can run now, recommend one
+for each tier, and ask the user once to accept or change them. Write the answer under this
+host's key as `{"strong": "<name>", "standard": "<name>", "light": "<name>"}`; a tier left
+out runs on the session model. When nobody can answer, write the recommendation and list
+it at completion as a choice the run made for the user. An entry that exists is used as it
+is and is not asked again: the user edits the file to change it, or deletes this host's
+entry to be asked at the next run. Never write a model name into a skill or a template.
+
+This is the only question a run asks (ADR-0021 narrows ADR-0018); everything below is
+recorded, never asked.
+
 ## Run Policy — recorded, never asked
 
-The run asks nothing, before the first node or after it; questions belong to
+Apart from the model tiers above, the run asks nothing, before the first node or after it; questions belong to
 bootstrap (ADR-0018). Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`
 before the first node and use the `run_policy_ready` policy it returns. With no usable
 policy on record the script records the defaults itself — repeated failure `continue`,
@@ -123,14 +144,13 @@ publish freshness or edit the ledger.
   `checkpointBeforeDeadlineMs` so a lane that runs out checkpoints its work
   instead of losing it. A lane that still expires is a failed transition to
   diagnose (usually: split the node), never a semantic verdict on the delivery.
-- Every child keeps the current session model: do not pass another provider
-  or model family, and do not start an external CLI to change models. Control
-  cost and capability with thinking level only: omit it to inherit the agent
-  default, or pass the session model's own `provider/id:<level>`
-  (`off/minimal/low/medium/high/xhigh/max`) within host/user limits. Record
-  the effective model and level from host metadata or receipts; write unknown
-  when the host does not expose them, and never claim a cross-model check that
-  did not happen.
+- A child runs on the model the `pi` entry of `model-tiers.json` names for its step's tier
+  (§ Model tiers), passed as that child's `provider/id`; a tier with no name keeps the
+  current session model. Do not start an external CLI to change models. Thinking level
+  stays available for finer cost control (`off/minimal/low/medium/high/xhigh/max`) within
+  host/user limits. Record the effective model and level from host metadata or receipts;
+  write unknown when the host does not expose them, and never claim a cross-model check
+  that did not happen.
 - No usable child: execute the node in this session and disclose
   non-independent execution. After a dispatch has started, infrastructure
   failure stops that path; record the exact error and run/cwd/ref/workspace

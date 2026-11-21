@@ -30,7 +30,7 @@ def reporting(worker, node_id=None):
     def run(project_root, prompt, *rest):
         path = Path(project_root) / '.allforai/bootstrap/workflow.json'
         before = len(flow.load_json(path).get('transition_log', [])) if path.exists() else 0
-        result = worker(project_root, prompt, *rest)
+        result = worker(project_root, prompt)   # the tier is the driver's, not the fake's
         selected = node_id or (re.search(r'Selected node: (\S+)', prompt) or [None, None])[1]
         if result.returncode == 0 and selected and path.exists():
             current = flow.load_json(path)
@@ -287,6 +287,22 @@ def test_codex_nodes_inherit_host_permissions(tmp_path, monkeypatch):
     flow.run_codex(tmp_path, 'test')
     assert calls[1][0][calls[1][0].index('--sandbox') + 1] == 'read-only'
 
+
+
+def test_codex_nodes_run_on_the_model_the_user_named_for_their_tier(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(flow, 'run_bounded', lambda *args: calls.append(args[0]))
+    monkeypatch.setattr(flow, 'host_permission_args', lambda: [])
+    flow.run_codex(tmp_path, 'test', 'light')
+    assert '-m' not in calls[-1]                       # nothing named: the session model
+    write(tmp_path / '.allforai/bootstrap/model-tiers.json',
+          {'codex': {'light': 'named-light'}, 'claude': {'strong': 'not-ours'}})
+    flow.run_codex(tmp_path, 'test', 'light')
+    assert calls[-1][calls[-1].index('-m') + 1] == 'named-light'
+    flow.run_codex(tmp_path, 'test')                   # judges default to strong; none named
+    assert '-m' not in calls[-1]
+    assert flow.node_tier({'model_tier': 'standard'}) == 'standard'
+    assert flow.node_tier({'model_tier': 'tiny'}) == flow.node_tier({}) == 'strong'
 
 def test_host_permission_discovery(tmp_path):
     env = {'CODEX_HOME': str(tmp_path)}
@@ -2983,7 +2999,7 @@ def scripted_review(tmp_path, monkeypatch, counts, revision_ok=True):
     calls = []
     remaining = list(counts)
 
-    def worker(project_root, prompt):
+    def worker(project_root, prompt, tier="strong"):
         if prompt.startswith('You are an independent reviewer'):
             calls.append('review')
             count = remaining.pop(0)
@@ -3055,7 +3071,7 @@ def stale_proof_project(tmp_path, monkeypatch, report):
     monkeypatch.setattr(flow, 'policy_action', lambda root, event=None: 'ready' if event is None else 'halt')
     monkeypatch.setattr(flow, 'independent_artifact_gate', lambda *a: True)
 
-    def worker(project_root, prompt):
+    def worker(project_root, prompt, tier="strong"):
         if report is not None:
             current = flow.load_json(path)
             current['transition_log'].append(dict(report, node='n1'))

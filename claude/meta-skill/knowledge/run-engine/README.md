@@ -20,12 +20,13 @@ under `docs/superpowers/retired/`.
   re-implements only the helper's decisions; `declared-loop.test.js` runs the helper
   itself, and that test wins if the two ever disagree.
 
-## Model routing
-`runEngine` takes an optional `models: { relay, routine }` (the Workflow shell reads it from
-`args.models`). `relay` goes to steps whose label matches `RELAY_LABEL` — one command, output
-reported verbatim; `routine` goes to nodes carrying `model_class: "routine"`. Every other
-step, and every step when a name is absent, runs on the session model. A new label must be
-classified in `tests/engine-integration.test.js` (ADR-0021).
+## Model tiers
+`runEngine` takes an optional `models: { strong, standard, light }`, the Claude entry of
+`.allforai/bootstrap/model-tiers.json` (the Workflow shell reads it from `args.models`). A node
+runs on its declared `model_tier` (strong when undeclared). An engine step is light when its
+label matches `LIGHT_LABEL` — one command reported verbatim, or a record write — and strong
+otherwise. A tier with no name runs on the session model. A new label must be classified in
+`tests/engine-integration.test.js` (ADR-0021).
 
 ## Run tests (L1 + L2 + sync-check)
     node --test 'claude/meta-skill/knowledge/run-engine/tests/**/*.test.js'

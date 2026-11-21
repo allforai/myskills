@@ -20,9 +20,8 @@ const DAG_SCHEMA = {
         // Declared at bootstrap on a node whose output a later QA node judges: review it
         // against its own acceptance right after it passes, while nothing consumes it yet.
         inline_review: { type: 'object', properties: { qa_node_id: { type: 'string' } } },
-        // Declared at bootstrap on a node whose work needs no judgement of its own: the run
-        // entry may name another model for it. Absent means the session model.
-        model_class: { type: 'string', enum: ['routine'] }
+        // The tier bootstrap declared for this node's own work (ADR-0021); absent means strong.
+        model_tier: { type: 'string', enum: ['strong', 'standard', 'light'] }
       } } },
     completed: { type: 'array', items: { type: 'string' } },
     expanders: { type: 'array', items: { type: 'string' } },
@@ -310,7 +309,7 @@ function loadDagPrompt() {
   return [
     'Read .allforai/bootstrap/workflow.json and .allforai/bootstrap/bootstrap-profile.json.',
     'Return a DAG object: nodes[] (each with node_id, capability, hard_blocked_by, alignment_refs,',
-    'exit_artifacts, node_spec_path, decision_mode, decision_inputs, closure_verify, soft_retry_max, inline_review, model_class,',
+    'exit_artifacts, node_spec_path, decision_mode, decision_inputs, closure_verify, soft_retry_max, inline_review, model_tier,',
     'and a profile_slice carrying only the bootstrap-profile fields that node needs — tech stack,',
     'scenario, target paths); completed[] = node_ids whose transition_log status is "completed";',
     'expanders[] = the declared idempotent expander scripts.',
@@ -872,29 +871,30 @@ async function commitNode(result, agent, done) {
   done.add(result.node_id)
 }
 
-// Which model runs a step is the project's choice, never this engine's: `models` comes from
-// the run entry (.allforai/bootstrap/model-routing.json) and a name it does not give means
-// the session model. `relay` is for a step that runs one command and reports what it printed;
-// `routine` is for a node bootstrap declared `model_class: "routine"`. Everything that judges
-// or writes the record — the node gate, a review, a repair, a repair route, the DAG summary,
-// an expander, a commit — keeps the session model, so another model never decides whether
-// work passed.
-const RELAY_LABEL = /^(run-policy|recover-waves|begin-wave|end-wave|quarantine-wave|(ledger|policy|measure|repair-authorize|repair-start|repair-settle|repair-verdict):.+)$/
-function routeModels(agent, models, routineNodes) {
+// Each step runs on a tier, never on a model this engine picks: `models` is the Claude entry of
+// .allforai/bootstrap/model-tiers.json, `{strong, standard, light}`, and a tier with no name
+// runs on the session model. A node runs on the `model_tier` bootstrap declared for it (strong
+// when undeclared). Engine steps are classified by label: a command relay or a record write is
+// light; everything that judges, repairs or summarizes the graph is strong (ADR-0021).
+const LIGHT_LABEL = /^(run-policy|recover-waves|begin-wave|end-wave|quarantine-wave|commit-failures|(ledger|policy|measure|repair-authorize|repair-start|repair-settle|repair-verdict|commit|safety-report|iteration-report):.+)$/
+const MODEL_TIERS = ['strong', 'standard', 'light']
+function tierOf(label, nodes) {
+  if (LIGHT_LABEL.test(label)) return 'light'
+  const node = nodes.find(n => n.node_id === label)
+  return node && MODEL_TIERS.includes(node.model_tier) ? node.model_tier : 'strong'
+}
+function routeModels(agent, models, nodes) {
   const names = models || {}
-  if (!names.relay && !names.routine) return agent
+  if (!MODEL_TIERS.some(t => names[t])) return agent
   return (prompt, opts = {}) => {
-    const label = opts.label || ''
-    const model = RELAY_LABEL.test(label) ? names.relay
-      : routineNodes().some(n => n.node_id === label && n.model_class === 'routine') ? names.routine
-        : undefined
+    const model = names[tierOf(opts.label || '', nodes())]
     return agent(prompt, model ? { ...opts, model } : opts)
   }
 }
 
 async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase = () => {}, models }) {
-  let routineNodes = () => []
-  const agent = routeModels(sessionAgent, models, () => routineNodes())
+  let dagNodes = () => []
+  const agent = routeModels(sessionAgent, models, () => dagNodes())
   phase('Load')
   const recorded = await agent(
     'Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy` and return its JSON verbatim. ' +
@@ -912,7 +912,7 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
   // Before the graph is read: what an interrupted wave left behind must not be loaded as state.
   await agent(wavePrompt('recover-waves'), { label: 'recover-waves' })
   const dag = await agent(loadDagPrompt(), { schema: DAG_SCHEMA, label: 'load-dag' })
-  routineNodes = () => dag.nodes || []
+  dagNodes = () => dag.nodes || []
   const done = new Set(dag.completed || [])
   // A completion inherited from an earlier session is a claim read out of transition_log, not a
   // measurement. Before anything is dispatched on it, the gate re-measures each inherited
@@ -1375,7 +1375,7 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
 module.exports = {
   DAG_SCHEMA, NODE_RESULT_SCHEMA, EXPAND_SCHEMA, NODE_GATE_SCHEMA, READINESS_SCHEMA,
   MEASUREMENT_SCHEMA, measuredDelivery, measurePrompt,
-  routeModels, RELAY_LABEL,
+  routeModels, tierOf, LIGHT_LABEL,
   computeReady, routeOutcome, mergeExpanded, pickExit, convergenceCheck,
   qaReportUsable, productDecisionGap, repairLoopFor, repairBudget, undeclaredCoverageLoopMessage,
   serializeCommit, runNode, runNodeWithReview, commitNode, runEngine,

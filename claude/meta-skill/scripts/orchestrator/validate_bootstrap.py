@@ -738,28 +738,29 @@ def _inline_review_declarations(raw_nodes: list) -> list:
     return errors
 
 
-def _model_class_declarations(raw_nodes: list) -> list:
-    """A node offered to another model must not be the one whose verdict others rely on.
+def _model_tier_declarations(raw_nodes: list) -> list:
+    """A node's tier says how strong a model its own work needs; a judge is always strong.
 
-    `model_class: "routine"` lets the run entry name a cheaper model for the node. The
-    node's own exit gate still runs on the session model, so the declaration is safe for a
-    producer; it is refused on a node that an `inline_review` names as its QA node, because
-    that node's findings are the judgement.
+    `model_tier` is `strong`, `standard` or `light` (absent means strong); the user maps each
+    tier to a model per host when the run starts (ADR-0021). The node's exit gate runs on the
+    strong tier whatever the node declares, so a lower tier is safe for a producer. It is
+    refused on a node that an `inline_review` names as its QA node: its findings are the
+    judgement.
     """
     errors = []
     nodes = [n for n in raw_nodes if isinstance(n, dict) and _addressable_id(n.get("node_id"))]
     judges = {n["inline_review"].get("qa_node_id") for n in nodes if isinstance(n.get("inline_review"), dict)}
     for node in nodes:
-        if "model_class" not in node:
+        if "model_tier" not in node:
             continue
-        nid = node["node_id"]
-        if node["model_class"] != "routine":
-            errors.append(f'workflow.json: {nid} model_class must be "routine" or absent; absent '
-                          f"means the session model (invalid_model_class)")
-        elif nid in judges:
+        nid, tier = node["node_id"], node["model_tier"]
+        if tier not in ("strong", "standard", "light"):
+            errors.append(f'workflow.json: {nid} model_tier must be "strong", "standard" or "light" '
+                          f"(invalid_model_tier)")
+        elif tier != "strong" and nid in judges:
             errors.append(f"workflow.json: {nid} is the QA node of an inline_review and declares "
-                          f"model_class routine; a node whose findings judge other work keeps "
-                          f"the session model (routine_node_judges)")
+                          f"model_tier {tier}; a node whose findings judge other work is strong "
+                          f"(judge_below_strong)")
     return errors
 
 
@@ -862,7 +863,7 @@ def validate_workflow(wf_path: str) -> list:
     errors.extend(_inverted_source_inputs(wf["nodes"]))
     errors.extend(_write_scope_ownership(wf["nodes"]))
     errors.extend(_inline_review_declarations(wf["nodes"]))
-    errors.extend(_model_class_declarations(wf["nodes"]))
+    errors.extend(_model_tier_declarations(wf["nodes"]))
 
     return errors
 

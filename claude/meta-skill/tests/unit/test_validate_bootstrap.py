@@ -1808,17 +1808,19 @@ def test_producers_of_parallel_parts_may_share_one_acceptance_list(tmp_path):
     assert _inline_errors(tmp_path, nodes) == []
 
 
-# --- model_class: a node offered to another model is a producer, never the judge ---
+# --- model_tier: a producer may declare a lower tier; a judge is always strong ---
 
 @pytest.mark.parametrize("node_index, value, code", [
-    (2, "routine", None),                       # a producer nobody relies on for a verdict
-    (2, "cheap", "invalid_model_class"),
-    (1, "routine", "routine_node_judges"),      # the QA node an inline_review names
+    (2, "light", None),                         # a producer nobody relies on for a verdict
+    (0, "standard", None),
+    (1, "strong", None),
+    (2, "cheap", "invalid_model_tier"),
+    (1, "standard", "judge_below_strong"),      # the QA node an inline_review names
 ])
-def test_only_a_producer_may_be_declared_routine(tmp_path, node_index, value, code):
+def test_a_judge_is_never_declared_below_strong(tmp_path, node_index, value, code):
     nodes = _reviewed_graph()
-    nodes[node_index]["model_class"] = value
-    errors = [e for e in validate_workflow(_write_workflow(tmp_path, nodes)) if "model_class" in e]
+    nodes[node_index]["model_tier"] = value
+    errors = [e for e in validate_workflow(_write_workflow(tmp_path, nodes)) if "model_tier" in e]
     assert (errors == []) if code is None else (errors and code in errors[0]), errors
 
 

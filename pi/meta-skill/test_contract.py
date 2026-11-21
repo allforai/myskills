@@ -142,13 +142,13 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn(".claude/commands/run.md", text)
         self.assertNotIn(".codex/commands/run.md", text)
 
-    def test_pi_dispatch_keeps_the_session_model(self):
-        # Pi children inherit the session model and vary only thinking level;
-        # external CLI runners (another harness, another model) stay out.
+    def test_pi_dispatch_runs_on_the_users_tier_models(self):
+        # Pi children run on the model the user mapped to their tier (ADR-0021), else the
+        # session model; external CLI runners (another harness) stay out.
         text = (PACKAGE / "knowledge/orchestrator-template.md").read_text(encoding="utf-8")
         for boundary in ("Do not use external CLI", "codex-exec", "claude-code", "cursor-agent",
-                         "runner.available === true", "keeps the current session model",
-                         "thinking level only", "provider/id:<level>",
+                         "runner.available === true", "`pi` entry of `model-tiers.json`",
+                         "a tier with no name keeps the", "provider/id",
                          "off/minimal/low/medium/high/xhigh/max", "write unknown"):
             self.assertIn(boundary, text)
         self.assertNotIn("may use supported `model` parameters", text)

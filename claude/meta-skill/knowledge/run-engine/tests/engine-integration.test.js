@@ -329,39 +329,38 @@ test('runEngine: a wave the engine never saw end is left open for recovery', asy
   assert.equal(agent.counters['end-wave'], undefined)
 })
 
-// Another model may run only what does not judge: a command relay, and a node declared routine.
-test('runEngine: model routing reaches relays and routine nodes, never a judge', async () => {
+// A step runs on the model the user named for its tier; a judge is always strong.
+test('runEngine: each step runs on its tier, and nothing that judges is ever below strong', async () => {
   const dag = { nodes: [
-    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [], model_class: 'routine' },
-    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }
+    { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [], model_tier: 'light' },
+    { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [], model_tier: 'standard' },
+    { node_id: 'c', capability: 'x', hard_blocked_by: ['b'], exit_artifacts: [] }
   ], completed: [] }
-  const responses = { 'load-dag': dag, a: passed('a'), b: passed('b'), 'commit:a': {}, 'commit:b': {} }
+  const responses = { 'load-dag': dag, a: passed('a'), b: passed('b'), c: passed('c'),
+    'commit:a': {}, 'commit:b': {}, 'commit:c': {} }
   const routed = makeFakeAgent(responses)
-  assert.equal((await core.runEngine({ agent: routed, pipeline, models: { relay: 'small', routine: 'mid' } })).status, 'complete')
+  const models = { strong: 'S', standard: 'M', light: 'L' }
+  assert.equal((await core.runEngine({ agent: routed, pipeline, models })).status, 'complete')
   const modelOf = Object.fromEntries(routed.calls.map(c => [c.label, c.opts.model]))
-  assert.equal(modelOf.a, 'mid')
-  assert.equal(modelOf['run-policy'], 'small')
-  assert.equal(modelOf['begin-wave'], 'small')
-  for (const label of ['b', 'load-dag', 'verify:a', 'verify:b', 'commit:a']) {
-    assert.ok(label in modelOf, `${label} was dispatched`)
-    assert.equal(modelOf[label], undefined, `${label} keeps the session model`)
-  }
-  // A name the project did not give leaves that kind of step on the session model.
-  const relayOnly = makeFakeAgent(responses)
-  await core.runEngine({ agent: relayOnly, pipeline, models: { relay: 'small' } })
-  assert.equal(relayOnly.calls.find(c => c.label === 'a').opts.model, undefined)
+  assert.deepEqual([modelOf.a, modelOf.b, modelOf.c], ['L', 'M', 'S'])
+  for (const label of ['run-policy', 'begin-wave', 'commit:a']) assert.equal(modelOf[label], 'L', label)
+  for (const label of ['load-dag', 'verify:a', 'verify:b', 'verify:c']) assert.equal(modelOf[label], 'S', label)
+  // A tier with no name runs on the session model.
+  const lightOnly = makeFakeAgent(responses)
+  await core.runEngine({ agent: lightOnly, pipeline, models: { light: 'L' } })
+  assert.equal(lightOnly.calls.find(c => c.label === 'b').opts.model, undefined)
+  assert.equal(lightOnly.calls.find(c => c.label === 'verify:a').opts.model, undefined)
   const none = makeFakeAgent(responses)
   await core.runEngine({ agent: none, pipeline })
   assert.ok(none.calls.every(c => c.opts.model === undefined))
 })
 
-test('every label the engine dispatches is either a relay or keeps the session model on purpose', () => {
+test('every label the engine dispatches has a deliberate tier', () => {
   const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'engine-core.js'), 'utf8')
   const heads = new Set([...src.matchAll(/label: [`']([a-z-]+)[:'`]/g)].map(m => m[1]))
-  const judged = ['safety-report', 'iteration-report', 'verify', 'repair', 'inline-review', 'commit',
-    'load-dag', 'inherit', 'expand', 'validate-readiness', 'commit-failures', 'repair-route']
+  const strong = ['verify', 'repair', 'inline-review', 'load-dag', 'inherit', 'expand', 'validate-readiness', 'repair-route']
   for (const head of heads) {
-    const relay = core.RELAY_LABEL.test(head) || core.RELAY_LABEL.test(`${head}:x`)
-    assert.notEqual(relay, judged.includes(head), `${head}: classify it as a relay or as session-model`)
+    const tier = core.tierOf(head, []) === 'light' || core.tierOf(`${head}:x`, []) === 'light' ? 'light' : 'strong'
+    assert.equal(tier === 'strong', strong.includes(head), `${head}: classify it as light or keep it strong on purpose`)
   }
 })

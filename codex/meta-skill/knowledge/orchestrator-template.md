@@ -81,9 +81,30 @@ with `not_ready`; the previous report is retained only as diagnostic context.
 Do not diagnose a command timeout as a missing product decision.
 Before stopping, record `preflight_blocked` with `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
+## Model tiers (the one question before the first node)
+
+<!-- clause:run-model-tiers@da668040 -->
+Every step runs on a tier, never on a model a skill names: `strong` for work that decides
+or judges, `standard` for building to a settled spec, `light` for running a command and
+reporting what it printed or writing a record. A node runs on the `model_tier` bootstrap
+declared for it, `strong` when it declares none; the node gate, reviews, diagnosis and
+repair are `strong` whatever the node declares (ADR-0021).
+
+Before the first node, read `.allforai/bootstrap/model-tiers.json`. When it has no entry for
+this host (`claude`, `codex` or `pi`), list the models this host can run now, recommend one
+for each tier, and ask the user once to accept or change them. Write the answer under this
+host's key as `{"strong": "<name>", "standard": "<name>", "light": "<name>"}`; a tier left
+out runs on the session model. When nobody can answer, write the recommendation and list
+it at completion as a choice the run made for the user. An entry that exists is used as it
+is and is not asked again: the user edits the file to change it, or deletes this host's
+entry to be asked at the next run. Never write a model name into a skill or a template.
+
+This is the only question a run asks (ADR-0021 narrows ADR-0018); everything below is
+recorded, never asked.
+
 ## Run Policy — recorded, never asked
 
-The run asks nothing, before the first node or after it; questions belong to
+Apart from the model tiers above, the run asks nothing, before the first node or after it; questions belong to
 bootstrap (ADR-0018). Run `python3 .allforai/bootstrap/scripts/product_intent.py . --run-policy`
 before the first node and use the `run_policy_ready` policy it returns. With no usable
 policy on record the script records the defaults itself — repeated failure `continue`,

@@ -88,9 +88,31 @@ blocked until reconstructed.
 Before stopping, record `preflight_blocked` with
 `record_run_event.py`, then run `summarize_run_log.py --write-report`.
 
+## Model tiers (the one question before the first node)
+
+<!-- clause-begin:run-model-tiers -->
+Every step runs on a tier, never on a model a skill names: `strong` for work that decides
+or judges, `standard` for building to a settled spec, `light` for running a command and
+reporting what it printed or writing a record. A node runs on the `model_tier` bootstrap
+declared for it, `strong` when it declares none; the node gate, reviews, diagnosis and
+repair are `strong` whatever the node declares (ADR-0021).
+
+Before the first node, read `.allforai/bootstrap/model-tiers.json`. When it has no entry for
+this host (`claude`, `codex` or `pi`), list the models this host can run now, recommend one
+for each tier, and ask the user once to accept or change them. Write the answer under this
+host's key as `{"strong": "<name>", "standard": "<name>", "light": "<name>"}`; a tier left
+out runs on the session model. When nobody can answer, write the recommendation and list
+it at completion as a choice the run made for the user. An entry that exists is used as it
+is and is not asked again: the user edits the file to change it, or deletes this host's
+entry to be asked at the next run. Never write a model name into a skill or a template.
+<!-- clause-end:run-model-tiers -->
+
+This is the only question a run asks (ADR-0021 narrows ADR-0018); everything below is
+recorded, never asked.
+
 ## Run Policy (recorded, never asked)
 
-`/run` asks nothing — not before the first node and not after it. The user answers
+Apart from the model tiers above, `/run` asks nothing — not before the first node and not after it. The user answers
 questions at `/bootstrap`; a run goes from its first line to its report unattended
 (ADR-0018). The three choices a run needs are read from
 `.allforai/bootstrap/run-policy.json`: run
@@ -298,16 +320,11 @@ never waive, downgrade, or hide a gap.
 
 ## Phase B execution (CC: Workflow engine)
 
-`/run` is fully autonomous from its first line — no questions, no human stops. Drive it as:
+`/run` is fully autonomous once the model tiers are settled — no further questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
-   `.allforai/bootstrap/run-engine/run-engine.workflow.js`. When
-   `.allforai/bootstrap/model-routing.json` exists, pass its content as the engine's
-   `args.models`, unchanged; when it does not, pass nothing and every step runs on the
-   session model. The file is the user's choice of which model runs command relays
-   (`relay`) and nodes declared routine (`routine`); never write it, extend it or pick a
-   name here. The node gate, reviews, repairs and commits stay on the session model
-   whatever it says (ADR-0021).
+   `.allforai/bootstrap/run-engine/run-engine.workflow.js`, passing the `claude` entry of
+   `.allforai/bootstrap/model-tiers.json` (§ Model tiers) unchanged as `args.models`.
    It reads `workflow.json` plus `unattended-run-readiness-spec.json.required_repair_loops`,
    schedules ready nodes (alignment_refs run in parallel),
    self-heals soft failures, commits each node immediately, and returns one of:

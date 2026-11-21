@@ -140,6 +140,18 @@
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
          "require": ["\"operation\":\"verdict\"", "run again to continue"]}
       ]
+    },
+    {
+      "id": "run-model-tiers",
+      "rule": "Before the first node a run asks once, with a recommendation, which model this host uses for each tier (strong, standard, light), records it per host in model-tiers.json, and reuses it until the user edits or deletes it; judges are always strong.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["model-tiers.json", "recommend one", "ask the user once", "deletes this host's"]},
+      "copies": [
+        {"path": "codex/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["model-tiers.json", "recommend one", "ask the user once", "deletes this host's"]},
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["model-tiers.json", "recommend one", "ask the user once", "deletes this host's"]}
+      ]
     }
   ]
 }
