@@ -78,6 +78,31 @@ def test_external_implementation_change_is_reported_with_its_impact(tmp_path, ho
     _unrelated_is_valid(tmp_path)
 
 
+@pytest.mark.parametrize("host", HOSTS)
+def test_a_read_registered_after_publication_is_not_an_external_change(tmp_path, host):
+    # A repair pass registers a read of a file another node produced long before. The node's
+    # record never fingerprinted it, so nothing outside the flow can be shown to have changed
+    # it: no product question, and the node itself is stale and reruns (feedback 2026-11-21).
+    drift_project(tmp_path, host)
+    (tmp_path / "docs").mkdir(exist_ok=True)
+    (tmp_path / "docs/upstream-contract.md").write_text("produced by an earlier node\n")
+    reads_path = tmp_path / ".allforai/bootstrap/observed-input-dependencies.json"
+    reads = json.loads(reads_path.read_text()) if reads_path.exists() else {}
+    reads[NODE] = sorted(set(reads.get(NODE, [])) | {"docs/upstream-contract.md"})
+    reads_path.write_text(json.dumps(reads))
+    result, report = external(tmp_path)
+    assert result.returncode == 0, report
+    assert [c for c in report.get("changes", []) if c["node_id"] == NODE] == [], report
+    assert _artifacts(tmp_path, NODE)["freshness"]["status"] == "stale"
+    # Running the node again is the repair, so readiness lets the run start it.
+    held = [b for b in _readiness(tmp_path)[1]["blockers"] if b.get("node_id") == NODE]
+    assert held == [], held
+    # A real edit to a file the record did fingerprint is still reported.
+    (tmp_path / "orders.py").write_text("def list_orders(account): return [account, account]\n")
+    result, report = external(tmp_path)
+    assert {path for c in report["changes"] for path in c["files"]} == {"orders.py"}, report
+
+
 CONFLICTING = "def list_orders(account): return [account, 'other-account']\n"
 
 

@@ -257,6 +257,17 @@ A node a diagnosis reset — its latest transition is `superseded` — claims no
 the readiness `stale_evidence` blocker does not hold it, because the rerun the reset ordered
 is the repair. The artifact gate still withholds it until it republishes.
 
+A read a node registers after it published, of a file outside its declared inputs (a repair
+pass reading what other nodes produced), is the node's own observation growing, not an
+external change: its record never fingerprinted that file, so no edit to it can be shown.
+When that is the only difference, the node is stale but startable — running it again
+republishes with those reads — and nobody is asked a product question.
+
+A read-only evaluation (the artifact gate, readiness, external-change detection) whose inputs
+move while it reads them — a sibling in the same wave rewriting the shared read register or
+writing source — waits for a quiet pass, up to two minutes, before it fails closed. Under the
+publication lock it does not wait: holding the lock would stall every sibling's registration.
+
 Every withheld completion is an explicit difference with a repair owner, never a
 bare warning. `check`, `check_artifacts.py`, the readiness `stale_evidence`
 blocker and reconciliation `invalidate` items carry `diff` (changed `files`,

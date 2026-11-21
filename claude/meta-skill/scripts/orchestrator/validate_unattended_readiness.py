@@ -648,7 +648,18 @@ def _reset_nodes(workflow: dict) -> set:
     return {node_id for node_id, status in latest.items() if status == "superseded"}
 
 
-def _stale_evidence_blocks_start(node: dict, freshness: dict, reset: bool = False) -> bool:
+def _late_reads(project_root: Path, node: dict) -> set:
+    """The node's own reads registered after it published (see evidence_freshness.late_reads)."""
+    from evidence_freshness import STATE, late_reads, read_json
+    try:
+        record = (read_json(project_root, STATE, {}).get("nodes") or {}).get(node.get("node_id"))
+        return late_reads(project_root, node, record) if isinstance(record, dict) else set()
+    except (OSError, ValueError, TypeError, AttributeError):
+        return set()  # unreadable state or register: the stale record blocks, as before
+
+
+def _stale_evidence_blocks_start(node: dict, freshness: dict, reset: bool = False,
+                                 late: set = frozenset()) -> bool:
     """Whether a node's stale record must stop the run before it starts.
 
     A node that has published nothing has no contract or evidence to invalidate, so it
@@ -667,6 +678,12 @@ def _stale_evidence_blocks_start(node: dict, freshness: dict, reset: bool = Fals
     if reset:
         return False
     diff = freshness.get("diff") if isinstance(freshness.get("diff"), dict) else {}
+    files = diff.get("files") if isinstance(diff.get("files"), dict) else {}
+    # Stale only because the node itself read more after publishing: running it again
+    # republishes with those reads, so the run that would do that must be able to start.
+    if (late and set(diff) == {"files"} and files
+            and all(kind == "added" and path in late for path, kind in files.items())):
+        return False
     if diff.get("contract") == "unpublished":
         return False
     if diff.get("evidence") != "unpublished":
@@ -760,7 +777,8 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         elif admission == "legacy" and freshness.get("readiness_status") == "undeclared":
             _add(warnings, "undeclared_source_inputs", freshness["reason"], node_id=node_id)
         elif (freshness.get("readiness_status") != "valid"
-              and _stale_evidence_blocks_start(by_id.get(node_id, {}), freshness, node_id in reset)):
+              and _stale_evidence_blocks_start(by_id.get(node_id, {}), freshness, node_id in reset,
+                                               _late_reads(project_root, by_id.get(node_id, {})))):
             message = freshness.get("reason") or "Reconcile inputs and reverify affected evidence"
             repair = freshness.get("repair") if isinstance(freshness.get("repair"), dict) else None
             if repair:

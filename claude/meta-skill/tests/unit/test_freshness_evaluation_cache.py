@@ -61,29 +61,63 @@ def test_next_gate_sees_source_and_dynamic_read_changes(tmp_path):
     assert module.evaluate(tmp_path)['nodes']['n0']['status'] == 'stale'
 
 
-@pytest.mark.parametrize('change', ['edit', 'add', 'missing_dependency'])
-def test_input_change_during_cached_gate_is_refused(tmp_path, monkeypatch, change):
+@pytest.mark.parametrize('change, keeps_moving', [
+    ('edit', False), ('add', False), ('missing_dependency', False),
+    ('edit', True), ('add', True), ('missing_dependency', True)])
+def test_input_change_during_cached_gate_waits_for_quiet_then_refuses(tmp_path, monkeypatch, change, keeps_moving):
+    # A parallel sibling moving the inputs once is waited out; one that never stops is refused.
     module = load('evidence_freshness')
+    monkeypatch.setattr(module, 'QUIET_WAIT_SECONDS', .3)
+    monkeypatch.setattr(module, 'QUIET_RETRY_PAUSES', (.01,))
     graph(tmp_path, module, 3)
-    original = module.outputs
-    changed = False
+    calls = 0
+    def move():
+        nonlocal calls
+        calls += 1
+        if change == 'edit':
+            put(tmp_path, 'src/data.json', {'version': 1 + calls})
+        elif change == 'add':
+            put(tmp_path, f'src/added-{calls}.json', {'version': 1})
+        else:
+            put(tmp_path, module.READS, {'n0': [f'new-{calls}.json']})
+    original_outputs, original_verify = module.outputs, module._ReadEvaluation.verify
     def outputs(*args, **kwargs):
-        nonlocal changed
-        result = original(*args, **kwargs)
-        if not changed:
-            changed = True
-            if change == 'edit':
-                put(tmp_path, 'src/data.json', {'version': 2})
-            elif change == 'add':
-                put(tmp_path, 'src/added.json', {'version': 1})
-            else:
-                put(tmp_path, module.READS, {'n0': ['new.json']})
+        result = original_outputs(*args, **kwargs)
+        if calls == 0:
+            move()
         return result
+    def verify(self):
+        if keeps_moving:          # a sibling writing at the moment every pass checks
+            move()
+        return original_verify(self)
     monkeypatch.setattr(module, 'outputs', outputs)
-    with pytest.raises(ValueError, match='changed during freshness evaluation'):
-        module.evaluate(tmp_path)
+    monkeypatch.setattr(module._ReadEvaluation, 'verify', verify)
+    if keeps_moving:
+        with pytest.raises(ValueError, match='changed during freshness evaluation'):
+            module.evaluate(tmp_path)
+    else:
+        assert 'n0' in module.evaluate(tmp_path)['nodes']
     assert module._READ_EVALUATION.get() is None
 
+
+
+def test_under_the_publication_lock_a_moving_input_fails_at_once(tmp_path, monkeypatch):
+    # Waiting there would starve every sibling that needs the lock to register a read.
+    module = load('evidence_freshness')
+    monkeypatch.setattr(module, 'QUIET_WAIT_SECONDS', 60)
+    graph(tmp_path, module, 3)
+    original_verify = module._ReadEvaluation.verify
+    passes = []
+    def verify(self):
+        passes.append(1)
+        put(tmp_path, 'src/data.json', {'version': 10 + len(passes)})
+        return original_verify(self)
+    monkeypatch.setattr(module._ReadEvaluation, 'verify', verify)
+    with module.publication_lock(tmp_path):
+        with pytest.raises(ValueError, match='changed during freshness evaluation'):
+            module.evaluate(tmp_path)
+    assert passes == [1]
+    assert module._HOLDING_PUBLICATION_LOCK.get() is False
 
 def test_cached_snapshot_still_rejects_dependency_cycle(tmp_path):
     module = load('evidence_freshness')
@@ -159,13 +193,15 @@ def test_expo_working_logs_are_ambient_only_exclusions(tmp_path, monkeypatch, ex
     put(tmp_path, module.STATE, {'nodes': {'mobile': {'inputs': inputs, 'outputs': {},
         'source_snapshot': module.inventory(tmp_path, workflow)}}})
     original = module.outputs
-    changed = False
+    monkeypatch.setattr(module, 'QUIET_WAIT_SECONDS', .3)
+    monkeypatch.setattr(module, 'QUIET_RETRY_PAUSES', (.01,))
+    calls = 0
     def outputs(*args, **kwargs):
-        nonlocal changed
+        nonlocal calls
         result = original(*args, **kwargs)
-        if not changed:
-            changed = True
-            put(tmp_path, log, {'message': 'Metro wrote a new log while evaluating'})
+        calls += 1
+        if calls == 1 or explicit:   # a declared log that keeps being written never settles
+            put(tmp_path, log, {'message': f'Metro wrote log {calls} while evaluating'})
         return result
     monkeypatch.setattr(module, 'outputs', outputs)
     if explicit:
@@ -258,3 +294,15 @@ def test_dependency_lookup_does_not_mutate_the_cached_expansion(tmp_path):
 
     snapshot = gate(tmp_path)
     assert 'docs/extra.json' in snapshot['files']
+
+
+def test_a_late_read_the_node_also_declares_is_still_source(tmp_path):
+    # Only a read outside the node's declared inputs is exempt from being an external
+    # change: a new file under a declared glob is a source addition however it was read.
+    module = load('evidence_freshness')
+    put(tmp_path, 'docs/contract.md', {'v': 1})
+    put(tmp_path, 'other/report.json', {'v': 1})
+    put(tmp_path, module.READS, {'n': ['docs/contract.md', 'other/report.json', 'early.json']})
+    node = {'node_id': 'n', 'source_inputs': ['docs/**']}
+    assert module.late_reads(tmp_path, node, {'extra': ['early.json']}) == {'other/report.json'}
+    assert module.late_reads(tmp_path, node, {'extra': ['other/report.json', 'early.json']}) == set()

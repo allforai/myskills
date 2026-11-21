@@ -56,6 +56,25 @@ def orchestration_state(path):
 # Caches exist only inside one read-only gate. Never reuse them across observe,
 # publish, a verification subprocess, or a later gate in the same interpreter.
 _READ_EVALUATION = ContextVar('freshness_read_evaluation', default=None)
+# Set while this process holds the publication lock. Waiting for quiet inputs there would
+# hold every sibling's read registration and publication behind it, and they give up on
+# the lock in seconds; under the lock a moving input fails at once, as it always did.
+_HOLDING_PUBLICATION_LOCK = ContextVar('freshness_holding_publication_lock', default=False)
+
+
+class ConcurrentInputChange(ValueError):
+    """The inputs moved while a read-only evaluation was reading them.
+
+    In a parallel wave this is a sibling still working — rewriting the shared read
+    register, or writing source — not a fact about the node being judged. The outermost
+    evaluation waits for a quiet pass instead of returning it as a verdict.
+    """
+
+
+# How long a read-only evaluation waits for its inputs to hold still. A pass that never
+# finds them quiet still fails closed with the last change it saw.
+QUIET_WAIT_SECONDS = 120
+QUIET_RETRY_PAUSES = (.2, .5, 1, 2, 5)
 
 
 def _file_version(path):
@@ -85,7 +104,7 @@ class _ReadEvaluation:
             content = path.read_bytes() if path.is_file() else None
             after = _file_version(path)
             if before != after:
-                raise ValueError('Inputs changed during freshness evaluation: ' + key)
+                raise ConcurrentInputChange('Inputs changed during freshness evaluation: ' + key)
             self.files[key] = (after, content)
         return self.files[key][1]
 
@@ -97,15 +116,15 @@ class _ReadEvaluation:
             before = _file_version(path)
             current = path.read_bytes() if path.is_file() else None
             if before != version or _file_version(path) != before or current != content:
-                raise ValueError('Inputs changed during freshness evaluation: ' + key)
+                raise ConcurrentInputChange('Inputs changed during freshness evaluation: ' + key)
         for paths, previous in self.expansions.items():
             if expand_paths(self.root, list(paths)) != previous:
-                raise ValueError('Input membership changed during freshness evaluation')
+                raise ConcurrentInputChange('Input membership changed during freshness evaluation')
         if self.tree is not None and source_tree(self.root) != self.tree:
-            raise ValueError('Source tree changed during freshness evaluation')
+            raise ConcurrentInputChange('Source tree changed during freshness evaluation')
         for key, (version, _) in self.files.items():
             if _file_version(Path(key)) != version:
-                raise ValueError('Inputs changed during freshness evaluation: ' + key)
+                raise ConcurrentInputChange('Inputs changed during freshness evaluation: ' + key)
 
 
 def _read_only_gate(function):
@@ -116,15 +135,27 @@ def _read_only_gate(function):
             if active.root != root.resolve():
                 raise ValueError('Freshness evaluation cannot cross project roots')
             return function(root, *args, **kwargs)
-        context = _ReadEvaluation(root)
-        context.paths = _ignore_aware_paths(root)
-        token = _READ_EVALUATION.set(context)
-        try:
-            result = function(root, *args, **kwargs)
-        finally:
-            _READ_EVALUATION.reset(token)
-        context.verify()  # No verdict escapes if inputs moved during the gate.
-        return result
+        deadline = time.monotonic() + (0 if _HOLDING_PUBLICATION_LOCK.get() else QUIET_WAIT_SECONDS)
+        attempt = 0
+        while True:
+            context = _ReadEvaluation(root)
+            context.paths = _ignore_aware_paths(root)
+            token = _READ_EVALUATION.set(context)
+            try:
+                try:
+                    result = function(root, *args, **kwargs)
+                finally:
+                    _READ_EVALUATION.reset(token)
+                # Outside the evaluation on purpose: inside it, the tree and expansions
+                # would be answered from this pass's own cache and nothing could differ.
+                context.verify()  # No verdict escapes if inputs moved during the gate.
+                return result
+            except ConcurrentInputChange:
+                pause = QUIET_RETRY_PAUSES[min(attempt, len(QUIET_RETRY_PAUSES) - 1)]
+                if time.monotonic() + pause > deadline:
+                    raise
+                attempt += 1
+                time.sleep(pause)
     return wrapped
 
 
@@ -181,9 +212,11 @@ def publication_lock(root):
             time.sleep(.01)
     else:
         raise ValueError('Freshness publication is locked; retry or coordinate an abandoned writer')
+    held = _HOLDING_PUBLICATION_LOCK.set(True)
     try:
         yield
     finally:
+        _HOLDING_PUBLICATION_LOCK.reset(held)
         lock.rmdir()
 
 
@@ -219,7 +252,7 @@ def expand_paths(root, paths, *, track=True):
         key = tuple(paths)
         previous = context.expansions.setdefault(key, expanded)
         if previous != expanded:
-            raise ValueError('Input membership changed during freshness evaluation')
+            raise ConcurrentInputChange('Input membership changed during freshness evaluation')
     return expanded
 
 
@@ -737,6 +770,23 @@ def flow_written(root, path):
     return isinstance(written, dict) and path in written and written[path] == fingerprint(root, path)
 
 
+def late_reads(root, node, record):
+    """Reads the node registered after it published, outside what it declares it reads.
+
+    A repair pass that reads what other nodes produced grows the node's own observation;
+    it does not edit source. The published record never fingerprinted those files, so no
+    change to them can be established: they are not an external change, and the node's
+    stale evidence is repaired by running the node again, which republishes with them. A
+    file the node's declared inputs also cover stays a source addition like any other.
+    """
+    registered = set(observed_reads(root).get(node['node_id'], [])) - set(record.get('extra') or [])
+    if not registered:
+        return set()
+    declared = (expand_paths(root, node.get('source_inputs', []), track=False)
+                | expand_paths(root, node.get('input_dependencies', []), track=False))
+    return registered - declared
+
+
 def detect_external_changes(root):
     """Source changed outside the flow since a node published its evidence, keyed by content.
 
@@ -760,8 +810,9 @@ def detect_external_changes(root):
         if not record:
             continue
         current = snapshot(root, node, record.get('extra', []))
+        late = late_reads(root, node, record)
         files = {path: kind for path, kind in input_diff(record['inputs'], current).get('files', {}).items()
-                 if not flow_written(root, path)}
+                 if not flow_written(root, path) and not (kind == 'added' and path in late)}
         if not files:
             continue
         detected.append({'change_id': change_identity(node['node_id'],
