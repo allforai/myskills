@@ -41,6 +41,8 @@ You are diagnosing a workflow failure.
    repairs it and the repair action says the defect is inherited; if none does,
    the failure is out of scope (see Out-of-Scope Repairs). When no earlier state
    can be read, the baseline is `unknown` — write that, do not assume either way.
+   Each failing check has its own baseline: checks that failed together can differ,
+   and a mixed verdict is how an inherited failure gets charged to this run.
 
 2. **Impact Chain**: List all intermediate nodes between root cause and failure.
 
@@ -64,10 +66,13 @@ Return JSON:
     "node": "<node-id>",
     "description": "<what's wrong>"
   },
-  "baseline": {
-    "state": "passing_before | failing_before | unknown",
-    "basis": "<the earlier state read and where — commit, wave baseline, evidence entry — or why none could be read>"
-  },
+  "baselines": [
+    {
+      "check": "<the failing check>",
+      "state": "passing_before | failing_before | unknown",
+      "basis": "<the earlier state read and where — commit, wave baseline, evidence entry — or why none could be read>"
+    }
+  ],
   "impact_chain": ["<node-id>", ...],
   "gaps_found": [
     { "domain": "<area>", "missing": ["<item>", ...], "severity": "high|medium|low" }

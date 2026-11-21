@@ -173,6 +173,11 @@ itself: the node built what these patterns exclude, or weakened a guard to share
 Each deferral also leaves one comment in the source, at the place the mechanism would
 have gone: `deferred: <what was not built>, <the real occurrence that brings it back>`.
 The run record tells this run; the comment tells whoever opens the file later.
+The marker is only for a mechanism the node chose not to build. A product rule the
+upstream artifacts leave open is not one: the run takes its recommended option and records
+it in `run-decisions/<node_id>.json` for the user to confirm or overturn, and the source
+carries no `deferred:` marker for it — a later reader must not take an open product
+question for a settled technical decision.
 A write scope alone does not make a node a code-writing node: a node whose
 `parallel_write_scopes` hold only documents, records, design files or generated assets
 writes the single line `Code simplicity: not applicable — this node writes no program code`
