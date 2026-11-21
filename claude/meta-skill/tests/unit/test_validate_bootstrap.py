@@ -1808,6 +1808,20 @@ def test_producers_of_parallel_parts_may_share_one_acceptance_list(tmp_path):
     assert _inline_errors(tmp_path, nodes) == []
 
 
+# --- model_class: a node offered to another model is a producer, never the judge ---
+
+@pytest.mark.parametrize("node_index, value, code", [
+    (2, "routine", None),                       # a producer nobody relies on for a verdict
+    (2, "cheap", "invalid_model_class"),
+    (1, "routine", "routine_node_judges"),      # the QA node an inline_review names
+])
+def test_only_a_producer_may_be_declared_routine(tmp_path, node_index, value, code):
+    nodes = _reviewed_graph()
+    nodes[node_index]["model_class"] = value
+    errors = [e for e in validate_workflow(_write_workflow(tmp_path, nodes)) if "model_class" in e]
+    assert (errors == []) if code is None else (errors and code in errors[0]), errors
+
+
 # Use-case authoring (planning Must #10): how the product is tested is decided while it is
 # built. The rule is about the graph only — a producer of the cases exists, it does not wait
 # for the code, product-verify waits for it, and on a designed interface it waits for the design.

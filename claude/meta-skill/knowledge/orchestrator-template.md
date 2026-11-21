@@ -301,7 +301,13 @@ never waive, downgrade, or hide a gap.
 `/run` is fully autonomous from its first line — no questions, no human stops. Drive it as:
 
 1. Invoke the Workflow engine script at
-   `.allforai/bootstrap/run-engine/run-engine.workflow.js`.
+   `.allforai/bootstrap/run-engine/run-engine.workflow.js`. When
+   `.allforai/bootstrap/model-routing.json` exists, pass its content as the engine's
+   `args.models`, unchanged; when it does not, pass nothing and every step runs on the
+   session model. The file is the user's choice of which model runs command relays
+   (`relay`) and nodes declared routine (`routine`); never write it, extend it or pick a
+   name here. The node gate, reviews, repairs and commits stay on the session model
+   whatever it says (ADR-0021).
    It reads `workflow.json` plus `unattended-run-readiness-spec.json.required_repair_loops`,
    schedules ready nodes (alignment_refs run in parallel),
    self-heals soft failures, commits each node immediately, and returns one of:

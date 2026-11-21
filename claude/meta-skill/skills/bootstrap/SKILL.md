@@ -647,6 +647,7 @@ When writing each node into `workflow.json`, add:
   it in the Node-spec frontmatter. An unowned deferral is refused as `unowned_effect_stage`.
 - `closure_verify`: closure types to verify (e.g. `["audio"]`, `["save-load"]`, `["2d-placeholder"]`) when applicable; else omit or `[]`.
 - `soft_retry_max`: integer (default 2) — leave unset to use the engine default.
+- `model_class` (optional): `"routine"` on a node whose work needs no judgement of its own, so the run may give it to a cheaper model the user named; omit it everywhere else. See `bootstrap-planning.md` § Keep a failure local for which nodes qualify.
 - `acceptance`: what this node's own output must satisfy, checkable against that output alone — never a stage's goals copied onto each of its nodes.
 - `inline_review`: `{"qa_node_id": "<node>"}` on a producer whose output a later QA node judges for quality (design, generated art, content, wording); omit it where validation commands already decide right from wrong. See `bootstrap-planning.md` § Keep a failure local, which also governs what a gate, a QA node and a bulk producer may depend on.
 
@@ -842,6 +843,15 @@ cp ${CLAUDE_PLUGIN_ROOT}/scripts/check_evidence.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/compute_reset_closure.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/engine/evidence.py ${CLAUDE_PLUGIN_ROOT}/scripts/engine/identity.py .allforai/bootstrap/scripts/engine/
 ```
+
+**Model routing (optional).** By default every step of a run uses the session model. An
+interactive bootstrap that finds no `.allforai/bootstrap/model-routing.json` asks once
+whether the user wants a cheaper model for (a) command relays — steps that run one command
+and report what it printed — and (b) nodes declared `model_class: "routine"`, and writes
+the answer as `{"relay": "<name>", "routine": "<name>"}`; either key may be left out, and
+`{}` records that the user declined. The names are the user's, chosen from what the host
+offers at that moment — this skill names no model. An existing file is kept as it is. An
+unattended bootstrap writes no file.
 
 > **Why copy?** The meta-skill plugin is installed in Claude's plugin cache.
 > The target project needs its own copy so `/run` works even if the plugin
