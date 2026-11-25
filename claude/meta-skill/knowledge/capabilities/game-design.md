@@ -94,7 +94,7 @@ Bootstrap 在生成 `art-spec-design` node-spec 时，须在其 `Context Pull` �
     暂停执行，等待 art-concept 完成后重新触发
 ```
 
-`art-direction` 节点 approved → `/run` 自动调起 `art-concept` skill（读取
+`art-direction` 节点完成 → `art-concept` 按 `hard_blocked_by` 接着运行（读取
 `art-style-guide.json.art_overview`）。art-concept 完成后，`/run` 继续推进 `art-spec-design`。
 
 ## Team Roles
@@ -161,23 +161,26 @@ and `revision_notes` text inputs, and expose controls equivalent to Approve /
 Request revision / Save notes.
 
 Because browser static pages cannot safely write arbitrary local files, write
-back is owned by `/run` through Playwright:
+back is owned by the interactive entry (`/bootstrap`, or `serve_approval.py` while the
+user reviews), never by an unattended `/run`:
 
 1. Playwright opens `review-dashboard.html`.
 2. The user or automation fills notes and clicks an action button.
 3. The page queues a JSON action in `window.__approvalDashboard.getPendingAction()`.
-4. `/run` reads that action with Playwright and applies it to
+4. The interactive entry reads that action with Playwright and applies it to
    `approval-records.json` using
    `.allforai/bootstrap/scripts/apply_approval_action.py`.
-5. `/run` clears the queued action with
+5. It clears the queued action with
    `window.__approvalDashboard.clearPendingAction()` and refreshes the page.
 
-This preserves the source of truth in `approval-records.json` while still
-making approval an interactive, Playwright-controlled part of the skill flow.
+This keeps `approval-records.json` the record of the review. It is a review record,
+not a run gate: `/run` asks nothing and waits for no one (ADR-0018).
 
 ### Approval Records Schema
 
-`/run` reads this file to determine gate status before advancing:
+A review record: the dashboard shows it and the discipline owner annotates it. `/run`
+never reads it to decide what runs; scheduling follows `workflow.json` `hard_blocked_by`
+and the artifact gates only.
 
 ```json
 {
@@ -200,16 +203,16 @@ making approval an interactive, Playwright-controlled part of the skill flow.
 }
 ```
 
-**Consistency invariant:** The `unlocks[]` field here MUST be identical to the corresponding `workflow.json nodes[].unlocks[]` field written by bootstrap. Bootstrap is the single writer of both fields and MUST derive them from the same source (node_order). `/run` uses `approval-records.json.unlocks[]` for gate-driven unblocking of game-design nodes; if these diverge from `workflow.json.nodes[].unlocks[]`, the orchestrator graph will be out of sync. Verify after bootstrap: `records[i].unlocks == workflow.json.nodes[matching_id].unlocks` for every game-design node.
+**Consistency invariant:** The `unlocks[]` field here MUST be identical to the corresponding `workflow.json nodes[].unlocks[]` field written by bootstrap. Bootstrap is the single writer of both fields and MUST derive them from the same source (node_order); the copy here is for display, so the dashboard shows the same graph the run follows. Verify after bootstrap: `records[i].unlocks == workflow.json.nodes[matching_id].unlocks` for every game-design node.
 
 Note on `revision_notes` vs `reviewer_notes`: `revision_notes` is written by the `discipline_owner` when requesting changes (triggers re-execution); `reviewer_notes` is written by `discipline_reviewers` for advisory observations that do not change `gate_status`.
 
-Gate rules:
-- `gate_status == "pending"` AND node's `exit_artifacts` all exist → `/run` automatically sets `gate_status` to `"in-review"` and notifies `discipline_owner` that the output is ready for review. (Bootstrap initializes all records as `pending`; node execution produces the artifacts; `/run` transitions to `in-review` — this is the only way to reach `in-review`.)
-- `gate_status == "in-review"` → wait for `discipline_owner` to review the HTML output and either approve or request revision. The gate sits at the **consumption** of this node's output: its `unlocks[]` and `game-design-finalize` do not run until it is `approved`. Sibling nodes whose inputs are already approved keep running, so the owner reviews drafts in batches instead of one node per round-trip.
-- `gate_status == "approved"` → unlock all `unlocks[]` nodes
-- `gate_status == "revision-requested"` → re-execute node with `revision_notes` as instruction; after re-execution completes, reset `gate_status` to `"in-review"` (awaiting fresh approval from `discipline_owner`)
-- `discipline_owner` must approve (drives `gate_status`); `discipline_reviewers` approval is advisory — reviewers may add `reviewer_notes` but cannot change `gate_status` unilaterally; if reviewer flags an issue post-approval, they must coordinate with `discipline_owner` to reset `gate_status` to `"revision-requested"`
+Review states (none of them stops or unlocks anything at run time):
+- `pending`: the node's output has not been reviewed yet.
+- `in-review`: the discipline owner is looking at the HTML output.
+- `approved`: the owner accepts the output; a later partial bootstrap keeps it (see Partial Pipeline).
+- `revision-requested`: the owner wants changes; the next interactive `/bootstrap` replans the node with `revision_notes` as its instruction, and the following `/run` reruns it.
+- `discipline_owner` drives `gate_status`; `discipline_reviewers` add `reviewer_notes` only, and coordinate with the owner to request a revision.
 
 Bootstrap initialises this file with one `pending` record per game-design node
 when writing node-specs to `.allforai/bootstrap/`, then immediately renders
@@ -397,7 +400,7 @@ node's `exit_artifacts`:
 
 The handoff artifacts are formal cross-phase contracts, not optional helper
 files. `product-analysis` and downstream implementation nodes may rely on them
-after `game-design-finalize` is approved.
+after `game-design-finalize` completes.
 
 ## Sub-Skill Mapping
 
@@ -765,11 +768,11 @@ bootstrap-planning.md rule 8) before any concept-acceptance node.
 
 **art-gen nodes** are determined by `art-pipeline-config.json.active_nodes` at art-concept
 completion time. Bootstrap writes only the listed nodes into `workflow.json`.
-Every art-gen node requires human approval gate (discipline-specific).
+Every art-gen node is judged by `art-qa` against its discipline checklist; nothing waits for a human approval at run time.
 
 **Dependency rule for `game-design-finalize`:** Set `blocked_by` = ALL other game-design
 nodes in the scenario (not just the preceding node). Finalize aggregates every system JSON;
-it must not run until all upstream nodes are approved. Upstream nodes may run in parallel
+it must not run until all upstream nodes are complete. Upstream nodes may run in parallel
 after `core-loop-design` — finalize waits for all of them.
 
 ### Partial Pipeline (existing game, adding feature)

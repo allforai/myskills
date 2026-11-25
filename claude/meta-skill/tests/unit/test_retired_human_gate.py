@@ -23,3 +23,23 @@ def offending_lines():
 
 def test_no_skill_text_tells_bootstrap_to_set_human_gate():
     assert offending_lines() == []
+
+
+# The same retired gate, described without its name: a run that waits for an approval, or
+# a node that halts unless a record is approved (ADR-0018: /run stops for no one).
+RUN_WAITS_FOR_APPROVAL = re.compile(
+    r'wait for `?discipline_owner|do not run until it is `?approved|'
+    r'gate_status == "approved"`?\. Collect|If any exist → halt|'
+    r'Do not produce the contract until all gates pass|gate-driven unblocking|'
+    r'`/run` automatically sets `gate_status`|approved → `/run`|must not run until all upstream nodes are approved|requires human approval gate', re.I)
+
+
+def test_no_run_time_text_waits_for_an_approval():
+    found = []
+    for path in sorted(ROOT.rglob('*.md')):
+        if {'fixtures', 'tests'} & set(path.relative_to(ROOT).parts):
+            continue
+        for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+            if RUN_WAITS_FOR_APPROVAL.search(line):
+                found.append(f'{path.relative_to(ROOT)}:{number}: {line.strip()[:110]}')
+    assert found == []

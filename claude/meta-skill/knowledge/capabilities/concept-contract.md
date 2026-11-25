@@ -54,14 +54,14 @@ For Branch B, `canonical_registry` is derived from `app-design-doc.json` screen 
 
 ## Protocol
 
-### Step 1: Validate all gates approved
+### Step 1: Read the review records
 
-Read `bootstrap-profile.json` to determine `is_game_project`.
-
-- **Branch A** (`is_game_project = true`): Read `.allforai/game-design/approval-records.json`. Every record must have `gate_status == "approved"`. Collect any non-approved records and report them. If any exist → halt.
-- **Branch B** (`is_game_project = false`): Read `.allforai/app-design/approval-records.json`. Every record must have `gate_status == "approved"`. Collect any non-approved records and report them. If any exist → halt.
-
-Do not produce the contract until all gates pass.
+Read `bootstrap-profile.json` to determine `is_game_project`, then read the branch's
+`approval-records.json` (game: `.allforai/game-design/`, app: `.allforai/app-design/`) if it
+exists. Copy the node ids whose `gate_status` is `approved` into `human_gates_approved`, and
+list every other record with its status in the report. A record that is not approved is a
+review note, never a reason to halt or to ask: `/run` waits for no one (ADR-0018), and the
+art-gen nodes that would be reviewed depend on this contract.
 
 ### Step 2: Build canonical_registry
 

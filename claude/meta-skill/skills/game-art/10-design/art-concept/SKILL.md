@@ -11,7 +11,7 @@ description: Interactive, search-driven confirmation of a game's art technical s
 > 通过搜索驱动的交互式对话确定美术技术规格，产出 `art-pipeline-config.json`。
 >
 > **触发方式：**
-> - Bootstrap 自动串联（art-direction approved → 检查 art-pipeline-config.json → 不存在则调起此 skill）
+> - Bootstrap 自动串联（art-direction 完成 → 检查 art-pipeline-config.json → 不存在则调起此 skill）
 > - 需要修订美术决策时，重新运行 `art-concept` 节点（没有独立的 slash 命令）
 
 ## 知识库加载
