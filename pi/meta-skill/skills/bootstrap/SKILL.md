@@ -67,6 +67,7 @@ canonical 的后续用户步骤不变：`workflow.json.user_steps` 仍是
 - `scripts/orchestrator/product_intent.py`
 - `scripts/orchestrator/evidence_freshness.py`
 - `scripts/orchestrator/repair_authorization.py`
+- `scripts/orchestrator/record_transition.py`
 - `scripts/orchestrator/run_safety.py`
 - `scripts/check_decision_inputs.py`
 - `scripts/orchestrator/validate_bootstrap.py`

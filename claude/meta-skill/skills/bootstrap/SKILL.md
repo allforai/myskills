@@ -819,6 +819,7 @@ cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/check_artifacts.py .allforai/boots
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/product_intent.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/evidence_freshness.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/repair_authorization.py .allforai/bootstrap/scripts/
+cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/record_transition.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/orchestrator/run_safety.py .allforai/bootstrap/scripts/
 cp ${CLAUDE_PLUGIN_ROOT}/knowledge/input-freshness.md .allforai/bootstrap/protocols/
 cp ${CLAUDE_PLUGIN_ROOT}/scripts/check_decision_inputs.py .allforai/bootstrap/scripts/
