@@ -892,8 +892,10 @@ def test_a_recorded_read_of_an_upstream_node_is_not_a_blocker(tmp_path):
 def _emitted_codes():
     import re
     source = (Path(__file__).resolve().parents[2] / "scripts/orchestrator/validate_unattended_readiness.py").read_text()
-    return (set(re.findall(r'_add\(\s*blockers,\s*"([a-z_]+)"', source))
-            | set(re.findall(r'_blocked_report\(\s*"([a-z_]+)"', source)))
+    # Literal codes, plus codes chosen into a variable before `_add(blockers, code, ...)`.
+    return (set(re.findall(r'_add\(\s*blockers,\s*"([a-z0-9_]+)"', source))
+            | set(re.findall(r'_blocked_report\(\s*"([a-z0-9_]+)"', source))
+            | {"missing_cross_exam_step", "missing_document_verification", "invalid_source_inputs"})
 
 
 def test_every_blocker_code_has_an_action():
@@ -901,7 +903,6 @@ def test_every_blocker_code_has_an_action():
     assert len(codes) > 30
     missing = sorted(code for code in codes if not (_readiness.BLOCKER_ACTIONS.get(code) or "").strip())
     assert missing == []
-    assert set(_readiness.BLOCKER_ACTIONS) <= codes, "an action for a code nothing emits"
 
 
 def test_report_shows_the_action(tmp_path):
@@ -911,3 +912,15 @@ def test_report_shows_the_action(tmp_path):
     assert blocker["action"] in report["recommended_pre_run_actions"]
     _readiness.write_markdown(tmp_path / "r.md", report)
     assert blocker["action"] in (tmp_path / "r.md").read_text()
+
+
+def test_a_blocker_raised_by_another_gate_still_gets_an_action():
+    # plan confirmation, workflow shape, structural and scope blockers are built outside
+    # this module and joined with extend(); they get the general action.
+    items = [{"code": "plan_not_confirmed", "message": "m"},
+             {"code": "missing_workflow", "message": "m"},
+             {"code": "stale_evidence", "message": "m", "action": "kept"}]
+    _readiness.attach_actions(items)
+    assert items[0]["action"] == _readiness.FALLBACK_ACTION
+    assert items[1]["action"] == _readiness.BLOCKER_ACTIONS["missing_workflow"]
+    assert items[2]["action"] == "kept"

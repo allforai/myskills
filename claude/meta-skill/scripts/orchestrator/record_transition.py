@@ -81,6 +81,26 @@ def record(root: Path, request: dict) -> dict:
     if not isinstance(workflow, dict) or not isinstance(workflow.get('transition_log', []), list):
         raise Refused('workflow.json has no transition_log list')
 
+    decisions = request.get('assumed_decisions') or []
+    decisions_path = root / BOOTSTRAP / 'assumed-decisions.json'
+    existing = []
+    if decisions and decisions_path.exists():
+        try:
+            existing = json.loads(decisions_path.read_text())
+        except (OSError, json.JSONDecodeError) as error:
+            raise Refused(f'{decisions_path} is unreadable: {error}')
+        if not isinstance(existing, (list, dict)):
+            raise Refused(f'{decisions_path} is neither a list nor an object')
+
+    # Decisions first, and only the ones not already there: a retry after a write that
+    # died halfway completes it instead of losing them or recording them twice.
+    if decisions:
+        target = existing.setdefault('decisions', []) if isinstance(existing, dict) else existing
+        new = [d for d in decisions if d not in target]
+        if new:
+            target.extend(new)
+            write_json(decisions_path, existing)
+
     node_id = request['node_id']
     entry = {'node_id': node_id, 'status': request['status'],
              'artifacts_created': request.get('artifacts_created', [])}
@@ -99,14 +119,6 @@ def record(root: Path, request: dict) -> dict:
         log.append(entry)
         write_json(workflow_path, workflow)
         index, replayed = len(log) - 1, False
-
-    decisions = request.get('assumed_decisions') or []
-    if decisions and not replayed:
-        path = root / BOOTSTRAP / 'assumed-decisions.json'
-        existing = json.loads(path.read_text()) if path.exists() else []
-        target = existing.setdefault('decisions', []) if isinstance(existing, dict) else existing
-        target.extend(decisions)
-        write_json(path, existing)
 
     if request.get('clear_corrections'):
         (root / BOOTSTRAP / 'diagnosis-corrections' / f'{node_id}.json').unlink(missing_ok=True)

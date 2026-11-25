@@ -96,6 +96,10 @@ def _node_id(node: dict) -> str:
 # What a person does about each blocker, in one line. The message says what is wrong;
 # this says how to clear it. Every code this gate emits has one (tested).
 BLOCKER_ACTIONS: dict[str, str] = {
+    "missing_cross_exam_step": "Rerun the interactive `/bootstrap`; it adds /cross-exam to user_steps.",
+    "missing_document_verification": "Rerun the interactive `/bootstrap`; it declares how the named node's documents are verified.",
+    "invalid_source_inputs": "Fix the named node's source_inputs at the interactive `/bootstrap` (the message names the bad entry).",
+    "unexpanded_game_2d_production_handoff": "Rerun the interactive `/bootstrap`; it adds the 2D production closure QA node for the handoff.",
     "closure_not_blocked_by_repair_loop": "Rerun the interactive `/bootstrap`; the closure node must wait for its repair node.",
     "dependency_outside_graph": "At the interactive `/bootstrap`, declare the dependency in hard_blocked_by or remove the stale read from observed-input-dependencies.json.",
     "external_change_repair_pending": "Restore the confirmed behaviour in the named files (or let `/bootstrap` plan the repair), then rerun `/run`.",
@@ -142,6 +146,18 @@ BLOCKER_ACTIONS: dict[str, str] = {
     "unverified_external_change": "Open the interactive `/bootstrap` and run its external-changes check for the named files.",
     "verdict_entry_planned_as_node": "Rerun the interactive `/bootstrap`; /cross-exam and /product-review are steps you type after the run, never nodes.",
 }
+
+# A blocker raised by another gate (plan confirmation, workflow shape, structure, scope)
+# reaches this report through extend(), not _add; it still says what to do.
+FALLBACK_ACTION = ("Rerun the interactive `/bootstrap`; it re-plans the workflow and clears "
+                   "this, or tells you the one decision it needs.")
+
+
+def attach_actions(blockers: list[dict]) -> list[dict]:
+    for item in blockers:
+        if isinstance(item, dict) and not item.get("action"):
+            item["action"] = BLOCKER_ACTIONS.get(item.get("code"), FALLBACK_ACTION)
+    return blockers
 
 
 def _add(blockers: list[dict], code: str, message: str, *, node_id: str | None = None) -> None:
@@ -1001,6 +1017,7 @@ def validate_unattended_readiness(project_root: Path) -> dict:
                 "game 2D production handoff exists but 2D production closure QA is not represented",
             )
 
+    attach_actions(blockers)
     status = READY_STATUS if not blockers else BLOCKING_STATUS
     return {
         "status": status,

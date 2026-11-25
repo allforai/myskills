@@ -117,3 +117,21 @@ def test_started_at_is_kept_and_part_of_the_replay_identity(tmp_path):
     assert log_of(root)[-1]['started_at'] == '2026-01-01T00:00:00+00:00'
     _, receipt = record(root, {**COMPLETED, 'started_at': '2026-01-02T00:00:00+00:00'})
     assert receipt['replayed'] is False and len(log_of(root)) == 2
+
+
+def test_unreadable_decisions_file_is_refused_before_anything_is_written(tmp_path):
+    root = project(tmp_path)
+    (root / '.allforai/bootstrap/assumed-decisions.json').write_text('{not json')
+    code, receipt = record(root, {**COMPLETED, 'assumed_decisions': [{'id': 'd1'}]})
+    assert code == 1 and receipt['status'] == 'refused'
+    assert log_of(root) == []
+
+
+def test_a_retry_after_a_partial_write_still_records_the_decisions_once(tmp_path):
+    root = project(tmp_path)
+    decision = {'id': 'd1', 'choice': 'x'}
+    record(root, {**COMPLETED, 'assumed_decisions': [decision]})
+    code, receipt = record(root, {**COMPLETED, 'assumed_decisions': [decision]})
+    assert code == 0 and receipt['replayed'] is True
+    path = root / '.allforai/bootstrap/assumed-decisions.json'
+    assert json.loads(path.read_text()) == [decision]
