@@ -93,8 +93,61 @@ def _node_id(node: dict) -> str:
     return node_id if isinstance(node_id, str) and node_id.strip() else "<missing-node-id>"
 
 
+# What a person does about each blocker, in one line. The message says what is wrong;
+# this says how to clear it. Every code this gate emits has one (tested).
+BLOCKER_ACTIONS: dict[str, str] = {
+    "closure_not_blocked_by_repair_loop": "Rerun the interactive `/bootstrap`; the closure node must wait for its repair node.",
+    "dependency_outside_graph": "At the interactive `/bootstrap`, declare the dependency in hard_blocked_by or remove the stale read from observed-input-dependencies.json.",
+    "external_change_repair_pending": "Restore the confirmed behaviour in the named files (or let `/bootstrap` plan the repair), then rerun `/run`.",
+    "forbidden_completed_with_limits": "Remove COMPLETED_WITH_LIMITS from the named node-spec, or allow it on that node at the interactive `/bootstrap`.",
+    "invalid_repair_attempt_budget": "Set max_repair_attempts in the readiness spec to an integer from 1 to 5, or rerun the interactive `/bootstrap`.",
+    "invalid_repair_loop_budget": "Give the repair loop a positive integer max_attempts, or rerun the interactive `/bootstrap`.",
+    "invalid_repair_loop_spec": "Make required_repair_loops a list in the readiness spec, or rerun the interactive `/bootstrap`.",
+    "invalid_required_capabilities": "Make required_capabilities a list in the readiness spec, or rerun the interactive `/bootstrap`.",
+    "invalid_safety_quarantine": "Open the interactive `/bootstrap`; it reconciles the unreadable safety-quarantine record before any node runs.",
+    "invalid_unattended_readiness_spec": "Fix the JSON syntax in the readiness spec, or rerun the interactive `/bootstrap` to regenerate it.",
+    "invalid_user_steps": "Rerun the interactive `/bootstrap`; it writes user_steps as a list of entry names.",
+    "missing_bootstrap_validator": "Rerun the interactive `/bootstrap`; it copies the validator into .allforai/bootstrap/scripts/.",
+    "missing_coverage_repair_loop": "Declare a repair loop for the coverage gate at the interactive `/bootstrap`, or change on_needs_iteration in run-policy.json.",
+    "missing_google_key": "Set GOOGLE_API_KEY (`/setup` walks you through it), then rerun `/run`.",
+    "missing_image_cli": "Install and log in to the Codex CLI (`/setup check` shows the steps), then rerun `/run`.",
+    "missing_long_task_recovery": "Rerun the interactive `/bootstrap`; it sets long_task_policy in the readiness spec.",
+    "missing_no_fallback_policy": "Rerun the interactive `/bootstrap`; it sets forbid_hidden_fallback_completion in the readiness spec.",
+    "missing_node_spec": "Rerun the interactive `/bootstrap`; it writes the missing node-spec.",
+    "missing_noninteractive_policy": "Rerun the interactive `/bootstrap`; it sets forbid_mid_run_user_prompts in the readiness spec.",
+    "missing_playwright_or_engine_automation": "Install the Playwright MCP or the named engine automation (`/setup check`), then rerun `/run`.",
+    "missing_repair_attempt_budget": "Rerun the interactive `/bootstrap`; it sets max_repair_attempts in the readiness spec.",
+    "missing_repair_loop_closure": "Rerun the interactive `/bootstrap`; the repair loop names a closure node the workflow does not have.",
+    "missing_repair_loop_node": "Rerun the interactive `/bootstrap`; every repair loop needs a repair_node_id.",
+    "missing_repair_loop_source": "Rerun the interactive `/bootstrap`; the repair loop names a QA node the workflow does not have.",
+    "missing_runtime_command": "Rerun the interactive `/bootstrap`; it records the commands that start the product.",
+    "missing_source_inputs": "Rerun the interactive `/bootstrap`; it declares source_inputs for the named node.",
+    "missing_unattended_readiness_spec": "Rerun the interactive `/bootstrap`; it writes the unattended-run readiness spec.",
+    "missing_video_cli": "Install and log in to the Grok CLI (`/setup check` shows the steps), then rerun `/run`.",
+    "missing_workflow": "Run the interactive `/bootstrap` first; it writes workflow.json.",
+    "node_spec_allows_user_prompt": "Remove the ask-the-user wording from the named node-spec, or rerun the interactive `/bootstrap`.",
+    "pending_human_gate": "Rerun the interactive `/bootstrap`; this legacy approval gate names an approval file that does not exist.",
+    "pending_product_decision": "Answer the named product decision at the interactive `/bootstrap` (Phase A).",
+    "readiness_gate_error": "Fix the error the message names (usually an unreadable file under .allforai/bootstrap/), then rerun `/run`.",
+    "repair_loop_not_blocked_by_qa": "Rerun the interactive `/bootstrap`; the repair node must wait for its QA node.",
+    "stale_evidence": "Rerun `/run` if the named repair owner can redo it; otherwise open the interactive `/bootstrap` to reconcile the changed inputs.",
+    "undetermined_external_change": "Open the interactive `/bootstrap`; it compares the changed source files and asks about any product conflict.",
+    "unexpanded_program_handoff": "Rerun the interactive `/bootstrap`; it adds the runtime gameplay visual QA nodes for the frontend handoff.",
+    "unpublished_readiness_report": "Make .allforai/bootstrap/ writable (disk space, permissions), then rerun `/run`.",
+    "unreadable_node_spec": "Re-save the named node-spec as UTF-8 text, or rerun the interactive `/bootstrap` to regenerate it.",
+    "unreconciled_repair_accounting": "Reconcile the interrupted repair authorization at the interactive `/bootstrap`, then remove the ledger lock; deleting the lock alone resumes nothing.",
+    "unreconciled_safety_halt": "Reconcile the interrupted safety halt at the interactive `/bootstrap`, then remove the safety lock; deleting the lock alone resumes nothing.",
+    "unresolved_external_change": "Decide the named change at the interactive `/bootstrap`: accept, reject or defer it.",
+    "unresolved_safety_quarantine": "Rerun `/run` after the quarantined nodes are revalidated, or reconcile the halt at the interactive `/bootstrap`; never delete the marker by hand.",
+    "unverified_external_change": "Open the interactive `/bootstrap` and run its external-changes check for the named files.",
+    "verdict_entry_planned_as_node": "Rerun the interactive `/bootstrap`; /cross-exam and /product-review are steps you type after the run, never nodes.",
+}
+
+
 def _add(blockers: list[dict], code: str, message: str, *, node_id: str | None = None) -> None:
     item = {"code": code, "message": message}
+    if code in BLOCKER_ACTIONS:
+        item["action"] = BLOCKER_ACTIONS[code]
     if node_id:
         item["node_id"] = node_id
     blockers.append(item)
@@ -960,14 +1013,8 @@ def validate_unattended_readiness(project_root: Path) -> dict:
         "external_tool_findings": external_tool_findings,
         "fallback_findings": fallback_findings,
         "long_task_findings": long_task_findings,
-        "recommended_pre_run_actions": [
-            "Approve or revise pending human gates before /run.",
-            "Run /setup check and configure missing external tools or keys.",
-            "Re-bootstrap if program handoff or frontend QA nodes are not expanded.",
-            "Remove forbidden COMPLETED_WITH_LIMITS paths or explicitly lower scope before /run.",
-        ]
-        if blockers
-        else [],
+        "recommended_pre_run_actions": list(dict.fromkeys(
+            item["action"] for item in blockers if item.get("action"))),
     }
 
 
@@ -984,6 +1031,8 @@ def write_markdown(path: Path, report: dict) -> None:
         for blocker in report["blockers"]:
             node = f" `{blocker['node_id']}`" if blocker.get("node_id") else ""
             lines.append(f"- `{blocker['code']}`{node}: {blocker['message']}")
+            if blocker.get("action"):
+                lines.append(f"  - What to do: {blocker['action']}")
     else:
         lines.append("- None")
     lines.extend(["", "## Required Capabilities"])
@@ -1001,7 +1050,7 @@ def _blocked_report(code: str, message: str) -> dict:
     return {
         "status": BLOCKING_STATUS,
         "checked_at": datetime.now(timezone.utc).isoformat(),
-        "blockers": [{"code": code, "message": message}],
+        "blockers": [{"code": code, "message": message, "action": BLOCKER_ACTIONS[code]}],
         "warnings": [],
         "required_capabilities": [],
         "approval_gate_findings": [],
@@ -1009,9 +1058,7 @@ def _blocked_report(code: str, message: str) -> dict:
         "external_tool_findings": [],
         "fallback_findings": [],
         "long_task_findings": [],
-        "recommended_pre_run_actions": [
-            "Repair the reported fault and re-run validate_unattended_readiness.py before /run.",
-        ],
+        "recommended_pre_run_actions": [BLOCKER_ACTIONS[code]],
     }
 
 

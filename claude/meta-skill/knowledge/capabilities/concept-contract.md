@@ -1,6 +1,6 @@
 # Concept Contract Capability
 
-> Node: `concept-freeze`. Runs after all concept-phase human gates are approved.
+> Node: `concept-freeze`. Runs after the concept-phase decisions are recorded.
 > Captures all approved creative decisions into a canonical source of truth with
 > a `canonical_registry` that maps every asset ID to a definitive file prefix.
 >

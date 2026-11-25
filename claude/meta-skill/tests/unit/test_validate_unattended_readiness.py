@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -885,3 +886,28 @@ def test_a_recorded_read_of_an_upstream_node_is_not_a_blocker(tmp_path):
     report = validate_unattended_readiness(tmp_path)
 
     assert not [b for b in report["blockers"] if b["code"] == "dependency_outside_graph"]
+
+
+# Every blocker says what to do, not only what is wrong (expert review 2026-11-26).
+def _emitted_codes():
+    import re
+    source = (Path(__file__).resolve().parents[2] / "scripts/orchestrator/validate_unattended_readiness.py").read_text()
+    return (set(re.findall(r'_add\(\s*blockers,\s*"([a-z_]+)"', source))
+            | set(re.findall(r'_blocked_report\(\s*"([a-z_]+)"', source)))
+
+
+def test_every_blocker_code_has_an_action():
+    codes = _emitted_codes()
+    assert len(codes) > 30
+    missing = sorted(code for code in codes if not (_readiness.BLOCKER_ACTIONS.get(code) or "").strip())
+    assert missing == []
+    assert set(_readiness.BLOCKER_ACTIONS) <= codes, "an action for a code nothing emits"
+
+
+def test_report_shows_the_action(tmp_path):
+    report = validate_unattended_readiness(tmp_path)
+    blocker = next(item for item in report["blockers"] if item["code"] == "missing_workflow")
+    assert blocker["action"] == _readiness.BLOCKER_ACTIONS["missing_workflow"]
+    assert blocker["action"] in report["recommended_pre_run_actions"]
+    _readiness.write_markdown(tmp_path / "r.md", report)
+    assert blocker["action"] in (tmp_path / "r.md").read_text()

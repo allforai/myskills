@@ -53,7 +53,7 @@ Writes:
 `unattended-run-readiness.json` must include:
 - `status`: `ready | not_ready`
 - `checked_at`
-- `blockers[]`
+- `blockers[]` (each with `code`, `message` and `action`: what to do to clear it)
 - `warnings[]`
 - `required_capabilities[]`
 - `approval_gate_findings[]`

@@ -5,7 +5,7 @@ version: "0.36.2"
 description: Analyze the target project and generate its .allforai/ workflow (product concept, experience map, art, game design, verify nodes) for /run. User-invoked only via /bootstrap; never invoke it yourself.
 ---
 
-# Bootstrap Protocol v0.3.0
+# Bootstrap Protocol
 
 > Invoked only by the user as `/bootstrap [path]`. Claude must not start it on its own.
 > Arguments: $ARGUMENTS (target project path; default is the current directory). Analyze the project and generate its workflow, node-specs, and run command by following this protocol.
