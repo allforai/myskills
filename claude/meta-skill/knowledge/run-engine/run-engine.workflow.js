@@ -541,32 +541,82 @@ function wavePrompt(operation, nodeIds) {
   ].join(' ')
 }
 
-function commitPrompt(result) {
-  const ad = result.assumed_decisions || []
-  const v = result.verification || { method: 'none' }
-  return [
-    `Append to .allforai/bootstrap/workflow.json transition_log: node_id ${result.node_id},`,
-    `status "completed", artifacts_created ${JSON.stringify(result.artifacts_written || [])},`,
-    `verification ${JSON.stringify(v)}.`,
-    '(verification is recorded verbatim — do NOT upgrade method or invent evidence; completeness is',
-    'computed from this field by compute_completeness.py.)',
-    ad.length ? `Also append these to .allforai/bootstrap/assumed-decisions.json: ${JSON.stringify(ad)}.` : '',
-    `Then delete .allforai/bootstrap/diagnosis-corrections/${result.node_id}.json if it exists: the node completed`,
-    'with its corrections applied, and diagnosis_history keeps their record.',
-    'Append only; do not touch other entries.'
-  ].filter(Boolean).join(' ')
+// A node's transition is written by record_transition.py, never by an agent editing
+// workflow.json: a cheap model that wrote it wrong left nothing to catch it. The engine
+// relays the command and checks the receipt, exactly like a ledger operation.
+const TRANSITION_RECEIPT_SCHEMA = {
+  type: 'object',
+  required: ['status'],
+  properties: {
+    status: { type: 'string' },
+    node_id: { type: ['string', 'null'] },
+    transition_index: { type: 'integer' },
+    replayed: { type: 'boolean' },
+    reason: { type: 'string' }
+  }
 }
 
-function repairRoutePrompt(qaNodeId, loop, attempt) {
+function transitionPrompt(request) {
   return [
-    `Append a failed transition for ${qaNodeId} to .allforai/bootstrap/workflow.json transition_log`,
-    `with error "QA failed; routed to declared repair node ${loop.repair_node_id}`,
-    `(attempt ${attempt} of ${repairBudget(loop)} without progress)".`,
-    'Do NOT mark the QA node completed and do not edit its report: the declared repair node runs',
-    'next, this QA node then reruns, and no closure node of this loop may start until that rerun',
-    'passes. Append only; do not touch other entries, and do not write the repair_routes entry',
-    'here — that is appended separately, immediately before the repair node is dispatched.'
+    'Run EXACTLY this command, once, and return its stdout parsed as your JSON result:',
+    `\`printf '%s' ${shellQuote(JSON.stringify(request))} | python3 .allforai/bootstrap/scripts/record_transition.py .\``,
+    '(the command is everything between the backticks; its final `.` is the project-root argument, not punctuation).',
+    'Do not edit any file yourself. Return the receipt exactly as the command printed it; a',
+    'refusal exits non-zero and still prints a receipt — return that. Only if the command',
+    'cannot be run at all, return {"status": "invalid", "reason": "<what actually happened>"}.'
   ].join(' ')
+}
+
+function transitionReceiptError(receipt, nodeId) {
+  if (!receipt || typeof receipt !== 'object') return 'the transition helper returned no receipt'
+  if (receipt.status !== 'recorded') {
+    return `transition for ${nodeId} not recorded: ${receipt.status}` +
+      (receipt.reason ? ` — ${receipt.reason}` : '')
+  }
+  if (receipt.node_id !== nodeId) {
+    return `receipt names node ${JSON.stringify(receipt.node_id)}, not ${JSON.stringify(nodeId)}`
+  }
+  if (!Number.isInteger(receipt.transition_index)) return 'receipt has no transition_index'
+  return null
+}
+
+function transitionBlocker(nodeId, detail) {
+  return { status: 'needs_diagnosis', hardFailures: [{
+    node_id: nodeId, outcome: 'hard_fail', artifacts_written: [],
+    blocking_findings: [{ type: 'unrecorded_transition', detail }] }] }
+}
+
+// A relay that came back with nothing, or that says the command could not be run, is
+// asked once more. Every relayed helper treats a repeat as a replay (the ledger by its
+// derived ids, record_transition.py by content), so the retry cannot charge or record
+// twice. An answer — a refusal included — is never retried.
+async function relay(agent, prompt, opts = {}) {
+  const first = await agent(prompt, opts)
+  if (first && typeof first === 'object' && first.status !== 'invalid') return first
+  return agent(prompt, { ...opts, label: `${opts.label || 'relay'}:retry` })
+}
+
+// verification is recorded verbatim — completeness is computed from it by
+// compute_completeness.py, so it is never upgraded here.
+function commitPrompt(result) {
+  const request = {
+    node_id: result.node_id, status: 'completed',
+    artifacts_created: result.artifacts_written || [],
+    verification: result.verification || { method: 'none' },
+    clear_corrections: true
+  }
+  if ((result.assumed_decisions || []).length) request.assumed_decisions = result.assumed_decisions
+  return transitionPrompt(request)
+}
+
+// The QA node's failed transition records the route; it never marks the QA node
+// completed. The repair_routes entry is appended separately, before the repair dispatch.
+function repairRoutePrompt(qaNodeId, loop, attempt) {
+  return transitionPrompt({
+    node_id: qaNodeId, status: 'failed', artifacts_created: [],
+    error: `QA failed; routed to declared repair node ${loop.repair_node_id} ` +
+      `(attempt ${attempt} of ${repairBudget(loop)} without progress)`
+  })
 }
 
 // Single-quote a value for a POSIX shell command line embedded in a prompt.
@@ -874,11 +924,15 @@ async function runNodeWithReview(node, agent, policy = {}, deliveryOnly = null) 
   return result
 }
 
+// Returns null once the helper's receipt proves the transition is on disk, or why not;
+// a node whose completion was not recorded is not completed.
 async function commitNode(result, agent, done) {
-  // The commit agent appends transition_log + any result.assumed_decisions to
-  // assumed-decisions.json (real prompt wired in Plan 2). Engine persists; subagent does not.
-  await agent(commitPrompt(result), { label: `commit:${result.node_id}` })
+  const receipt = await relay(agent, commitPrompt(result),
+    { schema: TRANSITION_RECEIPT_SCHEMA, label: `commit:${result.node_id}` })
+  const error = transitionReceiptError(receipt, result.node_id)
+  if (error) return error
   done.add(result.node_id)
+  return null
 }
 
 // Each step runs on a tier, never on a model this engine picks: `models` is the Claude entry of
@@ -886,7 +940,7 @@ async function commitNode(result, agent, done) {
 // runs on the session model. A node runs on the `model_tier` bootstrap declared for it (strong
 // when undeclared). Engine steps are classified by label: a command relay or a record write is
 // light; everything that judges, repairs or summarizes the graph is strong (ADR-0021).
-const LIGHT_LABEL = /^(run-policy|recover-waves|begin-wave|end-wave|quarantine-wave|commit-failures|(ledger|policy|measure|repair-authorize|repair-start|repair-settle|repair-verdict|commit|safety-report|iteration-report):.+)$/
+const LIGHT_LABEL = /^(run-policy|recover-waves|begin-wave|end-wave|quarantine-wave|commit-failures|(ledger|policy|measure|repair-authorize|repair-start|repair-settle|repair-verdict|repair-route|commit|safety-report|iteration-report):.+)$/
 const MODEL_TIERS = ['strong', 'standard', 'light']
 function tierOf(label, nodes) {
   if (LIGHT_LABEL.test(label)) return 'light'
@@ -1002,19 +1056,19 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
     // does not list really has spent nothing, because the ledger's own origin was proved
     // when it was created. That proof is why absence may be read as zero here and could
     // not be before.
-    let consumption = await agent(authorizationPrompt({ operation: 'consumption' }),
+    let consumption = await relay(agent, authorizationPrompt({ operation: 'consumption' }),
       { schema: LEDGER_VERDICT_SCHEMA, label: 'ledger:consumption' })
     if (consumption && consumption.status === 'blocked' && consumption.untrusted === 'missing_ledger') {
       // The only path to a fresh budget, and this engine does not assert it: the helper
       // reads workflow.json itself and refuses to record zero for a run that already
       // shows execution. Any other refusal — an unreadable ledger, a foreign run, an
       // ambiguous history — is untrusted state and stops the run right here.
-      const started = await agent(
+      const started = await relay(agent,
         authorizationPrompt({ operation: 'initialize', run_id: runIdentity(dag) }),
         { schema: LEDGER_VERDICT_SCHEMA, label: 'ledger:initialize' })
       const refused = ledgerReceiptError(started, { status: 'ok', operation: 'initialize' })
       if (refused) return ledgerBlocker('repair-authorization-ledger', refused)
-      consumption = await agent(authorizationPrompt({ operation: 'consumption' }),
+      consumption = await relay(agent, authorizationPrompt({ operation: 'consumption' }),
         { schema: LEDGER_VERDICT_SCHEMA, label: 'ledger:consumption' })
     }
     const refused = ledgerReceiptError(consumption, { status: 'ok', operation: 'consumption' })
@@ -1137,7 +1191,7 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
       // One atomic grant for the whole dispatch: every obligation is charged or none is,
       // so a partial charge can never leave a sibling paying for an attempt that was
       // never authorized. It is still not permission to run.
-      const granted = await agent(authorizationPrompt({
+      const granted = await relay(agent, authorizationPrompt({
         operation: 'authorize', run_id: ledgerRunId, authorization_id: grantId,
         repair_node_id: repairNodeId, obligations: authorizedQa, budgets,
         provenance: { host: 'claude-run-engine' }
@@ -1157,13 +1211,13 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
       }
       // The launch claim is separate and succeeds once. A replay, a resumed engine and a
       // second worker are all told no, so nothing executes twice on one charge.
-      const claimed = await agent(authorizationPrompt({
+      const claimed = await relay(agent, authorizationPrompt({
         operation: 'start', run_id: ledgerRunId, authorization_id: grantId
       }), { schema: LEDGER_VERDICT_SCHEMA, label: `repair-start:${repairNodeId}` })
       const claimError = ledgerReceiptError(claimed, { status: 'started', operation: 'start',
         authorization_id: grantId, execution_allowed: true })
       if (claimError) return ledgerBlocker(repairNodeId, claimError)
-      const before = await agent(measurePrompt(node), {
+      const before = await relay(agent, measurePrompt(node), {
         schema: MEASUREMENT_SCHEMA, label: `measure:${repairNodeId}`
       })
       openDelivery.set(repairNodeId, { qa: qaIds, authorized_qa: authorizedQa,
@@ -1231,7 +1285,7 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
       const result = outcomes.find(r => r && r.node_id === repairNodeId)
       if (!result || result.execution_unknown) continue
       const outcome = (result.delivered || routeOutcome(result) === 'done') ? 'delivered' : 'failed'
-      const settled = await agent(authorizationPrompt({
+      const settled = await relay(agent, authorizationPrompt({
         operation: 'settle', authorization_id: grant.authorization_id, outcome
       }), { schema: LEDGER_VERDICT_SCHEMA, label: `repair-settle:${repairNodeId}` })
       const settleError = ledgerReceiptError(settled, { status: 'settled', operation: 'settle',
@@ -1242,7 +1296,8 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
     // safety barrier; the independent QA must still judge a repair delivery.
     for (const result of outcomes) {
       if (result && routeOutcome(result) === 'done' && !result.delivered) {
-        await serializeCommit(() => commitNode(result, agent, done))
+        const unrecorded = await serializeCommit(() => commitNode(result, agent, done))
+        if (unrecorded) return transitionBlocker(result.node_id, unrecorded)
       }
     }
     // A repair node that delivered or completed this wave closes its loop; the QA node
@@ -1308,9 +1363,11 @@ async function runEngine({ agent: sessionAgent, pipeline, log = () => {}, phase 
         const spent = repairAttempts.get(key) || 0
         if (spent >= budget) continue
         repair.open.set(failure.node_id, loop)
-        await agent(repairRoutePrompt(failure.node_id, loop, spent + 1), {
-          label: `repair-route:${failure.node_id}:${spent + 1}`
+        const routedReceipt = await relay(agent, repairRoutePrompt(failure.node_id, loop, spent + 1), {
+          schema: TRANSITION_RECEIPT_SCHEMA, label: `repair-route:${failure.node_id}:${spent + 1}`
         })
+        const routeError = transitionReceiptError(routedReceipt, failure.node_id)
+        if (routeError) return transitionBlocker(failure.node_id, routeError)
         routed.push(failure.node_id)
         // The coverage gate's one recorded iteration repair is this dispatch; the
         // charge itself is taken by the ledger when the repair node is dispatched.

@@ -24,7 +24,7 @@ TEMPLATES = {
     'pi': REPO / 'pi/meta-skill/knowledge/orchestrator-template.md',
 }
 # Every snippet name a template may use; each is executed by a test below.
-EXECUTED = {'preflight-readiness', 'repair-ledger-initialize', 'freshness-publish'}
+EXECUTED = {'preflight-readiness', 'repair-ledger-initialize', 'freshness-publish', 'record-transition'}
 NODE = 'deliver-export'
 PASSING = json.dumps([sys.executable, '-c', 'pass'])
 FAILING = json.dumps([sys.executable, '-c', 'raise SystemExit(3)'])
@@ -126,6 +126,21 @@ def test_repair_ledger_initialize_snippet_records_a_new_run(tmp_path, host):
     assert answer['status'] == 'ok' and answer['origin'] == 'new_run', answer
     again = json.loads(run(tmp_path, script).stdout)
     assert again['replayed'] is True, again
+
+
+@pytest.mark.parametrize('host', ['claude', 'pi'])
+def test_record_transition_snippet_records_through_the_helper(tmp_path, host):
+    setup(tmp_path, 'claude')
+    shutil.copy2(SCRIPTS / 'orchestrator' / 'record_transition.py',
+                 tmp_path / '.allforai/bootstrap/scripts/record_transition.py')
+    script = snippet(TEMPLATES[host], 'record-transition').replace('<node_id>', NODE).replace('<path>', 'out.json')
+    assert not re.search(r'<[a-z_]+>', script), f'unfilled placeholder left in:\n{script}'
+    result = run(tmp_path, script)
+    assert result.returncode == 0, result.stdout + result.stderr
+    receipt = json.loads(result.stdout)
+    assert receipt['status'] == 'recorded' and receipt['node_id'] == NODE, receipt
+    log = json.loads((tmp_path / '.allforai/bootstrap/workflow.json').read_text())['transition_log']
+    assert log[receipt['transition_index']]['artifacts_created'] == ['out.json']
 
 
 def test_pi_publish_then_gate_completes_an_accepted_node(tmp_path):

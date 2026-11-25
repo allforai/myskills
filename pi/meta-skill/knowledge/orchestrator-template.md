@@ -252,8 +252,8 @@ publish freshness or edit the ledger.
    `python3 .allforai/bootstrap/scripts/check_artifacts.py .allforai/bootstrap/workflow.json --node <node_id> --json`
    Non-empty production gaps, blocking status values, or `all_exist != true` cannot be recorded as complete.
    Missing checker, nonzero exit, empty/invalid JSON, mismatched node identity or non-boolean success are failures, never implicit passes. Final bootstrap validation must also succeed before reporting the workflow complete.
-9. On success: append a completed transition entry to `workflow.json`
-10. On failure: append a failed transition entry, then read `.allforai/bootstrap/protocols/diagnosis.md`
+9. On success: record a completed transition with `record_transition.py` (see Recording Transitions)
+10. On failure: record a failed transition the same way, then read `.allforai/bootstrap/protocols/diagnosis.md`
 11. Repeat
 
 ## Declared cross-node repair loop
@@ -508,18 +508,19 @@ route for work that never declared what it judges.
 
 ## Recording Transitions
 
-After each node completes or fails, append to `workflow.json` `transition_log`:
+<!-- clause:run-record-transition@fcc8f1a4 -->
+After each node completes or fails, record it with the helper; never edit `transition_log` by hand:
 
-```json
-{
-  "node": "<id>",
-  "status": "completed | failed",
-  "started_at": "<ISO timestamp>",
-  "completed_at": "<ISO timestamp>",
-  "artifacts_created": ["<file paths>"],
-  "error": "<one line, only if failed>"
-}
+<!-- snippet:record-transition -->
+```bash
+printf '%s' '{"node_id":"<node_id>","status":"completed","artifacts_created":["<path>"]}' \
+  | python3 .allforai/bootstrap/scripts/record_transition.py .
 ```
+
+A failed attempt carries `"status":"failed"` and a one-line `"error"`; `started_at`,
+`verification` (verbatim, never upgraded) and `assumed_decisions` are optional. The command
+prints a receipt, and the transition counts only when that receipt reads `"status":"recorded"`
+for this node. Running the same request again is a replay, not a second entry.
 
 ## Session Resume
 

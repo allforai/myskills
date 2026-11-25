@@ -38,10 +38,17 @@ test('runNodePrompt includes node_spec_path, decision_inputs, no-placeholder rul
   assert.match(p, /\[retry 1\]/)         // strictness suffix threaded through
 })
 
-test('commitPrompt references transition_log AND persists assumed_decisions (fix C1)', () => {
+// The commit is a relay of record_transition.py, never an agent editing workflow.json.
+const relayed = p => JSON.parse(/printf '%s' '(.*?)' \| python3/.exec(p)[1])
+
+test('commitPrompt relays record_transition.py with the assumed_decisions (fix C1)', () => {
   const p = core.commitPrompt({ node_id: 'a', artifacts_written: ['x'], assumed_decisions: [{ id: 'tone', decision: 'warm' }] })
-  assert.match(p, /transition_log/)
-  assert.match(p, /assumed-decisions\.json/)
+  assert.match(p, /`printf '%s' '.*' \| python3 \.allforai\/bootstrap\/scripts\/record_transition\.py \.`/)
+  assert.match(p, /Do not edit any file yourself/)
+  assert.doesNotMatch(p, /Append to \.allforai\/bootstrap\/workflow\.json/)
+  assert.deepEqual(relayed(p), { node_id: 'a', status: 'completed', artifacts_created: ['x'],
+    verification: { method: 'none' }, clear_corrections: true,
+    assumed_decisions: [{ id: 'tone', decision: 'warm' }] })
 })
 
 test('runNodePrompt tells the subagent to RETURN assumed_decisions, not write them (fix C1)', () => {
@@ -57,9 +64,9 @@ test('runNodePrompt demands real evidence and forbids generated-as-verified (ver
 })
 
 test('commitPrompt records verification verbatim (no upgrade)', () => {
-  const p = core.commitPrompt({ node_id: 'a', artifacts_written: [], verification: { method: 'none' } })
-  assert.match(p, /verification/)
-  assert.match(p, /do NOT upgrade/)
+  const verification = { method: 'real-test', evidence_path: 'e.txt', verifier: 'qa' }
+  const p = core.commitPrompt({ node_id: 'a', artifacts_written: [], verification })
+  assert.deepEqual(relayed(p).verification, verification)
 })
 
 test('commitFailuresPrompt references diagnosis_history', () => {
@@ -87,7 +94,25 @@ test('runNodePrompt points the node at its diagnosis corrections and bounds them
 
 test('commitPrompt removes the completed node\'s corrections file', () => {
   const p = core.commitPrompt({ node_id: 'n', artifacts_written: [] })
-  assert.match(p, /delete \.allforai\/bootstrap\/diagnosis-corrections\/n\.json/)
+  assert.equal(relayed(p).clear_corrections, true)
+})
+
+test('repairRoutePrompt records a failed QA transition through the helper', () => {
+  const p = core.repairRoutePrompt('verify', { repair_node_id: 'fix', max_attempts: 2 }, 1)
+  const request = relayed(p)
+  assert.equal(request.node_id, 'verify')
+  assert.equal(request.status, 'failed')
+  assert.match(request.error, /routed to declared repair node fix \(attempt 1 of 2 without progress\)/)
+})
+
+test('transitionReceiptError accepts only a recorded receipt for this node', () => {
+  const ok = { status: 'recorded', node_id: 'a', transition_index: 3, replayed: false }
+  assert.equal(core.transitionReceiptError(ok, 'a'), null)
+  assert.equal(core.transitionReceiptError({ ...ok, replayed: true }, 'a'), null)
+  assert.match(core.transitionReceiptError(null, 'a'), /no receipt/)
+  assert.match(core.transitionReceiptError({ ...ok, node_id: 'b' }, 'a'), /names node "b"/)
+  assert.match(core.transitionReceiptError({ status: 'refused', node_id: 'a', reason: 'x' }, 'a'), /not recorded: refused — x/)
+  assert.match(core.transitionReceiptError({ status: 'recorded', node_id: 'a' }, 'a'), /transition_index/)
 })
 
 test('deliveryNote is empty for an ordinary dispatch', () => {

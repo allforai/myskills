@@ -152,6 +152,16 @@
         {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
          "require": ["model-tiers.json", "three yourself", "ask the user once", "levels[profile[position of its tier]]"]}
       ]
+    },
+    {
+      "id": "run-record-transition",
+      "rule": "A node transition is written only by record_transition.py, and counts only on its recorded receipt for that node.",
+      "authority": {"path": "claude/meta-skill/knowledge/orchestrator-template.md",
+                    "require": ["record_transition.py .", "never edit `transition_log` by hand", "\"status\":\"recorded\""]},
+      "copies": [
+        {"path": "pi/meta-skill/knowledge/orchestrator-template.md",
+         "require": ["record_transition.py .", "never edit `transition_log` by hand", "\"status\":\"recorded\""]}
+      ]
     }
   ]
 }

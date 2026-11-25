@@ -9,7 +9,7 @@ is what the run checks.
     printf '%s' '<request json>' | python3 .allforai/bootstrap/scripts/record_transition.py <project_root>
 
 Request: {"node_id", "status": "completed"|"failed", "artifacts_created": [...],
-          "verification"?: {...}, "error"?: str (required when failed),
+          "started_at"?: str, "verification"?: {...}, "error"?: str (required when failed),
           "assumed_decisions"?: [...], "clear_corrections"?: bool}
 Receipt (exit 0): {"status": "recorded", "node_id", "transition_index", "replayed"}
 Refusal (exit 1): {"status": "refused", "node_id", "reason"}
@@ -29,7 +29,7 @@ import tempfile
 
 BOOTSTRAP = Path('.allforai/bootstrap')
 STATUSES = ('completed', 'failed')
-ENTRY_FIELDS = ('status', 'artifacts_created', 'verification', 'error')
+ENTRY_FIELDS = ('status', 'started_at', 'artifacts_created', 'verification', 'error')
 
 
 class Refused(Exception):
@@ -84,7 +84,7 @@ def record(root: Path, request: dict) -> dict:
     node_id = request['node_id']
     entry = {'node_id': node_id, 'status': request['status'],
              'artifacts_created': request.get('artifacts_created', [])}
-    for field in ('verification', 'error'):
+    for field in ('started_at', 'verification', 'error'):
         if request.get(field) is not None:
             entry[field] = request[field]
 

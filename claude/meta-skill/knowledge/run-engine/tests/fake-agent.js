@@ -24,6 +24,13 @@ function makeFakeAgent(responses) {
         spec = { node_id: label.slice(prefix.length), status: 'passed', blocking_findings: [] }
       }
     }
+    // record_transition.py's receipt, unless a test answers the relay itself. `{}` is how
+    // older tests said "the commit happened"; it means the same receipt.
+    const recorded = /^(commit|repair-route):([^:]+)/.exec(label)
+    if (recorded && (spec === undefined || (spec && typeof spec === 'object' && !Array.isArray(spec) &&
+        Object.keys(spec).length === 0))) {
+      spec = { status: 'recorded', node_id: recorded[2], transition_index: 0, replayed: false }
+    }
     // Unknown labels may be answered by a fallback: the ledger double registers one,
     // because the engine's authorize/start/settle labels carry the repair node id.
     if (spec === undefined && typeof responses.__fallback === 'function') {

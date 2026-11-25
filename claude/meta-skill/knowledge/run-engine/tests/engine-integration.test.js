@@ -284,6 +284,8 @@ test('runEngine: a completed node nothing remaining depends on is not re-measure
   assert.equal(agent.counters['inherit:a'], undefined)
 })
 
+const receipt = id => ({ status: 'recorded', node_id: id, transition_index: 0, replayed: false })
+
 test('L2.5 commit serialization: second commit waits for the first (fix C1)', async () => {
   // Two passing siblings; gate the first commit so we can observe the second has not started.
   const firstCommit = makeDeferred()
@@ -295,13 +297,13 @@ test('L2.5 commit serialization: second commit waits for the first (fix C1)', as
     ], completed: [] },
     A: passed('A'), B: passed('B'),
     'commit:A': (i, p) => { started.push('A'); return firstCommit.promise },
-    'commit:B': (i, p) => { started.push('B'); return {} }
+    'commit:B': (i, p) => { started.push('B'); return receipt('B') }
   })
   const run = core.runEngine({ agent, pipeline })
   await new Promise(r => setImmediate(r))
   // Only the first commit may have started; B's commit must be queued behind it.
   assert.deepEqual(started, ['A'])
-  firstCommit.resolve({})
+  firstCommit.resolve(receipt('A'))
   await run
   assert.deepEqual(started, ['A', 'B']) // serialized order
 })
@@ -358,9 +360,39 @@ test('runEngine: each step runs on its tier, and nothing that judges is ever bel
 test('every label the engine dispatches has a deliberate tier', () => {
   const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'engine-core.js'), 'utf8')
   const heads = new Set([...src.matchAll(/label: [`']([a-z-]+)[:'`]/g)].map(m => m[1]))
-  const strong = ['verify', 'repair', 'inline-review', 'load-dag', 'inherit', 'expand', 'validate-readiness', 'repair-route']
+  const strong = ['verify', 'repair', 'inline-review', 'load-dag', 'inherit', 'expand', 'validate-readiness']
   for (const head of heads) {
     const tier = core.tierOf(head, []) === 'light' || core.tierOf(`${head}:x`, []) === 'light' ? 'light' : 'strong'
     assert.equal(tier === 'strong', strong.includes(head), `${head}: classify it as light or keep it strong on purpose`)
   }
+})
+
+// A transition is complete only when record_transition.py's receipt says so.
+test('a receipt for another node does not complete this one', async () => {
+  const agent = makeFakeAgent({ 'load-dag': { nodes: [
+      { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] },
+      { node_id: 'b', capability: 'x', hard_blocked_by: ['a'], exit_artifacts: [] }
+    ], completed: [] },
+    a: passed('a'), b: passed('b'), 'commit:a': receipt('b') })
+  const out = await core.runEngine({ agent, pipeline })
+  assert.equal(out.status, 'needs_diagnosis')
+  assert.equal(out.hardFailures[0].blocking_findings[0].type, 'unrecorded_transition')
+  assert.equal(agent.counters.b, undefined, 'nothing downstream runs on an unrecorded completion')
+})
+
+test('a replayed receipt completes the node', async () => {
+  const agent = makeFakeAgent({ 'load-dag': { nodes: [
+      { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }], completed: [] },
+    a: passed('a'), 'commit:a': { ...receipt('a'), replayed: true } })
+  const out = await core.runEngine({ agent, pipeline })
+  assert.equal(out.status, 'complete')
+})
+
+test('a commit relay that answers nothing is asked once more, then trusted only on a receipt', async () => {
+  const agent = makeFakeAgent({ 'load-dag': { nodes: [
+      { node_id: 'a', capability: 'x', hard_blocked_by: [], exit_artifacts: [] }], completed: [] },
+    a: passed('a'), 'commit:a': () => null, 'commit:a:retry': receipt('a') })
+  const out = await core.runEngine({ agent, pipeline })
+  assert.equal(out.status, 'complete')
+  assert.equal(agent.counters['commit:a:retry'], 1)
 })

@@ -440,18 +440,20 @@ This template is CC-only. Codex keeps its existing markdown loop (frozen).
 
 ## Recording Transitions
 
-After each node completes or fails, append to workflow.json transition_log:
+<!-- clause-begin:run-record-transition -->
+After each node completes or fails, record it with the helper; never edit `transition_log` by hand:
 
-```json
-{
-  "node_id": "<node_id>",
-  "status": "completed | failed",
-  "started_at": "<ISO timestamp>",
-  "completed_at": "<ISO timestamp>",
-  "artifacts_created": ["<file paths>"],
-  "error": "<one line, only if failed>"
-}
+<!-- snippet:record-transition -->
+```bash
+printf '%s' '{"node_id":"<node_id>","status":"completed","artifacts_created":["<path>"]}' \
+  | python3 .allforai/bootstrap/scripts/record_transition.py .
 ```
+
+A failed attempt carries `"status":"failed"` and a one-line `"error"`; `started_at`,
+`verification` (verbatim, never upgraded) and `assumed_decisions` are optional. The command
+prints a receipt, and the transition counts only when that receipt reads `"status":"recorded"`
+for this node. Running the same request again is a replay, not a second entry.
+<!-- clause-end:run-record-transition -->
 
 ## Session Resume
 

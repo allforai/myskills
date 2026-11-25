@@ -109,3 +109,11 @@ def test_clear_corrections_deletes_the_node_file(tmp_path):
     assert code == 0 and not corrections.exists()
     code, _ = record(root, {**COMPLETED, 'artifacts_created': [], 'clear_corrections': True})
     assert code == 0
+
+
+def test_started_at_is_kept_and_part_of_the_replay_identity(tmp_path):
+    root = project(tmp_path)
+    record(root, {**COMPLETED, 'started_at': '2026-01-01T00:00:00+00:00'})
+    assert log_of(root)[-1]['started_at'] == '2026-01-01T00:00:00+00:00'
+    _, receipt = record(root, {**COMPLETED, 'started_at': '2026-01-02T00:00:00+00:00'})
+    assert receipt['replayed'] is False and len(log_of(root)) == 2

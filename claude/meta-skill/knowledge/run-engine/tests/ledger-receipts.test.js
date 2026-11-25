@@ -265,3 +265,27 @@ test('a repair node whose only obligation is exhausted is never dispatched unpai
       'an exhausted obligation is never named in a grant')
   }
 })
+
+// A relay that came back with nothing is asked once more; an answer never is.
+test('relay retries once when the relay returns null', async () => {
+  const agent = makeFakeAgent({ 'ledger:x': () => null, 'ledger:x:retry': { status: 'ok' } })
+  assert.deepEqual(await core.relay(agent, 'p', { label: 'ledger:x' }), { status: 'ok' })
+  assert.deepEqual(agent.calls.map(c => c.label), ['ledger:x', 'ledger:x:retry'])
+})
+
+test('relay retries a relay that could not run the command', async () => {
+  const agent = makeFakeAgent({ 'ledger:x': { status: 'invalid', reason: 'no python' }, 'ledger:x:retry': { status: 'ok' } })
+  assert.deepEqual(await core.relay(agent, 'p', { label: 'ledger:x' }), { status: 'ok' })
+})
+
+test('relay does not retry a refusal', async () => {
+  const agent = makeFakeAgent({ 'ledger:x': { status: 'blocked', reason: 'no' } })
+  assert.equal((await core.relay(agent, 'p', { label: 'ledger:x' })).status, 'blocked')
+  assert.equal(agent.calls.length, 1)
+})
+
+test('relay gives up after one retry', async () => {
+  const agent = makeFakeAgent({ 'ledger:x': () => null, 'ledger:x:retry': () => null })
+  assert.equal(await core.relay(agent, 'p', { label: 'ledger:x' }), null)
+  assert.equal(agent.calls.length, 2)
+})
