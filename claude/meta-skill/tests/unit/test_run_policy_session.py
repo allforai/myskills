@@ -177,6 +177,7 @@ const agent = async (prompt, opts) => {
  if(opts.label === 'load-dag') return {nodes:[{node_id:'export',soft_retry_max:2,hard_blocked_by:[],exit_artifacts:[]}],completed:[]};
  if(opts.label === 'export') {count++; return {node_id:'export',outcome:count===4?'passed':'soft_fail',blocking_findings:[],artifacts_written:[]};}
  if(opts.label === 'verify:export') return {node_id:'export',status:'passed',blocking_findings:[]};
+ if(opts.label === 'commit:export') return {status:'recorded',node_id:'export',transition_index:0,replayed:false};
  return {};
 };
 const pipeline=async (items,...steps)=>Promise.all(items.map(async x=>{for(const step of steps)x=await step(x);return x;}));
@@ -224,7 +225,7 @@ const agent=async(prompt,opts)=>{
   ...(process.argv[4]==='on_safety_warning'?{safety_warnings:['Slow external API']}:{}),
   missing_mappings:process.argv[5]==='named'?[{mapping_id:'bm-1',behaviour:'CSV labels follow the account locale'}]:[]};}
  if(opts.label==='verify:export')return {node_id:'export',status:'passed',blocking_findings:[]};
- if(opts.label==='commit:export')commits++;
+ if(opts.label==='commit:export'){commits++;return {status:'recorded',node_id:'export',transition_index:0,replayed:false};}
  return {};
 };
 const pipeline=async(items,...steps)=>Promise.all(items.map(async x=>{for(const step of steps)x=await step(x);return x;}));
