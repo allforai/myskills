@@ -40,7 +40,7 @@ Writes:
 
 Each `selected_skills[]` entry must include `skill_path`, `selection_reason`,
 `triggering_facts`, `required_inputs`, `expected_outputs`, `hard_blocked_by`,
-`unlocks`, `node_id_hint`, `human_gate`, `owner`, `state`, and `consumer_refs`.
+`unlocks`, `node_id_hint`, `owner`, `state`, and `consumer_refs`.
 
 `artifact-contract-graph.json` must include `artifacts[]`, `producers[]`,
 `consumers[]`, `edges[]`, `missing_producers[]`, `orphan_outputs[]`,

@@ -29,8 +29,6 @@ Does not include timestamps or other volatile data.
 `total_nodes` fixed at bootstrap time.
 Checked every `check_interval` iterations.
 
-**Carve-out for human gate nodes:** Nodes with `human_gate: true` and `gate_status == "in-review"` are excluded from the no-progress check — they are legitimately waiting for human approval, not stuck. Only count them as "no progress" if they remain `in-review` for more than `max_node_execution_time * 2` seconds without a gate status change.
-
 ## Demo Data Staging Constraint
 
 demo-forge node-specs MUST include a pre-flight credential check:

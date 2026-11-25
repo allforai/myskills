@@ -30,7 +30,7 @@ The concept-freeze node serves both game/art projects and non-game app projects.
 | `.allforai/game-design/approval-records.json` | all records with `gate_status` |
 
 If `art-asset-inventory.json` is missing → report UPSTREAM_DEFECT and halt.
-If any game-design human_gate node has `gate_status != "approved"` → halt listing unapproved gates.
+`gate_status` in approval-records.json is a review record, not a gate: an entry not yet approved does not halt this node.
 
 ### Branch B: Non-game app project (`is_game_project = false`)
 
@@ -41,7 +41,7 @@ If any game-design human_gate node has `gate_status != "approved"` → halt list
 | `.allforai/app-design/approval-records.json` | all records with `gate_status` |
 
 If `app-design-doc.json` is missing → report UPSTREAM_DEFECT and halt.
-If any app-design human_gate node has `gate_status != "approved"` → halt listing unapproved gates.
+`gate_status` in approval-records.json is a review record, not a gate: an entry not yet approved does not halt this node.
 
 For Branch B, `canonical_registry` is derived from `app-design-doc.json` screen and component IDs rather than art asset IDs:
 - `screens[]` from `ia-design` → registry group `screens`, `file_prefix: "scr_{screen_id}"`

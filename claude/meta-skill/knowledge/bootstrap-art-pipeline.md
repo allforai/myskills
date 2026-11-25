@@ -15,7 +15,7 @@ whatever it was copied from.
 **Art Concept Node Injection (always applies when `art-direction` is in the selected workflow):**
 
 After inserting the `art-direction` node, also insert an `art-concept` node immediately following it:
-- `node_id: "art-concept"`, `capability: "art-concept-skill"`, `human_gate: false`
+- `node_id: "art-concept"`, `capability: "art-concept-skill"`
 - `hard_blocked_by: ["art-direction"]`; update `art-spec-design` to `hard_blocked_by: ["art-concept"]` (remove `art-direction` from its hard_blocked_by list)
 - `unlocks: ["art-spec-design"]`
 - **No approval-records entry** (art-concept is a skill invocation, not a human-reviewed document)
@@ -24,7 +24,6 @@ After inserting the `art-direction` node, also insert an `art-concept` node imme
 ```markdown
 ---
 node_id: art-concept
-human_gate: false
 hard_blocked_by: [art-direction]
 unlocks: [art-spec-design]
 exit_artifacts:
@@ -83,16 +82,15 @@ art-concept skill 完成后，依次调用以下 game-art 子 skill 细化策略
 **Concept Freeze Node Injection (applies when art-spec-design is in the selected workflow):**
 
 After inserting `art-spec-design`, also insert a `concept-freeze` node immediately following it:
-- `node_id: "concept-freeze"`, `capability: "concept-contract"`, `human_gate: false`
+- `node_id: "concept-freeze"`, `capability: "concept-contract"`
 - `hard_blocked_by: ["art-spec-design"]`; update all art-gen nodes (`ai-art-generation`, `tile-art-gen`, `character-art-gen`, `environment-art-gen`, `vfx-art-gen`, etc.) to `hard_blocked_by: ["concept-freeze"]` (remove `art-spec-design` from their hard_blocked_by)
 - `unlocks`: all art-gen nodes
-- **No approval-records entry** (concept-freeze has `human_gate: false` — no discipline_owner review needed)
+- **No approval-records entry** (no discipline_owner review needed)
 - **Node contract** for concept-freeze (bootstrap generates `.allforai/bootstrap/node-specs/concept-freeze.md` from `node-spec-template.md` and carries these fields into it):
 
 ```markdown
 ---
 node_id: concept-freeze
-human_gate: false
 hard_blocked_by: [art-spec-design]
 unlocks: []  # populated by bootstrap from workflow's art-gen nodes
 exit_artifacts:
@@ -178,7 +176,6 @@ Bootstrap generates `.allforai/bootstrap/node-specs/<node_id>.md` from `node-spe
 ```markdown
 ---
 node_id: <node_id>
-human_gate: true
 hard_blocked_by: [concept-freeze]
 unlocks: [art-qa]
 exit_artifacts:
@@ -298,19 +295,16 @@ If any sub-skill returns `UPSTREAM_DEFECT` → halt and report the defect. Do no
 **Key rules for art-gen injection:**
 - `hard_blocked_by: ["concept-freeze"]` for ALL art-gen nodes (regardless of type)
 - `unlocks: ["art-qa"]` for ALL art-gen nodes
-- `human_gate: true` for ALL art-gen nodes (discipline-specific approval required)
-- `approval_record_path: ".allforai/game-design/approval-records.json"` for ALL art-gen nodes
 - `review_checklist`: use the checklist from `game-design.md` canonical registry table
 - Do NOT inject a node-spec for entries in `skipped_nodes` — only `active_nodes` get node-specs
 
 **Art-QA Node Injection (when `art-qa` is in the canonical node registry for the selected scenario):**
 
 After injecting all art-gen nodes, inject the `art-qa` node:
-- `node_id: "art-qa"`, `capability: "game-design"`, `human_gate: true`
+- `node_id: "art-qa"`, `capability: "game-design"`
 - `hard_blocked_by:` ALL active art-gen nodes (i.e., every entry in `active_nodes` that was actually injected — tile-art-gen, character-art-gen, environment-art-gen, ui-art-gen, vfx-art-gen, whichever are in `active_nodes`)
 - `unlocks: ["game-design-finalize"]`
 - `discipline_owner: "art-director"`
-- `approval_record_path: ".allforai/game-design/approval-records.json"`
 - `review_checklist:` ["全资产风格一致性（调色板/线条/光影）", "所有资产均有 alpha/final 状态", "Atlas 打包无越界/重叠", "运行时导入通过（无丢失引用）", "3D 衍生资产透视/枢轴正确（若 dimension=2.5d）"]
 
 **Node contract for art-qa** (bootstrap generates `.allforai/bootstrap/node-specs/art-qa.md` from `node-spec-template.md` and carries these fields into it):
@@ -318,7 +312,6 @@ After injecting all art-gen nodes, inject the `art-qa` node:
 ```markdown
 ---
 node_id: art-qa
-human_gate: true
 hard_blocked_by: []  # populated by bootstrap: all active art-gen node IDs
 unlocks: [game-design-finalize]
 exit_artifacts:

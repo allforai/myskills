@@ -250,7 +250,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 def generate_placeholder_frame(width: int, height: int, label: str, output_path: str,
                                  bg_color=(180, 180, 200), text_color=(60, 60, 80)):
-    """生成带尺寸标注的占位帧，用于复杂帧动画的 human_gate 期间"""
+    """生成带尺寸标注的占位帧，用于复杂帧动画等待人工资产期间"""
     img = Image.new("RGBA", (width, height), bg_color + (255,))
     draw = ImageDraw.Draw(img)
     
@@ -361,11 +361,11 @@ fallback: 改走 2D 帧序列 / 视频抽帧，不要改开 3D 游戏分支
 
 ## 六、需人工介入（不可自动化）
 
-以下情况 art-gen 节点执行策略：**生成规格文档（JSON）+ 程序化占位资产（PNG）+ human_gate = true**
+以下情况 art-gen 节点执行策略：**生成规格文档（JSON）+ 程序化占位资产（PNG）+ 在节点结果里列出需人工补做的资产**
 
 | 资产类型 | 原因 | 节点策略 |
 |---|---|---|
-| 复杂角色动作 | 自动绑骨质量不可用 | 帧序列或视频抽帧；复杂部分 human_gate |
+| 复杂角色动作 | 自动绑骨质量不可用 | 帧序列或视频抽帧；复杂部分列为人工补做 |
 | 高质量像素手绘 | 色相偏移/手工描边/精细抖动需人眼判断 | 生成低质量程序化像素化占位 |
 | PBR / ZBrush / 3D 角色建模 / Live2D | 超出本管线 | 不要开这些节点；remap 到 2D 帧或标记 out of scope |
 

@@ -5,8 +5,8 @@
 > Direction choices in this capability are Phase A decisions: a node whose
 > direction is a human decision carries `decision_mode: "brainstorm"` and
 > receives its answer as `decision_inputs` (see `bootstrap-audits.md` Phase A).
-> No node carries `human_gate: true`; nothing here waits for approval at run
-> time.
+> Nothing here waits for approval at run time; the retired `human_gate` field
+> is not emitted.
 
 ## Canonical Node Registry
 

@@ -1,0 +1,25 @@
+"""`human_gate` is retired (bootstrap SKILL.md: "not a runtime concept"). No skill text may
+still tell bootstrap to set it: a game project would follow the more specific old rule.
+Legacy projects keep their validator and readiness handling; only the teaching goes."""
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+MENTION = re.compile(r'(?<![a-z_])human_gates?(?![a-z_])')
+# The paragraph that retires it, and lines that only say it is retired or legacy.
+ALLOWED = re.compile(r'not a runtime concept|Do not emit|retired|legacy|former `human_gate`', re.I)
+
+
+def offending_lines():
+    found = []
+    for path in sorted(ROOT.rglob('*.md')):
+        if {'fixtures', 'tests'} & set(path.relative_to(ROOT).parts):
+            continue
+        for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+            if MENTION.search(line) and not ALLOWED.search(line):
+                found.append(f'{path.relative_to(ROOT)}:{number}: {line.strip()[:120]}')
+    return found
+
+
+def test_no_skill_text_tells_bootstrap_to_set_human_gate():
+    assert offending_lines() == []

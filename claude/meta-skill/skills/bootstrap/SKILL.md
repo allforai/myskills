@@ -586,7 +586,6 @@ If total nodes > 30, offer phased `/bootstrap` → `/run` cycles in Step 3.4.
       "hard_blocked_by": ["<node IDs that must complete before this node can start — strict execution gate>"],
       "alignment_refs": ["<node IDs this node reads from but can run concurrently — reads artifacts after they exist>"],
       "unlocks": ["<node IDs unblocked when this node completes>"],
-      "human_gate": false,
       "discipline_owner": null
     }
   ],
@@ -621,7 +620,7 @@ If total nodes > 30, offer phased `/bootstrap` → `/run` cycles in Step 3.4.
   the Downstream Contract section in the node-spec — tells the subagent "who
   will consume your output and what they need from it".
   **How to populate**: For each node N, `consumers[]` = all node IDs M where N appears in M's `hard_blocked_by[]` AND N's exit_artifacts are listed in the Downstream Consumers table of M's capability file. Bootstrap derives this during Step 3.1 node graph design — after hard_blocked_by chains are established, traverse them in reverse to fill consumers.
-- `hard_blocked_by`: Node IDs that must complete (exit_artifacts ready + human_gate approved if applicable) before this node can START. The orchestrator will not dispatch this node until all hard_blocked_by nodes are complete and artifact-status validation passes. Use for true data dependencies — this node's inputs are not usable until upstream finishes.
+- `hard_blocked_by`: Node IDs that must complete (exit_artifacts ready) before this node can START. The orchestrator will not dispatch this node until all hard_blocked_by nodes are complete and artifact-status validation passes. Use for true data dependencies — this node's inputs are not usable until upstream finishes.
 - `alignment_refs`: Node IDs this node reads artifacts FROM but does not strictly depend on for execution timing. The orchestrator may dispatch this node in parallel with alignment_refs nodes; the node-spec's Context Pull section must handle the case where alignment_refs artifacts may not yet exist (graceful degradation). Use for "I want to align with X's output but can work without it."
 
 - `unlocks`: Node IDs unblocked when this node's gate is approved. Used by the orchestrator to advance the workflow after approval.
@@ -880,7 +879,7 @@ Persist the validated files from Steps 3–5 and required runtime assets:
     ```
     允许 `status: "not_ready"`，但必须把 blocker 前置暴露给用户。`/run` 会再次执行同一检查；未 ready 时不得启动长任务。
 16. `.allforai/bootstrap/protocols/*.md`
-17. `.allforai/game-design/approval-records.json`：为每个 `human_gate: true` 的游戏设计节点初始化一条 `pending` 记录。**重建时（goals 包含 `create` 或 `rebuild`）如果文件已存在，重置所有记录为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。保留节点列表结构，但重置审批状态。**首次 bootstrap 时创建新文件。`human_gate: false` 的节点（art-concept、concept-freeze、architecture-concept-validation）不写入审批记录。
+17. `.allforai/game-design/approval-records.json`：只为仍带 `human_gate: true` 的 legacy 节点初始化 `pending` 记录；新规划的节点不带这个字段，新 bootstrap 写出空列表。重建时（goals 包含 `create` 或 `rebuild`）文件已存在则把这些 legacy 记录重置为 `gate_status: "pending"`，清空 `approved_by`、`approved_at`、`reviewer_notes`、`revision_notes`。
 18. `.allforai/game-design/review-dashboard.html`：在生成 `approval-records.json` 后立即渲染，并且必须早于任何 game-design 节点执行：
     ```bash
     python3 .allforai/bootstrap/scripts/render_approval_dashboard.py \
